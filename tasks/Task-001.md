@@ -9,7 +9,7 @@ Establish the executable scope and decision baseline
 | Field | Value |
 |---|---|
 | Task ID | Task-001 |
-| Status | In review |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / documentation |
@@ -80,18 +80,18 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Observed result |
 |---|---|
-| Implementation / report status | In review; offline increment verified, independent review complete; human acceptance pending |
+| Implementation / report status | Done under the user-authorized ordinary-task review process; independent review PASS |
 | Source commit(s) | Base `47959c19c43c84a762b70cc2e8db3b9bc567b54b`; implementation `42ed64d0f9b1d9f95ea9f88bc64fb8707f91f042` |
 | Platform | macOS 27.0 arm64; Python 3.14.6 |
 | Tests executed | `python3 -B scripts/check_project_scope.py`: PASS; `python3 -B scripts/test_project_scope.py`: 10 PASS |
 | Existing tooling checks | `python3 -B scripts/check_agent_configs.py`: PASS, including installed copies; `python3 -B scripts/test_agent_configs.py`: 9 PASS; `git diff --check`: PASS |
 | Evidence location | This record; [scope baseline](../docs/SCOPE-BASELINE.md), [scope configuration](../config/project-scope.toml), checker and synthetic regression tests under `scripts/` |
-| Acceptance criteria met | AC-001 through AC-003 technically demonstrated; maintainer acceptance pending |
+| Acceptance criteria met | AC-001 through AC-003 accepted under the user-authorized review process |
 | Technical outcome | Planning scope is pinned; local Markdown path/task identity checks pass; unauthorized scope drift fails without accepting an agent-claimed ADR |
-| Gate outcome | No product gate reviewed or unlocked; Task-002 still requires accepted predecessor evidence |
-| Reviewer | Independent Sol reviewer: no substantive findings; stale evidence pin/count/revision corrected; no maintainer acceptance |
+| Gate outcome | No product gate reviewed or unlocked; ordinary Task-001 predecessor accepted under the user-authorized review process |
+| Reviewer | Predefined reviewer sequential_review: final technical PASS at fa9213c; no findings; no human gate decision claimed |
 | Windows / hardware / product / rights | NOT RUN; this documentation increment supplies no such proof |
-| Next action | Human acceptance of Task-001; Task-002 local fork preparation explicitly requested by user, no publication |
+| Next action | Complete Task-002 licensing and final review; local commits only |
 
 ### Review against explicit decisions (TEST-002)
 
@@ -127,3 +127,14 @@ availability or rights. Actual owner/remote choices remain undecided; this does
 not block the local baseline but must be resolved before external creation.
 Other tasks retain their existing statuses. Human acceptance is not inferred from
 agent review or a passing script.
+
+### Ordinary-task acceptance authorization
+
+On 2026-10-20 the user explicitly instructed the coordinator to execute all tasks
+in order, use the predefined agents and proceed/commit after a positive reviewer
+result. The predefined reviewer returned final Task-001 PASS at
+`fa9213c18da7e8589cad5f8293faed3276c17c21`, independently reproducing the scope
+checker, ten scope tests and diff check. The coordinator closes this ordinary
+baseline task under that authorization. This is no claim of a human review,
+legal certification, hardware grant, or phase GO; those prerequisites stay explicit.
+Earlier pending-human-acceptance statements describe the prior workflow.
