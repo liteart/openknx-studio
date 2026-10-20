@@ -1,0 +1,55 @@
+# Task-001 planning baseline; this file does not claim implemented capabilities.
+schema_version = 1
+requirements_source = "docs/REQUIREMENTS.md"
+
+[confirmed]
+requirements = ["R-001", "R-002", "R-003", "R-004", "R-005", "R-006", "R-007", "R-008", "R-009", "R-010", "R-011", "R-012", "R-013", "R-014", "R-015", "R-016", "R-017", "R-018", "R-019", "R-020", "R-024", "R-025", "R-027", "R-029"]
+implementation_language = "Rust"
+dotnet_exception = "necessary Windows original-DCA and ETS-SDK hosting only"
+protocol_owner = "knust-fork"
+project_owned_license = "Apache-2.0"
+paid_tiers = false
+runtime_ets_dependency = false
+configuration_authority = "multiple JSON files and Git"
+sqlite_role = "rebuildable cache only"
+interface = "MCP-first and headless-first with trusted operator CLI"
+dca_priority = "unchanged original manufacturer DCAs"
+original_dca_window = "permitted UI exception; general editor UI is excluded"
+core_platforms = ["Windows", "Linux", "macOS"]
+normal_operation = "local and offline without mandatory account, cloud, LLM or remote"
+development_language = "English"
+production_messages = "localization framework with English fallback"
+
+[confirmed_direction]
+requirements = ["R-026"]
+native_manufacturer_plugins = "later open extension direction; adoption is not assumed"
+
+[v1_exclusions]
+knx_ip_secure = true
+knx_data_secure = true
+secure_keys_and_keyrings = true
+legacy_ets_plugins = true
+generic_ets_utility_apps = true
+general_editor_ui = true
+native_dca_replacement_as_primary_strategy = true
+secure_required_behavior = "reject without downgrade"
+
+[engineering_defaults]
+requirements = ["R-021", "R-022", "R-023", "R-028", "R-030"]
+policy_ids = ["EP-01", "EP-02", "EP-03", "EP-04", "EP-05", "EP-06", "EP-07", "EP-08", "EP-09", "EP-10", "EP-11", "EP-12", "EP-13", "EP-14", "EP-15", "EP-16", "EP-17", "EP-18"]
+policy_values_source = "docs/REQUIREMENTS.md"
+product_work_gate = "Task-028: PoCs A/B/C PASS and explicit maintainer GO"
+
+[repositories.editor]
+logical_name = "knx-editor"
+owner = "undecided"
+remote = "undecided"
+
+[repositories.protocol]
+logical_name = "knust-fork"
+owner = "undecided"
+remote = "undecided"
+
+[repositories.dca_host]
+logical_path = "knx-editor/dca-host"
+separate_repository = false

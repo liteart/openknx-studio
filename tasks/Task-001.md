@@ -9,11 +9,11 @@ Establish the executable scope and decision baseline
 | Field | Value |
 |---|---|
 | Task ID | Task-001 |
-| Status | Not started |
+| Status | In review |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / documentation |
-| Owner | Unassigned |
+| Owner | Primary coordinator with implementer, verifier and reviewer agents |
 | Requirement references | [R-001](../docs/REQUIREMENTS.md), [R-002](../docs/REQUIREMENTS.md), [R-003](../docs/REQUIREMENTS.md), [R-004](../docs/REQUIREMENTS.md), [R-015](../docs/REQUIREMENTS.md), [R-024](../docs/REQUIREMENTS.md), [R-027](../docs/REQUIREMENTS.md), [R-029](../docs/REQUIREMENTS.md) |
 
 ## Description
@@ -36,9 +36,9 @@ Install the approved planning documents into the actual development repository w
 
 ## Acceptance Criteria
 
-- [ ] AC-001: Goals, AGENTS, task index, and requirements can be navigated in the repository.
-- [ ] AC-002: No earlier Java, all-.NET, Free/Pro, or database-authority proposal remains normative.
-- [ ] AC-003: A reviewer can identify each PoC success condition and the production stop gate.
+- [x] AC-001: Goals, AGENTS, task index, and requirements can be navigated in the repository.
+- [x] AC-002: No earlier Java, all-.NET, Free/Pro, or database-authority proposal remains normative.
+- [x] AC-003: A reviewer can identify each PoC success condition and the production stop gate.
 
 ## Dependencies to Other Tasks
 
@@ -78,15 +78,52 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 ## Completion Record
 
-| Field | Initial value |
+| Field | Observed result |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | In review; offline increment verified, independent review complete; human acceptance pending |
+| Source commit(s) | Base `47959c19c43c84a762b70cc2e8db3b9bc567b54b`; implementation commit recorded after review |
+| Platform | macOS 27.0 arm64; Python 3.14.6 |
+| Tests executed | `python3 -B scripts/check_project_scope.py`: PASS; `python3 -B scripts/test_project_scope.py`: 10 PASS |
+| Existing tooling checks | `python3 -B scripts/check_agent_configs.py`: PASS, including installed copies; `python3 -B scripts/test_agent_configs.py`: 9 PASS; `git diff --check`: PASS |
+| Evidence location | This record; [scope baseline](../docs/SCOPE-BASELINE.md), [scope configuration](../config/project-scope.toml), checker and synthetic regression tests under `scripts/` |
+| Acceptance criteria met | AC-001 through AC-003 technically demonstrated; maintainer acceptance pending |
+| Technical outcome | Planning scope is pinned; local Markdown path/task identity checks pass; unauthorized scope drift fails without accepting an agent-claimed ADR |
+| Gate outcome | No product gate reviewed or unlocked; Task-002 still requires accepted predecessor evidence |
+| Reviewer | Independent Sol reviewer: no substantive findings; stale evidence pin/count/revision corrected; no maintainer acceptance |
+| Windows / hardware / product / rights | NOT RUN; this documentation increment supplies no such proof |
+| Next action | Human acceptance of Task-001; Task-002 local fork preparation explicitly requested by user, no publication |
 
-Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+### Review against explicit decisions (TEST-002)
+
+The coordinator compared GOALS, AGENTS, architecture and the requirements baseline
+with the explicit user contract on 2026-10-20. The normative implementation is Rust;
+.NET is limited to necessary Windows original-DCA hosting. Wire protocols belong
+only in knust; Apache-2.0 applies to owned source with no paid tiers. Multiple JSON
+files and Git remain configuration authority, with SQLite rebuildable. Secure,
+legacy plug-ins and the general editor UI are excluded from v1; original vendor UI
+is the stated exception. Original DCAs take priority over native replacements.
+References to earlier Java/Calimero, all-.NET, Falcon-core, database-authority and
+Free/Pro proposals occur as superseded/excluded choices, not normative designs.
+All existing requirement authority classes and engineering policy references are
+preserved separately in the scope file. No product scope was changed.
+
+### Negative scope review (TEST-003)
+
+The synthetic tests alter Secure scope without an ADR and replace Rust with Java
+while adding an agent-claimed accepted ADR. Both are rejected by the pinned scope
+check. The review checklist requires an actual human-approved ADR and affected
+contract/task/test review for scope changes. The checker detects drift; it cannot
+authenticate human approval or prevent a malicious edit to both pin and scope.
+
+### Readiness and delegation
+
+The resumed coordinator used a read-only explorer followed by an independent
+reviewer. The coordinator ran the checks and finished the paused draft. No subagent
+committed, contacted hardware or advanced a gate.
+
+The explorer found no configured remotes or local manufacturer archive. The old
+archive hash in REFERENCE-DCA is historical static evidence, not current file
+availability or rights. Actual owner/remote choices remain undecided; this does
+not block the local baseline but must be resolved before external creation.
+Other tasks retain their existing statuses. Human acceptance is not inferred from
+agent review or a passing script.

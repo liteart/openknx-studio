@@ -13,6 +13,8 @@ This kit consolidates the decisions in the project conversation. Later explicit 
 
 Agent roles, model routing, and installation: [AGENT-WORKFLOW.md](docs/AGENT-WORKFLOW.md).
 
+Offline scope and documentation checks: [SCOPE-BASELINE.md](docs/SCOPE-BASELINE.md).
+
 ## Contents
 
 | File | Purpose |
