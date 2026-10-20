@@ -82,7 +82,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Local fork preparation complete; full task acceptance pending |
-| Source commit(s) | Upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; local fork `d6e25fb206850dd6da18d8acf9b82ecdf5234733`; editor evidence commit recorded below after commit |
+| Source commit(s) | Upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; local fork `d6e25fb206850dd6da18d8acf9b82ecdf5234733`; editor setup `85975017054edb072b9f4505f5fcd12362294d1e` |
 | Platform | macOS 27.0 arm64; Git CLI; Python 3.14.6 |
 | Tests executed | Static history/license/dependency/ignore assertions PASS; scope checker PASS; both repository diffs pass `git diff --check` |
 | Evidence location | This record; local fork `FORK.md` and `AGENTS.md`; [repository setup evidence](../docs/LOCAL-REPOSITORIES.md) |
