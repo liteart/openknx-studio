@@ -74,15 +74,16 @@ No hardware writes, firmware flashing, or redistribution of inputs.
 
 ## Risks and Blockers
 
-The DALI .etsapp and two candidate KNXPROD files are Available privately with
-verified hashes. Internal application matches, actual physical targets,
+The DALI .etsapp, two candidate KNXPROD files, separate original firmware-update
+DCA and one exact candidate firmware member file are Available privately with
+recorded hashes. Internal application matches, actual physical targets,
 non-secure profiles, isolated bench/recovery evidence, SDK rights/build references,
-clean Windows qualification and separate firmware inputs remain Missing. The
+clean Windows qualification and actual firmware-device qualification remain Missing. The
 inventory can record these gaps; it cannot approve a hardware operation.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
-## Completion Record
+## Initial Completion Record
 
 | Field | Observed result |
 |---|---|
@@ -107,5 +108,21 @@ The independent reviewer accepted AC-003 as the policy prerequisite: the
 user-supplied contract requires human approval before hardware-write work, and
 no such task has started. DR-002 explicitly permits inventory completion while
 inputs remain Missing. This acceptance grants no bench or operation approval.
+
+## Firmware Input Registration Follow-up
+
+| Field | Observed result |
+|---|---|
+| Implementation / report status | Done; original Task-004 acceptance preserved, follow-up verifier and reviewer PASS |
+| Source commit(s) | Follow-up baseline `96da20eb409280266a2f65ba463a1e4f7ffe11e9`; current increment uncommitted |
+| Current technical outcome | Five Available files and 14 Missing prerequisites; two candidate firmware files registered with exact archive/member provenance |
+| New input files | `MDT_DCA_Update_Tool_v5_1_1_0.etsapp`, 9,328,498 bytes; exact member `Firmware/SCN-RTC20.02_R21.hex`, 275,716 bytes; hashes/paths in the manifest and evidence document |
+| Tests executed | Actual inventory/hash check PASS; requiring both firmware files PASS (exit 0); requiring physical target/human grant PASS negative case (exit 1, both Missing); scope checker and diff check PASS. Unchanged test suites not rerun |
+| Evidence location | [Firmware input and provenance evidence](../docs/REFERENCE-INPUTS.md); existing `firmware-dca` / `firmware-image` entries in [manifest](../config/reference-inputs.toml) |
+| Static observation limits | Coordinator/explorer manifest/member observations only; no archive inspection repeated by this registration, no runtime/vendor execution, firmware decoding or programming |
+| Compatibility / rights | Actual target/profile/application match UNVERIFIED; no current-version claim or rights certification |
+| Hardware / Windows | NOT RUN by this follow-up; `firmware-device` and `human-write-grant` remain Missing |
+| Gate / approval | No phase gate or physical operation approved; original human-approval policy unchanged |
+| Reviewer | Predefined sequential_verifier and sequential_review independently PASS; no findings |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).

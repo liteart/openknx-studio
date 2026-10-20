@@ -160,12 +160,14 @@ missing_reason = "Actual SDK/reference identities, compatible build environment 
 [[inputs]]
 id = "firmware-dca"
 kind = "file"
-status = "Missing"
-identity = "UNVERIFIED: separate original firmware-update DCA package/version/hash"
+status = "Available"
+identity = "MDT_DCA_Update_Tool_v5_1_1_0.etsapp"
 owner = "Project maintainer"
-source = "GOALS.md firmware-update qualification requirement"
-evidence = "The available DALI DCA is not evidence of a firmware-update DCA"
-missing_reason = "A separate firmware-update DCA has not been supplied"
+source = "https://www.mdt.de/fileadmin/user_upload/user_upload/download/MDT_DCA_Update_Tool_v5_1_1_0.etsapp"
+evidence = "2026-10-20 authorized coordinator download; bounded explorer manifest observation AppId M0083-A0096, AddInAssembly UpdateTool.dll; package filename is not current-version or runtime/target compatibility proof; rights not certified"
+path = "private/fixtures/mdt/MDT_DCA_Update_Tool_v5_1_1_0.etsapp"
+bytes = 9328498
+sha256 = "c0a67d64c489e640500c0a6d8455c4fda8db3bc659c32d4cfab606317439338f"
 
 [[inputs]]
 id = "firmware-device"
@@ -180,12 +182,14 @@ missing_reason = "An exact supported target and manufacturer-approved recovery p
 [[inputs]]
 id = "firmware-image"
 kind = "file"
-status = "Missing"
-identity = "UNVERIFIED: permitted firmware image/version/hash and target compatibility"
+status = "Available"
+identity = "SCN-RTC20.02_R21.hex"
 owner = "Project maintainer"
-source = "GOALS.md firmware-update qualification requirement"
-evidence = "No firmware image supplied or qualified"
-missing_reason = "Manufacturer image, lawful use and exact target/version compatibility remain unavailable"
+source = "https://www.mdt.de/fileadmin/user_upload/user_upload/download/MDT_DCA_Update_Tool_v5_1_1_0.etsapp"
+evidence = "2026-10-20 coordinator bounded copy of exact archive member Firmware/SCN-RTC20.02_R21.hex; original package preserved; no firmware decoding/programming; actual target/profile/application compatibility UNVERIFIED and rights not certified"
+path = "private/fixtures/mdt/SCN-RTC20.02_R21.hex"
+bytes = 275716
+sha256 = "0aeeb509bda3f2bda39688c013870a0fd77e78d9b900c3cf88c44412343db3ba"
 
 [[inputs]]
 id = "knxproj"

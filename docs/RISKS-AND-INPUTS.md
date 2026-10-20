@@ -21,7 +21,7 @@ physical identity, bench approval and SDK rights.
 | Clean interactive Windows environment | Missing; existing ETS host UI observed, subsequent automation unavailable; OS/SDK inventory NOT RUN | Original DCA/SDK/runtime proofs |
 | Lawful SDK/dependency provisioning and rights | Not established | Independent original DCA host |
 | DALI gear inventory/test circuit | Not supplied | Actual discovery/group/scene/HCL/replacement testing |
-| Separate firmware-update DCA + device + firmware | Not supplied | Firmware qualification; the DALI archive is not a substitute |
+| Separate firmware-update DCA + device + firmware | Candidate Update Tool package and exact RTC member file Available privately with hashes; physical target/profile/application compatibility and rights UNVERIFIED | Firmware qualification; file availability is not device qualification or write approval |
 | Supported KNXPROJ reference export and expected inventory | Not supplied | One-time migration tests |
 | Git remote owner/URLs and publication permission | Not supplied | External repository creation and later releases |
 | Qualified platform CI runners | Not established | Cross-platform execution evidence |

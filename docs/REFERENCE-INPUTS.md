@@ -9,6 +9,11 @@ bench qualification, a PoC PASS, or permission to operate a device.
 
 ## Available files
 
+The current inventory contains **5 Available files and 14 Missing prerequisites**.
+The initial inventory contained 3 Available files and 16 Missing prerequisites;
+its accepted evidence is preserved below. The firmware follow-up registers two
+additional candidate files without qualifying a device or approving a write.
+
 On 2026-10-20 the implementer streamed and hashed these local files without
 extracting archives, parsing product data, or executing vendor code:
 
@@ -33,9 +38,50 @@ No actual simple device has been selected or identified, and its non-secure
 profile has not been verified. Internal application IDs and package/DCA/device
 matching remain UNVERIFIED for both product packages.
 
+### Firmware input registration follow-up
+
+The coordinator downloaded the original
+[MDT Update Tool package](https://www.mdt.de/fileadmin/user_upload/user_upload/download/MDT_DCA_Update_Tool_v5_1_1_0.etsapp)
+under the user's explicit original-artifact acquisition authorization. It is
+preserved unchanged in `private/downloads/` and `private/fixtures/mdt/`.
+The filename identifies this input; it does not establish that it is the current
+version, that it loads independently, or that it supports an actual target.
+
+| Input ID / exact file identity | Bytes | SHA-256 |
+|---|---:|---|
+| `firmware-dca`: `MDT_DCA_Update_Tool_v5_1_1_0.etsapp` | 9,328,498 | `c0a67d64c489e640500c0a6d8455c4fda8db3bc659c32d4cfab606317439338f` |
+| `firmware-image`: `SCN-RTC20.02_R21.hex` | 275,716 | `0aeeb509bda3f2bda39688c013870a0fd77e78d9b900c3cf88c44412343db3ba` |
+
+The explorer's bounded central-directory and manifest-only observation reported
+117 entries, `AddInManifest.xml` of 19,090 bytes, AppId `M0083-A0096`, assembly
+`UpdateTool.dll`, display name `UpdateTool`, and 323 unique DeviceConfiguration
+application program IDs. The six IDs under the manifest comment
+`Zeitschaltuhr2.Generation` range from `M-0083_A-0255-20-0000` through
+`M-0083_A-0255-25-0000`. These are declared static metadata, not observed target
+identities or compatibility evidence for a physical device.
+
+The coordinator copied only the exact member
+`Firmware/SCN-RTC20.02_R21.hex` from that package to
+`private/fixtures/mdt/SCN-RTC20.02_R21.hex`. Its bounded read allowed 275,717 bytes
+and asserted the exact 275,716-byte member size; encrypted entries and symlinks
+were denied and the member was required to be a regular file. No bulk extraction,
+firmware decoding, vendor execution or programming was performed. This follow-up
+only registers and hashes the resulting candidate file; it does not repeat the
+archive inspection or member copy.
+
+The coordinator's source evidence includes the
+[2024 RTC technical manual](https://www.mdt.de/fileadmin/user_upload/user_upload/download/SCN-RTC20-02_MDT_TM_V11_DE.pdf)
+identifying firmware updates through a DCA, and the
+[2020 MDT DCA update guide](https://www.mdt.de/download/MDT_LSG_Update_MDT_Produkte_mittels_DCA_App.pdf).
+The current generic Firmware Update App is a distinct artifact and has not been
+substituted for this original package. No current-version, runtime-load, SDK
+compatibility, firmware/target match, non-secure profile, or rights certification
+is claimed. This bounded registration is not Task-006 or Task-109 implementation.
+`firmware-device` and all actual physical approval prerequisites remain Missing.
+
 ## Missing inputs
 
-These 16 entries remain Missing. Their exact identity is UNVERIFIED; the
+These 14 entries remain Missing. Their exact identity is UNVERIFIED; the
 inventory does not invent a model, firmware, application ID, property, address,
 gateway endpoint, or approval. The manifest records each source and missing reason.
 
@@ -53,9 +99,7 @@ gateway endpoint, or approval. The manifest records each source and missing reas
 | `human-write-grant` | Explicit human approval for the exact bench/target/operation | Project operator |
 | `clean-windows` | Clean interactive Windows environment without ETS/runtime dependency | Project operator |
 | `sdk-references-rights` | Exact SDK identities, compatible pinned build tools and human rights/provisioning review | Project maintainer |
-| `firmware-dca` | Separate original firmware-update DCA/version/hash | Project maintainer |
 | `firmware-device` | Exact supported firmware-update target and recovery evidence | Project operator |
-| `firmware-image` | Permitted image/version/hash and target compatibility | Project maintainer |
 | `knxproj` | Permitted export/hash and expected project inventory | Project operator |
 
 An existing Windows ETS host was user-reported and its RDP UI showed ETS 6 Home
@@ -64,9 +108,10 @@ Windows OS, MSBuild and SDK inventories are NOT RUN. This observation establishe
 neither a clean Windows qualification environment nor a verified SDK reference
 set. No private endpoint or screenshot is recorded here.
 
-The DALI archive does not satisfy any separate firmware-update input. A device
-and application must be identified again for the actual experiment; a file hash
-or an earlier identity record cannot prove the current physical state.
+The separate firmware-update package now supplies the two candidate files; the
+DALI archive is not their source. A device and application must be identified
+again for the actual experiment; a file hash or an earlier identity record
+cannot prove the current physical state.
 
 ## Bench and permitted-write policy
 
@@ -125,12 +170,16 @@ failed prerequisite result to report PASS. A zero exit only confirms inventory
 checks and requested input availability; it never qualifies hardware or approves
 execution. The tool prints this limitation on every invocation.
 
-Evidence was gathered on macOS 27.0 arm64 with Python 3.14.6 at source baseline
+### Initial accepted evidence
+
+The initial 3 Available / 16 Missing inventory evidence was gathered on macOS
+27.0 arm64 with Python 3.14.6 at source baseline
 `5ab53ba5c8b4766d92f80b12cad9adfbb23de34e`, branch
 `task/Task-004-reference-inventory`. Task-001 and Task-002 were accepted with
 verification/review PASS; Task-004 has no phase gate and does not depend on the
-blocked Windows part of Task-003. The coordinator records the reviewed source
-commit after committing; no commit of the current increment is claimed yet.
+blocked Windows part of Task-003. Initial implementation revision:
+`4f3ddb7f904c37f9b7a159a4bbd6653d1610a1b8`; acceptance record: `94358b5`.
+The following results remain the initial evidence rather than new test claims.
 
 | Check | Actual outcome |
 |---|---|
@@ -157,3 +206,30 @@ scope regressions. Reviewer accepted AC-003 as the adopted policy prerequisite,
 not a physical bench or write grant. The coordinator closes ordinary Task-004
 under the user's review-and-commit authorization. No consumer or phase gate is
 unlocked merely by that closure; each checks its own Missing prerequisites.
+
+### Firmware follow-up verification
+
+The follow-up source baseline is `96da20eb409280266a2f65ba463a1e4f7ffe11e9`,
+branch `task/Task-004-firmware-inputs`. The coordinator records the reviewed
+follow-up commit after verification/review; no new source commit is claimed yet.
+Task-004's original acceptance and bench policy remain unchanged; this input
+registration follow-up passed independent verification/review. Task-005 remains Blocked on its own SDK
+and Windows prerequisites. No phase gate or device operation is approved here.
+
+| Exact command | Follow-up outcome |
+|---|---|
+| `python3 scripts/check_reference_inputs.py` | PASS, exit 0: five Available files match their recorded sizes and SHA-256 hashes |
+| `python3 scripts/check_reference_inputs.py --require firmware-dca firmware-image` | PASS, exit 0: both candidate files verified |
+| `python3 scripts/check_reference_inputs.py --require firmware-device human-write-grant` | PASS negative case, exit 1: both prerequisites remain Missing |
+| `python3 scripts/check_project_scope.py` | PASS, exit 0 |
+| `git diff --check` | PASS, exit 0 |
+
+No checker code or tests changed in this registration. The initial synthetic
+test results above are historical, not reruns. Windows/vendor runtime,
+firmware decoding/programming and hardware tests are NOT RUN by this follow-up.
+
+Follow-up predefined verifier/reviewer: PASS, no findings. Both confirmed the
+five available-file hashes, expected rejection of missing target/grant, unique
+bounded archive-member byte equality, scope navigation and whitespace. The
+coordinator accepts only this inventory update; actual firmware target matching,
+rights, Windows runtime and physical effects remain unqualified.
