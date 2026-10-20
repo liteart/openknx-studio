@@ -121,12 +121,17 @@ author identity already existed; no identity was created or changed. The runtime
 exposes all seven custom role definitions, but no new model calls or trusted-project
 discovery test were performed. AC-004 remains open pending that confirmation.
 
+The initial local commit succeeded: `c4b17ed970e4894b1dd6c13b14037aa90fccd701`
+contains the 178 reviewed source/documentation/configuration files.
+`git diff --cached --check` passed before commit and `git status --short` was empty
+afterward. No remote push, merge, tag, or publication was performed.
+
 ## Completion Record
 
 | Field | Observed result |
 |---|---|
 | Implementation / report status | In review; runtime files installed and matched, session discovery pending |
-| Source commit(s) | Initial source commit pending below; task branch created successfully |
+| Source commit(s) | `c4b17ed970e4894b1dd6c13b14037aa90fccd701` (initial source snapshot); this follow-up records its identity |
 | Platform | macOS; Python 3.14.6; codex-cli 0.163.0 |
 | Tests executed | `python3 -B scripts/check_agent_configs.py`: PASS for templates and installed copies |
 | Regression tests | `python3 -B scripts/test_agent_configs.py`: 9 offline tests PASS after the review fix |
