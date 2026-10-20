@@ -82,7 +82,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done under the user-authorized ordinary-task reviewer process; final verification and review PASS |
-| Source commit(s) | Upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; local fork `d6e25fb206850dd6da18d8acf9b82ecdf5234733`; editor setup `85975017054edb072b9f4505f5fcd12362294d1e` |
+| Source commit(s) | Upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; local fork `d6e25fb206850dd6da18d8acf9b82ecdf5234733`; editor setup `85975017054edb072b9f4505f5fcd12362294d1e`; final license increment `88cdcbb4bf1f8d777eb00176a51c808c865e5de3` |
 | Platform | macOS 27.0 arm64; Git CLI; Python 3.14.6 |
 | Tests executed | Static history/license/dependency/ignore assertions PASS; scope checker PASS; 10 scope regression tests PASS; both repository diff checks PASS |
 | Evidence location | This record; local fork `FORK.md` and `AGENTS.md`; [repository setup evidence](../docs/LOCAL-REPOSITORIES.md) |
@@ -122,4 +122,4 @@ test fixture omission of LICENSE/NOTICE (initial 6 PASS / 4 FAIL; final 10 PASS)
 The reviewer confirmed all three acceptance criteria and no blocking findings.
 The coordinator accepted this ordinary task under the user's explicit sequential
 review-and-commit authorization. No human phase GO, device permission or legal
-certification is claimed. Source revision for this increment is recorded after commit.
+certification is claimed. Final license increment source revision: `88cdcbb4bf1f8d777eb00176a51c808c865e5de3`.
