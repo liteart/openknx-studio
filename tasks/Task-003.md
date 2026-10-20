@@ -9,11 +9,11 @@ Pin minimum PoC toolchains and verification commands
 | Field | Value |
 |---|---|
 | Task ID | Task-003 |
-| Status | Not started |
+| Status | Blocked |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor + knust-fork / build tooling |
-| Owner | Unassigned |
+| Owner | Primary coordinator with implementer, protocol, dca, verifier and reviewer agents |
 | Requirement references | [R-003](../docs/REQUIREMENTS.md), [R-005](../docs/REQUIREMENTS.md), [R-024](../docs/REQUIREMENTS.md), [R-027](../docs/REQUIREMENTS.md), [R-029](../docs/REQUIREMENTS.md) |
 
 ## Description
@@ -38,7 +38,7 @@ Make the minimal experiments reproducibly buildable without scaffolding the comp
 ## Acceptance Criteria
 
 - [ ] AC-001: A new developer can reproduce the offline PoC builds from the documented commands.
-- [ ] AC-002: The Rust build does not require .NET or ETS.
+- [x] AC-002: The Rust build does not require .NET or ETS.
 - [ ] AC-003: Tools and resolved dependency versions are recorded, not floating latest references.
 
 ## Dependencies to Other Tasks
@@ -79,15 +79,39 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 ## Completion Record
 
-| Field | Initial value |
+| Field | Observed result |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | Blocked overall; Rust-only increment verified and reviewed; overall prerequisites incomplete |
+| Source commit(s) | Editor base `a89fe47b7448e2ec9e4b872f01300d7f2d3045d7`; reviewed fork tooling `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e`; editor increment recorded after commit |
+| Platform | macOS 27.0 arm64; Rust 1.99.1 (58cf8f9c3 2026-10-13); full tool versions in evidence |
+| Tests executed | Editor fmt/Clippy/test/run/metadata/feature-tree PASS offline with defaults disabled; 0 Rust unit tests, actual smoke executable run is TEST-001 evidence |
+| Scope checker regression | Initial FAIL scanning ignored private Rust docs; fixed root-only exclusions, 12 focused scope tests and actual checker independently PASS |
+| Fork checks | Metadata --no-deps PASS; original source/Cargo/lock/MIT license unchanged; static pin/license assertions and diff checks PASS; no fork build/test claim |
+| Evidence location | [PoC toolchains and exact commands](../docs/POC-TOOLCHAINS.md); fork BUILDING.md and rust-toolchain.toml |
+| Acceptance criteria met | AC-002 for the Rust-only build; AC-001/003 partial, Windows host/reference evidence outstanding |
+| Technical outcome | PASS for macOS Rust smoke and selected compiler pin; INCONCLUSIVE for full Task-003 |
+| Gate outcome | No phase gate advanced; full Task-003 is not accepted |
+| Reviewer | Fork increment: predefined sequential_review PASS; editor Rust-only increment: predefined sequential_review PASS, no findings; predefined sequential_verifier reproduced checks and regression fix |
+| Windows / Linux / SDK / hardware | NOT RUN; Windows RDP is visible but input failed, exact SDK/reference selection unavailable; no Linux runner supplied; no device operation |
+| Remaining blockers | Windows input control, actual MSBuild/framework/SDK inventory and lawful pinned SDK references, required Windows host build/test |
+| Next action | Restore RDP input and resolve references; independent Task-004 inventory depends only on accepted Tasks 001/002 |
 
-Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+The original missing-manifest command exited 101; the minimal dependency-free
+Rust executable now runs and emits `toolchain-smoke offline=true protocol=none`.
+No production module workspace, protocol, MCP, database, original DCA execution
+or device service is added. The inherited fork test suite is not authorized before
+Task-015 audits feature selection and side effects.
+
+The original Windows environment attempt observed only ETS6 Home 6.4.1 Build 8718.
+The DCA agent and coordinator both encountered `noWindowsAvailable` when attempting
+input. No PowerShell inventory command executed, and a screenshot is not a
+build/runtime test. No SDK type, target framework, host command or success is
+invented to fill the missing Windows evidence. Task-004/005 may inventory the
+missing inputs without treating this task as Done.
+
+Final editor increment review: the predefined reviewer independently reproduced
+format/Clippy/test/run/metadata/feature-tree, the scope checker and all 12 scope
+regressions with PASS. The smoke test target intentionally has zero unit tests;
+actual executable execution is the build proof. Review permits this partial
+increment to commit, not Task-003 acceptance or a phase GO. The selected fork
+commit was created first, preserving separate histories.

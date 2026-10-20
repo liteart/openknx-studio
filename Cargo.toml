@@ -1,0 +1,15 @@
+[package]
+name = "knx-editor-toolchain-smoke"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99.1"
+license = "Apache-2.0"
+publish = false
+autobins = false
+
+[[bin]]
+name = "toolchain-smoke"
+path = "experiments/toolchain-smoke/main.rs"
+
+[features]
+default = []

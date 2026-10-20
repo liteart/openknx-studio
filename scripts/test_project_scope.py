@@ -74,6 +74,24 @@ class ProjectScopeChecks(unittest.TestCase):
         (nested / "README.md").write_text("[Upstream](missing-upstream-document.md)\n")
         self.assertEqual(validate(self.root), [])
 
+    def test_root_private_artifact_directories_are_not_editor_documentation(self):
+        for name in ("private", "artifacts", "captures", "credentials", "projects", "cache"):
+            with self.subTest(directory=name):
+                imported = self.root / name / "sdk"
+                imported.mkdir(parents=True)
+                (imported / "README.md").write_text("[SDK](missing-sdk-document.md)\n")
+                self.assertEqual(validate(self.root), [])
+
+    def test_private_directory_names_below_docs_are_still_checked(self):
+        for name in ("private", "artifacts", "captures", "credentials", "projects", "cache"):
+            with self.subTest(directory=name):
+                document = self.root / "docs" / name / "README.md"
+                document.parent.mkdir()
+                document.write_text("[Missing](missing-document.md)\n")
+                self.assertTrue(any(
+                    f"docs/{name}/README.md: unresolved local link" in error
+                    for error in validate(self.root)))
+
     def test_duplicate_task_index_link_is_rejected(self):
         with (self.root / "TASKS.md").open("a") as output:
             output.write("\n| [Task-001](tasks/Task-001.md) | Duplicate entry |\n")

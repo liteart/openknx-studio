@@ -17,6 +17,10 @@ from urllib.parse import unquote, urlsplit
 BASELINE_SHA256 = "371458c1330c4e6f5d1275cca3f4321f184f84ef5c915c355fb53b85c82d4c95"
 INLINE_LINK = re.compile(r"!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+\"[^\"\n]*\")?\s*\)")
 REFERENCE_LINK = re.compile(r"^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|\S+)", re.MULTILINE)
+# Root-only private inputs and generated outputs excluded by .gitignore.
+ROOT_IGNORED_DIRECTORIES = frozenset({
+    "private", "artifacts", "captures", "credentials", "projects", "cache",
+})
 
 
 def validate_scope(root: Path) -> list[str]:
@@ -42,6 +46,7 @@ def validate_documents(root: Path) -> list[str]:
         names[:] = sorted(name for name in names
                           if not name.startswith(".")
                           and name not in {"target", "node_modules"}
+                          and (parent != root or name not in ROOT_IGNORED_DIRECTORIES)
                           and not (parent / name / ".git").exists()
                           and not (parent / name).is_symlink())
         markdown_paths.extend(parent / name for name in sorted(files)
