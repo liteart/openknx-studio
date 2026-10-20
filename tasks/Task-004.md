@@ -114,7 +114,7 @@ inputs remain Missing. This acceptance grants no bench or operation approval.
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done; original Task-004 acceptance preserved, follow-up verifier and reviewer PASS |
-| Source commit(s) | Follow-up baseline `96da20eb409280266a2f65ba463a1e4f7ffe11e9`; current increment uncommitted |
+| Source commit(s) | Follow-up baseline `96da20eb409280266a2f65ba463a1e4f7ffe11e9`; firmware inventory update `09932f2950959617949db107a895f5b683e04658` |
 | Current technical outcome | Five Available files and 14 Missing prerequisites; two candidate firmware files registered with exact archive/member provenance |
 | New input files | `MDT_DCA_Update_Tool_v5_1_1_0.etsapp`, 9,328,498 bytes; exact member `Firmware/SCN-RTC20.02_R21.hex`, 275,716 bytes; hashes/paths in the manifest and evidence document |
 | Tests executed | Actual inventory/hash check PASS; requiring both firmware files PASS (exit 0); requiring physical target/human grant PASS negative case (exit 1, both Missing); scope checker and diff check PASS. Unchanged test suites not rerun |
