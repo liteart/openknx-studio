@@ -81,7 +81,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | In review; offline increment verified, independent review complete; human acceptance pending |
-| Source commit(s) | Base `47959c19c43c84a762b70cc2e8db3b9bc567b54b`; implementation commit recorded after review |
+| Source commit(s) | Base `47959c19c43c84a762b70cc2e8db3b9bc567b54b`; implementation `42ed64d0f9b1d9f95ea9f88bc64fb8707f91f042` |
 | Platform | macOS 27.0 arm64; Python 3.14.6 |
 | Tests executed | `python3 -B scripts/check_project_scope.py`: PASS; `python3 -B scripts/test_project_scope.py`: 10 PASS |
 | Existing tooling checks | `python3 -B scripts/check_agent_configs.py`: PASS, including installed copies; `python3 -B scripts/test_agent_configs.py`: 9 PASS; `git diff --check`: PASS |
