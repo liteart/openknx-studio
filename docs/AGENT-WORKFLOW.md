@@ -57,8 +57,26 @@ global configuration. A running session is not proof that new settings were load
 Compatibility baseline: installed CLI `0.163.0`; local account config selected
 `gpt-6.1-sol`, while the cached model catalog listed Luna but omitted that Sol alias.
 The current session exposes both model names. Cache presence/absence does not prove
-live access. A Sol review subagent was requested during follow-up verification;
-this uses explicit model routing and does not prove discovery of project-local roles.
+live access. The harness subsequently completed successful delegations through all
+seven predefined roles across Tasks 001-005, using the configured Luna or Sol model
+for each role. This demonstrates role use in that harness, not that a standalone CLI
+process discovered these project role files or that billing/access is independently
+configured. No model access error was reported for those delegations.
+
+On 2026-10-20, a real-project `codex --no-daemon debug prompt-input` attempt first
+failed with `Operation not permitted`. An authorized read-only retry exited 0 and
+rendered 37,465 bytes of JSON. All seven role names appeared, but the role-file
+descriptions did not. Since this prompt rendering omits the runtime tools schema and
+role names can also come from project instructions or user text, that output alone
+does not establish that the standalone CLI loaded the custom role definitions. The
+installed CLI confirmed that `--strict-config` is unsupported for the tested
+commands; strict schema validation was not performed. No global settings or project
+trust were changed. See [Task-138](../tasks/Task-138.md) for the exact evidence and
+remaining acceptance status. A subsequent fresh `codex app-server --stdio`
+`config/read` probe confirmed the project config layer and origins for the four
+public agent defaults. That schema exposes no standalone role list; role-file
+discovery in that separate CLI process remains inconclusive.
+
 The resumed session successfully created the task branch on 2026-10-20; the earlier
 Git metadata write restriction no longer blocks the initial local commit.
 If Sol cannot be selected, report the access failure and ask for an explicit routing
