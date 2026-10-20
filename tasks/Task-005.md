@@ -9,7 +9,7 @@ Resolve lawful DCA and SDK dependency provisioning
 | Field | Value |
 |---|---|
 | Task ID | Task-005 |
-| Status | Not started |
+| Status | Blocked |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / dca-host dependency review |
@@ -37,7 +37,7 @@ Determine whether the original reference DCA can legally and technically receive
 
 ## Acceptance Criteria
 
-- [ ] AC-001: There is an approved dependency provisioning procedure or an explicit blocker report.
+- [x] AC-001: There is an approved dependency provisioning procedure or an explicit blocker report.
 - [ ] AC-002: The procedure does not copy an arbitrary ETS installation or publish vendor DLLs by default.
 - [ ] AC-003: Host implementation cannot silently depend on a prohibited ETS runtime.
 
@@ -79,15 +79,23 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 ## Completion Record
 
-| Field | Initial value |
+| Field | Observed result |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | Blocked; bounded evidence report verified and reviewed, no host/provisioning acceptance |
+| Source commit(s) | Not created; source baseline `94358b5918ddc7a3ff0f3f0d16153d1b40c0954a` on `task/Task-005-sdk-provisioning`; Task-004 source revision `4f3ddb7f904c37f9b7a159a4bbd6653d1610a1b8` |
+| Tests executed | `python3 scripts/check_reference_inputs.py --require sdk-references-rights`: expected negative case PASS, exit 1; `python3 scripts/check_project_scope.py`: PASS, exit 0; `git diff --check`: PASS, exit 0. TEST-001: INCONCLUSIVE; TEST-002: NOT RUN; see [DCA-PROVISIONING.md](../docs/DCA-PROVISIONING.md) |
+| Evidence location | [DCA-PROVISIONING.md](../docs/DCA-PROVISIONING.md); [reference inputs](../docs/REFERENCE-INPUTS.md); [static DCA inventory](../docs/REFERENCE-DCA.md) |
+| Acceptance criteria met | AC-001: explicit blocker report present. AC-002: contract/report only; no approved provisioning route established. AC-003: contract only; no host implementation assessed. |
+| Technical outcome | INCONCLUSIVE: exact SDK references, actual CLR identities, compatible clean Windows toolchain, and runtime dependencies remain unverified |
+| Gate outcome, when applicable | No phase gate applies or was advanced |
+| Reviewer | Predefined sequential_verifier and sequential_review: PASS for blocker-report commit only; full Task-005 remains Blocked |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+The independent verifier and reviewer reproduced the SDK/clean-Windows required
+input check (expected exit 1), scope checker PASS and diff check PASS. The reviewer
+returned PASS for this bounded report with no blocking findings. This permits the
+report to commit under the user's ordinary-task workflow; TEST-001 remains
+INCONCLUSIVE and TEST-002 NOT RUN, so Task-005 is not Done and no dependent
+implementation or phase gate is unlocked. The exact report commit is recorded
+after commit. No SDK assemblies were copied or executed.
