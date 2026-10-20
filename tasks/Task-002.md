@@ -9,7 +9,7 @@ Create two isolated repositories and preserve licenses
 | Field | Value |
 |---|---|
 | Task ID | Task-002 |
-| Status | In progress |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor + knust-fork / repository setup |
@@ -37,9 +37,9 @@ Create the editor repository and a separate knust fork/checkout with an auditabl
 
 ## Acceptance Criteria
 
-- [ ] AC-001: The two working trees have separate Git histories and remotes when authorized.
-- [ ] AC-002: LICENSE/notice handling is documented and no manufacturer files are committed.
-- [ ] AC-003: A clean editor checkout does not contain copied KNX wire implementation files.
+- [x] AC-001: The two working trees have separate Git histories and remotes when authorized.
+- [x] AC-002: LICENSE/notice handling is documented and no manufacturer files are committed.
+- [x] AC-003: A clean editor checkout does not contain copied KNX wire implementation files.
 
 ## Dependencies to Other Tasks
 
@@ -81,17 +81,17 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Observed result |
 |---|---|
-| Implementation / report status | Local fork preparation complete; full task acceptance pending |
+| Implementation / report status | Done under the user-authorized ordinary-task reviewer process; final verification and review PASS |
 | Source commit(s) | Upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; local fork `d6e25fb206850dd6da18d8acf9b82ecdf5234733`; editor setup `85975017054edb072b9f4505f5fcd12362294d1e` |
 | Platform | macOS 27.0 arm64; Git CLI; Python 3.14.6 |
-| Tests executed | Static history/license/dependency/ignore assertions PASS; scope checker PASS; both repository diffs pass `git diff --check` |
+| Tests executed | Static history/license/dependency/ignore assertions PASS; scope checker PASS; 10 scope regression tests PASS; both repository diff checks PASS |
 | Evidence location | This record; local fork `FORK.md` and `AGENTS.md`; [repository setup evidence](../docs/LOCAL-REPOSITORIES.md) |
-| Acceptance criteria met | AC-001 locally demonstrated; AC-002 partially (upstream MIT preserved, editor LICENSE setup outstanding); AC-003 demonstrated for tracked editor files |
+| Acceptance criteria met | AC-001 through AC-003 technically demonstrated; no remote requested |
 | Technical outcome | Full upstream history cloned; independent local protocol checkout and task branch; editor excludes fork sources/history; no protocol implementation changed |
-| Gate outcome | None advanced; Task-001 remains In review pending human acceptance |
-| Reviewer | Independent Sol review complete; contribution-license wording corrected and re-reviewed; no remaining local-setup findings |
+| Gate outcome | No phase gate advanced; Task-001 Done via authorized ordinary-task review process (91ec308) |
+| Reviewer | Predefined sequential_verifier and sequential_review: final PASS; no blocking findings |
 | Hardware / Windows / Cargo | NOT RUN; static repository setup only; inherited test safety/features await Task-015 |
-| Remaining work | Task-001 maintainer acceptance and full Task-002 editor license/notice setup review; runtime agent installation in fork not established |
+| Remaining work | None for repository setup; fork runtime agent installation is separate development tooling |
 | Publication | No GitHub fork, push, PR, merge, tag or release; user explicitly selected local fork and local commits only |
 
 ### Authorization and readiness
@@ -102,3 +102,24 @@ This authorizes this bounded preparation while Task-001 is still In review;
 it is not a claim that its predecessor was accepted or that full Task-002 is Done.
 No publication destination is needed for local operation. Repository owners and
 publication remotes remain undecided rather than invented.
+
+### Final editor licensing increment
+
+After Task-001 reviewer PASS and closure (`91ec308`), the coordinator completed
+DR-003 using the already confirmed Apache-2.0 decision. LICENSE is the unmodified
+official Apache 2.0 text (11,358 bytes; SHA256
+`cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`).
+NOTICE and README document scope and third-party exceptions. The upstream
+LICENSE SHA256 remains
+`7b1bbf04daff1697045c1fa8f746fce7626b65302f98e0651efa1d9a078422e0`.
+No upstream source, package metadata or license was changed; future contributions
+must preserve that distinction. No dependency or vendor rights certification is
+claimed. Final test/review outcomes and exact increment commit follow below.
+
+Final verification/review at base `91ec30812918c5b4a133e36ae19cd5b910eac652`:
+predefined verifier and reviewer independently returned PASS after fixing the
+test fixture omission of LICENSE/NOTICE (initial 6 PASS / 4 FAIL; final 10 PASS).
+The reviewer confirmed all three acceptance criteria and no blocking findings.
+The coordinator accepted this ordinary task under the user's explicit sequential
+review-and-commit authorization. No human phase GO, device permission or legal
+certification is claimed. Source revision for this increment is recorded after commit.

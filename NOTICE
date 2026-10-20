@@ -1,0 +1,13 @@
+KNX Editor
+
+Project-owned material is licensed under the Apache License, Version 2.0.
+See LICENSE. Existing third-party copyright and license notices remain applicable
+to their respective material.
+
+The independent knust fork is not included in this editor repository.
+Its upstream material retains its original MIT license and notices. See
+https://github.com/dphi/knust and docs/LOCAL-REPOSITORIES.md for provenance.
+
+Manufacturer DCAs, product packages, firmware and ETS SDK components are not
+included or relicensed by this project. Any later distribution must preserve
+applicable third-party notices and have the required redistribution rights.

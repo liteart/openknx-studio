@@ -16,8 +16,9 @@ class ProjectScopeChecks(unittest.TestCase):
         source = Path(__file__).resolve().parents[1]
         for directory in ("docs", "tasks", "templates", "config"):
             shutil.copytree(source / directory, self.root / directory)
-        for path in source.glob("*.md"):
-            shutil.copy2(path, self.root / path.name)
+        for path in [*source.glob("*.md"), source / "LICENSE", source / "NOTICE"]:
+            if path.is_file():
+                shutil.copy2(path, self.root / path.name)
         # Script paths may be linked from the documentation, but are never executed.
         shutil.copytree(source / "scripts", self.root / "scripts",
                         ignore=shutil.ignore_patterns("__pycache__"))

@@ -52,3 +52,11 @@ The kit does not contain the user's `.etsapp`, manufacturer binaries, SDK binari
 **Confirmed requirement** means explicitly decided by the user. **Engineering baseline** means a concrete default selected to make work testable; changes require an ADR and corresponding task/test updates. **External input** means evidence, hardware, rights, or a file still needed. Never convert an external input into an invented implementation detail.
 
 The optional future work is separately marked **Post-v1**. It must not delay minimal PoCs or become an implicit release requirement.
+
+## License
+
+Project-owned source, documentation and configuration use [Apache-2.0](LICENSE).
+See [NOTICE](NOTICE) for the third-party boundary. The independently cloned knust
+repository preserves its upstream MIT license; manufacturer and SDK inputs are
+not included or relicensed. Repository setup does not grant redistribution rights
+for those private inputs.

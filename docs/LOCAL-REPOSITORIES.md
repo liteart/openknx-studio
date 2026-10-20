@@ -31,7 +31,8 @@ are unchanged. Only fork instructions/provenance and private-input ignore rules
 are added. New project-owned contributions follow the project's Apache-2.0 requirement;
 contribution notice/compatibility treatment remains for review before implementation.
 This does not relabel the upstream MIT code. No manufacturer or SDK input was used.
-Editor LICENSE setup remains outstanding under the full Task-002 criteria.
+The editor now includes the official Apache-2.0 LICENSE and a NOTICE identifying
+the separate upstream/vendor boundaries. No upstream license was replaced.
 
 Static assertions executed via Python subprocess and tomllib: distinct top-level
 Git directories; exact upstream HEAD; non-shallow clone; expected fetch/disabled
@@ -62,11 +63,40 @@ git ls-files -- knust-fork
 Cargo builds/tests, hardware, Windows and rights certification: NOT RUN. Source
 cloning is not a compatibility proof. Upstream Secure sources are preserved but
 not activated; Task-015 must audit features and inherited tests before execution.
-No phase gate is advanced. Task-001 remains pending human acceptance; this local
-preparation follows the explicit user request without declaring all Task-002 done.
+At the time of the initial local clone, Task-001 was pending human acceptance;
+that historical preparation did not declare all Task-002 done. The later
+ordinary-task acceptance and licensing increment are recorded below. No phase
+gate is advanced.
 
 Local fork setup commit: `d6e25fb206850dd6da18d8acf9b82ecdf5234733`.
 An independent Sol reviewer verified the static setup and requested correction of
 blanket MIT wording for future contributions. The correction was re-reviewed with
 no remaining findings. After commit, the fork working tree was clean; an exact
 baseline diff for LICENSE, Cargo manifests/lockfile and source was still empty.
+
+## Task-002 final licensing increment
+
+Predecessor Task-001 was accepted on 2026-10-20 under the user-authorized
+ordinary-task reviewer process (`91ec308`). The new editor LICENSE was fetched
+from https://www.apache.org/licenses/LICENSE-2.0.txt, the official Apache source,
+without modifying its 11,358 bytes. SHA256:
+`cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`.
+NOTICE and README apply the already confirmed Apache-2.0 decision to project-owned
+material and keep upstream MIT/vendor rights separate. No copyright owner or
+legal approval was invented. No proprietary input was added. Remotes and protected
+main hosting are not configured because the user explicitly selected local-only
+forks and commits; no remote protection is claimed.
+
+Exact static checks for this increment are recorded in Task-002. Before Cargo
+manifests or protocol changes are added, the current tree has no editor Rust
+source or dependency graph; the fork Cargo manifest has no reverse editor
+dependency. This is a source ownership review, not a transitive dependency or
+redistribution audit (those have later dedicated tasks).
+
+Final predefined verifier/reviewer result: PASS, no blocking findings. Both ran
+`python3 -B scripts/check_project_scope.py`, `python3 -B scripts/test_project_scope.py`
+(10 PASS), `git diff --check`, and `git -C knust-fork diff --check`. The first
+verification reproduced four scope-test failures because temporary fixtures
+omitted LICENSE/NOTICE referenced by README. Copying those two owned text files
+into the fixtures fixed all four; the verifier and reviewer reproduced the pass.
+This is the only test-code adjustment in the final licensing increment.
