@@ -82,7 +82,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Blocked; bounded evidence report verified and reviewed, no host/provisioning acceptance |
-| Source commit(s) | Not created; source baseline `94358b5918ddc7a3ff0f3f0d16153d1b40c0954a` on `task/Task-005-sdk-provisioning`; Task-004 source revision `4f3ddb7f904c37f9b7a159a4bbd6653d1610a1b8` |
+| Source commit(s) | Blocker report `6eff4797d37d3c6f9b22ac6191e0cb33b7b47c01`; source baseline `94358b5918ddc7a3ff0f3f0d16153d1b40c0954a` on `task/Task-005-sdk-provisioning`; Task-004 source revision `4f3ddb7f904c37f9b7a159a4bbd6653d1610a1b8` |
 | Tests executed | `python3 scripts/check_reference_inputs.py --require sdk-references-rights`: expected negative case PASS, exit 1; `python3 scripts/check_project_scope.py`: PASS, exit 0; `git diff --check`: PASS, exit 0. TEST-001: INCONCLUSIVE; TEST-002: NOT RUN; see [DCA-PROVISIONING.md](../docs/DCA-PROVISIONING.md) |
 | Evidence location | [DCA-PROVISIONING.md](../docs/DCA-PROVISIONING.md); [reference inputs](../docs/REFERENCE-INPUTS.md); [static DCA inventory](../docs/REFERENCE-DCA.md) |
 | Acceptance criteria met | AC-001: explicit blocker report present. AC-002: contract/report only; no approved provisioning route established. AC-003: contract only; no host implementation assessed. |
@@ -97,5 +97,5 @@ input check (expected exit 1), scope checker PASS and diff check PASS. The revie
 returned PASS for this bounded report with no blocking findings. This permits the
 report to commit under the user's ordinary-task workflow; TEST-001 remains
 INCONCLUSIVE and TEST-002 NOT RUN, so Task-005 is not Done and no dependent
-implementation or phase gate is unlocked. The exact report commit is recorded
-after commit. No SDK assemblies were copied or executed.
+implementation or phase gate is unlocked. The exact blocker-report source commit is
+`6eff4797d37d3c6f9b22ac6191e0cb33b7b47c01`. No SDK assemblies were copied or executed.
