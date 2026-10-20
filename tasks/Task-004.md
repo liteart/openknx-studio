@@ -87,7 +87,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done under the user-authorized ordinary-task review process; verifier and reviewer PASS |
-| Source commit(s) | Baseline `5ab53ba5c8b4766d92f80b12cad9adfbb23de34e`; reviewed inventory implementation source recorded after commit |
+| Source commit(s) | Baseline `5ab53ba5c8b4766d92f80b12cad9adfbb23de34e`; inventory implementation `4f3ddb7f904c37f9b7a159a4bbd6653d1610a1b8` |
 | Tests executed | TEST-001 PASS; TEST-003 negative cases PASS (required Missing/unknown inputs exit 1); 11 synthetic input tests PASS; scope checker and 12 existing scope tests PASS; diff check PASS |
 | Evidence location | [Reference input evidence](../docs/REFERENCE-INPUTS.md); [redacted manifest](../config/reference-inputs.toml) |
 | Acceptance criteria met | AC-001/002 met; AC-003 met as the adopted human-approval policy prerequisite, not an actual bench/operation grant |
