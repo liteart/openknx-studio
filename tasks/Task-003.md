@@ -82,7 +82,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Blocked overall; Rust-only increment verified and reviewed; overall prerequisites incomplete |
-| Source commit(s) | Editor base `a89fe47b7448e2ec9e4b872f01300d7f2d3045d7`; reviewed fork tooling `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e`; editor increment recorded after commit |
+| Source commit(s) | Editor base `a89fe47b7448e2ec9e4b872f01300d7f2d3045d7`; reviewed fork tooling `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e`; editor Rust increment `faa1befc1f73c3e6880c969fe5cd4b149a2aba47` |
 | Platform | macOS 27.0 arm64; Rust 1.99.1 (58cf8f9c3 2026-10-13); full tool versions in evidence |
 | Tests executed | Editor fmt/Clippy/test/run/metadata/feature-tree PASS offline with defaults disabled; 0 Rust unit tests, actual smoke executable run is TEST-001 evidence |
 | Scope checker regression | Initial FAIL scanning ignored private Rust docs; fixed root-only exclusions, 12 focused scope tests and actual checker independently PASS |
