@@ -9,11 +9,11 @@ Register reference artifacts and the isolated test bench
 | Field | Value |
 |---|---|
 | Task ID | Task-004 |
-| Status | Not started |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / private test fixtures |
-| Owner | Unassigned |
+| Owner | Primary coordinator |
 | Requirement references | [R-008](../docs/REQUIREMENTS.md), [R-011](../docs/REQUIREMENTS.md), [R-012](../docs/REQUIREMENTS.md), [R-013](../docs/REQUIREMENTS.md), [R-022](../docs/REQUIREMENTS.md), [R-023](../docs/REQUIREMENTS.md), [R-024](../docs/REQUIREMENTS.md), [R-028](../docs/REQUIREMENTS.md) |
 
 ## Description
@@ -37,9 +37,9 @@ Define the exact inputs and hardware needed for reproducible experiments, separa
 
 ## Acceptance Criteria
 
-- [ ] AC-001: Every PoC input has an Available/Missing status and exact identity.
-- [ ] AC-002: No writable property/address or hardware model is guessed.
-- [ ] AC-003: A human-approved bench/write policy exists before any hardware-write task is started.
+- [x] AC-001: Every PoC input has an Available/Missing status and exact identity.
+- [x] AC-002: No writable property/address or hardware model is guessed.
+- [x] AC-003: A human-approved bench/write policy exists before any hardware-write task is started.
 
 ## Dependencies to Other Tasks
 
@@ -74,21 +74,38 @@ No hardware writes, firmware flashing, or redistribution of inputs.
 
 ## Risks and Blockers
 
-Only the DALI .etsapp is provided in the chat. Matching KNXPROD, a simple device, real hardware access, and firmware-update fixtures remain external prerequisites.
+The DALI .etsapp and two candidate KNXPROD files are Available privately with
+verified hashes. Internal application matches, actual physical targets,
+non-secure profiles, isolated bench/recovery evidence, SDK rights/build references,
+clean Windows qualification and separate firmware inputs remain Missing. The
+inventory can record these gaps; it cannot approve a hardware operation.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
 ## Completion Record
 
-| Field | Initial value |
+| Field | Observed result |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | Done under the user-authorized ordinary-task review process; verifier and reviewer PASS |
+| Source commit(s) | Baseline `5ab53ba5c8b4766d92f80b12cad9adfbb23de34e`; reviewed inventory implementation source recorded after commit |
+| Tests executed | TEST-001 PASS; TEST-003 negative cases PASS (required Missing/unknown inputs exit 1); 11 synthetic input tests PASS; scope checker and 12 existing scope tests PASS; diff check PASS |
+| Evidence location | [Reference input evidence](../docs/REFERENCE-INPUTS.md); [redacted manifest](../config/reference-inputs.toml) |
+| Acceptance criteria met | AC-001/002 met; AC-003 met as the adopted human-approval policy prerequisite, not an actual bench/operation grant |
+| Technical outcome | Three Available files, 16 explicit Missing inputs with owners/reasons; no archive extraction, vendor execution or hardware operation |
+| Gate outcome, when applicable | No phase gate applicable or advanced; successful inventory check is not a PoC result or approval |
+| Reviewer | Predefined sequential_verifier and sequential_review independently PASS; no actionable findings |
+| Platform | macOS 27.0 arm64; Python 3.14.6; no new dependencies |
+| Windows / hardware | NOT RUN by this increment; existing ETS host UI observation does not qualify a clean host or SDK environment |
+| Remaining blockers | Actual hardware experiments require their own verified inputs and scoped human bench/write grant; DCA proof requires exact SDK references/rights and clean Windows execution |
+
+Task-001 and Task-002 are accepted predecessors with verification/review PASS.
+Task-003 Windows tooling is still blocked, but is not a dependency of this
+inventory task. The repository's user-supplied AGENTS policy establishes
+offline/read-only defaults and requires explicit human write approval. That
+adopted policy is distinct from an actual approved bench: none is recorded here.
+The independent reviewer accepted AC-003 as the policy prerequisite: the
+user-supplied contract requires human approval before hardware-write work, and
+no such task has started. DR-002 explicitly permits inventory completion while
+inputs remain Missing. This acceptance grants no bench or operation approval.
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).

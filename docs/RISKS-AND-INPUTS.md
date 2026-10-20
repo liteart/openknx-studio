@@ -6,19 +6,26 @@ This kit contains requirements and planned work. No Windows DCA execution, real 
 
 ## External inputs
 
+Current local availability was checked on 2026-10-20 in Task-004. See the
+[reference inventory](REFERENCE-INPUTS.md) and
+[hash manifest](../config/reference-inputs.toml) for exact files, owners and
+Missing reasons. Package availability is separate from application matching,
+physical identity, bench approval and SDK rights.
+
 | Input | Current status | Needed by |
 |---|---|---|
-| `SCN-DA64x-04_MDT_DCA_v4_0_0_0.etsapp` | Supplied; file identity/static inventory verified | PoC A and original DALI qualification |
-| Matching DALI KNXPROD/application | Not supplied | Accurate DCA device context, catalog/migration and gateway qualification |
-| Simple non-secure device and exact KNXPROD | Not selected/supplied | PoCs B/C and initial ordinary download support |
+| `SCN-DA64x-04_MDT_DCA_v4_0_0_0.etsapp` | Available privately; current bytes/hash match historical static identity | PoC A and original DALI qualification |
+| Matching DALI KNXPROD/application | Candidate V40a package Available privately; internal application/DCA/device match UNVERIFIED | Accurate DCA device context, catalog/migration and gateway qualification |
+| Simple non-secure device and exact KNXPROD | Candidate BE V32a package Available privately; physical device, non-secure profile and application match Missing | PoCs B/C and initial ordinary download support |
 | Isolated KNXnet/IP gateway/test bench | No execution access supplied | All actual hardware results |
-| Clean interactive Windows environment | Not exercised here | Original DCA/SDK/runtime proofs |
+| Clean interactive Windows environment | Missing; existing ETS host UI observed, subsequent automation unavailable; OS/SDK inventory NOT RUN | Original DCA/SDK/runtime proofs |
 | Lawful SDK/dependency provisioning and rights | Not established | Independent original DCA host |
 | DALI gear inventory/test circuit | Not supplied | Actual discovery/group/scene/HCL/replacement testing |
 | Separate firmware-update DCA + device + firmware | Not supplied | Firmware qualification; the DALI archive is not a substitute |
 | Supported KNXPROJ reference export and expected inventory | Not supplied | One-time migration tests |
 | Git remote owner/URLs and publication permission | Not supplied | External repository creation and later releases |
 | Qualified platform CI runners | Not established | Cross-platform execution evidence |
+| Power/recovery, authoritative reversible property and scoped human write grant | Missing; no property/address or actual write approval assumed | Before any hardware-write task |
 
 Missing input is a task blocker, not permission to invent an address, device type, update file, assembly dependency, application image or test result.
 

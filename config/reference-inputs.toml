@@ -1,0 +1,198 @@
+# Task-004 input inventory only. Availability never grants bus access or gate approval.
+schema_version = 1
+
+[[inputs]]
+id = "dali-dca"
+kind = "file"
+status = "Available"
+identity = "SCN-DA64x-04_MDT_DCA_v4_0_0_0.etsapp"
+owner = "Project maintainer"
+source = "https://www.mdt.de/fileadmin/user_upload/user_upload/download/SCN-DA64x-04_MDT_DCA_v4_0_0_0.etsapp"
+evidence = "2026-10-20 local byte/hash check; matches docs/REFERENCE-DCA.md historical identity; vendor page lists DCA 4.0.0.0 (06/24)"
+path = "private/fixtures/mdt/SCN-DA64x-04_MDT_DCA_v4_0_0_0.etsapp"
+bytes = 1730085
+sha256 = "cd5bbe33e8b13ba92d7575d33b3ca8f895589f5ec5d87706f847f997cddc3ec9"
+
+[[inputs]]
+id = "dali-knxprod"
+kind = "file"
+status = "Available"
+identity = "SCN-DA64x-04_MDT_KP_V40a.knxprod"
+owner = "Project maintainer"
+source = "https://www.mdt.de/fileadmin/user_upload/user_upload/download/SCN-DA64x-04_MDT_KP_V40a.knxprod"
+evidence = "2026-10-20 local byte/hash check; vendor page lists database 4.0a (06/25); internal application and device match UNVERIFIED"
+path = "private/fixtures/mdt/SCN-DA64x-04_MDT_KP_V40a.knxprod"
+bytes = 254893
+sha256 = "0cf819f5a9148bdfd5cd9c63d96e6c4eef273ec3593aec218cb7ebe04320b3cc"
+
+[[inputs]]
+id = "simple-knxprod"
+kind = "file"
+status = "Available"
+identity = "MDT_KP_BE_02_Binary_Input_V32a.knxprod"
+owner = "Project maintainer"
+source = "https://www.mdt.de/fileadmin/user_upload/user_upload/download/MDT_KP_BE_02_Binary_Input_V32a.knxprod"
+evidence = "2026-10-20 local byte/hash check; vendor page lists database V3.2a (01/22); candidate package only, no physical device selected"
+path = "private/fixtures/mdt/MDT_KP_BE_02_Binary_Input_V32a.knxprod"
+bytes = 393923
+sha256 = "51ebce4f5e8b3adb364be0f8681d5d91d08ab11e8608703eb8973baf3a5e1709"
+
+[[inputs]]
+id = "simple-device"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: physical simple non-secure device, hardware/firmware/mask identity"
+owner = "Project operator"
+source = "https://www.mdt.de/produkte/produktdetail/sensorik/binaereingaenge/binaereingang-be.html"
+evidence = "Vendor page lists BE-04000.02 as a candidate only; no physical identity or non-secure profile verified"
+missing_reason = "Operator has not selected and identified an actual isolated device"
+
+[[inputs]]
+id = "dali-device"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: physical DALI gateway model/hardware/firmware/mask"
+owner = "Project operator"
+source = "https://www.mdt.de/produkte/produktdetail/aktorik/dimmaktoren/dali-control-64-gateway.html"
+evidence = "Product page and DCA package are candidate evidence, not physical device identity"
+missing_reason = "Exact physical DALI gateway and application identity have not been supplied and verified"
+
+[[inputs]]
+id = "dali-application-match"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: DALI package/DCA/application/device match"
+owner = "Project maintainer"
+source = "docs/REFERENCE-DCA.md; dali-knxprod"
+evidence = "Historical DCA manifest IDs exist; current KNXPROD internals and actual device identity are not checked by this inventory"
+missing_reason = "Exact internal application/profile match and physical target compatibility remain unverified"
+
+[[inputs]]
+id = "simple-application-match"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: simple non-secure application/product/profile/device match"
+owner = "Project maintainer"
+source = "simple-knxprod; simple-device"
+evidence = "Candidate package is available; archive internals and device compatibility were not inspected"
+missing_reason = "No selected physical target or verified non-secure application/profile match"
+
+[[inputs]]
+id = "knxnetip-gateway"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: isolated KNXnet/IP gateway identity, version and bus path"
+owner = "Project operator"
+source = "docs/TEST-STRATEGY.md hardware authorization record"
+evidence = "No gateway identity or approved isolated bus path supplied"
+missing_reason = "Operator must identify the selected gateway and exclusive commissioning path"
+
+[[inputs]]
+id = "isolated-bench"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: isolated bench identity, topology and operator"
+owner = "Project operator"
+source = "docs/TEST-STRATEGY.md hardware authorization record"
+evidence = "No actual bench isolation or target inventory verified"
+missing_reason = "Operator must document isolation from household/live installations and confirm the actual bench"
+
+[[inputs]]
+id = "dali-gear"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: DALI gear identities and isolated test circuit"
+owner = "Project operator"
+source = "docs/RISKS-AND-INPUTS.md"
+evidence = "No DALI gear or test circuit inventory supplied"
+missing_reason = "Operator must provide the gear and circuit needed for the specific DALI experiment"
+
+[[inputs]]
+id = "power-recovery"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: target-specific power, restoration and recovery procedure"
+owner = "Project operator"
+source = "docs/TEST-STRATEGY.md hardware authorization record"
+evidence = "No manufacturer-supported target recovery procedure or power arrangement recorded"
+missing_reason = "Exact hardware and target-specific safe recovery steps must be supplied and reviewed"
+
+[[inputs]]
+id = "reversible-property"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: authoritative reversible property and bounded values"
+owner = "Project maintainer"
+source = "docs/TEST-STRATEGY.md hardware authorization record"
+evidence = "No writable property, address, payload or reversibility has been assumed"
+missing_reason = "Authoritative target/profile evidence must identify permitted reads, writes, read-back and restoration"
+
+[[inputs]]
+id = "human-write-grant"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: explicit human grant for an exact bench, target and operation"
+owner = "Project operator"
+source = "AGENTS.md hardware and DCA safety; docs/TEST-STRATEGY.md"
+evidence = "Development and artifact acquisition authorization do not authorize bus operations"
+missing_reason = "Human bench/write approval with scope, identity, purpose and recovery evidence has not been provided"
+
+[[inputs]]
+id = "clean-windows"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: clean interactive Windows host without ETS"
+owner = "Project operator"
+source = "2026-10-20 coordinator RDP UI observation and user report"
+evidence = "RDP UI showed ETS 6 Home 6.4.1 Build 8718; subsequent automation reported noWindowsAvailable; OS/SDK inventory NOT RUN; this is not the clean qualification environment"
+missing_reason = "A clean Windows environment without ETS/runtime dependencies has not been established"
+
+[[inputs]]
+id = "sdk-references-rights"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: exact SDK assembly identities, provisioning rights and pinned Windows build tools"
+owner = "Project maintainer"
+source = "Task-003 Windows prerequisite; Task-005 SDK inventory"
+evidence = "Inventory is pending; file availability alone cannot establish provisioning or redistribution rights"
+missing_reason = "Actual SDK/reference identities, compatible build environment and human rights/provisioning review remain unresolved"
+
+[[inputs]]
+id = "firmware-dca"
+kind = "file"
+status = "Missing"
+identity = "UNVERIFIED: separate original firmware-update DCA package/version/hash"
+owner = "Project maintainer"
+source = "GOALS.md firmware-update qualification requirement"
+evidence = "The available DALI DCA is not evidence of a firmware-update DCA"
+missing_reason = "A separate firmware-update DCA has not been supplied"
+
+[[inputs]]
+id = "firmware-device"
+kind = "qualification"
+status = "Missing"
+identity = "UNVERIFIED: firmware-update target model/hardware/current firmware/application"
+owner = "Project operator"
+source = "GOALS.md firmware-update qualification requirement"
+evidence = "No firmware-update target selected or identified"
+missing_reason = "An exact supported target and manufacturer-approved recovery procedure are required"
+
+[[inputs]]
+id = "firmware-image"
+kind = "file"
+status = "Missing"
+identity = "UNVERIFIED: permitted firmware image/version/hash and target compatibility"
+owner = "Project maintainer"
+source = "GOALS.md firmware-update qualification requirement"
+evidence = "No firmware image supplied or qualified"
+missing_reason = "Manufacturer image, lawful use and exact target/version compatibility remain unavailable"
+
+[[inputs]]
+id = "knxproj"
+kind = "file"
+status = "Missing"
+identity = "UNVERIFIED: supported reference export/hash and expected inventory"
+owner = "Project operator"
+source = "docs/RISKS-AND-INPUTS.md one-time migration prerequisites"
+evidence = "No KNXPROJ export or expected project inventory supplied"
+missing_reason = "Operator must supply a permitted reference export and expected inventory for migration tests"
