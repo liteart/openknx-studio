@@ -1,2 +1,23 @@
 __pycache__/
 *.py[cod]
+
+# Independent local protocol checkout; never vendor its Git history or sources.
+/knust-fork/
+
+# Private local inputs and generated outputs.
+/private/
+/artifacts/
+/captures/
+/credentials/
+/projects/
+/cache/
+/target/
+.env*
+*.knxprod
+*.knxproj
+*.etsapp
+*.knxkeys
+*.pcap
+*.pcapng
+*.pem
+*.key

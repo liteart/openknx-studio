@@ -9,11 +9,11 @@ Create two isolated repositories and preserve licenses
 | Field | Value |
 |---|---|
 | Task ID | Task-002 |
-| Status | Not started |
+| Status | In progress |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor + knust-fork / repository setup |
-| Owner | Unassigned |
+| Owner | Primary coordinator |
 | Requirement references | [R-002](../docs/REQUIREMENTS.md), [R-003](../docs/REQUIREMENTS.md), [R-004](../docs/REQUIREMENTS.md), [R-028](../docs/REQUIREMENTS.md), [R-029](../docs/REQUIREMENTS.md) |
 
 ## Description
@@ -79,15 +79,26 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 ## Completion Record
 
-| Field | Initial value |
+| Field | Observed result |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | Local fork preparation complete; full task acceptance pending |
+| Source commit(s) | Upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; local fork `d6e25fb206850dd6da18d8acf9b82ecdf5234733`; editor evidence commit recorded below after commit |
+| Platform | macOS 27.0 arm64; Git CLI; Python 3.14.6 |
+| Tests executed | Static history/license/dependency/ignore assertions PASS; scope checker PASS; both repository diffs pass `git diff --check` |
+| Evidence location | This record; local fork `FORK.md` and `AGENTS.md`; [repository setup evidence](../docs/LOCAL-REPOSITORIES.md) |
+| Acceptance criteria met | AC-001 locally demonstrated; AC-002 partially (upstream MIT preserved, editor LICENSE setup outstanding); AC-003 demonstrated for tracked editor files |
+| Technical outcome | Full upstream history cloned; independent local protocol checkout and task branch; editor excludes fork sources/history; no protocol implementation changed |
+| Gate outcome | None advanced; Task-001 remains In review pending human acceptance |
+| Reviewer | Independent Sol review complete; contribution-license wording corrected and re-reviewed; no remaining local-setup findings |
+| Hardware / Windows / Cargo | NOT RUN; static repository setup only; inherited test safety/features await Task-015 |
+| Remaining work | Task-001 maintainer acceptance and full Task-002 editor license/notice setup review; runtime agent installation in fork not established |
+| Publication | No GitHub fork, push, PR, merge, tag or release; user explicitly selected local fork and local commits only |
 
-Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+### Authorization and readiness
+
+On 2026-10-20 the user explicitly requested retrieving the original GitHub
+repository and creating the local fork here, then confirmed local commits suffice.
+This authorizes this bounded preparation while Task-001 is still In review;
+it is not a claim that its predecessor was accepted or that full Task-002 is Done.
+No publication destination is needed for local operation. Repository owners and
+publication remotes remain undecided rather than invented.
