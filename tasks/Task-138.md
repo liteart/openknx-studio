@@ -173,7 +173,7 @@ An earlier probe used an unsupported transport spelling before the corrected
 | Field | Observed result |
 |---|---|
 | Implementation / report status | In review; runtime files installed and matched, standalone role-file discovery pending |
-| Source commit(s) | `c4b17ed970e4894b1dd6c13b14037aa90fccd701` (initial source snapshot); runtime follow-up based on `242689194f669fd647e90c531f4c2bbe1857034a`; follow-up commit recorded after review |
+| Source commit(s) | `c4b17ed970e4894b1dd6c13b14037aa90fccd701` (initial source snapshot); runtime follow-up based on `242689194f669fd647e90c531f4c2bbe1857034a`; reviewed runtime follow-up `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6` |
 | Platform | macOS; Python 3.14.6; codex-cli 0.163.0 |
 | Tests executed | `python3 -B scripts/check_agent_configs.py`: PASS for templates and installed copies; installed/template byte equality independently confirmed |
 | Regression tests | `python3 -B scripts/test_agent_configs.py`: 9 offline tests PASS after the review fix; repeated on `242689194f669fd647e90c531f4c2bbe1857034a` |
@@ -182,7 +182,7 @@ An earlier probe used an unsupported transport spelling before the corrected
 | Unsupported CLI checks | `--strict-config` was rejected as unsupported by tested commands; strict schema validation NOT RUN |
 | Scope / whitespace | `python3 -B scripts/check_project_scope.py`: PASS, exit 0; reports product/Windows/hardware/rights/human gate work NOT RUN. `git diff --check`: PASS, exit 0. |
 | Evidence location | This record and AGENT-WORKFLOW.md; validation scripts reproduce offline checks |
-| Acceptance criteria met | AC-001 through AC-003. AC-004 remains unchecked (real-project custom-role discovery inconclusive); AC-005: initial source commit recorded and independent follow-up review PASS; resulting evidence revision recorded after commit. |
+| Acceptance criteria met | AC-001 through AC-003. AC-004 remains unchecked (real-project custom-role discovery inconclusive); AC-005: initial source commit recorded and independent follow-up review PASS; reviewed follow-up revision `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6`. |
 | Technical outcome | Templates validate and installed copies match. Harness role delegations completed; independent standalone CLI custom-role discovery remains INCONCLUSIVE. |
 | Gate outcome | No gate reviewed or unlocked |
 | Reviewer | Prior independent Sol subagent review: installed-role detection gap found and fixed with regression coverage; current follow-up: predefined sequential_review PASS for this partial evidence increment, after two stale metadata phrases were corrected; no full task acceptance claimed |
