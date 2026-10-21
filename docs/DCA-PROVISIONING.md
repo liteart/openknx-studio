@@ -149,3 +149,13 @@ proof of package equivalence, dependency closure, signature validity or use righ
 No copying, vendor execution or independent host test is established by the JSON.
 The next authorized private-copy list is limited to those two exact filenames;
 verify its output against the recorded hashes before further analysis.
+
+## Matched private-copy evidence, 2026-10-21
+
+The operator's successful copy report for the two observed SDK candidates is now
+matched to the supplied Git-ignored ZIP by streamed lengths/SHA-256 and the bounded
+unique-key JSON manifest. [Task-139](../tasks/Task-139.md) records the archive hash,
+manifest hash, timestamp, actual Windows suite results (19 PASS, 0 FAIL, 2 NOT RUN)
+and ConsoleHost 5.1.26100.9168 observation. Selected candidate bytes are available
+privately for static analysis. This resolves candidate acquisition evidence, not
+the missing terms or an approved independent runtime. Task-005 remains Blocked.

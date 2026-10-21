@@ -146,3 +146,12 @@ runtime dependencies and Task-028's human gate remain unchanged by this tool.
 See [Task-139](../tasks/Task-139.md), [DCA contract](DCA-CONTRACT.md),
 [provisioning disposition](DCA-PROVISIONING.md) and
 [SDK alternatives](DCA-SDK-ALTERNATIVES.md) for the task and dependency boundaries.
+
+## Observed reference run, 2026-10-21
+
+The operator completed inventory and private copying of the two observed ETS
+6.4.8718.0 candidates and supplied Windows test output: 19 PASS, 0 FAIL, 2 NOT RUN.
+The coordinator observed ConsoleHost 5.1.26100.9168 and matched private archive
+bytes/manifest to the operator's hashes. See Task-139 for exact provenance and
+unsupported filesystem cases. Original DCA execution remains NOT RUN; this does
+not establish candidate dependency completeness, signatures, rights or a host.

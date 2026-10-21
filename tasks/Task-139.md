@@ -10,7 +10,7 @@ copying of explicitly selected reference DLL candidates from the user's own ETS.
 | Field | Value |
 |---|---|
 | Task ID | Task-139 |
-| Status | Blocked |
+| Status | Done |
 | Stage / required gate | PoC dependency investigation; no product gate required or unlocked |
 | Priority | P0 |
 | Component / Git project | knx-editor / developer provisioning scripts |
@@ -63,7 +63,7 @@ synthetic fixtures; that is not Windows/NTFS/ETS qualification.
 - [x] AC-001: Default inventory reports bounded metadata without copying or executing assemblies.
 - [x] AC-002: Explicit copy preserves selected bytes/hashes privately and rejects unsafe paths,
   missing/invalid inputs and existing destinations without claiming completion.
-- [ ] AC-003: Focused positive/negative synthetic tests pass and the real Windows command,
+- [x] AC-003: Focused positive/negative synthetic tests pass and the real Windows command,
   selected file identities and outcome are recorded without publishing vendor binaries.
 
 ## Dependencies to Other Tasks
@@ -112,20 +112,20 @@ without modifying vendor files or depending on ETS at runtime.
 
 | Field | Observed result |
 |---|---|
-| Implementation / task status | Script increment implemented; operator Windows inventory supplied; full task Blocked pending Windows test summary/version and real-copy evidence |
+| Implementation / task status | Done: operator Windows tests/copy supplied, ZIP/manifest independently matched, PowerShell 5.1 host observed, final reviewer PASS |
 | Source baseline | `104d0e3`; reviewed implementation revision recorded after commit |
 | Files | Script, self-contained synthetic suite, local-reference guide; task/index/traceability/private-binary policy and Task-005 cross-links |
 | Platform | macOS 27 arm64; repository-private PowerShell 7.6.7; no global installation |
 | Provisioning | Official PowerShell release `v7.6.7`, asset `powershell-7.6.7-osx-arm64.tar.gz`, 70,628,335 bytes; SHA-256 `50dde99bb066adacbb9a748182d09eb9beff25119dc3b12e85c84b6b6b1c5da9` matched official release asset metadata |
 | Test command | `private/toolchains/powershell-7.6.7/pwsh -NoLogo -NoProfile -NonInteractive -File scripts/windows/Test-EtsReferenceCandidates.ps1 -TemporaryParent /private/tmp` |
 | Implementation test result | Initial portable result PASS 17, FAIL 0, NOT RUN 2; after mapped-drive and bracket-path coverage, PASS 19, FAIL 0, NOT RUN 2. Owned managed fixtures only; initial UNC classification failure corrected |
-| Open platform checks | Windows PowerShell 5.1, NTFS/junction/sharing and distinct case-colliding files NOT RUN; macOS volume cannot create the case fixture |
-| Actual ETS inspection / copy / DCA execution | Operator-run Windows inventory PASS as reported below; actual copy and target assembly execution NOT RUN; no vendor binaries in source |
+| Open platform checks | Windows suite supplied: 19 PASS / 0 FAIL / 2 NOT RUN (symbolic-link creation unavailable; distinct case-colliding files unsupported). Windows junction rejection PASS. Portable symbolic-link tests PASS. Unsupported filesystem cases remain explicit NOT RUN |
+| Actual ETS inspection / copy / DCA execution | Operator inventory and private-copy reports PASS; coordinator ZIP byte/manifest checks PASS. Target assembly execution NOT RUN; no vendor binaries in Git |
 | RDP observation | Clipboard timeout; an attempted version query was corrupted and returned CommandNotFound. A subsequent file-list command showed corrupted path/separator characters and was canceled with Escape before execution; prompt verified clear. No coordinator-run successful ETS metadata result; subsequent operator result is recorded below |
-| Acceptance | AC-001/002 verified with synthetic fixtures; AC-001 additionally has operator-reported Windows inventory. AC-003 partial: inventory supplied, Windows synthetic summary/version and real-copy evidence outstanding |
+| Acceptance | AC-001/002 portable + operator Windows evidence; AC-003 now has Windows test/copy output, exact identities and independent ZIP/manifest match. Final reviewer PASS for ordinary-task closure |
 | Verifier / reviewer | Initial verifier reproduced 17 PASS; reviewer found mapped-network-drive acceptance (P2). Corrected before any commit with fail-closed local drive types and synthetic classification tests; final verifier and reviewer independently reproduced PASS 19 / FAIL 0 / NOT RUN 2 plus scope, whitespace and encoding checks; reviewer returned PASS for this partial script increment with no remaining findings |
 | Gate | None reviewed or advanced; Tasks 003/005 retain their own blockers |
-| Next action | Privately copy exactly the two observed candidates with the reviewed script, obtain Windows test summary/version and validate manifest hashes; then evaluate required contract surface and rights separately |
+| Next action | Investigate the candidate dependency graph statically in a separate bounded task. Runtime and rights gates remain closed |
 
 Official tool provenance: [PowerShell release v7.6.7](https://github.com/PowerShell/PowerShell/releases/tag/v7.6.7).
 The local test runtime is not part of product dependencies or redistribution.
@@ -163,3 +163,69 @@ baseline `779beedc2f8b1c9f593976495686fa4cb9e08383`, independently confirmed bot
 hashes/identities/timestamp and the 7,051,728-byte sum, and returned PASS for this
 evidence-only increment. Scope checker and `git diff --check` passed. This does
 not close the outstanding Windows test/copy criteria.
+
+## Windows copy, synthetic tests and private ZIP verification, 2026-10-21
+
+The operator supplied `operation=private_copy`, `status=complete`, timestamp
+`2026-10-21T07:10:26.2421521Z`, count 2, and the same 7,051,728 total bytes,
+assembly identities and SHA-256 values as the inventory above. The operator also
+supplied the Windows suite command `.\Test-EtsReferenceCandidates.ps1` and its
+complete summary: 19 PASS, 0 FAIL, 2 NOT RUN. Windows drive-relative rejection
+and junction rejection passed; creating a symbolic link and distinct case-colliding
+files were unavailable. These are genuine operator-run tests, not a coordinator
+rerun. On the same visible console, the coordinator ran the read-only `get-host`
+command and observed ConsoleHost version **5.1.26100.9168**. This resolves the
+previously missing PowerShell-major/version evidence.
+
+The supplied private ZIP is `private/downloads/Knx.Ets.Sdk.AddIns.AddInViews.zip`,
+1,064,624 bytes, SHA-256
+`35a4790a9a3c8e87264cfb566896b73efe0683ff194680fa7eff27a4108b5100`.
+The predefined explorer independently bounded and streamed it without extraction:
+3 root-level regular entries, 7,053,643 total expanded bytes, no unsafe paths,
+case collisions, links or special entries. Both DLL streams exactly match the
+recorded byte counts and hashes. The third entry is `reference-inventory.json`,
+1,915 bytes, SHA-256
+`1869a665f3a86d8939411f4498c7ed58edaba7c8b4e376e6ce5e17c34a5d51b7`.
+
+The coordinator parsed that bounded JSON with duplicate-key rejection and
+confirmed exact copy timestamp, count/sum, filenames, sizes, hashes, versions,
+neutral culture, token and unresolved/unverified/not-executed statuses. The
+archive is ignored by the root `/private/` rule; no DLL is tracked. These checks
+confirm input/copy evidence only, not permissions, signatures, complete dependency
+closure, a compatible host or original DCA operation. Source baseline `13b5eb8`.
+
+
+### Windows command evidence
+
+The coordinator supplied the following private-copy invocation; the operator
+confirmed completion with the copy JSON and supplied archive above. Paths are
+represented by the same variables to avoid publishing private installation/home
+paths. The exact interactive history was not captured; this records the instructed
+and operator-confirmed operation with its flags and exact two-name selection.
+
+```powershell
+$names = @(
+    'Knx.Ets.Sdk.AddIns.AddInViews.dll'
+    'Knx.Ets.Sdk.dll'
+)
+$destination = Join-Path $env:LOCALAPPDATA `
+    ('KnxEditor-EtsReferences-' + [guid]::NewGuid().ToString('N'))
+& $inventoryTool -EtsDirectory $etsDirectory -CandidateFileName $names `
+    -Copy -DestinationDirectory $destination
+```
+
+`$inventoryTool` is the local copy of the reviewed
+`Get-EtsReferenceCandidates.ps1`; `$etsDirectory` is the operator's actual local
+ETS directory. The operator explicitly supplied the synthetic test command:
+
+```powershell
+.\Test-EtsReferenceCandidates.ps1
+```
+
+Its 19/0/2 summary is recorded above; the coordinator's separate `get-host`
+observation is version evidence, not a coordinator rerun of those tests.
+
+Final predefined reviewer: PASS for Task-139 closure after independently verifying
+ZIP bytes/entries, both DLL hashes, duplicate-key-rejecting manifest, exact copy
+metadata, private-input exclusion, scope and whitespace. No vendor code was loaded.
+The two unavailable filesystem cases stay NOT RUN; no rights/runtime gate changes.
