@@ -141,3 +141,5 @@ capability distinctions and returned PASS with no findings for this bounded
 research/task-description increment. TEST-004 PASS for the evidence comparison;
 TEST-001 remains INCONCLUSIVE, TEST-002 NOT RUN, and runtime alternatives remain
 INCONCLUSIVE. No full task acceptance or product GO follows.
+
+Reviewed alternatives research source commit: `faed67cfb8501dbf8b2f98d7eca34f8777e14336`.
