@@ -241,3 +241,168 @@ distinguish build-time Developer Packs from runtimes. A 4.8 Developer Pack is a
 candidate prerequisite provisioning step, not a verified DCA target selection,
 SDK substitute, or demonstrated compatibility result. A later installation must
 be observed and verified before its references are claimed available.
+
+
+## Direct Windows SSH inventory, 2026-10-21
+
+The operator enabled a password-authenticated OpenSSH master connection from the
+coordinator's Mac. The coordinator independently ran read-only PowerShell commands
+through its private local control socket. No password, socket, account/host address
+or Windows profile path is part of the source record. This supersedes historical
+RDP input failures for command-line access; interactive vendor UI is untested.
+
+At `2026-10-21T10:19:10.1166105Z` the inventory observed:
+
+| Check | Result |
+|---|---|
+| Windows process/OS | `AMD64`, 64-bit OS and PowerShell process |
+| PowerShell | `5.1.26100.9168` |
+| OS API version | `10.0.26200.0`; distinct from the full OS build already reported by the operator |
+| Explicit installed MSBuild executable | `18.9.1.35102` |
+| .NET Framework registry | Release `533509`, Version `4.8.09221` |
+| Conventional framework reference roots | Neither Program Files nor Program Files (x86) root exists |
+| PATH command lookup | `msbuild`, `dotnet`, `rustc`, `cargo`, `git` not found; this is not a whole-disk absence claim |
+
+Microsoft's [version/dependency table](https://learn.microsoft.com/dotnet/framework/install/versions-and-dependencies)
+maps Release 533509 to .NET Framework 4.8.1. This installed runtime does not supply
+proof of build-time reference packs or original SDK/DCA compatibility.
+
+The private inventory is `private/artifacts/task003-ssh-inventory.json`;
+its SHA-256 is `2ba6bac3e3785f4515a2a867f6b5449570a0ddc2ec39b034e03d4d433a737f1d`.
+The actual query reads Environment architecture/OS values, PSVersionTable,
+Get-Command for the five names above, the installed MSBuild `-version -nologo`,
+the two conventional reference roots and the framework v4 Full registry values.
+It does not enumerate ETS projects or invoke ETS/vendor code.
+
+### Private framework-only reference provisioning
+
+For an owned compiler smoke test, select .NET Framework 4.8 reference assemblies
+from Microsoft's public `Microsoft.NETFramework.ReferenceAssemblies.net48` NuGet
+package **1.0.3**. This is a compiler prerequisite experiment, not selection or
+qualification of an ETS runtime contract. Microsoft [documents reference packages](https://learn.microsoft.com/en-us/dotnet/framework/migration-guide/reference-assemblies)
+as an alternative to an installed Developer Pack.
+
+| Package observation | Result |
+|---|---|
+| Exact public source | `https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net48/1.0.3/microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg` |
+| Archive bytes / SHA-256 | 20,997,929 / `8a7e348538e7eb91351696911689f49e3d4f63f8bab517432bbe159b8b1104a2` |
+| ZIP inventory | 374 entries, expanded sum 116,705,757 bytes |
+| Actual nuspec | Microsoft publisher, version 1.0.3, developmentDependency true; no dependencies |
+| Actual license pointer | `https://github.com/Microsoft/dotnet/blob/master/LICENSE`; checked MIT, copyright 2019 Microsoft |
+| License packaging limitation | No embedded LICENSE entry; the nuspec's external pointer was inspected separately |
+
+The [official package listing](https://www.nuget.org/packages/Microsoft.NETFramework.ReferenceAssemblies.net48/1.0.3)
+agrees with the observed identity. The archive was downloaded over HTTPS, pinned
+by SHA-256 and validated for bounded entries/sizes, safe names, case collisions
+and special files. This is content identity/provenance evidence, not an independent
+NuGet-signature verification claim. After transfer to a new Windows user-temporary
+directory, both archive SHA-256 and the five selected reference DLL hashes matched.
+Only `mscorlib`, `System`, `WindowsBase`, `PresentationCore` and
+`PresentationFramework` are staged. No global installation, PATH change or ETS
+file modification occurred. The Microsoft package remains private and is not
+relicensed or redistributed in this repository; ETS usage rights remain unresolved.
+
+### Owned Windows framework compiler smoke
+
+The original sources in `experiments/windows-toolchain-smoke/` contain a tiny
+MSBuild project, C# program and PowerShell 5.1 driver. The project invokes the
+installed Roslyn Csc task with five explicit reference files, `NoConfig` and
+`NoStandardLib`; it imports no targets and has no restore/download step. It
+neither references an ETS assembly nor constructs UI objects. The executable
+checks x64, STA and three framework type references, then exits.
+
+The driver checks the exact expected MSBuild version and reference DLL hashes
+before creating a new output directory. Sources, references and output must be
+separate trees. Version/run deadlines are 10 seconds each, build deadline is 60
+seconds, combined captured output is limited to 65,536 characters. The runner
+attempts to terminate its owned process tree on interruption/timeout; it is not
+a general malicious-code containment boundary.
+
+Run on Windows, using provisioned local paths (normalized placeholders):
+
+```powershell
+& "$SourceDirectory\Test-ToolchainSmoke.ps1" `
+  -MSBuildPath $MSBuildExe `
+  -ExpectedMSBuildVersion '18.9.1.35102' `
+  -FrameworkReferenceDirectory $PrivateReferences `
+  -OutputDirectory $NewPrivateOutput
+```
+
+The actual Windows command completed with exit 0 and `status=PASS`, emitting:
+
+```text
+toolchain-smoke target=net48 process=x64 apartment=STA wpf-types=3 vendor=none protocol=none
+```
+
+Executable SHA-256:
+`1b7a15acd69b522eb9e9d6d229a13ea73d19625e190b59771302e38152df054d`.
+The initial invocation placed output under the source directory and was correctly
+rejected with `SMOKE_OUTPUT_OVERLAP` before building; the successful run used
+separate source/reference/output siblings. Transfer hashes matched the three
+local source files before execution. Actual private stdout/stderr evidence is in
+`private/artifacts/task003-windows-smoke-stdout.txt` and its stderr counterpart.
+
+This is Windows framework/compiler prerequisite evidence only. It does not
+complete Task-003 TEST-002's SDK-qualified host proof, instantiate an original
+DCA, test an interactive desktop or resolve Task-005. The full task remains
+Blocked while those stated prerequisites are unmet.
+
+The predefined verifier independently checked all three uploaded source hashes,
+built and ran the smoke successfully, and reproduced five negative cases:
+existing output (hash unchanged), wrong MSBuild version, source/output overlap,
+missing references, and owned fake reference files. Each failed before output
+creation where applicable. Timeout/output-overflow cleanup is source-reviewed,
+not separately exercised on Windows. The predefined reviewer returned PASS with
+no P1/P2 source findings; final evidence/commit review is recorded in Task-003.
+
+### Windows Rust attempt and capacity blocker
+
+The explorer independently confirmed MSVC **14.51.36231** (`cl.exe`, `link.exe`)
+and Windows SDK **10.0.26100.0** headers, libraries, `rc.exe` and `mt.exe`.
+The current Windows machine can therefore supply these native prerequisites;
+Rust itself was not initially available through PATH.
+
+Following the [official Windows rustup route](https://rust-lang.github.io/rustup/installation/other.html),
+the coordinator downloaded the Windows x64 MSVC bootstrap and checked its
+SHA-256 against the official accompanying `.sha256` file before transfer:
+
+| Artifact | Observation |
+|---|---|
+| Source | `https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe` |
+| Bytes / SHA-256 | 12,721,664 / `6f4bef66261261fcb43131be8720bab817d403a09edec7455c371974b90bdb7e` |
+| Observed bootstrap manager | `rustup 1.29.1 (d95a37b6a 2026-08-13)` |
+| Requested toolchain | `1.99.1-x86_64-pc-windows-msvc`, minimal profile, rustfmt and Clippy |
+| Installation scope | New task-temporary `RUSTUP_HOME` and `CARGO_HOME`, `--no-modify-path` |
+| Actual result | FAIL: component extraction reported OS error 112, insufficient disk space, and rolled back |
+| Windows Rust build/test | NOT RUN; subsequent version probes confirmed no active compiler/Cargo |
+| Capacity observation | Only 72,056,832 bytes available on the sole local fixed volume, about 69 MiB |
+
+The process-end-status query in the initial PowerShell provisioning wrapper failed
+separately; this is not treated as a captured installer exit code. Subsequent
+bounded process/version checks and the actual installer stderr establish the
+failed extraction and absence of an active compiler. No switch to `stable`, GNU,
+or another Rust version was used to manufacture a passing result. The requested
+1.99.1 Windows package identities are present in the already pinned official
+channel manifest; no Windows Rust build is inferred from those entries.
+
+Actual installer arguments were:
+
+```text
+-y --no-modify-path --default-host x86_64-pc-windows-msvc --default-toolchain 1.99.1 --profile minimal --component rustfmt --component clippy
+```
+
+The user was asked to provide several GB of free space (5 GB suggested reserve)
+or enlarge the VM disk. No unrelated files are deleted to provide room. Private
+logs remain in `private/artifacts/task003-rust-*-stdout.txt` and their stderr
+counterparts. Provisioning and Windows Rust execution remain incomplete.
+
+Cleanup state: an initial conservative cleanup preflight stopped on rustup's 13
+owned executable symbolic-link proxies before deleting anything. A bounded,
+non-following inspection confirmed those files point to the relative owned
+`rustup.exe`, with no directory links and no current-user Rustup uninstall key.
+Before the revised cleanup could connect, the SSH master was gone and the new
+connection timed out. Removal of the incomplete private Rust directories is
+therefore **NOT RUN / pending**, not claimed complete. No unrelated Windows
+files were removed; the successful C# sources/references/output remain available
+in their separate task-temporary siblings. Restore access and capacity before
+retrying provisioning or completing cleanup.

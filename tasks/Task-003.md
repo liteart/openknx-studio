@@ -185,3 +185,59 @@ be observed and verified before its references are claimed available.
 
 Command-result evidence source: `8dd077a244f1f98b5aecb53524fdcb1ea5eff033`; predefined reviewer PASS for
 this partial increment. Scope and whitespace checks PASS; full task remains Blocked.
+
+## Direct SSH and framework smoke increment, 2026-10-21
+
+The operator enabled an authenticated SSH master. Coordinator-run PowerShell now
+confirms AMD64/64-bit execution, MSBuild `18.9.1.35102`, and .NET Framework 4.8.1
+registry Release `533509`. This supersedes earlier CLI access/inventory blockers;
+RDP remains a separate requirement for later interactive vendor UI.
+
+Five exact Microsoft .NET Framework 4.8 reference assemblies from public package
+`Microsoft.NETFramework.ReferenceAssemblies.net48` 1.0.3 were hash-verified and
+privately staged without system installation. The original tiny MSBuild/C# smoke
+compiled and ran on Windows: net48/x64, STA, three WPF type references, no UI or
+vendor reference. The predefined verifier independently reproduced the success
+and five expected preflight failures. The predefined reviewer returned PASS for
+the three source files, no P1/P2 findings. Full versions, package hashes, source
+references, commands and boundaries are in [POC-TOOLCHAINS.md](../docs/POC-TOOLCHAINS.md).
+
+This framework-only proof is partial evidence for TEST-002, not its required
+SDK-qualified host proof. The Task-140 SDK version mismatch, lawful provisioning
+and ETS-free dependencies remain unresolved; Task-005 remains Blocked.
+
+The Windows Rust prerequisites (MSVC and Windows SDK) are present. A private,
+pinned Rust 1.99.1 provisioning attempt failed during extraction with insufficient
+space (OS error 112); only about 69 MiB remained. No active compiler was available
+after rollback, so Windows Rust build/test is NOT RUN. The user was asked to free
+space or enlarge the VM disk; no unrelated data is deleted. Linux remains NOT RUN
+because no runner is available. Task-003 remains **Blocked**.
+
+| Increment check | Result |
+|---|---|
+| Actual SSH inventory | PASS; version/architecture/reference availability observed directly |
+| Owned framework compiler smoke | PASS; Windows compile and executable run, independently reproduced |
+| Negative preflight cases | PASS: 5 expected failures, output not created or overwritten |
+| Rust bootstrap SHA-256 / native prerequisite inventory | PASS; official bootstrap hash and actual MSVC/Windows SDK files |
+| Rust Windows provisioning | FAIL, insufficient disk space; compiler build/test NOT RUN |
+| Original DCA / hardware | NOT RUN; no operation on ETS projects or KNX devices |
+| Source baseline | `2667b65412a7c39450c3b53ea9cbe6029467f8e3`; reviewed increment revision recorded after commit |
+| Final evidence review | Predefined sequential_review PASS, no findings; no Task-003 acceptance or phase GO claimed |
+
+Source validation commands actually run:
+
+```sh
+python3 scripts/check_project_scope.py
+git diff --check
+```
+
+Windows smoke/negative commands and public prerequisite sources are recorded in
+the linked toolchain evidence. The work does not introduce an editor .NET runtime
+dependency or a KNX implementation.
+
+Cleanup/access limitation: the incomplete own Rust installation was not removed.
+The first cleanup preflight failed closed on its proxy links; subsequent bounded
+inspection identified only owned relative executable proxies, but the SSH master
+ended before revised cleanup could connect. SSH access must be restored after
+freeing disk space. No cleanup success, Rust compiler installation or Windows
+Rust build is asserted. Successful C# evidence was already captured locally.

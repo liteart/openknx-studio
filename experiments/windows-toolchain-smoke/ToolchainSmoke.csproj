@@ -1,0 +1,32 @@
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Task-003 owned compiler smoke only. No SDK, imports, restore or host. -->
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+  </PropertyGroup>
+  <UsingTask TaskName="Microsoft.CodeAnalysis.BuildTasks.Csc"
+             AssemblyFile="$(MSBuildToolsPath)\Roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll" />
+  <ItemGroup>
+    <FrameworkReference Include="$(FrameworkReferenceDirectory)\mscorlib.dll" />
+    <FrameworkReference Include="$(FrameworkReferenceDirectory)\System.dll" />
+    <FrameworkReference Include="$(FrameworkReferenceDirectory)\WindowsBase.dll" />
+    <FrameworkReference Include="$(FrameworkReferenceDirectory)\PresentationCore.dll" />
+    <FrameworkReference Include="$(FrameworkReferenceDirectory)\PresentationFramework.dll" />
+  </ItemGroup>
+  <Target Name="Build">
+    <Error Condition="'$(FrameworkReferenceDirectory)' == ''" Text="SMOKE_REFERENCE_DIRECTORY_REQUIRED" />
+    <Error Condition="'$(SmokeOutputDirectory)' == '' Or !Exists('$(SmokeOutputDirectory)')" Text="SMOKE_NEW_OUTPUT_DIRECTORY_REQUIRED" />
+    <Error Condition="!Exists('%(FrameworkReference.Identity)')" Text="SMOKE_REFERENCE_MISSING" />
+    <Error Condition="Exists('$(SmokeOutputDirectory)\ToolchainSmoke.exe')" Text="SMOKE_OUTPUT_EXISTS" />
+    <!-- No response-file defaults or implicit standard-library/GAC resolution. -->
+    <Microsoft.CodeAnalysis.BuildTasks.Csc
+        Sources="$(MSBuildThisFileDirectory)Program.cs"
+        References="@(FrameworkReference)"
+        OutputAssembly="$(SmokeOutputDirectory)\ToolchainSmoke.exe"
+        TargetType="Exe" Platform="x64" LangVersion="7.3"
+        NoConfig="true" NoStandardLib="true" NoLogo="true"
+        UseSharedCompilation="false" UseHostCompilerIfAvailable="false"
+        Deterministic="true" Optimize="true" WarningLevel="4"
+        TreatWarningsAsErrors="true" EmitDebugInformation="false" />
+  </Target>
+</Project>
