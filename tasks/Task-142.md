@@ -99,7 +99,7 @@ network/device operations, configuration state proof and full-host compatibility
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done; final guarded reproduction, independent verification and critical review PASS |
-| Source commit(s) | Baseline `b1dd90ca45fdf8de04bb79786dd1d9bcd13b47d2`; implementation commit pending |
+| Source commit(s) | Baseline `b1dd90ca45fdf8de04bb79786dd1d9bcd13b47d2`; reviewed implementation `0b3cfef884a2181e12bf58acf1d08b76312789ed` |
 | Tests executed | PASS 31 owned member fixtures; PASS 9 Task-140 worker fixtures; PASS 12 wrapper fixtures; scope checker PASS; git diff --check PASS |
 | Evidence location | [Static member evidence](../docs/DCA-MEMBER-MAP.md); private `member-report-task142.json`, 183,722 bytes, SHA-256 `fa494688a2fc5e98b6b22e84e173a5222a72d14cde613169176697d194824667` |
 | Acceptance criteria met | AC-001/002/003 met; final static-only scope independently verified and reviewed |
@@ -237,4 +237,4 @@ whitespace and no-tracked-DLL checks. It reran only its focused owned regression
 not the complete verifier suites. Task-142 is Done for this static experiment;
 CLR binding, ABI, vendor behavior, Windows hosting and hardware remain unqualified.
 No phase gate or Task-005 runtime qualification is advanced. The exact source
-revision is recorded following the reviewed source commit.
+revision is `0b3cfef884a2181e12bf58acf1d08b76312789ed`.
