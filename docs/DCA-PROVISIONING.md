@@ -122,3 +122,16 @@ reference/runtime route was proven. Falcon and ETS-hosted bridges do not replace
 DCA hosting. MDT PRO64 offers documented partial web workflows on a different
 product; substituting it for original-DCA-first remains an explicit scope decision.
 Task-005's missing runtime inputs and Blocked status remain unchanged.
+
+## Selected local-reference investigation, 2026-10-21
+
+The user subsequently selected the minimal compatibility investigation and
+explicitly authorized a user-run script that inventories and optionally copies
+selected DLL candidates from their own ETS installation into private local storage.
+[Task-139](../tasks/Task-139.md) implements that narrow evidence-gathering route;
+[the guide](LOCAL-ETS-REFERENCES.md) defines exact selection, metadata-only default,
+new non-Git destination, bounds and known filesystem limits. This supersedes the
+earlier blanket rejection of installation copying for this authorized research
+step. Arbitrary installation copying, runtime loading and redistribution remain
+outside this route. Rights and actual standalone provisioning are unresolved;
+local copying does not decide them. Task-005 remains Blocked.

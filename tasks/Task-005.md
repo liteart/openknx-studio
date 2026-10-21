@@ -143,3 +143,14 @@ TEST-001 remains INCONCLUSIVE, TEST-002 NOT RUN, and runtime alternatives remain
 INCONCLUSIVE. No full task acceptance or product GO follows.
 
 Reviewed alternatives research source commit: `faed67cfb8501dbf8b2f98d7eca34f8777e14336`.
+
+## Selected private-reference route, 2026-10-21
+
+The user selected the first candidate (minimal original-DCA compatibility) and
+explicitly authorized extracting selected DLLs from their own ETS installation
+through a user-run script, with no binaries in this repository. The independent
+[Task-139](Task-139.md) supplies bounded metadata inventory and optional private
+copying. This is now an authorized research route; the earlier no-copy statement
+was historical. Runtime use rights, complete reference identity/closure and
+clean-machine compatibility remain unresolved. No SDK replacement or DCA load is
+claimed and this task's required rights/runtime evidence remains unmet.

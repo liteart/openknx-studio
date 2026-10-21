@@ -1,6 +1,6 @@
 # Task Index
 
-This backlog contains **138 individually specified tasks**, numbered Task-001 through Task-138. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
+This backlog contains **139 individually specified tasks**, numbered Task-001 through Task-139. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
 
 All implementation/report statuses initially are **Not started**. This kit specifies work; it does not assert that tests, forks, code or releases already exist. Task dependencies and explicit phase-gate outcomes both govern readiness. A NO-GO report does not unlock the next stage.
 
@@ -15,6 +15,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | Stage | Task IDs | Count | Gate |
 |---|---|---:|---|
 | PoCs and feasibility gate | Task-001 to Task-028 | 28 | Task-028 |
+| Additional PoC input investigation | Task-139 | 1 | No gate unlocked; Task-005 still governs provisioning |
 | Alpha integration | Task-029 to Task-092 | 64 | Task-092 |
 | Beta functionality | Task-093 to Task-112 | 20 | Task-112 |
 | Release candidate | Task-113 to Task-125 | 13 | Task-125 |
@@ -194,6 +195,12 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 |---|---|---|---|
 | [Task-138](tasks/Task-138.md) | Configure project agents and model routing | Editor development tooling | Explicit user request; no product gate unlocked |
 
+## Additional PoC dependency investigations
+
+| Task | Subject | Component | Dependencies |
+|---|---|---|---|
+| [Task-139](tasks/Task-139.md) | Inventory and privately copy selected local ETS reference candidates | Editor developer tooling | Tasks 001, 002, 004; explicit local-copy authorization; no runtime gate unlocked |
+
 ## How to extend the backlog
 
-Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (initially Task-139), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
+Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (initially Task-140), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.

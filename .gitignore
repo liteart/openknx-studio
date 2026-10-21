@@ -21,3 +21,6 @@ __pycache__/
 *.pcapng
 *.pem
 *.key
+
+# User-owned local reference binaries must never be committed.
+*.[dD][lL][lL]
