@@ -128,3 +128,6 @@ without modifying vendor files or depending on ETS at runtime.
 
 Official tool provenance: [PowerShell release v7.6.7](https://github.com/PowerShell/PowerShell/releases/tag/v7.6.7).
 The local test runtime is not part of product dependencies or redistribution.
+
+Reviewed implementation source commit: `8517859335c7f20fd71e815da10c57a36e69061a`. Full task remains Blocked
+until Windows/real-ETS evidence; this commit accepts only the tested script increment.
