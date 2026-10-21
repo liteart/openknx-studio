@@ -174,7 +174,7 @@ An earlier probe used an unsupported transport spelling before the corrected
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done; operator confirmed fresh-session explorer/reviewer execution on 2026-10-21; independent final review PASS |
-| Source commit(s) | `c4b17ed970e4894b1dd6c13b14037aa90fccd701` (initial source snapshot); runtime follow-up based on `242689194f669fd647e90c531f4c2bbe1857034a`; reviewed runtime follow-up `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6` |
+| Source commit(s) | `c4b17ed970e4894b1dd6c13b14037aa90fccd701` (initial source snapshot); runtime follow-up based on `242689194f669fd647e90c531f4c2bbe1857034a`; reviewed runtime follow-up `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6`; final closure `6febef54f0ea3be76f39316cbf7145cfdc624474` |
 | Platform | macOS; Python 3.14.6; codex-cli 0.163.0 |
 | Tests executed | `python3 -B scripts/check_agent_configs.py`: PASS for templates and installed copies; installed/template byte equality independently confirmed |
 | Regression tests | `python3 -B scripts/test_agent_configs.py`: 9 offline tests PASS after the review fix; repeated on `242689194f669fd647e90c531f4c2bbe1857034a` |
