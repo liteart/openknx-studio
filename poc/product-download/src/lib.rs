@@ -27,6 +27,82 @@ pub const MAX_MEMBERS: usize = 16;
 pub const MAX_ELEMENTS: usize = 20_000;
 pub const MAX_DEPTH: usize = 32;
 
+/// Explicit structural profiles; neither profile authorizes compilation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum InspectionProfile {
+    Be04000,
+    GlassV31,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct InspectionLimits {
+    pub archive_bytes: usize,
+    pub member_bytes: usize,
+    pub total_bytes: usize,
+    pub members: usize,
+    pub elements: usize,
+    pub depth: usize,
+}
+pub const GLASS_APPLICATION_ID: &str = "M-0083_A-018B-31-369F";
+pub const GLASS_APPLICATION_MEMBER: &str = "M-0083/M-0083_A-018B-31-369F.xml";
+pub const GLASS_REGISTERED_SHA256: &str =
+    "b5ea5653091bf95d3650216eafbc26c080b3d6c14924bc315c2dfdcfaa63530d";
+struct Identity {
+    application: &'static str,
+    member: &'static str,
+    catalog: &'static str,
+    product: &'static str,
+    hardware_program: &'static str,
+    order_number: &'static str,
+    number: u32,
+    version: u32,
+}
+impl InspectionProfile {
+    pub const fn limits(self) -> InspectionLimits {
+        match self {
+            Self::Be04000 => InspectionLimits {
+                archive_bytes: MAX_ARCHIVE_BYTES,
+                member_bytes: MAX_MEMBER_BYTES,
+                total_bytes: MAX_TOTAL_BYTES,
+                members: MAX_MEMBERS,
+                elements: MAX_ELEMENTS,
+                depth: MAX_DEPTH,
+            },
+            Self::GlassV31 => InspectionLimits {
+                archive_bytes: 2 * 1024 * 1024,
+                member_bytes: 12 * 1024 * 1024,
+                total_bytes: 32 * 1024 * 1024,
+                members: 64,
+                elements: 100_000,
+                depth: 32,
+            },
+        }
+    }
+    fn identity(self) -> Identity {
+        match self {
+            Self::Be04000 => Identity {
+                application: APPLICATION_ID,
+                member: APPLICATION_MEMBER,
+                catalog: CATALOG_ID,
+                product: PRODUCT_ID,
+                hardware_program: HARDWARE_PROGRAM_ID,
+                order_number: "BE-04000.02",
+                number: 179,
+                version: 50,
+            },
+            Self::GlassV31 => Identity {
+                application: GLASS_APPLICATION_ID,
+                member: GLASS_APPLICATION_MEMBER,
+                catalog: "M-0083_H-3.2E38-1_HP-018B-31-369F_CI-BE.2DGT20x.2E02-1",
+                product: "M-0083_H-3.2E38-1_P-BE.2DGT20x.2E02",
+                hardware_program: "M-0083_H-3.2E38-1_HP-018B-31-369F",
+                order_number: "BE-GT20x.02",
+                number: 395,
+                version: 49,
+            },
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Error {
     Cancelled,
@@ -117,6 +193,7 @@ pub struct ParameterType {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Parameter {
     pub declaration: Declaration,
+    pub union_source: Option<SourceIdentity>,
     pub parameter_type: String,
     pub default_value: Option<String>,
 }
@@ -147,8 +224,60 @@ pub struct Segment {
     pub data: Option<EmbeddedResource>,
     pub mask: Option<EmbeddedResource>,
 }
+/// Identifies a location in immutable source bytes, never a business identity.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SourceIdentity {
+    pub member_sha256: String,
+    pub source_range: Range<usize>,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MemoryOwner {
+    Parameter(String),
+    Union(SourceIdentity),
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UnionMemberKind {
+    Parameter,
+    Memory,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UnionMember {
+    pub kind: UnionMemberKind,
+    pub source: SourceIdentity,
+    pub attributes: BTreeMap<String, String>,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UnionDeclaration {
+    pub source: SourceIdentity,
+    pub module_scope: Option<String>,
+    pub attributes: BTreeMap<String, String>,
+    pub members: Vec<UnionMember>,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OpaqueDeclaration {
+    pub name: String,
+    pub attributes: BTreeMap<String, String>,
+    pub module_scope: Option<String>,
+    pub source_range: Range<usize>,
+}
+/// An observed reference edge whose scope semantics are unverified.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UnverifiedScopeReference {
+    pub source: SourceIdentity,
+    pub node_name: String,
+    pub attribute: String,
+    pub target_id: String,
+    pub target_kind: ScopeReferenceTargetKind,
+    pub source_module_scope: Option<String>,
+    pub target_module_scope: Option<String>,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ScopeReferenceTargetKind {
+    ParameterReference,
+}
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MemoryDeclaration {
+    pub owner: MemoryOwner,
     pub module_scope: Option<String>,
     pub owner_id: Option<String>,
     pub code_segment: Option<String>,
@@ -188,6 +317,9 @@ pub enum UnsupportedFeature {
     DynamicActivation,
     ParameterTypeSemantics,
     UnverifiedLoadProcedure,
+    ExternalResourceReference,
+    TextRename,
+    UnverifiedGlobalCondition,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CompilationBlocker {
@@ -221,6 +353,9 @@ pub struct Snapshot {
     pub communication_object_refs: Vec<Reference>,
     pub segments: Vec<Segment>,
     pub memory_declarations: Vec<MemoryDeclaration>,
+    pub unions: Vec<UnionDeclaration>,
+    pub opaque_declarations: Vec<OpaqueDeclaration>,
+    pub unverified_scope_references: Vec<UnverifiedScopeReference>,
     pub tables: Vec<Table>,
     pub load_steps: Vec<LoadStep>,
     pub element_counts: BTreeMap<String, usize>,
@@ -235,47 +370,55 @@ pub fn inspect_archive(
     application_id: &str,
     cancelled: &AtomicBool,
 ) -> Result<Snapshot, Error> {
+    inspect_archive_with_profile(bytes, application_id, InspectionProfile::Be04000, cancelled)
+}
+
+/// Opt-in offline inspection with fixed profile-specific identity and bounds.
+pub fn inspect_archive_with_profile(
+    bytes: &[u8],
+    application_id: &str,
+    profile: InspectionProfile,
+    cancelled: &AtomicBool,
+) -> Result<Snapshot, Error> {
     checkpoint(cancelled)?;
-    if application_id != APPLICATION_ID {
+    let identity = profile.identity();
+    let limits = profile.limits();
+    if application_id != identity.application {
         return Err(Error::UnsupportedApplication);
     }
-    let members = archive::read(bytes, cancelled)?;
+    let members = archive::read(bytes, limits, profile, cancelled)?;
     let mut sources = Vec::new();
     let mut documents = Vec::new();
-    for name in [
-        "M-0083/Catalog.xml",
-        "M-0083/Hardware.xml",
-        APPLICATION_MEMBER,
-    ] {
+    for name in ["M-0083/Catalog.xml", "M-0083/Hardware.xml", identity.member] {
         let source = members.get(name).ok_or(Error::MissingMember)?;
-        documents.push(xml::parse(source, cancelled)?);
+        documents.push(xml::parse(source, limits, cancelled)?);
         sources.push(SourceMember {
             name: name.into(),
             sha256: sha256(source),
             bytes: Arc::clone(source),
         });
     }
-    select(&documents[0], &documents[1], &documents[2])?;
+    select(&documents[0], &documents[1], &documents[2], &identity)?;
     let doc = &documents[2];
     let application = doc.single("ApplicationProgram")?;
-    if application.required("Id")? != APPLICATION_ID
-        || application.number("ApplicationNumber")? != 179
-        || application.number("ApplicationVersion")? != 50
+    if application.required("Id")? != identity.application
+        || application.number("ApplicationNumber")? != identity.number
+        || application.number("ApplicationVersion")? != identity.version
         || application.required("MaskVersion")? != "MV-0705"
         || application.required("LoadProcedureStyle")? != "ProductProcedure"
     {
         return Err(Error::UnsupportedApplication);
     }
     let mut snapshot = Snapshot {
-        ir_version: 1,
+        ir_version: 2,
         archive_sha256: sha256(bytes),
         namespace: NAMESPACE.into(),
-        catalog_id: CATALOG_ID.into(),
-        product_id: PRODUCT_ID.into(),
-        hardware_program_id: HARDWARE_PROGRAM_ID.into(),
-        application_id: APPLICATION_ID.into(),
-        application_number: 179,
-        application_version: 50,
+        catalog_id: identity.catalog.into(),
+        product_id: identity.product.into(),
+        hardware_program_id: identity.hardware_program.into(),
+        application_id: identity.application.into(),
+        application_number: identity.number,
+        application_version: identity.version,
         mask_version: "MV-0705".into(),
         load_procedure_style: "ProductProcedure".into(),
         sources,
@@ -286,23 +429,40 @@ pub fn inspect_archive(
         communication_object_refs: Vec::new(),
         segments: Vec::new(),
         memory_declarations: Vec::new(),
+        unions: Vec::new(),
+        opaque_declarations: Vec::new(),
+        unverified_scope_references: Vec::new(),
         tables: Vec::new(),
         load_steps: Vec::new(),
         element_counts: BTreeMap::new(),
         compilation_blockers: Vec::new(),
     };
+    let member_sha256 = snapshot.sources[2].sha256.clone();
+    let source_identity = |node: &xml::Node| SourceIdentity {
+        member_sha256: member_sha256.clone(),
+        source_range: node.range.clone(),
+    };
     let mut blockers = BTreeMap::new();
     for (index, node) in doc.nodes.iter().enumerate() {
         checkpoint(cancelled)?;
-        xml::check_application_construct(node)?;
-        doc.check_placement(index)?;
+        xml::check_application_construct(node, profile)?;
+        doc.check_placement(index, profile)?;
         *snapshot
             .element_counts
             .entry(node.name.clone())
             .or_insert(0) += 1;
-        validate_references(doc, index)?;
+        if let Some(observation) = validate_references(doc, index, profile, &member_sha256)? {
+            snapshot.unverified_scope_references.push(observation);
+            *blockers
+                .entry(UnsupportedFeature::UnverifiedGlobalCondition)
+                .or_insert(0) += 1;
+        }
         let declaration = || doc.declaration(index);
         match node.name.as_str() {
+            // A missing module identity must never masquerade as global scope.
+            "ModuleDef" => {
+                let _ = node.required("Id")?;
+            }
             "ParameterType" => {
                 let kinds: Vec<_> = doc
                     .children(index)
@@ -319,6 +479,10 @@ pub fn inspect_archive(
             }
             "Parameter" => snapshot.parameters.push(Parameter {
                 declaration: declaration()?,
+                union_source: node
+                    .parent
+                    .filter(|p| doc.nodes[*p].name == "Union")
+                    .map(|p| source_identity(&doc.nodes[p])),
                 parameter_type: node.required("ParameterType")?.into(),
                 default_value: node.attrs.get("Value").cloned(),
             }),
@@ -341,7 +505,7 @@ pub fn inspect_archive(
             }),
             "AbsoluteSegment" => {
                 let size = node.number("Size")?;
-                if size == 0 || size as usize > MAX_MEMBER_BYTES {
+                if size == 0 || size as usize > limits.member_bytes {
                     return Err(Error::Resource);
                 }
                 let address = node.number("Address")?;
@@ -390,7 +554,14 @@ pub fn inspect_archive(
                 {
                     return Err(Error::Reference);
                 }
+                let parent = node.parent.ok_or(Error::Metadata)?;
+                let owner = match doc.nodes[parent].name.as_str() {
+                    "Parameter" => MemoryOwner::Parameter(doc.nodes[parent].required("Id")?.into()),
+                    "Union" => MemoryOwner::Union(source_identity(&doc.nodes[parent])),
+                    _ => return Err(Error::Metadata),
+                };
                 snapshot.memory_declarations.push(MemoryDeclaration {
+                    owner,
                     module_scope: doc.scope(index),
                     owner_id: node
                         .parent
@@ -401,6 +572,33 @@ pub fn inspect_archive(
                     bit_offset: bit as u8,
                     source_range: node.range.clone(),
                 });
+            }
+            "Union" => snapshot.unions.push(UnionDeclaration {
+                source: source_identity(node),
+                module_scope: doc.scope(index),
+                attributes: node.attrs.clone(),
+                members: doc
+                    .children(index)
+                    .map(|child| {
+                        Ok(UnionMember {
+                            kind: match child.name.as_str() {
+                                "Parameter" => UnionMemberKind::Parameter,
+                                "Memory" => UnionMemberKind::Memory,
+                                _ => return Err(Error::UnsupportedConstruct),
+                            },
+                            source: source_identity(child),
+                            attributes: child.attrs.clone(),
+                        })
+                    })
+                    .collect::<Result<Vec<_>, Error>>()?,
+            }),
+            "TypePicture" | "Baggage" | "Rename" => {
+                snapshot.opaque_declarations.push(OpaqueDeclaration {
+                    name: node.name.clone(),
+                    attributes: node.attrs.clone(),
+                    module_scope: doc.scope(index),
+                    source_range: node.range.clone(),
+                })
             }
             "ComObjectTable" | "AddressTable" | "AssociationTable" => {
                 let segment = node.required("CodeSegment")?;
@@ -441,6 +639,8 @@ pub fn inspect_archive(
             "Dynamic" => Some(UnsupportedFeature::DynamicActivation),
             "ParameterType" => Some(UnsupportedFeature::ParameterTypeSemantics),
             "LoadProcedure" => Some(UnsupportedFeature::UnverifiedLoadProcedure),
+            "TypePicture" | "Baggage" => Some(UnsupportedFeature::ExternalResourceReference),
+            "Rename" => Some(UnsupportedFeature::TextRename),
             _ => None,
         };
         if let Some(feature) = feature {
@@ -468,23 +668,28 @@ pub fn inspect_archive(
     Ok(snapshot)
 }
 
-fn select(catalog: &Document, hardware: &Document, app: &Document) -> Result<(), Error> {
+fn select(
+    catalog: &Document,
+    hardware: &Document,
+    app: &Document,
+    identity: &Identity,
+) -> Result<(), Error> {
     for doc in [catalog, hardware, app] {
         if doc.single("Manufacturer")?.required("RefId")? != "M-0083" {
             return Err(Error::UnsupportedApplication);
         }
     }
-    let item = catalog.by_id(CATALOG_ID)?;
+    let item = catalog.by_id(identity.catalog)?;
     if item.name != "CatalogItem"
-        || item.required("ProductRefId")? != PRODUCT_ID
-        || item.required("Hardware2ProgramRefId")? != HARDWARE_PROGRAM_ID
+        || item.required("ProductRefId")? != identity.product
+        || item.required("Hardware2ProgramRefId")? != identity.hardware_program
     {
         return Err(Error::UnsupportedApplication);
     }
-    let product = hardware.by_id(PRODUCT_ID)?;
-    let association = hardware.by_id(HARDWARE_PROGRAM_ID)?;
+    let product = hardware.by_id(identity.product)?;
+    let association = hardware.by_id(identity.hardware_program)?;
     if product.name != "Product"
-        || product.required("OrderNumber")? != "BE-04000.02"
+        || product.required("OrderNumber")? != identity.order_number
         || association.name != "Hardware2Program"
     {
         return Err(Error::UnsupportedApplication);
@@ -496,26 +701,32 @@ fn select(catalog: &Document, hardware: &Document, app: &Document) -> Result<(),
     }
     let index = *hardware
         .ids
-        .get(HARDWARE_PROGRAM_ID)
+        .get(identity.hardware_program)
         .ok_or(Error::Reference)?;
     let references: Vec<_> = hardware
         .children(index)
         .filter(|n| n.name == "ApplicationProgramRef")
         .collect();
-    if references.len() != 1 || references[0].required("RefId")? != APPLICATION_ID {
+    if references.len() != 1 || references[0].required("RefId")? != identity.application {
         return Err(Error::UnsupportedApplication);
     }
-    if app.single("ApplicationProgram")?.required("Id")? != APPLICATION_ID {
+    if app.single("ApplicationProgram")?.required("Id")? != identity.application {
         return Err(Error::UnsupportedApplication);
     }
     Ok(())
 }
 
-fn validate_references(doc: &Document, index: usize) -> Result<(), Error> {
+fn validate_references(
+    doc: &Document,
+    index: usize,
+    profile: InspectionProfile,
+    member_sha256: &str,
+) -> Result<Option<UnverifiedScopeReference>, Error> {
     let node = &doc.nodes[index];
     if doc.ancestor(node, "Languages").is_some() {
-        return Ok(());
+        return Ok(None);
     }
+    let mut observation = None;
     for (attribute, value) in &node.attrs {
         let expected = match attribute.as_str() {
             "ParameterType" => "ParameterType",
@@ -530,6 +741,8 @@ fn validate_references(doc: &Document, index: usize) -> Result<(), Error> {
                 "ParameterRefRef" => "ParameterRef",
                 "ComObjectRefRef" => "ComObjectRef",
                 "Module" => "ModuleDef",
+                "Rename" if profile == InspectionProfile::GlassV31 => "ParameterBlock",
+                "TypePicture" | "Baggage" if profile == InspectionProfile::GlassV31 => continue,
                 "NumericArg" | "TextArg" => "Argument",
                 "Manufacturer" => continue,
                 _ => return Err(Error::Reference),
@@ -543,11 +756,38 @@ fn validate_references(doc: &Document, index: usize) -> Result<(), Error> {
         let target_index = *doc.ids.get(value).ok_or(Error::Reference)?;
         if matches!(
             expected,
-            "Parameter" | "ComObject" | "ParameterRef" | "ComObjectRef" | "Argument"
+            "Parameter"
+                | "ComObject"
+                | "ParameterRef"
+                | "ComObjectRef"
+                | "Argument"
+                | "ParameterBlock"
         ) && !matches!(node.name.as_str(), "NumericArg" | "TextArg")
             && doc.scope(index) != doc.scope(target_index)
         {
-            return Err(Error::Reference);
+            let source_scope = doc.scope(index);
+            let target_scope = doc.scope(target_index);
+            if profile == InspectionProfile::GlassV31
+                && node.name == "choose"
+                && attribute == "ParamRefId"
+                && source_scope.is_some()
+                && target_scope.is_none()
+            {
+                observation = Some(UnverifiedScopeReference {
+                    source: SourceIdentity {
+                        member_sha256: member_sha256.into(),
+                        source_range: node.range.clone(),
+                    },
+                    node_name: node.name.clone(),
+                    attribute: attribute.clone(),
+                    target_id: value.clone(),
+                    target_kind: ScopeReferenceTargetKind::ParameterReference,
+                    source_module_scope: source_scope,
+                    target_module_scope: target_scope,
+                });
+            } else {
+                return Err(Error::Reference);
+            }
         }
         if matches!(node.name.as_str(), "NumericArg" | "TextArg") {
             let module_index = doc
@@ -559,7 +799,7 @@ fn validate_references(doc: &Document, index: usize) -> Result<(), Error> {
             }
         }
     }
-    Ok(())
+    Ok(observation)
 }
 
 // Resource encoding only; this is not a KNX wire codec. Accept canonical padded

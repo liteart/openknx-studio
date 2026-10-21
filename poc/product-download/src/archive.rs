@@ -1,4 +1,4 @@
-use crate::{Error, MAX_ARCHIVE_BYTES, MAX_MEMBER_BYTES, MAX_MEMBERS, MAX_TOTAL_BYTES, checkpoint};
+use crate::{Error, InspectionLimits, InspectionProfile, checkpoint};
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Cursor, Read};
 use std::sync::Arc;
@@ -6,13 +6,15 @@ use std::sync::atomic::AtomicBool;
 
 pub(crate) fn read(
     bytes: &[u8],
+    limits: InspectionLimits,
+    profile: InspectionProfile,
     cancelled: &AtomicBool,
 ) -> Result<BTreeMap<String, Arc<[u8]>>, Error> {
-    if bytes.len() > MAX_ARCHIVE_BYTES {
+    if bytes.len() > limits.archive_bytes {
         return Err(Error::Limit);
     }
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|_| Error::Archive)?;
-    if archive.len() > MAX_MEMBERS {
+    if archive.len() > limits.members {
         return Err(Error::Limit);
     }
     // The library's name index deduplicates central-directory names. Its
@@ -31,6 +33,12 @@ pub(crate) fn read(
             .map_err(|_| Error::ArchivePath)?
             .to_owned();
         let canonical = name.strip_suffix('/').unwrap_or(&name);
+        // Observed Glass PNG leaf names contain internal ASCII spaces. No path
+        // is extracted, and all traversal/collision/trailing-space checks remain.
+        let glass_png = profile == InspectionProfile::GlassV31
+            && name.strip_prefix("M-0083/Baggages/").is_some_and(|leaf| {
+                !leaf.contains('/') && !leaf.starts_with(' ') && leaf.ends_with(".png")
+            });
         if name.len() > 240
             || canonical.is_empty()
             || !name.is_ascii()
@@ -38,9 +46,9 @@ pub(crate) fn read(
             || canonical.split('/').any(|part| {
                 part.is_empty() || part == "." || part == ".." || part.ends_with(['.', ' '])
             })
-            || !name
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b"/_-.".contains(&b))
+            || !name.bytes().all(|b| {
+                b.is_ascii_alphanumeric() || b"/_-.".contains(&b) || (glass_png && b == b' ')
+            })
             || entry.enclosed_name().is_none()
             || entry.is_symlink()
             || entry
@@ -50,13 +58,13 @@ pub(crate) fn read(
         {
             return Err(Error::ArchivePath);
         }
-        if entry.size() > MAX_MEMBER_BYTES as u64
+        if entry.size() > limits.member_bytes as u64
             || entry.size() > entry.compressed_size().max(1).saturating_mul(64)
         {
             return Err(Error::Limit);
         }
         total += entry.size() as usize;
-        if total > MAX_TOTAL_BYTES {
+        if total > limits.total_bytes {
             return Err(Error::Limit);
         }
         let declared_size = entry.size() as usize;

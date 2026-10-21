@@ -1,6 +1,6 @@
 # Task Index
 
-This backlog contains **144 individually specified tasks**, numbered Task-001 through Task-144. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
+This backlog contains **145 individually specified tasks**, numbered Task-001 through Task-145. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
 
 All implementation/report statuses initially are **Not started**. This kit specifies work; it does not assert that tests, forks, code or releases already exist. Task dependencies and explicit phase-gate outcomes both govern readiness. A NO-GO report does not unlock the next stage.
 
@@ -15,7 +15,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | Stage | Task IDs | Count | Gate |
 |---|---|---:|---|
 | PoCs and feasibility gate | Task-001 to Task-028 | 28 | Task-028 |
-| Additional PoC input investigations and test reliability | Task-139 to Task-144 | 6 | No gate unlocked; Task-005 still governs provisioning |
+| Additional PoC input investigations and test reliability | Task-139 to Task-145 | 7 | No gate unlocked; Task-005 still governs provisioning |
 | Alpha integration | Task-029 to Task-092 | 64 | Task-092 |
 | Beta functionality | Task-093 to Task-112 | 20 | Task-112 |
 | Release candidate | Task-113 to Task-125 | 13 | Task-125 |
@@ -205,7 +205,8 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-142](tasks/Task-142.md) | Compare static DCA member signatures with private SDK candidates | Original-DCA metadata research | [Task-139](tasks/Task-139.md), [Task-140](tasks/Task-140.md); no runtime gate unlocked |
 | [Task-143](tasks/Task-143.md) | Probe explicit Windows DCA assembly binding policy | Original-DCA binding research | [Task-142](tasks/Task-142.md); owner-authorized offline experiment, no runtime gate unlocked |
 | [Task-144](tasks/Task-144.md) | Inspect original DCA entrypoints and exercise an owned STA shell | Bounded DCA compatibility research | [Task-143](tasks/Task-143.md); metadata and owned UI only, no runtime gate unlocked |
+| [Task-145](tasks/Task-145.md) | Inspect the explicit Glass V3.1 static profile | Editor offline product inspection | Accepted bounded Task-023 parser and reviewed reference investigation; no gate unlocked |
 
 ## How to extend the backlog
 
-Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-145), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
+Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-146), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.

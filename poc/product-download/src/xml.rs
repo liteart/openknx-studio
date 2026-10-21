@@ -1,4 +1,4 @@
-use crate::{Declaration, Error, MAX_DEPTH, MAX_ELEMENTS, MAX_MEMBER_BYTES, NAMESPACE, checkpoint};
+use crate::{Declaration, Error, InspectionLimits, InspectionProfile, NAMESPACE, checkpoint};
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use std::collections::BTreeMap;
@@ -85,7 +85,7 @@ impl Document {
             source_range: node.range.clone(),
         })
     }
-    pub fn check_placement(&self, index: usize) -> Result<(), Error> {
+    pub fn check_placement(&self, index: usize, profile: InspectionProfile) -> Result<(), Error> {
         let node = &self.nodes[index];
         let expected: &[&str] = match node.name.as_str() {
             "KNX" => {
@@ -142,11 +142,19 @@ impl Document {
                 "when",
                 "Dynamic",
             ],
+            "ParameterBlock" if profile == InspectionProfile::GlassV31 => {
+                &["Channel", "ChannelIndependentBlock", "Dynamic", "when"]
+            }
             "ParameterBlock" => &["Channel", "ChannelIndependentBlock", "Dynamic"],
             "choose" => &["Channel", "ParameterBlock", "when"],
             "when" => &["choose"],
             "ParameterSeparator" => &["ParameterBlock", "when"],
+            "ComObjectRefRef" if profile == InspectionProfile::GlassV31 => {
+                &["when", "Dynamic", "ParameterBlock"]
+            }
             "ComObjectRefRef" => &["when", "Dynamic"],
+            "Baggage" if profile == InspectionProfile::GlassV31 => &["Extension"],
+            "Rename" if profile == InspectionProfile::GlassV31 => &["when"],
             "Assign" => &["when"],
             "ChannelIndependentBlock" | "Channel" => &["Dynamic"],
             "Module" => &["Channel", "when"],
@@ -184,8 +192,12 @@ impl Document {
     }
 }
 
-pub(crate) fn parse(bytes: &[u8], cancelled: &AtomicBool) -> Result<Document, Error> {
-    if bytes.len() > MAX_MEMBER_BYTES {
+pub(crate) fn parse(
+    bytes: &[u8],
+    limits: InspectionLimits,
+    cancelled: &AtomicBool,
+) -> Result<Document, Error> {
+    if bytes.len() > limits.member_bytes {
         return Err(Error::Limit);
     }
     let text = std::str::from_utf8(bytes).map_err(|_| Error::Xml)?;
@@ -213,7 +225,7 @@ pub(crate) fn parse(bytes: &[u8], cancelled: &AtomicBool) -> Result<Document, Er
         match event {
             Event::Start(ref element) | Event::Empty(ref element) => {
                 let empty = matches!(event, Event::Empty(_));
-                if stack.len() >= MAX_DEPTH || doc.nodes.len() >= MAX_ELEMENTS {
+                if stack.len() >= limits.depth || doc.nodes.len() >= limits.elements {
                     return Err(Error::Limit);
                 }
                 let name = element.name().as_ref().to_owned();
@@ -288,12 +300,14 @@ pub(crate) fn parse(bytes: &[u8], cancelled: &AtomicBool) -> Result<Document, Er
                 let index = stack.pop().ok_or(Error::Xml)?;
                 doc.nodes[index].range.end = reader.buffer_position() as usize + source_offset;
             }
-            Event::Text(value) => append_text(&mut doc, &stack, value.as_ref())?,
+            Event::Text(value) => {
+                append_text(&mut doc, &stack, value.as_ref(), limits.member_bytes)?
+            }
             Event::CData(value) => {
                 if stack.is_empty() {
                     return Err(Error::Xml);
                 }
-                append_text(&mut doc, &stack, value.as_ref())?;
+                append_text(&mut doc, &stack, value.as_ref(), limits.member_bytes)?;
             }
             Event::GeneralRef(value) => {
                 if stack.is_empty() {
@@ -301,7 +315,7 @@ pub(crate) fn parse(bytes: &[u8], cancelled: &AtomicBool) -> Result<Document, Er
                 }
                 let reference = format!("&{};", value.as_ref());
                 let decoded = quick_xml::escape::unescape(&reference).map_err(|_| Error::Xml)?;
-                append_text(&mut doc, &stack, &decoded)?;
+                append_text(&mut doc, &stack, &decoded, limits.member_bytes)?;
             }
             Event::Decl(value) => {
                 if root_seen
@@ -331,13 +345,18 @@ pub(crate) fn parse(bytes: &[u8], cancelled: &AtomicBool) -> Result<Document, Er
 fn valid_xml_char(c: char) -> bool {
     matches!(c, '\u{9}' | '\u{a}' | '\u{d}' | '\u{20}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')
 }
-fn append_text(doc: &mut Document, stack: &[usize], value: &str) -> Result<(), Error> {
+fn append_text(
+    doc: &mut Document,
+    stack: &[usize],
+    value: &str,
+    member_bytes: usize,
+) -> Result<(), Error> {
     if !value.chars().all(valid_xml_char) {
         return Err(Error::Xml);
     }
     if let Some(index) = stack.last() {
         let target = &mut doc.nodes[*index].text;
-        if target.len() + value.len() > MAX_MEMBER_BYTES {
+        if target.len() + value.len() > member_bytes {
             return Err(Error::Limit);
         }
         target.push_str(value);
@@ -349,7 +368,10 @@ fn append_text(doc: &mut Document, stack: &[usize], value: &str) -> Result<(), E
 
 // Reference-specific observed shape, not a complete KNX XML schema. Unknown
 // elements AND attributes fail closed, including unknown load controls.
-pub(crate) fn check_application_construct(node: &Node) -> Result<(), Error> {
+pub(crate) fn check_application_construct(
+    node: &Node,
+    profile: InspectionProfile,
+) -> Result<(), Error> {
     let allowed = match node.name.as_str() {
         "KNX" => "xmlns xmlns:xsi xmlns:xsd CreatedBy ToolVersion",
         "Manufacturer" => "RefId",
@@ -362,7 +384,19 @@ pub(crate) fn check_application_construct(node: &Node) -> Result<(), Error> {
         "TypeRestriction" => "Base SizeInBit",
         "Enumeration" => "Id Text Value",
         "TypeNumber" => "SizeInBit Type maxInclusive minInclusive",
+        "TypeFloat" if profile == InspectionProfile::GlassV31 => {
+            "Encoding Increment maxInclusive minInclusive"
+        }
         "TypeFloat" => "Encoding maxInclusive minInclusive",
+        "TypePicture" | "Baggage" if profile == InspectionProfile::GlassV31 => "RefId",
+        "Rename" if profile == InspectionProfile::GlassV31 => "Id RefId Text",
+        "Options" if profile == InspectionProfile::GlassV31 => {
+            "Comparable DownloadInvisibleParameters Reconstructable TextParameterEncoding"
+        }
+        "TranslationUnit" if profile == InspectionProfile::GlassV31 => "RefId Version",
+        "ComObjectRef" if profile == InspectionProfile::GlassV31 => {
+            "CommunicationFlag DatapointType FunctionText Id InternalDescription Name ObjectSize ReadFlag RefId Text TextParameterRefId TransmitFlag UpdateFlag WriteFlag"
+        }
         "TypeColor" => "Space",
         "Parameter" => {
             "Access BitOffset DefaultUnionParameter Id LegacyPatchAlways Name Offset ParameterType SuffixText Text Value"

@@ -40,3 +40,7 @@ Every requirement below is linked to implementation or qualification tasks. A li
 The original DALI archive is identified in REFERENCE-DCA. Matching product/firmware/project/hardware inputs are not manufactured by this backlog. KNX Secure cryptography, legacy plug-ins, generic ETS apps and universal DCA support have no implementation tasks; relevant tests only enforce their exclusion. Future visual/native/remote tasks are explicitly Post-v1.
 
 The English/localization requirement applies to every task through AGENTS and its common non-functional requirements, even where R-027 is not individually repeated in the matrix. The same applies to safety, task-scoped Git and no-Secure ownership constraints.
+
+Task-145 adds separately bounded, explicit Glass V3.1 static inspection evidence
+for R-003, R-008, R-009, R-024, R-028 and R-030. It does not unlock Task-024 or
+change Task-023 AC-002. See [Task-145](../tasks/Task-145.md).

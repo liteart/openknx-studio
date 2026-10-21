@@ -656,3 +656,564 @@ fn invalid_xml_characters_and_document_prolog_are_rejected() {
         );
     }
 }
+
+fn glass_archive(app: &str, extra: Option<(&str, &[u8])>) -> Vec<u8> {
+    use knx_selected_product_parser::{GLASS_APPLICATION_ID, GLASS_APPLICATION_MEMBER};
+    use std::io::Read;
+    let original = archive(app, extra);
+    let mut input = zip::ZipArchive::new(Cursor::new(original)).unwrap();
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    for i in 0..input.len() {
+        let mut member = input.by_index(i).unwrap();
+        let mut bytes = Vec::new();
+        member.read_to_end(&mut bytes).unwrap();
+        let original_name = member.name().unwrap();
+        let name = if original_name == knx_selected_product_parser::APPLICATION_MEMBER {
+            GLASS_APPLICATION_MEMBER
+        } else {
+            original_name.as_ref()
+        };
+        let content = if original_name.ends_with(".xml") {
+            String::from_utf8(bytes)
+                .unwrap()
+                .replace(
+                    CATALOG,
+                    "M-0083_H-3.2E38-1_HP-018B-31-369F_CI-BE.2DGT20x.2E02-1",
+                )
+                .replace(PRODUCT, "M-0083_H-3.2E38-1_P-BE.2DGT20x.2E02")
+                .replace(HARDWARE, "M-0083_H-3.2E38-1_HP-018B-31-369F")
+                .replace(APPLICATION_ID, GLASS_APPLICATION_ID)
+                .replace("BE-04000.02", "BE-GT20x.02")
+                .replace("ApplicationNumber=\"179\"", "ApplicationNumber=\"395\"")
+                .replace("ApplicationVersion=\"50\"", "ApplicationVersion=\"49\"")
+                .into_bytes()
+        } else {
+            bytes
+        };
+        writer
+            .start_file(
+                name,
+                SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored),
+            )
+            .unwrap();
+        writer.write_all(&content).unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+fn inspect_glass(
+    bytes: &[u8],
+) -> Result<knx_selected_product_parser::Snapshot, knx_selected_product_parser::Error> {
+    use knx_selected_product_parser::{
+        GLASS_APPLICATION_ID, InspectionProfile, inspect_archive_with_profile,
+    };
+    inspect_archive_with_profile(
+        bytes,
+        GLASS_APPLICATION_ID,
+        InspectionProfile::GlassV31,
+        &AtomicBool::new(false),
+    )
+}
+#[test]
+fn glass_is_explicit_and_identity_is_exact() {
+    use knx_selected_product_parser::{
+        Error, GLASS_APPLICATION_ID, InspectionProfile, inspect_archive_with_profile,
+    };
+    let bytes = glass_archive(&application(""), None);
+    let snapshot = inspect_glass(&bytes).unwrap();
+    assert_eq!(snapshot.ir_version, 2);
+    assert_eq!(snapshot.application_id, GLASS_APPLICATION_ID);
+    assert_eq!(snapshot.application_number, 395);
+    assert_eq!(snapshot.application_version, 49);
+    assert_eq!(
+        inspect_archive(&bytes, GLASS_APPLICATION_ID, &AtomicBool::new(false)),
+        Err(Error::UnsupportedApplication)
+    );
+    for id in [APPLICATION_ID, "M-0083_A-018A-31-EEE8"] {
+        assert_eq!(
+            inspect_archive_with_profile(
+                &bytes,
+                id,
+                InspectionProfile::GlassV31,
+                &AtomicBool::new(false)
+            ),
+            Err(Error::UnsupportedApplication)
+        );
+    }
+    for (from, to) in [
+        (APPLICATION_ID, "M-0083_A-018A-31-EEE8"),
+        ("ApplicationNumber=\"179\"", "ApplicationNumber=\"394\""),
+        ("ApplicationVersion=\"50\"", "ApplicationVersion=\"48\""),
+        ("MV-0705", "MV-other"),
+    ] {
+        assert_eq!(
+            inspect_glass(&glass_archive(&application("").replace(from, to), None)),
+            Err(Error::UnsupportedApplication)
+        );
+    }
+}
+#[test]
+fn glass_preserves_union_order_membership_memory_ownership_and_scope() {
+    use knx_selected_product_parser::{MemoryOwner, UnionMemberKind, UnsupportedFeature};
+    let union = r#"<Union SizeInBit="8"><Memory CodeSegment="s" Offset="1" BitOffset="0"/><Parameter Id="u2" ParameterType="t" Value="2"/><Parameter Id="u1" ParameterType="t" Value="1"/></Union>"#;
+    let module_union = union.replace("u2", "mu2").replace("u1", "mu1");
+    let module = format!(
+        r#"<ModuleDefs><ModuleDef Id="m"><Static><Parameters>{module_union}</Parameters></Static></ModuleDef></ModuleDefs>"#
+    );
+    let app = application("")
+        .replace("</Parameters>", &format!("{union}</Parameters>"))
+        .replace("</Static><Dynamic>", &format!("</Static>{module}<Dynamic>"));
+    let snapshot = inspect_glass(&glass_archive(&app, None)).unwrap();
+    assert_eq!(snapshot.unions.len(), 2);
+    assert_eq!(snapshot.unions[0].module_scope, None);
+    assert_eq!(snapshot.unions[1].module_scope.as_deref(), Some("m"));
+    assert_eq!(
+        snapshot.unions[0]
+            .members
+            .iter()
+            .map(|m| m.kind)
+            .collect::<Vec<_>>(),
+        [
+            UnionMemberKind::Memory,
+            UnionMemberKind::Parameter,
+            UnionMemberKind::Parameter
+        ]
+    );
+    assert_eq!(snapshot.unions[0].members[1].attributes["Id"], "u2");
+    assert_eq!(snapshot.unions[0].members[2].attributes["Id"], "u1");
+    for union in &snapshot.unions {
+        assert_eq!(union.source.member_sha256, snapshot.sources[2].sha256);
+        let source = &snapshot.sources[2].bytes[union.source.source_range.clone()];
+        assert!(source.starts_with(b"<Union "));
+        assert!(
+            union
+                .members
+                .windows(2)
+                .all(|p| p[0].source.source_range.end <= p[1].source.source_range.start)
+        );
+    }
+    assert_eq!(
+        snapshot.parameters[1].union_source.as_ref(),
+        Some(&snapshot.unions[0].source)
+    );
+    assert_eq!(
+        snapshot.parameters[3].union_source.as_ref(),
+        Some(&snapshot.unions[1].source)
+    );
+    assert_eq!(
+        snapshot.memory_declarations[0].owner,
+        MemoryOwner::Parameter("p".into())
+    );
+    assert_eq!(
+        snapshot.memory_declarations[1].owner,
+        MemoryOwner::Union(snapshot.unions[0].source.clone())
+    );
+    assert_eq!(snapshot.memory_declarations[1].owner_id, None);
+    assert_eq!(
+        snapshot.memory_declarations[2].module_scope.as_deref(),
+        Some("m")
+    );
+    assert!(
+        snapshot
+            .compilation_blockers
+            .iter()
+            .any(|b| b.feature == UnsupportedFeature::Union && b.occurrences == 2)
+    );
+}
+#[test]
+fn glass_additions_are_opaque_blocked_and_isolated_from_default() {
+    use knx_selected_product_parser::{Error, UnsupportedFeature};
+    let app = application(r#"<Extension><Baggage RefId="external"/></Extension><Options TextParameterEncoding="UTF-8"/>"#)
+        .replace("</ParameterTypes>", r#"<ParameterType Id="picture"><TypePicture RefId="external"/></ParameterType><ParameterType Id="float"><TypeFloat Encoding="DPT 9" Increment="1"/></ParameterType></ParameterTypes>"#)
+        .replace("<ComObjectRef Id=", "<ComObjectRef InternalDescription=\"opaque\" Id=")
+        .replace("<Dynamic><ParameterRefRef", r#"<Dynamic><ParameterBlock Id="pb"/><Channel Id="c"><choose ParamRefId="pr"><when test="1"><ParameterBlock Id="nested"><ComObjectRefRef RefId="or"/></ParameterBlock><Rename Id="rename" RefId="pb" Text="opaque"/></when></choose></Channel><ParameterRefRef"#);
+    let snapshot = inspect_glass(&glass_archive(&app, None)).unwrap();
+    assert_eq!(
+        snapshot
+            .opaque_declarations
+            .iter()
+            .map(|d| d.name.as_str())
+            .collect::<Vec<_>>(),
+        ["TypePicture", "Baggage", "Rename"]
+    );
+    assert_eq!(snapshot.opaque_declarations[2].attributes["Text"], "opaque");
+    assert!(
+        snapshot.compilation_blockers.iter().any(|b| b.feature
+            == UnsupportedFeature::ExternalResourceReference
+            && b.occurrences == 2)
+    );
+    assert!(
+        snapshot
+            .compilation_blockers
+            .iter()
+            .any(|b| b.feature == UnsupportedFeature::TextRename)
+    );
+    assert!(
+        snapshot
+            .compilation_blockers
+            .iter()
+            .any(|b| b.feature == UnsupportedFeature::UnverifiedLoadProcedure)
+    );
+    assert_eq!(
+        inspect_archive(
+            &archive(&app, None),
+            APPLICATION_ID,
+            &AtomicBool::new(false)
+        ),
+        Err(Error::UnsupportedConstruct)
+    );
+    let wrong_kind = app.replace("RefId=\"pb\"", "RefId=\"p\"");
+    assert_eq!(
+        inspect_glass(&glass_archive(&wrong_kind, None)),
+        Err(Error::Reference)
+    );
+}
+#[test]
+fn glass_unknown_constructs_placements_and_reference_scopes_fail_closed() {
+    use knx_selected_product_parser::Error;
+    for app in [
+        application("<Future/>"),
+        application("<Rename Id=\"r\" RefId=\"p\"/>"),
+        application("<Baggage RefId=\"external\"/>"),
+        application("").replace("<LdCtrlConnect/>", "<LdCtrlGuess/>"),
+        application("").replace("<LdCtrlConnect/>", "<LdCtrlConnect Future=\"1\"/>"),
+        application("").replace("<ParameterRef Id=", "<ParameterRef Future=\"1\" Id="),
+    ] {
+        assert!(matches!(
+            inspect_glass(&glass_archive(&app, None)),
+            Err(Error::UnsupportedConstruct | Error::Metadata | Error::Xml)
+        ));
+    }
+    let module = r#"<ModuleDefs><ModuleDef Id="m"><Static><Parameters><Parameter Id="mp" ParameterType="t"/></Parameters><ParameterRefs><ParameterRef Id="mpr" RefId="mp"/></ParameterRefs></Static></ModuleDef></ModuleDefs>"#;
+    let app = application("")
+        .replace("</Static><Dynamic>", &format!("</Static>{module}<Dynamic>"))
+        .replace("RefId=\"pr\"", "RefId=\"mpr\"");
+    assert_eq!(
+        inspect_glass(&glass_archive(&app, None)),
+        Err(Error::Reference)
+    );
+}
+#[test]
+fn glass_absent_data_and_opaque_load_attributes_are_preserved() {
+    let app = application("").replace("<Data>AQI=</Data>", "").replace("<LdCtrlConnect/>", r#"<LdCtrlConnect/><LdCtrlAbsSegment Address="1792" Size="666" LsmIdx="3" Access="0" MemType="2" SegFlags="0" SegType="0"/>"#);
+    let snapshot = inspect_glass(&glass_archive(&app, None)).unwrap();
+    assert!(snapshot.segments[0].data.is_none());
+    assert_eq!(snapshot.load_steps[1].attributes["Size"], "666");
+    assert!(!snapshot.compilation_blockers.is_empty());
+    assert_eq!(
+        &snapshot.sources[2].bytes[snapshot.load_steps[1].source_range.clone()][..17],
+        b"<LdCtrlAbsSegment"
+    );
+}
+#[test]
+#[ignore = "requires the private registered Glass archive via KNXPROD_GLASS_FIXTURE"]
+fn registered_glass_private_fixture_matches_independent_inventory() {
+    use knx_selected_product_parser::{GLASS_REGISTERED_SHA256, MemoryOwner, UnsupportedFeature};
+    let path =
+        std::env::var_os("KNXPROD_GLASS_FIXTURE").expect("explicit private fixture path required");
+    let bytes = std::fs::read(path).unwrap();
+    assert_eq!(bytes.len(), 900_549);
+    let mut inventory = zip::ZipArchive::new(Cursor::new(&bytes)).unwrap();
+    assert_eq!(inventory.len(), 57);
+    assert_eq!(
+        (0..inventory.len())
+            .map(|i| inventory.by_index(i).unwrap().size())
+            .sum::<u64>(),
+        21_193_051
+    );
+    assert_eq!(
+        knx_selected_product_parser::sha256(&bytes),
+        GLASS_REGISTERED_SHA256
+    );
+    let snapshot = inspect_glass(&bytes).unwrap();
+    assert_eq!(snapshot.sources[2].bytes.len(), 9_861_680);
+    assert_eq!(
+        snapshot.sources[2].sha256,
+        "f5bfbf9edb0ec799d2182f6962b20195b72d19268bbbe4c7dbe3458b7c0e0f6e"
+    );
+    assert_eq!(snapshot.element_counts.values().sum::<usize>(), 90_988);
+    assert_eq!(snapshot.parameter_types.len(), 213);
+    assert_eq!(snapshot.parameters.len(), 1174);
+    assert_eq!(snapshot.parameter_refs.len(), 2920);
+    assert_eq!(snapshot.communication_objects.len(), 89);
+    assert_eq!(snapshot.communication_object_refs.len(), 650);
+    assert_eq!(snapshot.unions.len(), 98);
+    assert_eq!(snapshot.load_steps.len(), 22);
+    assert_eq!(snapshot.memory_declarations.len(), 539);
+    assert_eq!(
+        snapshot
+            .memory_declarations
+            .iter()
+            .filter(|m| matches!(m.owner, MemoryOwner::Union(_)))
+            .count(),
+        98
+    );
+    assert_eq!(
+        snapshot
+            .memory_declarations
+            .iter()
+            .filter(|m| matches!(m.owner, MemoryOwner::Parameter(_)))
+            .count(),
+        441
+    );
+    assert!(snapshot.memory_declarations.iter().all(|m| {
+        m.code_segment
+            .as_ref()
+            .is_none_or(|s| s.ends_with("AS-4690"))
+    }));
+    assert_eq!(
+        snapshot
+            .segments
+            .iter()
+            .map(|s| s.data.as_ref().map(|d| d.bytes.len()))
+            .collect::<Vec<_>>(),
+        [Some(513), Some(511), None, Some(656), None, Some(1968)]
+    );
+    assert_eq!(snapshot.opaque_declarations.len(), 105);
+    assert_eq!(snapshot.unverified_scope_references.len(), 7310);
+    let mut scope_counts = std::collections::BTreeMap::new();
+    for edge in &snapshot.unverified_scope_references {
+        assert_eq!(edge.target_module_scope, None);
+        *scope_counts
+            .entry(edge.source_module_scope.as_deref().unwrap())
+            .or_insert(0) += 1;
+    }
+    assert_eq!(scope_counts["M-0083_A-018B-31-369F_MD-1"], 3706);
+    assert_eq!(scope_counts["M-0083_A-018B-31-369F_MD-2"], 3604);
+    assert_eq!(snapshot.element_counts["ModuleDef"], 2);
+    assert!(
+        snapshot
+            .compilation_blockers
+            .iter()
+            .any(|b| b.feature == UnsupportedFeature::UnverifiedLoadProcedure)
+    );
+    println!(
+        "offline=true compiler=unsupported elements={} parameters={} unions={} memories={} opaque={} blockers={:?}",
+        snapshot.element_counts.values().sum::<usize>(),
+        snapshot.parameters.len(),
+        snapshot.unions.len(),
+        snapshot.memory_declarations.len(),
+        snapshot.opaque_declarations.len(),
+        snapshot.compilation_blockers
+    );
+}
+
+#[test]
+fn glass_rename_target_must_share_module_scope() {
+    use knx_selected_product_parser::Error;
+    let module = r#"<ModuleDefs><ModuleDef Id="m"><Static/><Dynamic><ParameterBlock Id="mpb"/><Channel Id="mc"><choose ParamRefId="mpr"><when test="1"><Rename Id="rename" RefId="mpb" Text="opaque"/></when></choose></Channel></Dynamic></ModuleDef></ModuleDefs>"#
+        .replace("<Static/>", r#"<Static><Parameters><Parameter Id="mp" ParameterType="t"/></Parameters><ParameterRefs><ParameterRef Id="mpr" RefId="mp"/></ParameterRefs></Static>"#);
+    let app = application("").replace(
+        "</Static><Dynamic>",
+        &format!("</Static>{module}<Dynamic><ParameterBlock Id=\"global-block\"/>"),
+    );
+    assert!(inspect_glass(&glass_archive(&app, None)).is_ok());
+    let cross = app.replace("RefId=\"mpb\"", "RefId=\"global-block\"");
+    assert_eq!(
+        inspect_glass(&glass_archive(&cross, None)),
+        Err(Error::Reference)
+    );
+}
+#[test]
+fn glass_internal_space_baggage_path_allowance_is_narrow() {
+    use knx_selected_product_parser::Error;
+    let name = "M-0083/Baggages/owned symbol.png";
+    assert!(inspect_glass(&glass_archive(&application(""), Some((name, b"opaque")))).is_ok());
+    assert_eq!(
+        inspect_archive(
+            &archive(&application(""), Some((name, b"opaque"))),
+            APPLICATION_ID,
+            &AtomicBool::new(false)
+        ),
+        Err(Error::ArchivePath)
+    );
+    for name in [
+        "M-0083/owned symbol.png",
+        "M-0083/Baggages/nested/owned symbol.png",
+        "M-0083/Baggages/owned symbol.bin",
+        "M-0083/Baggages/../owned symbol.png",
+        "M-0083/Baggages/owned symbol.png ",
+        "M-0083/Baggages/ owned.png",
+    ] {
+        assert_eq!(
+            inspect_glass(&glass_archive(&application(""), Some((name, b"opaque")))),
+            Err(Error::ArchivePath)
+        );
+    }
+}
+#[test]
+fn glass_limits_are_fixed_separate_and_enforced() {
+    use knx_selected_product_parser::{Error, InspectionLimits, InspectionProfile};
+    assert_eq!(
+        InspectionProfile::GlassV31.limits(),
+        InspectionLimits {
+            archive_bytes: 2 * 1024 * 1024,
+            member_bytes: 12 * 1024 * 1024,
+            total_bytes: 32 * 1024 * 1024,
+            members: 64,
+            elements: 100_000,
+            depth: 32
+        }
+    );
+    assert_eq!(
+        InspectionProfile::Be04000.limits(),
+        InspectionLimits {
+            archive_bytes: 2 * 1024 * 1024,
+            member_bytes: 2 * 1024 * 1024,
+            total_bytes: 8 * 1024 * 1024,
+            members: 16,
+            elements: 20_000,
+            depth: 32
+        }
+    );
+    assert_eq!(
+        inspect_glass(&vec![0; 2 * 1024 * 1024 + 1]),
+        Err(Error::Limit)
+    );
+    let app = application(&"<Options/>".repeat(20_000));
+    assert!(inspect_glass(&glass_archive(&app, None)).is_ok());
+    assert_eq!(
+        inspect_archive(
+            &archive(&app, None),
+            APPLICATION_ID,
+            &AtomicBool::new(false)
+        ),
+        Err(Error::Limit)
+    );
+    let app = application(&"<Options/>".repeat(100_000));
+    assert_eq!(inspect_glass(&glass_archive(&app, None)), Err(Error::Limit));
+    let deep = application(&format!(
+        "{}{}",
+        "<Dynamic>".repeat(33),
+        "</Dynamic>".repeat(33)
+    ));
+    assert_eq!(
+        inspect_glass(&glass_archive(&deep, None)),
+        Err(Error::Limit)
+    );
+    for (count, size) in [
+        (17, 0),
+        (65, 0),
+        (1, 12 * 1024 * 1024 + 1),
+        (3, 12 * 1024 * 1024),
+    ] {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let mut seed = 0x1234abcd_u32;
+        let random: Vec<u8> = (0..2 * 1024 * 1024)
+            .map(|_| {
+                seed ^= seed << 13;
+                seed ^= seed >> 17;
+                seed ^= seed << 5;
+                seed as u8
+            })
+            .collect();
+        let bytes: Vec<u8> = (0..size)
+            .map(|i| {
+                if i % 131072 < 4096 {
+                    random[(i / 131072 * 4096 + i % 131072) % random.len()]
+                } else {
+                    0
+                }
+            })
+            .collect();
+        for i in 0..count {
+            writer
+                .start_file(
+                    format!("f{i}"),
+                    SimpleFileOptions::default()
+                        .compression_method(zip::CompressionMethod::Deflated),
+                )
+                .unwrap();
+            writer.write_all(&bytes).unwrap();
+        }
+        let input = writer.finish().unwrap().into_inner();
+        if count == 3 {
+            assert!(input.len() < 2 * 1024 * 1024);
+            let mut check = zip::ZipArchive::new(Cursor::new(&input)).unwrap();
+            let entry = check.by_index(0).unwrap();
+            assert!(entry.size() <= entry.compressed_size() * 64);
+        }
+        assert_eq!(
+            inspect_glass(&input),
+            Err(if count == 17 {
+                Error::MissingMember
+            } else {
+                Error::Limit
+            })
+        );
+    }
+}
+
+#[test]
+fn glass_module_global_conditions_remain_explicitly_unverified() {
+    use knx_selected_product_parser::{Error, ScopeReferenceTargetKind, UnsupportedFeature};
+    let module = r#"<ModuleDefs><ModuleDef Id="m"><Static/><Dynamic><Channel Id="c"><choose ParamRefId="pr"><when test="1"/></choose></Channel></Dynamic></ModuleDef></ModuleDefs>"#;
+    let app = application("").replace("</Static><Dynamic>", &format!("</Static>{module}<Dynamic>"));
+    let snapshot = inspect_glass(&glass_archive(&app, None)).unwrap();
+    assert_eq!(snapshot.unverified_scope_references.len(), 1);
+    let edge = &snapshot.unverified_scope_references[0];
+    assert_eq!(edge.node_name, "choose");
+    assert_eq!(edge.attribute, "ParamRefId");
+    assert_eq!(edge.target_id, "pr");
+    assert_eq!(
+        edge.target_kind,
+        ScopeReferenceTargetKind::ParameterReference
+    );
+    assert_eq!(edge.source_module_scope.as_deref(), Some("m"));
+    assert_eq!(edge.target_module_scope, None);
+    assert_eq!(edge.source.member_sha256, snapshot.sources[2].sha256);
+    assert!(snapshot.sources[2].bytes[edge.source.source_range.clone()].starts_with(b"<choose "));
+    assert!(
+        snapshot.compilation_blockers.iter().any(|b| b.feature
+            == UnsupportedFeature::UnverifiedGlobalCondition
+            && b.occurrences == 1)
+    );
+    assert_eq!(
+        inspect_archive(
+            &archive(&app, None),
+            APPLICATION_ID,
+            &AtomicBool::new(false)
+        ),
+        Err(Error::Reference)
+    );
+    for target in ["missing", "p", "or"] {
+        assert_eq!(
+            inspect_glass(&glass_archive(
+                &app.replace("ParamRefId=\"pr\"", &format!("ParamRefId=\"{target}\"")),
+                None
+            )),
+            Err(Error::Reference)
+        );
+    }
+    let other = r#"<ModuleDef Id="other"><Static><Parameters><Parameter Id="op" ParameterType="t"/></Parameters><ParameterRefs><ParameterRef Id="opr" RefId="op"/></ParameterRefs></Static></ModuleDef>"#;
+    let cross = app
+        .replace("</ModuleDefs>", &format!("{other}</ModuleDefs>"))
+        .replace("ParamRefId=\"pr\"", "ParamRefId=\"opr\"");
+    assert_eq!(
+        inspect_glass(&glass_archive(&cross, None)),
+        Err(Error::Reference)
+    );
+}
+
+#[test]
+fn module_scope_requires_a_nonempty_definition_identity() {
+    use knx_selected_product_parser::Error;
+    let module = r#"<ModuleDefs><ModuleDef Id="m"><Static><Parameters><Union SizeInBit="8"><Memory CodeSegment="s" Offset="1" BitOffset="0"/><Parameter Id="mp" ParameterType="t"/></Union></Parameters></Static></ModuleDef></ModuleDefs>"#;
+    for (from, to, error) in [
+        (" Id=\"m\"", "", Error::Metadata),
+        ("Id=\"m\"", "Id=\"\"", Error::DuplicateId),
+    ] {
+        let app = application("").replace(
+            "</Static><Dynamic>",
+            &format!("</Static>{}<Dynamic>", module.replace(from, to)),
+        );
+        assert_eq!(inspect_glass(&glass_archive(&app, None)), Err(error));
+        assert_eq!(
+            inspect_archive(
+                &archive(&app, None),
+                APPLICATION_ID,
+                &AtomicBool::new(false)
+            ),
+            Err(error)
+        );
+    }
+}
