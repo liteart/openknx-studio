@@ -83,7 +83,7 @@ manufacturer behavior, real network/device tests, publication and rights decisio
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done; independent verification and critical review PASS |
-| Source commit(s) | Fork baseline `7e44751fb6681812fcb6690d8159a9b8c5c3e816`; reviewed correction `0fc99a9c0d551093c8eea4883c052c75e59ee6c8`; editor record revision follows |
+| Source commit(s) | Fork baseline `7e44751fb6681812fcb6690d8159a9b8c5c3e816`; reviewed correction `0fc99a9c0d551093c8eea4883c052c75e59ee6c8`; editor task/evidence record `9b6bf43615597df22c0d89e27ea26b3005495aaa` |
 | Tests executed | Controlled false assertion: old harness false PASS exit 0; corrected harness expected FAIL exit 101; restored 13 sequence tests, fmt, targeted Clippy and integrity checks PASS, independently reproduced |
 | Evidence location | Separate fork `TEST-RELIABILITY.md`; private implementation and independent verification logs |
 | Acceptance criteria met | AC-001/002/003 demonstrated and independently reviewed |
