@@ -75,7 +75,11 @@ trust were changed. See [Task-138](../tasks/Task-138.md) for the exact evidence 
 remaining acceptance status. A subsequent fresh `codex app-server --stdio`
 `config/read` probe confirmed the project config layer and origins for the four
 public agent defaults. That schema exposes no standalone role list; role-file
-discovery in that separate CLI process remains inconclusive.
+discovery in that separate CLI process remains inconclusive. On 2026-10-21, the
+operator explicitly confirmed successful `explorer` and `reviewer` execution in
+the requested new project session. This operator-reported functional check closes
+the new-session confirmation, without changing the historical probe result or
+claiming billing/all-client compatibility.
 
 The resumed session successfully created the task branch on 2026-10-20; the earlier
 Git metadata write restriction no longer blocks the initial local commit.
@@ -138,4 +142,4 @@ Run `python3 scripts/test_agent_configs.py` for the nine regression cases.
 Run `python3 scripts/check_agent_configs.py` for offline TOML, routing, role-identity,
 and installed-copy consistency checks. It requires Python 3.11+ and no dependencies.
 This does not validate live account access or runtime agent discovery. See
-[Task-138](../tasks/Task-138.md) for execution evidence and remaining prerequisites.
+[Task-138](../tasks/Task-138.md) for execution evidence and final acceptance status.

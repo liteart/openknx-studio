@@ -9,7 +9,7 @@ Prepare project-local Codex roles with explicit Sol/Luna routing and bounded del
 | Field | Value |
 |---|---|
 | Task ID | Task-138 |
-| Status | In review |
+| Status | Done |
 | Stage / required gate | Development tooling; no product gate required or unlocked |
 | Priority | P1 |
 | Component / Git project | knx-editor / development configuration |
@@ -44,7 +44,7 @@ model allowlist are behavioral/configuration choices, not runtime access control
 - [x] AC-001: Seven narrow role templates and coordinator defaults use only Sol/Luna.
 - [x] AC-002: Routing, handoffs, ownership, concurrency and continuation are documented.
 - [x] AC-003: Offline validation rejects malformed/drifted configs and wrong routing.
-- [ ] AC-004: Templates installed in the real project's protected `.codex/` directory and confirmed in a new trusted session.
+- [x] AC-004: Templates installed in the real project's protected `.codex/` directory and confirmed in a new trusted session.
 - [x] AC-005: Source commit and independent review recorded after repository setup.
 
 ## Dependencies to Other Tasks
@@ -52,8 +52,8 @@ model allowlist are behavioral/configuration choices, not runtime access control
 No predecessor needed to prepare this explicitly requested tooling increment.
 The user initialized the local Git repository and installed the configuration.
 Git metadata is now writable and the task branch has been created.
-Standalone role-file discovery in a fresh CLI session remains to be confirmed;
-project config-layer discovery passed in the read-only follow-up. Task-002 as a whole
+Project config-layer discovery passed in the read-only follow-up. The operator
+subsequently confirmed fresh-session role execution, as recorded below. Task-002 as a whole
 is not accepted by this observation; no existing product gate is changed.
 
 ## Required Tests
@@ -84,8 +84,9 @@ checks, and execution of the full backlog.
 The user installed `.codex/` and initialized Git. Installed copies match templates.
 Earlier sessions could not write `.git/`; the resumed session successfully created
 `task/Task-138-project-agent-config`. The initial real-project CLI diagnostic failed with `Operation not permitted`;
-a later authorized retry and config-layer probe are recorded below. Standalone
-role-file discovery remains unproven. Cached model metadata omitted the requested
+a later authorized retry and config-layer probe are recorded below. The standalone
+CLI probe did not expose role-file discovery; later operator-reported functional
+confirmation is recorded below. Cached model metadata omitted the requested
 Sol alias despite successful role invocations in the current harness. The instructions cannot enforce billing quotas or device policy.
 
 ## Follow-up installation verification
@@ -127,7 +128,7 @@ contains the 178 reviewed source/documentation/configuration files.
 `git diff --cached --check` passed before commit and `git status --short` was empty
 afterward. No remote push, merge, tag, or publication was performed.
 
-## Runtime evidence follow-up
+## Runtime evidence follow-up, 2026-10-20 (historical)
 
 On 2026-10-20, the active harness completed successful delegations through all
 seven configured roles across Tasks 001-005: explorer (`gpt-6-luna`), implementer,
@@ -172,7 +173,7 @@ An earlier probe used an unsupported transport spelling before the corrected
 
 | Field | Observed result |
 |---|---|
-| Implementation / report status | In review; runtime files installed and matched, standalone role-file discovery pending |
+| Implementation / report status | Done; operator confirmed fresh-session explorer/reviewer execution on 2026-10-21; independent final review PASS |
 | Source commit(s) | `c4b17ed970e4894b1dd6c13b14037aa90fccd701` (initial source snapshot); runtime follow-up based on `242689194f669fd647e90c531f4c2bbe1857034a`; reviewed runtime follow-up `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6` |
 | Platform | macOS; Python 3.14.6; codex-cli 0.163.0 |
 | Tests executed | `python3 -B scripts/check_agent_configs.py`: PASS for templates and installed copies; installed/template byte equality independently confirmed |
@@ -182,12 +183,12 @@ An earlier probe used an unsupported transport spelling before the corrected
 | Unsupported CLI checks | `--strict-config` was rejected as unsupported by tested commands; strict schema validation NOT RUN |
 | Scope / whitespace | `python3 -B scripts/check_project_scope.py`: PASS, exit 0; reports product/Windows/hardware/rights/human gate work NOT RUN. `git diff --check`: PASS, exit 0. |
 | Evidence location | This record and AGENT-WORKFLOW.md; validation scripts reproduce offline checks |
-| Acceptance criteria met | AC-001 through AC-003. AC-004 remains unchecked (real-project custom-role discovery inconclusive); AC-005: initial source commit recorded and independent follow-up review PASS; reviewed follow-up revision `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6`. |
-| Technical outcome | Templates validate and installed copies match. Harness role delegations completed; independent standalone CLI custom-role discovery remains INCONCLUSIVE. |
+| Acceptance criteria met | AC-001 through AC-004, including operator-confirmed new-session execution recorded below; AC-005: initial source commit recorded and independent follow-up review PASS; reviewed follow-up revision `34d2fead068ab429ee390b58d8e0ff7ddf0eeec6`. |
+| Technical outcome | PASS for task scope: installed copies match, all seven harness roles were used, project config-layer discovery passed, and the operator confirmed new-session explorer/reviewer execution. Historical standalone CLI probe remains INCONCLUSIVE. |
 | Gate outcome | No gate reviewed or unlocked |
 | Reviewer | Prior independent Sol subagent review: installed-role detection gap found and fixed with regression coverage; current follow-up: predefined sequential_review PASS for this partial evidence increment, after two stale metadata phrases were corrected; no full task acceptance claimed |
 | Hardware / Windows / standalone CLI model test | NOT RUN for this tooling increment; current harness role invocations are observed separately above |
-| Next action | Resolve standalone CLI role-file discovery; retain Task-138 In review until all criteria are met. Tasks 001, 002, and 004 are Done; Tasks 003 and 005 require Windows/SDK prerequisites before dependent product work can proceed. |
+| Next action | Task-138 complete. Tasks 003 and 005 remain blocked on Windows inventory/SDK prerequisites; no product gate is unlocked. |
 
 Historical names-only CLI reproduction without model requests. This assertion does
 not establish standalone role-file discovery:
@@ -213,3 +214,21 @@ with tempfile.TemporaryDirectory(prefix="knx-codex-config-") as tmp:
     print("PASS: all seven names in locally rendered prompt")
 PY
 ```
+
+## Operator-confirmed new-session execution, 2026-10-21
+
+After the coordinator requested a new project session that invokes `explorer`
+and `reviewer`, the operator explicitly answered that both were successfully
+executed. This is operator-reported functional evidence, not a captured standalone
+CLI tool schema or an independently reproduced transcript. Together with installed
+byte equality, current harness use of all seven roles and fresh-process project
+config-layer discovery, it satisfies the requested new-session confirmation in
+AC-004. No account/billing or all-client compatibility claim follows. Historical
+INCONCLUSIVE probe results above are retained and are not relabeled PASS.
+
+On this follow-up, `python3 -B scripts/check_agent_configs.py` passed for templates
+and installed copies; `python3 -B scripts/test_agent_configs.py` passed all nine
+cases. The predefined sequential_review agent independently reproduced the agent checker,
+nine tests, scope checker and whitespace check with PASS, and returned PASS for
+ordinary-task closure. Task-138 is Done under the authorized workflow. No product
+phase gate changes.
