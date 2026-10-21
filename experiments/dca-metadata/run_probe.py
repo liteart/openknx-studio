@@ -184,7 +184,7 @@ def private_output(path, data):
 
 
 def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map"):
-    if experiment not in ("reference-map", "member-map"):
+    if experiment not in ("reference-map", "member-map", "entrypoint-map"):
         raise ProbeError("DCAPROBE_EXPERIMENT")
     if sys.platform != "darwin":
         raise ProbeError("DCAPROBE_MACOS_REQUIRED")
@@ -199,8 +199,11 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     if not pwsh.is_file() or not os.access(pwsh, os.X_OK):
         raise ProbeError("DCAPROBE_RUNTIME_PATH")
     worker_base = Path(__file__).absolute().parent
-    worker_path = (worker_base / "Read-ReferenceMetadata.ps1" if experiment == "reference-map"
-                   else worker_base.parent / "dca-member-map" / "Read-MemberMetadata.ps1")
+    worker_path = {
+        "reference-map": worker_base / "Read-ReferenceMetadata.ps1",
+        "member-map": worker_base.parent / "dca-member-map" / "Read-MemberMetadata.ps1",
+        "entrypoint-map": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
+    }[experiment]
     # Only fixed repository-owned experiments are selectable; never an arbitrary worker.
     worker = checked_path(worker_path)
     pins = []
@@ -224,8 +227,11 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     raw = bounded_child(sandbox_command(pwsh, METADATA_COMMAND), env)
     report = parse_child(raw, "DCAPROBE_METADATA_FAILED")
     if (not isinstance(report, dict) or type(report.get("schema_version")) is not int
-            or report["schema_version"] != 1 or report.get("operation") != (
-                "static_candidate_contract_map" if experiment == "reference-map" else "static_candidate_member_map")
+            or report["schema_version"] != 1 or report.get("operation") != {
+                "reference-map": "static_candidate_contract_map",
+                "member-map": "static_candidate_member_map",
+                "entrypoint-map": "static_dca_entrypoint_map",
+            }[experiment]
             or report.get("runtime_execution") != "NOT_RUN" or report.get("rights") != "UNRESOLVED"):
         raise ProbeError("DCAPROBE_REPORT_SHAPE")
     observed = report.get("inputs", [])
@@ -248,7 +254,7 @@ def main():
     parser.add_argument("--stage", required=True)
     parser.add_argument("--pwsh", required=True)
     parser.add_argument("--output", help="New private report path immediately inside stage")
-    parser.add_argument("--experiment", choices=("reference-map", "member-map"), default="reference-map",
+    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map"), default="reference-map",
                         help="Fixed owned experiment; Task-140 default is unchanged")
     args = parser.parse_args()
     try:

@@ -115,6 +115,35 @@ class PolicyTests(unittest.TestCase):
                         with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_REPORT_SHAPE$"):
                             run_probe.run(str(stage), str(pwsh), experiment="member-map")
 
+    def test_entrypoint_experiment_is_fixed_and_restriction_gated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory).resolve()
+            stage.chmod(0o700)
+            pwsh = stage / "owned-pwsh"
+            pwsh.write_bytes(b"never executed")
+            pwsh.chmod(0o700)
+            pins = (("Owned.Dca.dll", 1, "0" * 64), ("Owned.Sdk.dll", 1, "1" * 64))
+            for name, _, _ in pins:
+                path = stage / name
+                path.write_bytes(b"x")
+                path.chmod(0o600)
+            report = {"schema_version": 1, "operation": "static_dca_entrypoint_map",
+                      "runtime_execution": "NOT_RUN", "rights": "UNRESOLVED", "inputs": [
+                          {"filename": name, "bytes": size, "sha256": digest} for name, size, digest in pins]}
+            with mock.patch.object(run_probe.sys, "platform", "darwin"), mock.patch.object(run_probe, "PINS", pins):
+                with mock.patch.object(run_probe, "negative_probes", side_effect=run_probe.ProbeError("DCAPROBE_RESTRICTION")):
+                    with mock.patch.object(run_probe, "bounded_child") as child:
+                        with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_RESTRICTION$"):
+                            run_probe.run(str(stage), str(pwsh), experiment="entrypoint-map")
+                        child.assert_not_called()
+                with mock.patch.object(run_probe, "negative_probes", return_value={"owned": True}):
+                    with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(report).encode(), b"")) as child:
+                        run_probe.run(str(stage), str(pwsh), str(stage / "report.json"), experiment="entrypoint-map")
+                        self.assertEqual(Path(child.call_args.args[1]["DCAMETA_WORKER"]).name, "Read-EntrypointMetadata.ps1")
+                    with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(dict(report, operation="static_candidate_member_map")).encode(), b"")):
+                        with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_REPORT_SHAPE$"):
+                            run_probe.run(str(stage), str(pwsh), experiment="entrypoint-map")
+
     def test_probe_failure_is_closed(self):
         result = (0, b'{"powershell_version":"7.6.7","write_denied":true,"network_denied":false}', b"")
         with mock.patch.object(run_probe, "bounded_child", return_value=result):
