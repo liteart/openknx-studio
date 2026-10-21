@@ -96,3 +96,18 @@ with no blocking findings. Both independently checked the required SDK and clean
 Windows inputs (exit 1 as expected), scope navigation and whitespace. They did not
 fetch source pages again or verify actual package rights. Task-005 remains Blocked;
 this report supplies no provisioning, compatibility, operation or phase approval.
+
+## Operator provisioning update, 2026-10-21
+
+The operator explicitly confirmed having neither the ETS6 SDK package nor active
+KNX membership. The documented member-resource acquisition route is therefore
+unavailable through this operator's account. This supersedes the earlier open
+question about that access. The operator's expectation that the license is
+restrictive is not treated as evidence of any actual term or prohibition.
+
+Task-005 remains Blocked: exact SDK references and applicable terms are absent;
+no compatible standalone provisioning route is established. No membership purchase,
+third-party contact, copied ETS runtime dependency, or substitute SDK implementation
+is authorized or performed by this update. Existing terms may be reviewed if a
+lawful source becomes available. Rust-only work does not acquire an SDK dependency
+from this report; existing task dependencies and gates remain unchanged.
