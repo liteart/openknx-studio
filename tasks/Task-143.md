@@ -165,7 +165,8 @@ Final frozen source SHA-256: BindingProbe.cs
 `5865cc3afda869a53095dd14e2a346cfc98fbb524881d44e9b34d37210cb221b`;
 Test-BindingProbe.ps1
 `e9dfc16c188d58c60040ae51c681b377f7791a85043a13babda0ad125f1c95dc`.
-Source baseline `85c4712`; implementation commit pending independent review.
+Source baseline `85c4712`; reviewed implementation commit
+`86f26237afafbf3f71fca52ed423c2a032524c78`.
 
 Independent verifier PASS: local and Windows source hashes match the frozen
 values above. The final dot-sourced driver and `Run`-bounded extension completed
