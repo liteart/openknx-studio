@@ -221,7 +221,7 @@ because no runner is available. Task-003 remains **Blocked**.
 | Rust bootstrap SHA-256 / native prerequisite inventory | PASS; official bootstrap hash and actual MSVC/Windows SDK files |
 | Rust Windows provisioning | FAIL, insufficient disk space; compiler build/test NOT RUN |
 | Original DCA / hardware | NOT RUN; no operation on ETS projects or KNX devices |
-| Source baseline | `2667b65412a7c39450c3b53ea9cbe6029467f8e3`; reviewed increment revision recorded after commit |
+| Source baseline | `2667b65412a7c39450c3b53ea9cbe6029467f8e3`; reviewed increment `f267998c58db182dccebe8f2c16b9f8a08fc02dd` |
 | Final evidence review | Predefined sequential_review PASS, no findings; no Task-003 acceptance or phase GO claimed |
 
 Source validation commands actually run:
