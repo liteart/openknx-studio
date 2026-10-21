@@ -406,3 +406,91 @@ therefore **NOT RUN / pending**, not claimed complete. No unrelated Windows
 files were removed; the successful C# sources/references/output remain available
 in their separate task-temporary siblings. Restore access and capacity before
 retrying provisioning or completing cleanup.
+
+## Resumed Windows Rust proof, 2026-10-21
+
+This follow-up supersedes the preceding access/capacity and cleanup blockers.
+After the operator enlarged the Windows disk, the coordinator observed
+33,865,445,376 available bytes and a live authenticated SSH master. The old
+incomplete `rustup-private`, `cargo-private` and bootstrap file were removed only
+from the previously identified task-temporary directory. Thirteen owned relative
+executable symlink proxies were deleted as links, without following their targets;
+no unrelated files were removed. The cleanup command completed with exit 0.
+
+The same official Windows bootstrap SHA-256 was checked again after transfer.
+Private provisioning completed successfully using the already documented exact
+arguments and process-local `RUSTUP_HOME`/`CARGO_HOME`. A bounded process runner
+with a real started Process object replaced the earlier failed exit-status query.
+The private rustup configuration disables automatic self-update. No global PATH
+change was requested. Installed and executed versions:
+
+| Tool | Actual Windows version |
+|---|---|
+| rustup | 1.29.1 (`d95a37b6a`, 2026-08-13) |
+| rustc | 1.99.1 (`58cf8f9c3`, 2026-10-13); full commit `58cf8f9c35b355199727627d07ae34a4e2846d67`; LLVM 23.1.1 |
+| cargo | 1.99.1 (`5f94df478`, 2026-08-27) |
+| rustfmt | 1.10.0-stable (`58cf8f9c35`, 2026-10-13) |
+| clippy | 0.1.99 (`58cf8f9c35`, 2026-10-13) |
+| Host/target | `x86_64-pc-windows-msvc` |
+
+Only five original repository files were copied to a new private Windows source
+tree: Cargo.toml, Cargo.lock, rust-toolchain.toml, LICENSE and
+experiments/toolchain-smoke/main.rs. Archive and individual file hashes were
+checked before compilation. The compiler environment used the installed x64
+Visual Studio Developer Command Prompt (`VsDevCmd.bat -arch=x64 -host_arch=x64`),
+with process-local Cargo/rustup/target directories. No Git installation was
+necessary for the dependency-free source snapshot.
+
+The actual commands from that source tree were:
+
+```text
+rustc -Vv
+cargo -V
+rustfmt -V
+cargo clippy -V
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --locked --offline --no-default-features -- -D warnings
+cargo test --workspace --locked --offline --no-default-features
+cargo run --locked --offline --no-default-features --bin toolchain-smoke
+cargo metadata --format-version 1 --locked --offline --no-default-features
+cargo tree --locked --offline --no-default-features --edges features
+```
+
+Every command exited 0. The test target contains **0 unit tests**; its PASS is not
+behavioral/device qualification. The executable really ran and emitted
+`toolchain-smoke offline=true protocol=none`. Actual metadata has one package and
+one resolved node, with empty dependency, deps and enabled-feature arrays. This
+proves no Secure or other dependency was enabled in this smoke experiment.
+
+| Private evidence | SHA-256 |
+|---|---|
+| `task003-rust-cleanup-resumed-stdout.txt` | `e3572d2977ef3515dbd3082d86d2476c90ef36c76664edc9529c94eb9c00d02e` |
+| `task003-rust-retry-stdout.txt` | `596e5ef3c30e67e0d92f148f7fa6a5faf9d5bf1a40551acc8a7a006f23c4bf3e` |
+| `task003-windows-rust-smoke-stdout.txt` | `ba30cf38ab51120a66a6bb0406a0d67314490128db66697a8b7a5159d856e0e5` |
+
+These files live under the ignored `private/artifacts/`; raw reports contain
+machine paths and are not committed. Original DCA execution, SDK contract
+compatibility, legal provisioning and KNX/hardware tests remain unproved by these
+compiler experiments. Linux execution remains NOT RUN: no Linux runner supplied.
+
+
+The predefined verifier independently repeated all ten version/check commands
+using a fresh target directory, confirmed the five source hashes before/after,
+and parsed the actual empty metadata feature/dependency closure. The bounded
+rerun exited 0 in roughly ten seconds. Its initial separate Start-Process wrapper
+emitted the check markers but did not return an exit status within 240 seconds;
+the verifier stopped only its identified invocation, did not count that attempt
+as PASS, and repeated using the bounded helper and a second fresh target. This
+harness issue did not change compiler sources or the accepted positive proof.
+
+### Task-003 acceptance boundary
+
+The predefined reviewer audited the literal requirements and corrected the earlier
+SDK-qualified-host interpretation: DR-002 requires framework/MSBuild selection
+after SDK inventory (now supplied by Task-140), and TEST-002 requires the minimal
+host-toolchain compilation with pinned references. The owned net48/x64/STA/WPF
+reference smoke meets that tooling test. Task-007 separately depends on Task-005
+for original-host provisioning. Task-003 can therefore close once final evidence
+review passes, without waiving Task-005 or claiming original-DCA compatibility.
+The selected baseline is a compiler experiment; no requirement or phase gate is
+changed. Unavailable Linux execution is recorded NOT RUN as allowed by DR-004.

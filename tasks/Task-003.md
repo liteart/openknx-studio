@@ -9,7 +9,7 @@ Pin minimum PoC toolchains and verification commands
 | Field | Value |
 |---|---|
 | Task ID | Task-003 |
-| Status | Blocked |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor + knust-fork / build tooling |
@@ -37,9 +37,9 @@ Make the minimal experiments reproducibly buildable without scaffolding the comp
 
 ## Acceptance Criteria
 
-- [ ] AC-001: A new developer can reproduce the offline PoC builds from the documented commands.
+- [x] AC-001: A new developer can reproduce the offline PoC builds from the documented commands.
 - [x] AC-002: The Rust build does not require .NET or ETS.
-- [ ] AC-003: Tools and resolved dependency versions are recorded, not floating latest references.
+- [x] AC-003: Tools and resolved dependency versions are recorded, not floating latest references.
 
 ## Dependencies to Other Tasks
 
@@ -77,7 +77,7 @@ Windows/other OS runners may not be present. Do not mark their tests passed from
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
-## Completion Record
+## Initial Rust-only completion record (historical)
 
 | Field | Observed result |
 |---|---|
@@ -241,3 +241,65 @@ inspection identified only owned relative executable proxies, but the SSH master
 ended before revised cleanup could connect. SSH access must be restored after
 freeing disk space. No cleanup success, Rust compiler installation or Windows
 Rust build is asserted. Successful C# evidence was already captured locally.
+
+
+## Resumed Windows toolchain completion assessment, 2026-10-21
+
+The user enlarged the Windows disk and restored the SSH master. The coordinator
+observed more than 31 GiB available, completed cleanup of only the prior owned
+incomplete Rust installation, and successfully provisioned the exact pinned Rust
+1.99.1 MSVC toolchain with rustfmt and Clippy into private task directories.
+Windows fmt, Clippy, test target (0 unit tests), executable run, metadata and
+feature-tree commands all exited 0. The actual marker is
+`toolchain-smoke offline=true protocol=none`. Metadata confirms no dependencies
+or enabled features. The five copied owned source/configuration/license files
+matched repository hashes. Full commands, versions and evidence hashes are in
+[POC-TOOLCHAINS.md](../docs/POC-TOOLCHAINS.md).
+
+The predefined reviewer re-read the original task contract and corrected its
+earlier interpretation: Task-003 requires a minimal Windows host-toolchain test
+with pinned references after SDK inventory, not an SDK-qualified original-DCA
+host. Task-140 supplies that inventory, and the independently reproduced pinned
+net48/x64/STA/WPF-reference smoke satisfies TEST-002 for compiler readiness.
+Original hosting and provisioning are explicitly separated in Tasks 007 and 005;
+Task-007 still depends on Task-005. No acceptance criterion has been weakened or
+removed. The previous SDK-qualified-host blocker notes remain historical evidence
+of that overly strong interpretation, not an added requirement of this task.
+
+The fresh independent Windows Rust reproduction completed successfully.
+Final evidence review passed; status is Done for toolchain readiness. Linux remains NOT RUN under DR-004 because no runner was
+supplied. No original DCA, device or protocol operation occurred. Task-005 stays
+Blocked, and no phase gate or vendor-runtime compatibility is accepted here.
+
+
+## Current completion record
+
+| Field | Observed result |
+|---|---|
+| Status | Done; selected toolchain checks independently verified and final evidence review PASS |
+| Implementation revisions | Rust smoke `faa1befc1f73c3e6880c969fe5cd4b149a2aba47`; framework smoke `f267998c58db182dccebe8f2c16b9f8a08fc02dd`; fork tooling `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e` |
+| Current source baseline | `5a7f3f5af06388bef10a30f7efc189f7269185ac`; final evidence commit recorded after review |
+| TEST-001 | PASS on macOS and Windows: pinned Rust build and actual offline executable run |
+| TEST-002 | PASS: owned net48/x64/STA/WPF reference smoke on Windows with five exact Microsoft references and pinned MSBuild; independently reproduced |
+| TEST-003 | PASS: default features disabled; actual metadata sole node, no features/dependencies/deps; no Secure |
+| Windows reproduction | Verifier fresh target PASS, source hashes unchanged; all 10 version/check commands completed; initial hung harness attempt stopped and not counted as PASS |
+| Cleanup / capacity | PASS: own incomplete installation removed; expanded disk and private pinned provisioning observed directly |
+| Rust test coverage | 0 unit tests; actual executable run is the build proof, no device/behavior claim |
+| AC-001 / AC-002 / AC-003 | Met for selected tooling experiments: reproducible commands, Rust independent of .NET/ETS, versions/references/lockfiles pinned |
+| Linux | NOT RUN, no runner supplied; recorded under DR-004 |
+| Fork inherited library tests | NOT RUN; Task-015 audits their features and side effects before execution |
+| Original DCA / rights / hardware | NOT RUN / UNRESOLVED / NOT RUN; Task-005 and original-host prerequisites remain separate |
+| Phase gate | None advanced; ordinary toolchain readiness only |
+| Next ready task | Task-006; independent Task-015 and Task-023 may begin once this record is accepted; Task-005 research continues separately |
+
+Checks actually run after this evidence update:
+
+```sh
+python3 scripts/check_project_scope.py
+git diff --check
+```
+
+The predefined sequential_verifier completed the new Windows Rust proof. The
+predefined sequential_review supplied the contract assessment; final diff review
+and the exact evidence commit are recorded after completion. Earlier failures and
+blocked interpretations above are historical and superseded by this record.
