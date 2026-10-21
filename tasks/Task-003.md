@@ -154,3 +154,31 @@ record is committed.
 Inventory evidence source commit: `cd0597dc1e061019c96893f61f22f2ff354edfac`. The predefined
 reviewer returned PASS for this partial documentation increment; scope and
 whitespace checks passed. No task acceptance or phase GO follows.
+
+## Operator-supplied command results, 2026-10-21
+
+The operator subsequently supplied PowerShell command output:
+
+- `[Environment]::Is64BitOperatingSystem` returned `True`. This confirms a
+  64-bit OS; it does not distinguish x64 from ARM64.
+- Executing the installed Build Tools MSBuild executable with `-version -nologo`
+  returned `18.9.1.35102`. This is the executable's reported version, distinct
+  from the previously recorded installer version `18.9.12120.119`.
+- Listing the conventional .NET Framework reference-assembly root returned
+  `PathNotFound`. That root is absent at the queried location; neither framework
+  runtime absence nor absence of every possible alternate reference source follows.
+
+These operator-run results supersede the corresponding unknowns above. They are
+not coordinator-run commands or a host compilation. No package was installed.
+Task-003 remains Blocked on usable verified targeting references, SDK provisioning
+and the required Windows host compile/test.
+
+Public prerequisite references were rechecked on 2026-10-21:
+[KNX SDK requirements](https://support.knx.org/hc/en-us/articles/7588671243410-Requirements)
+describe a .NET Framework 4.8 SDK compilation target;
+[Microsoft developer installation guidance](https://learn.microsoft.com/en-us/dotnet/framework/install/guide-for-developers)
+and the [4.8 download page](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48)
+distinguish build-time Developer Packs from runtimes. A 4.8 Developer Pack is a
+candidate prerequisite provisioning step, not a verified DCA target selection,
+SDK substitute, or demonstrated compatibility result. A later installation must
+be observed and verified before its references are claimed available.
