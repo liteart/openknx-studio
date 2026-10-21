@@ -154,3 +154,15 @@ copying. This is now an authorized research route; the earlier no-copy statement
 was historical. Runtime use rights, complete reference identity/closure and
 clean-machine compatibility remain unresolved. No SDK replacement or DCA load is
 claimed and this task's required rights/runtime evidence remains unmet.
+
+
+## Private candidate follow-up, Task-140
+
+The operator supplied two hash-verified candidates from the local ETS 6.4.1
+installation. The [static candidate map](../docs/DCA-CONTRACT-MAP.md) observes
+that the reference DCA requests SDK/AddInViews `5.7.554.37315`, whereas supplied
+assemblies are `6.4.8718.0`. All 27 candidate-directed TypeRef rows have same-name
+definitions, but 55 member signatures remain unmatched and 209 TypeSpec member
+parents remain unsupported. Additional ETS dependencies are unsupplied. No vendor
+code, binding, activation, Windows UI or bus operation was executed. This improves
+the dependency evidence without changing Blocked status or resolving usage rights.

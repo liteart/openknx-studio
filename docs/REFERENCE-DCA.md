@@ -51,6 +51,9 @@ The archive includes English/German localization XML, help/resources, and `Templ
 
 ## What remains unknown
 
-Actual CLR assembly identities and referenced types; which SDK contracts are executed; whether proprietary concrete/runtime services or activation are indispensable; legal provisioning/redistribution; correct WPF initialization/lifecycle; the real DCA state format; whether bus requests can be mediated through Rust/knust; and complete DALI workflow behavior.
+The separate [Task-140 static candidate map](DCA-CONTRACT-MAP.md) now records the
+primary assembly identity, selected type references and concrete SDK version
+differences. It does not establish which SDK contracts are executed. Remaining
+unknowns include whether proprietary concrete/runtime services or activation are indispensable; legal provisioning/redistribution; correct WPF initialization/lifecycle; the real DCA state format; whether bus requests can be mediated through Rust/knust; and complete DALI workflow behavior.
 
 The only provided package is the DALI DCA. It must not be described as the separate firmware-update DCA. No original vendor files or extracted binaries are included in this documentation package.
