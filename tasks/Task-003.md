@@ -278,7 +278,7 @@ Blocked, and no phase gate or vendor-runtime compatibility is accepted here.
 |---|---|
 | Status | Done; selected toolchain checks independently verified and final evidence review PASS |
 | Implementation revisions | Rust smoke `faa1befc1f73c3e6880c969fe5cd4b149a2aba47`; framework smoke `f267998c58db182dccebe8f2c16b9f8a08fc02dd`; fork tooling `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e` |
-| Current source baseline | `5a7f3f5af06388bef10a30f7efc189f7269185ac`; final evidence commit recorded after review |
+| Current source baseline | `5a7f3f5af06388bef10a30f7efc189f7269185ac`; reviewed final evidence `a764f260a66db52d19b921c9beab0ba94665e00f` |
 | TEST-001 | PASS on macOS and Windows: pinned Rust build and actual offline executable run |
 | TEST-002 | PASS: owned net48/x64/STA/WPF reference smoke on Windows with five exact Microsoft references and pinned MSBuild; independently reproduced |
 | TEST-003 | PASS: default features disabled; actual metadata sole node, no features/dependencies/deps; no Secure |
