@@ -189,7 +189,7 @@ SDK reference or source signing key is committed.
 |---|---|
 | Implementation/report status | Done for this bounded investigation; implementation, independent verification and critical review PASS |
 | Source baseline | `438455a685d07cff1b71584cede8260d72028217` |
-| Reviewed source commit | Not yet created |
+| Reviewed source commit | `5b8e36ffed5c5f6f9fe8a5ec69eb771892168db6` |
 | Technical outcome | PASS for bounded static metadata and final-source owned STA lifecycle; original vendor execution remains NOT RUN |
 | Product/phase gate | No gate advanced; Task-005 and Tasks 007–012 unchanged |
 | Remaining blocker | Original activation requires the isolated Windows environment and an exact discovered-service experiment |
