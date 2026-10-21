@@ -135,3 +135,17 @@ earlier blanket rejection of installation copying for this authorized research
 step. Arbitrary installation copying, runtime loading and redistribution remain
 outside this route. Rights and actual standalone provisioning are unresolved;
 local copying does not decide them. Task-005 remains Blocked.
+
+## Observed installed reference candidates, 2026-10-21
+
+The operator supplied a successful Windows metadata-only inventory of
+`Knx.Ets.Sdk.dll` and `Knx.Ets.Sdk.AddIns.AddInViews.dll`, both reporting assembly
+version `6.4.8718.0`, neutral culture and public-key token `61439873ec5e1159`.
+[Task-139](../tasks/Task-139.md) records exact byte counts, SHA-256 and the operator's
+observation timestamp. This supersedes the earlier total absence of candidate
+identity evidence. The independently distributed SDK package and its applicable
+terms remain unavailable; this is an installed-reference candidate route, not
+proof of package equivalence, dependency closure, signature validity or use rights.
+No copying, vendor execution or independent host test is established by the JSON.
+The next authorized private-copy list is limited to those two exact filenames;
+verify its output against the recorded hashes before further analysis.

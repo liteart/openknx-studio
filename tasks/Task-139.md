@@ -101,7 +101,8 @@ not demonstrate an independent DCA runtime.
 
 ## Risks and Blockers
 
-Actual candidate DLL names/versions and terms are unknown until inspected. No
+Two candidate identities were supplied in the operator inventory below; required
+dependency closure and applicable terms remain unknown. No
 Windows/NTFS success may be inferred from portable tests. Installed ETS files may
 be runtime implementations rather than adequate or permitted standalone contracts.
 Stop the affected route if concrete services/activation/identity cannot be provided
@@ -111,7 +112,7 @@ without modifying vendor files or depending on ETS at runtime.
 
 | Field | Observed result |
 |---|---|
-| Implementation / task status | Script increment implemented; full task Blocked until Windows/real-ETS evidence |
+| Implementation / task status | Script increment implemented; operator Windows inventory supplied; full task Blocked pending Windows test summary/version and real-copy evidence |
 | Source baseline | `104d0e3`; reviewed implementation revision recorded after commit |
 | Files | Script, self-contained synthetic suite, local-reference guide; task/index/traceability/private-binary policy and Task-005 cross-links |
 | Platform | macOS 27 arm64; repository-private PowerShell 7.6.7; no global installation |
@@ -119,15 +120,46 @@ without modifying vendor files or depending on ETS at runtime.
 | Test command | `private/toolchains/powershell-7.6.7/pwsh -NoLogo -NoProfile -NonInteractive -File scripts/windows/Test-EtsReferenceCandidates.ps1 -TemporaryParent /private/tmp` |
 | Implementation test result | Initial portable result PASS 17, FAIL 0, NOT RUN 2; after mapped-drive and bracket-path coverage, PASS 19, FAIL 0, NOT RUN 2. Owned managed fixtures only; initial UNC classification failure corrected |
 | Open platform checks | Windows PowerShell 5.1, NTFS/junction/sharing and distinct case-colliding files NOT RUN; macOS volume cannot create the case fixture |
-| Actual ETS inspection / copy / DCA execution | NOT RUN; no vendor binaries in source, no target assembly execution |
-| RDP observation | Clipboard timeout; an attempted version query was corrupted and returned CommandNotFound. A subsequent file-list command showed corrupted path/separator characters and was canceled with Escape before execution; prompt verified clear. No successful actual-ETS metadata result |
-| Acceptance | AC-001/002 verified with synthetic fixtures; AC-003 remains open for genuine Windows/ETS evidence |
+| Actual ETS inspection / copy / DCA execution | Operator-run Windows inventory PASS as reported below; actual copy and target assembly execution NOT RUN; no vendor binaries in source |
+| RDP observation | Clipboard timeout; an attempted version query was corrupted and returned CommandNotFound. A subsequent file-list command showed corrupted path/separator characters and was canceled with Escape before execution; prompt verified clear. No coordinator-run successful ETS metadata result; subsequent operator result is recorded below |
+| Acceptance | AC-001/002 verified with synthetic fixtures; AC-001 additionally has operator-reported Windows inventory. AC-003 partial: inventory supplied, Windows synthetic summary/version and real-copy evidence outstanding |
 | Verifier / reviewer | Initial verifier reproduced 17 PASS; reviewer found mapped-network-drive acceptance (P2). Corrected before any commit with fail-closed local drive types and synthetic classification tests; final verifier and reviewer independently reproduced PASS 19 / FAIL 0 / NOT RUN 2 plus scope, whitespace and encoding checks; reviewer returned PASS for this partial script increment with no remaining findings |
 | Gate | None reviewed or advanced; Tasks 003/005 retain their own blockers |
-| Next action | Run the reviewed script under Windows PowerShell 5.1 on exact operator-selected candidates; retain output privately. Then evaluate actual contract identities and rights separately |
+| Next action | Privately copy exactly the two observed candidates with the reviewed script, obtain Windows test summary/version and validate manifest hashes; then evaluate required contract surface and rights separately |
 
 Official tool provenance: [PowerShell release v7.6.7](https://github.com/PowerShell/PowerShell/releases/tag/v7.6.7).
 The local test runtime is not part of product dependencies or redistribution.
 
 Reviewed implementation source commit: `8517859335c7f20fd71e815da10c57a36e69061a`. Full task remains Blocked
 until Windows/real-ETS evidence; this commit accepts only the tested script increment.
+
+## Operator-reported Windows inventory, 2026-10-21
+
+The operator supplied a complete inventory JSON response with observation time
+`2026-10-21T07:04:57.7520442Z`, `operation=inventory`, `status=complete`, count 2,
+and total bytes 7,051,728. These are user-run results, not a coordinator reproduction.
+The output explicitly retains `rights=UNRESOLVED`, `compatibility=UNVERIFIED`,
+`metadata_method=System.Reflection.AssemblyName.GetAssemblyName` and
+`target_assembly_execution=NOT_RUN`.
+
+| Candidate | Bytes | Assembly version | SHA-256 |
+|---|---:|---|---|
+| `Knx.Ets.Sdk.AddIns.AddInViews.dll` | 72,704 | `6.4.8718.0` | `5a59b733cbbecb8afe67f54e3b354045a61e092470a13129971f4f99e0b6d87d` |
+| `Knx.Ets.Sdk.dll` | 6,979,024 | `6.4.8718.0` | `7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989` |
+
+Their respective assembly names are `Knx.Ets.Sdk.AddIns.AddInViews` and
+`Knx.Ets.Sdk`; both report `Culture=neutral` and
+`PublicKeyToken=61439873ec5e1159`. Filename and identity remain distinct fields.
+No signature validity or trust conclusion follows from the public-key token.
+
+No Windows synthetic-test summary or exact PowerShell version was included in
+this response. No copied-file manifest or DLL bytes were supplied. This inventory
+therefore improves actual reference provenance, but does not establish the complete
+MDT dependency set, API/type compatibility, permissions, private-copy success or
+an ETS-free runtime. No SDK substitution or DCA load is claimed.
+
+The predefined reviewer checked the operator-evidence transcription against source
+baseline `779beedc2f8b1c9f593976495686fa4cb9e08383`, independently confirmed both
+hashes/identities/timestamp and the 7,051,728-byte sum, and returned PASS for this
+evidence-only increment. Scope checker and `git diff --check` passed. This does
+not close the outstanding Windows test/copy criteria.
