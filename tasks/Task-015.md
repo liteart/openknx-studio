@@ -84,7 +84,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Done; bounded audit independently verified and reviewed PASS |
-| Source commit(s) | Audited fork `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e`; upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; reviewed fork audit documentation `7e44751fb6681812fcb6690d8159a9b8c5c3e816`; editor record revision recorded by the following evidence commit |
+| Source commit(s) | Audited fork `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e`; upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; reviewed fork audit documentation `7e44751fb6681812fcb6690d8159a9b8c5c3e816`; editor audit/scope record `678fc7f0b8f0b0b6b2250361341c6ed0bf03c7f8` |
 | Tests executed | TEST-001 selected offline build/test execution PASS (75 runner passes; inherited sequence-consistency property assertion Result discarded); TEST-002 static inspection PASS with Secure feature/runtime paths disabled and inherited source preserved; TEST-003 coverage comparison and independent critical review PASS |
 | Evidence location | Separate fork `AUDIT.md`, `BUILDING.md`; [editor summary and pinned dependency map](../docs/KNUST-AUDIT.md) |
 | Acceptance criteria met | AC-001 concrete public APIs/tests and absent services mapped; AC-002 exact audit source pinned in dependency map; AC-003 no Secure implementation added. Independent verification/review PASS; ordinary audit criteria met |
