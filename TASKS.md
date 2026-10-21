@@ -1,6 +1,6 @@
 # Task Index
 
-This backlog contains **141 individually specified tasks**, numbered Task-001 through Task-141. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
+This backlog contains **142 individually specified tasks**, numbered Task-001 through Task-142. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
 
 All implementation/report statuses initially are **Not started**. This kit specifies work; it does not assert that tests, forks, code or releases already exist. Task dependencies and explicit phase-gate outcomes both govern readiness. A NO-GO report does not unlock the next stage.
 
@@ -15,7 +15,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | Stage | Task IDs | Count | Gate |
 |---|---|---:|---|
 | PoCs and feasibility gate | Task-001 to Task-028 | 28 | Task-028 |
-| Additional PoC input investigations and test reliability | Task-139 to Task-141 | 3 | No gate unlocked; Task-005 still governs provisioning |
+| Additional PoC input investigations and test reliability | Task-139 to Task-142 | 4 | No gate unlocked; Task-005 still governs provisioning |
 | Alpha integration | Task-029 to Task-092 | 64 | Task-092 |
 | Beta functionality | Task-093 to Task-112 | 20 | Task-112 |
 | Release candidate | Task-113 to Task-125 | 13 | Task-125 |
@@ -202,7 +202,8 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-139](tasks/Task-139.md) | Inventory and privately copy selected local ETS reference candidates | Editor developer tooling | Tasks 001, 002, 004; explicit local-copy authorization; no runtime gate unlocked |
 | [Task-140](tasks/Task-140.md) | Map static DCA references against privately supplied SDK candidates | DCA compatibility research tooling | Tasks 001, 002, 004, 139; static-only, no runtime gate unlocked |
 | [Task-141](tasks/Task-141.md) | Propagate inherited sequence property-test failures | knust-fork / offline test reliability | [Task-015](tasks/Task-015.md); no phase gate unlocked |
+| [Task-142](tasks/Task-142.md) | Compare static DCA member signatures with private SDK candidates | Original-DCA metadata research | [Task-139](tasks/Task-139.md), [Task-140](tasks/Task-140.md); no runtime gate unlocked |
 
 ## How to extend the backlog
 
-Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-142), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
+Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-143), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.

@@ -183,7 +183,9 @@ def private_output(path, data):
         raise
 
 
-def run(stage_value, pwsh_value, output_value=None):
+def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map"):
+    if experiment not in ("reference-map", "member-map"):
+        raise ProbeError("DCAPROBE_EXPERIMENT")
     if sys.platform != "darwin":
         raise ProbeError("DCAPROBE_MACOS_REQUIRED")
     stage = checked_path(stage_value)
@@ -196,7 +198,11 @@ def run(stage_value, pwsh_value, output_value=None):
     pwsh = checked_path(pwsh_value)
     if not pwsh.is_file() or not os.access(pwsh, os.X_OK):
         raise ProbeError("DCAPROBE_RUNTIME_PATH")
-    worker = checked_path(Path(__file__).absolute().parent / "Read-ReferenceMetadata.ps1")
+    worker_base = Path(__file__).absolute().parent
+    worker_path = (worker_base / "Read-ReferenceMetadata.ps1" if experiment == "reference-map"
+                   else worker_base.parent / "dca-member-map" / "Read-MemberMetadata.ps1")
+    # Only fixed repository-owned experiments are selectable; never an arbitrary worker.
+    worker = checked_path(worker_path)
     pins = []
     for filename, size, digest in PINS:
         path = checked_path(stage / filename)
@@ -218,7 +224,8 @@ def run(stage_value, pwsh_value, output_value=None):
     raw = bounded_child(sandbox_command(pwsh, METADATA_COMMAND), env)
     report = parse_child(raw, "DCAPROBE_METADATA_FAILED")
     if (not isinstance(report, dict) or type(report.get("schema_version")) is not int
-            or report["schema_version"] != 1 or report.get("operation") != "static_candidate_contract_map"
+            or report["schema_version"] != 1 or report.get("operation") != (
+                "static_candidate_contract_map" if experiment == "reference-map" else "static_candidate_member_map")
             or report.get("runtime_execution") != "NOT_RUN" or report.get("rights") != "UNRESOLVED"):
         raise ProbeError("DCAPROBE_REPORT_SHAPE")
     observed = report.get("inputs", [])
@@ -241,9 +248,11 @@ def main():
     parser.add_argument("--stage", required=True)
     parser.add_argument("--pwsh", required=True)
     parser.add_argument("--output", help="New private report path immediately inside stage")
+    parser.add_argument("--experiment", choices=("reference-map", "member-map"), default="reference-map",
+                        help="Fixed owned experiment; Task-140 default is unchanged")
     args = parser.parse_args()
     try:
-        run(args.stage, args.pwsh, args.output)
+        run(args.stage, args.pwsh, args.output, experiment=args.experiment)
     except KeyboardInterrupt:
         print("DCAPROBE_CANCELLED", file=sys.stderr)
         return 130
