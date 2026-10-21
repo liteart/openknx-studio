@@ -111,3 +111,14 @@ third-party contact, copied ETS runtime dependency, or substitute SDK implementa
 is authorized or performed by this update. Existing terms may be reviewed if a
 lawful source becomes available. Rust-only work does not acquire an SDK dependency
 from this report; existing task dependencies and gates remain unchanged.
+
+## Alternatives investigation follow-up, 2026-10-21
+
+[ETS SDK alternatives](DCA-SDK-ALTERNATIVES.md) records the online research and
+candidate dispositions. Official membership-gated provisioning is not assumed to
+be the only possible technical investigation. Public documentation and static
+metadata can help assess a minimal compatibility surface, but no usable lawful
+reference/runtime route was proven. Falcon and ETS-hosted bridges do not replace
+DCA hosting. MDT PRO64 offers documented partial web workflows on a different
+product; substituting it for original-DCA-first remains an explicit scope decision.
+Task-005's missing runtime inputs and Blocked status remain unchanged.

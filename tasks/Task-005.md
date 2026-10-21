@@ -18,7 +18,7 @@ Resolve lawful DCA and SDK dependency provisioning
 
 ## Description
 
-Determine whether the original reference DCA can legally and technically receive the SDK contracts it needs without requiring ETS at runtime.
+Determine whether the original reference DCA can legally and technically receive the contracts it needs without requiring ETS at runtime. Evaluate official provisioning and evidenced SDK-independent approaches rather than assuming SDK membership is the only investigation path. Distinguish original binary compatibility from partial feature alternatives; any change to original-DCA-first scope requires an explicit decision.
 
 ## Detailed Requirements
 
@@ -27,6 +27,8 @@ Determine whether the original reference DCA can legally and technically receive
 - DR-003: Record whether dependencies can be obtained and used on a clean machine without installing or activating ETS.
 - DR-004: Record strong-name/assembly identity and activation constraints for follow-up; do not bypass them.
 - DR-005: Keep a dependency disposition table: allowed, unavailable, needs review, or incompatible.
+- DR-006: Compare public SDK documentation/demos, independently implemented minimal compatibility surfaces, protocol libraries, ETS-hosted bridges, and manufacturer standalone features using primary sources. Record unknown identities/rights and reject unproven drop-in claims.
+- DR-007: Separate SDK-free static investigation from runtime provisioning. Do not waive task dependencies or a runtime acceptance criterion; describe the smallest prerequisite experiment and any explicit scope decision needed.
 
 ## Non-functional Requirements
 
@@ -54,6 +56,7 @@ A completed report with FAIL/INCONCLUSIVE or a gate with NO-GO does not satisfy 
 - TEST-001: Review: examine actual terms and packaging/provisioning evidence.
 - TEST-002: Reproduction: obtain permitted references through the documented route.
 - TEST-003: Negative: absent rights or activation prerequisites close the affected gate.
+- TEST-004: Alternatives review: each candidate has a primary source, exact claimed capability, unresolved prerequisites and disposition. A partial web workflow, transport API or running-ETS bridge must not count as unchanged original-DCA hosting.
 
 Use [TEST-STRATEGY.md](../docs/TEST-STRATEGY.md) and record the actual commands, source revisions, fixture hashes and outcomes. Do not replace a required hardware test with a simulator and keep the same claim.
 
@@ -114,3 +117,27 @@ third-party contact, copied ETS runtime dependency, or substitute SDK implementa
 is authorized or performed by this update. Existing terms may be reviewed if a
 lawful source becomes available. Rust-only work does not acquire an SDK dependency
 from this report; existing task dependencies and gates remain unchanged.
+
+## Alternatives research update, 2026-10-21
+
+The user explicitly requested online alternatives research and corresponding task
+adjustment. The coordinator and predefined explorer independently reviewed the
+primary sources in [ETS SDK alternatives](../docs/DCA-SDK-ALTERNATIVES.md).
+DR-006/007 and TEST-004 make that comparison explicit; no runtime criterion was
+removed. No working membership-free DCA-contract replacement was established.
+
+A concrete partial alternative is MDT PRO64 SCN-DA641P.04S's manufacturer web UI,
+with documented ETS commissioning dependencies and different-device identity.
+It is not the selected DALI64 DCA, a firmware-DCA replacement, or approved scope
+change. Public docs plus actual CLR metadata may support a narrow compatibility
+investigation; they do not establish permissible sources or executable compatibility.
+Task-005 stays Blocked and all original gates remain closed. No SDK implementation,
+manufacturer adapter, package installation or hardware action was performed.
+
+Alternatives increment checks: `python3 -B scripts/check_project_scope.py` PASS;
+`git diff --check` PASS. The predefined sequential_verifier reproduced those
+checks. The predefined sequential_review independently checked the primary-source
+capability distinctions and returned PASS with no findings for this bounded
+research/task-description increment. TEST-004 PASS for the evidence comparison;
+TEST-001 remains INCONCLUSIVE, TEST-002 NOT RUN, and runtime alternatives remain
+INCONCLUSIVE. No full task acceptance or product GO follows.
