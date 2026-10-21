@@ -119,7 +119,7 @@ for this startup probe. Unavailable restrictions block the affected real-file re
 | Field | Observed result |
 |---|---|
 | Status | Done; bounded static research scope verified and reviewed |
-| Source baseline | Task-139 closure `fe1bef61da837ec91e08f8faa8eb19e1b4556a97`; implementation source revision recorded after reviewed commit |
+| Source baseline | Task-139 closure `fe1bef61da837ec91e08f8faa8eb19e1b4556a97`; reviewed implementation `08d16fc5c5eac9469d88092d618860abb9115a2e` |
 | Platform / tools | macOS 27 arm64; privately provisioned PowerShell 7.6.7; Python standard-library wrapper |
 | Owned worker fixtures | PASS 9 / FAIL 0, independently reproduced by verifier and reviewer |
 | Owned wrapper fixtures | PASS 11 / FAIL 0, independently reproduced; deadlines, combined output limit, cancellation cleanup, fail-closed probes/report validation and exclusive private output |
@@ -151,6 +151,6 @@ before the real metadata read. Raw reports and binaries remain private; no loadi
 attribute construction, IL execution, dependency resolution or network fetch ran.
 The predefined verifier repeated the guarded command with the new private
 `metadata-report-verifier.json` output. Exit 0, empty stdout/stderr; reports are
-byte-identical with the SHA-256 above. Both probes passed again. Final reviewed
-source revision is recorded after the source commit. Agent review closes this
+byte-identical with the SHA-256 above. Both probes passed again. The reviewed source revision is
+`08d16fc5c5eac9469d88092d618860abb9115a2e`. Agent review closes this
 ordinary static task; it does not supply maintainer approval for any product gate.
