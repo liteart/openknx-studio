@@ -115,3 +115,21 @@ regressions with PASS. The smoke test target intentionally has zero unit tests;
 actual executable execution is the build proof. Review permits this partial
 increment to commit, not Task-003 acceptance or a phase GO. The selected fork
 commit was created first, preserving separate histories.
+
+## Renewed Windows access attempt, 2026-10-21
+
+The operator reports Windows 11 25H2, OS build 26200.9168, and ETS 6.4.1.
+A fresh Windows App RDP session was selected successfully; the visible Windows
+About dialog independently confirmed Windows 11 Pro 25H2 build 26200.9168,
+and the ETS title showed Home 6.4.1 (Build 8718). A keyboard action dismissed
+the dialog. Subsequent search/control input failed with
+`Computer Use server error -10005: noWindowsAvailable`. No PowerShell inventory
+command ran; architecture, MSBuild, targeting packs and SDK references remain
+unverified. Screenshots, host address and project contents are not source artifacts.
+
+The operator also confirmed that no ETS6 SDK package or KNX membership is
+available. This is a concrete provisioning blocker, not evidence about the actual
+license terms or technical incompatibility. Task-003 remains Blocked. The existing
+Windows machine is sufficient for read-only tool inventory once input works;
+a local VM is not required for that step. A separate ETS-free Windows environment
+is needed later for independent runtime qualification under the DCA contract.
