@@ -31,7 +31,7 @@ Retain upstream and third-party notices rather than relabeling other people's wo
 
 ## Explicit non-goals for version 1
 
-No KNX IP Secure or KNX Data Secure implementation, commissioning, key management, secure keyring support, or cryptographic interoperability tests. Existing secure code in the upstream fork must not be enabled by the v1 product build. Reject a request requiring Secure explicitly; do not silently downgrade it to plaintext. Ordinary IPC access control and safe local execution are still necessary and are not KNX Secure.
+KNX IP Secure, KNX Data Secure, Secure commissioning, key management, secure keyring support and cryptographic interoperability tests are out of scope for v1. Preserve inherited upstream Secure source, including unused type and wire-codec definitions; their presence in the library is not a blocker or a Secure support claim. Keep optional Secure features disabled and do not initiate or use Secure operations in v1. Reject a request requiring Secure explicitly; do not silently downgrade it to plaintext. Any future Secure use requires a separate version/scope decision. Ordinary IPC access control and safe local execution are still necessary and are not KNX Secure.
 
 No legacy ETS plug-ins, generic ETS utility-app compatibility, embedded ETS runtime, manufacturer-source rewrites as the primary strategy, paid feature tiers, or general-purpose desktop editor. The original DCA window is the one deliberate UI exception. USB/RF interfaces, routing/backbone commissioning, coupler/filter-table programming, remote Windows DCA workers, simultaneous collaborative editing, and multi-host databases are deferred unless separately approved. Model existing topology without claiming to commission every topology element.
 

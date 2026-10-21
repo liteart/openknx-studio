@@ -9,11 +9,11 @@ Audit the pinned knust fork against the PoC operations
 | Field | Value |
 |---|---|
 | Task ID | Task-015 |
-| Status | Not started |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / protocol audit |
-| Owner | Unassigned |
+| Owner | Protocol audit agent; independently verified and reviewed |
 | Requirement references | [R-004](../docs/REQUIREMENTS.md), [R-015](../docs/REQUIREMENTS.md), [R-023](../docs/REQUIREMENTS.md), [R-024](../docs/REQUIREMENTS.md), [R-028](../docs/REQUIREMENTS.md) |
 
 ## Description
@@ -37,9 +37,9 @@ Determine what the actual selected knust revision already provides and what must
 
 ## Acceptance Criteria
 
-- [ ] AC-001: The gap list names concrete public APIs/tests or missing services.
-- [ ] AC-002: The PoC dependency graph uses the pinned fork revision.
-- [ ] AC-003: No Secure work is added to fill an unrelated requirement.
+- [x] AC-001: The gap list names concrete public APIs/tests or missing services.
+- [x] AC-002: The PoC dependency graph uses the pinned fork revision.
+- [x] AC-003: No Secure work is added to fill an unrelated requirement.
 
 ## Dependencies to Other Tasks
 
@@ -83,13 +83,65 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | Done; bounded audit independently verified and reviewed PASS |
+| Source commit(s) | Audited fork `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e`; upstream `287bd5c94644688ac2eb93bf09f10a37bc509e0c`; reviewed fork audit documentation `7e44751fb6681812fcb6690d8159a9b8c5c3e816`; editor record revision recorded by the following evidence commit |
+| Tests executed | TEST-001 selected offline build/test execution PASS (75 runner passes; inherited sequence-consistency property assertion Result discarded); TEST-002 static inspection PASS with Secure feature/runtime paths disabled and inherited source preserved; TEST-003 coverage comparison and independent critical review PASS |
+| Evidence location | Separate fork `AUDIT.md`, `BUILDING.md`; [editor summary and pinned dependency map](../docs/KNUST-AUDIT.md) |
+| Acceptance criteria met | AC-001 concrete public APIs/tests and absent services mapped; AC-002 exact audit source pinned in dependency map; AC-003 no Secure implementation added. Independent verification/review PASS; ordinary audit criteria met |
+| Technical outcome | Audit findings recorded; offline selected checks PASS with documented ineffective sequence-consistency property assertions; inherited Secure source presence permitted by 2026-10-21 operator clarification; Secure runtime/hardware and actual gateway/device operations NOT RUN |
+| Gate outcome, when applicable | No phase gate required or advanced; no hardware authorization granted |
+| Reviewer | Project reviewer PASS: source/API/test-body and verifier-log comparison, hashes, feature metadata, source integrity, scope and diff checks; no Cargo rerun by reviewer |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Audit handoff, 2026-10-21
+
+Readiness: Tasks-002/004 are accepted; Task-003's final closure records Done and
+verification/review PASS at evidence `a764f260a66db52d19b921c9beab0ba94665e00f`.
+This worktree starts from editor `be5b4090740151ecf7cd0b3e66d9a7f445a863ac`; no phase gate is required for this
+static/offline task. Missing actual bench/device/grants do not become satisfied
+because the inventory or audit is complete.
+
+The pinned fork provides group communication, UDP/TCP tunnel code, descriptor
+and TPCI codecs, and an occupancy probe. It does not provide typed generic
+PropertyValue/PropertyDescription, device memory/restart/load-state operations,
+or a reusable device management session. Probe bool/timeout and a gateway's
+identity are insufficient target identity evidence. Missing services stay in
+fork Tasks-016 through 021; no editor/DCA protocol fallback was added.
+
+The audit selected only inspected offline test bodies; the runner reported
+75 passing cases on macOS 27.0 arm64 with pinned Rust/Cargo 1.99.1. It excluded inherited tests that can
+contact gateways, initialize multicast or exercise Secure session codecs.
+Full command arguments, feature evidence, counts, source hashes, provisioning
+failures and limits are in the fork report. No proprietary fixture/capture,
+real KNX packets, hardware test, publication or remote push was used.
+
+Final review identified an inherited false-positive coverage gap in
+`tests/test_sequence_validation.rs:262`:
+`property_tests::property_sequence_validation_consistency` discards the async
+block's `Result` using `let _`. Failed `prop_assert_*` checks at lines 273–285
+return an error that never fails the outer test. The observed 75 runner passes
+remain accurate, but this property is not verified by its reported PASS.
+Separate deterministic sequence cases remain bounded evidence. The fork audit
+and editor summary record the limitation; no source fix or additional task
+implementation is hidden in Task-015. Future reliance on that property needs a
+separately reviewed test correction.
+
+Operator clarification, 2026-10-21: preserve inherited Secure source; v1 does
+not use Secure, with possible later-version use to be evaluated separately.
+DR-003 concerns disabled feature/runtime use, not source or public-type removal.
+`--no-default-features --features dpt` disables the Secure feature and six
+optional crypto dependencies. Inherited Secure message codecs/configuration
+symbols compile unconditionally; their presence is permitted and is not a
+blocker or a source-removal task. Source inspection finds explicit
+unsupported/configuration errors for Secure requests; no silent plaintext
+downgrade is permitted. Those rejection paths were inspected statically, not
+runtime-tested here. All Secure tests/runtime/hardware qualification remain
+NOT RUN. No Secure source was removed, enabled or changed. This audit makes no
+license/right decision or gate approval.
+
+Independent verification reproduced the selected 75 runner passes. Final
+critical review PASS includes the documented inherited property-test limitation.
+The fork audit documentation was committed first at `7e44751fb6681812fcb6690d8159a9b8c5c3e816`.
+No phase gate was advanced. Next task: Task-016, subject to its own verified
+reference inputs; no downstream acceptance or scope expansion is implied here.
