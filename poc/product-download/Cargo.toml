@@ -1,0 +1,17 @@
+[package]
+name = "knx-selected-product-parser"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99.1"
+license = "Apache-2.0"
+publish = false
+
+[workspace]
+
+[features]
+default = []
+
+[dependencies]
+quick-xml = { version = "=0.42.0", default-features = false }
+sha2 = { version = "=0.11.0", default-features = false }
+zip = { version = "=9.0.5", default-features = false, features = ["deflate-flate2-zlib-rs"] }

@@ -9,11 +9,11 @@ Parse only the selected KNXPROD application for PoC C
 | Field | Value |
 |---|---|
 | Task ID | Task-023 |
-| Status | Not started |
+| Status | Blocked |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/product-download (Rust) |
-| Owner | Unassigned |
+| Owner | Rust implementer; bounded increment independently verified/reviewed |
 | Requirement references | [R-003](../docs/REQUIREMENTS.md), [R-008](../docs/REQUIREMENTS.md), [R-009](../docs/REQUIREMENTS.md), [R-024](../docs/REQUIREMENTS.md), [R-028](../docs/REQUIREMENTS.md) |
 
 ## Description
@@ -37,9 +37,9 @@ Extract only the product structures required for the chosen simple device/applic
 
 ## Acceptance Criteria
 
-- [ ] AC-001: The selected application resolves to a small explicit intermediate model.
+- [x] AC-001: The selected application resolves to a small explicit intermediate model.
 - [ ] AC-002: All required binary resources and references have validated identities/lengths.
-- [ ] AC-003: A different/unsupported application is rejected before compilation.
+- [x] AC-003: A different/unsupported application is rejected before compilation.
 
 ## Dependencies to Other Tasks
 
@@ -82,13 +82,60 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Implementation / report status | Blocked on AC-002 resource evidence; bounded increment verification/review PASS |
+| Source commit(s) | Baseline be5b409; reviewed increment commit pending coordinator |
+| Tests executed | Owned regression and registered private fixture PASS; final checks recorded in linked evidence |
+| Evidence location | [PoC C parser evidence](../docs/POC-C-PRODUCT-PARSER.md) |
+| Acceptance criteria met | AC-001 static declaration IR and AC-003 tested; AC-002 resource completeness remains INCONCLUSIVE; evaluator/compiler work is separate |
+| Technical outcome | PASS for bounded offline static inspection; INCONCLUSIVE for compilation-ready application |
+| Gate outcome, when applicable | No gate required or advanced |
+| Reviewer | Project reviewer PASS for bounded increment; AC-002 remains INCONCLUSIVE for resource completeness |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+
+## Bounded increment and remaining acceptance
+
+The standalone `poc/product-download` crate inspects only the selected
+BE-04000.02 product/application candidate and preserves original bytes, hashes,
+IDs, scopes and declared offsets. It rejects alternate application IDs,
+unknown application constructs, malformed archives/XML and invalid typed
+references. It does not evaluate product scripts, module instances, unions,
+conditional activation or parameter type semantics, and cannot compile or
+execute an operation. Exact observed metadata and reproducible commands are in
+the evidence document.
+
+- AC-001: PASS for a small static declaration IR; this is not a resolved
+  effective application configuration.
+- AC-002: PARTIAL / INCONCLUSIVE. Embedded resources have validated identities,
+  strict decoding, bounded lengths and source declarations; known required
+  static references have validated kinds/scopes. Two declared segments lack
+  embedded Data and some segment data is shorter than declared capacity. No
+  authoritative selected-profile evidence establishes whether this is legitimate
+  or whether all required resources are present. Downstream parameter/module/
+  union/dynamic/load evaluation is separate Task-024 work, not an added
+  Task-023 acceptance criterion.
+- AC-003: PASS for rejection of unsupported application IDs and conflicting
+  selected identity before any compiler (none exists in this increment).
+
+Task status is Blocked, not Done. No device/application/profile match,
+non-secure qualification, complete image, human hardware grant or phase GO is
+asserted. Independent verification and critical review PASS for the bounded increment.
+The next prerequisite is authoritative selected-profile resource evidence for
+AC-002; Task-024 remains locked until Task-023 meets its stated criteria.
+
+## Independent verification and review, 2026-10-21
+
+The project verifier reproduced format, Clippy, 22 synthetic tests (one private
+test ignored by default), the separate private fixture test, scope/diff checks
+and locked offline feature metadata using Rust 1.99.1 on macOS arm64 and an
+isolated target directory. Root features were empty; 22 external packages were
+resolved. Fixture bytes and lockfile hashes matched the recorded values.
+
+The critical reviewer found no actionable issue in the eight-file bounded
+increment, reran the verifier-built synthetic and private-fixture tests and
+independently compared selected XML hashes with Python. The reviewer did not
+rerun compilation, formatting or Clippy. Review PASS permits committing this
+increment, while ordinary Task-023 acceptance remains INCONCLUSIVE solely on
+the unproved resource-completeness obligation. Windows/Linux, hardware, vendor
+execution and compilation of a device image remain NOT RUN.
