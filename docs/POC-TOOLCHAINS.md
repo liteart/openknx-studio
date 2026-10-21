@@ -196,3 +196,20 @@ license terms or technical incompatibility. Task-003 remains Blocked. The existi
 Windows machine is sufficient for read-only tool inventory once input works;
 a local VM is not required for that step. A separate ETS-free Windows environment
 is needed later for independent runtime qualification under the DCA contract.
+
+## Operator-supplied Build Tools inventory, 2026-10-21
+
+The operator supplied `vswhere` JSON reporting Visual Studio Build Tools 2026,
+product `Microsoft.VisualStudio.Product.BuildTools`, display version `18.9.2`,
+installation version `18.9.12120.119`, and catalog build `18.9.12120.119`.
+The installation record reports complete, launchable, non-prerelease, with no
+reboot required. This is operator-supplied installer inventory; it is not an
+independently executed MSBuild command or a successful build.
+
+The response did not include the architecture result, command-discovery output,
+or .NET Framework reference-assembly directory listing. Their absence from this
+response does not establish absent tools or packs. Exact executable version,
+compatible targeting packs and SDK references remain unverified. Task-003 remains
+Blocked; the SDK access blocker is unchanged and no framework/toolchain compatibility
+selection or host build is claimed. No private machine identity or full installer
+record is committed.
