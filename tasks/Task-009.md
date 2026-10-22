@@ -82,11 +82,11 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; public-constructor diagnostic baseline `9a4e283c98809c4e91bd89dd495f74166c2692df`, new source commit pending |
-| Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded Project/construction/services/providers/constructors extraction PASS, with historical ROW_LIMIT failure retained. New diagnostic: local C#5 syntax/PowerShell parse and owned fixture compile PASS; Windows net48 build/proxy tests and original enum/Project execution NOT RUN at source freeze. Hardware NOT RUN |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; initial Windows diagnostic `61c768d1785c723c94985ac36e952601ed38f0b6`; fixed-facade follow-up source commit pending |
+| Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded static extractions PASS, with historical ROW_LIMIT failure retained. Initial Windows owned tests PASS (10 Session-0, 17 interactive); enum01 FAIL exit 2 on denied netstandard reflection-only dependency, no literals. Corrected fixed-facade Windows build/owned tests PASS (11 Session-0, 19 interactive); enum02 NOT RUN. Original Project invocation and hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Five provider-constructor declarations observed; public OM Project constructor selected for a deny-all diagnostic. Initial executable refuses original construction before any load because no enum literal is reviewed. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Initial enum metadata run denied the exact previously pinned netstandard facade; follow-up allows only that facade in reflection-only enum context after both pins. Enum value UNKNOWN; original construction remains disabled before any original load. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
 | Reviewer | Prior construction/service/provider/constructor static verification and source/result review PASS; new diagnostic Windows verification/review pending; no runtime service acceptance |
 
@@ -621,6 +621,40 @@ creation_route is **INCONCLUSIVE**, and hardware/UI/state/DCA initialization are
 **NOT RUN** for this increment. Source/result hashes and actual Windows results
 must be appended only after they exist.
 
+## First enum result and fixed facade follow-up
+
+The coordinator's actual clean-Windows metadata-only enum01 run used source
+`61c768d1785c723c94985ac36e952601ed38f0b6` and is **FAIL**, exit 2. Prior owned
+Windows tests passed 10 Session-0 and 17 interactive cases. The exact Common.Types
+file passed its hash and reflection-only audit; the tool then denied
+`netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51`.
+No literal, enum underlying type or original constructor was observed. The
+value remains UNKNOWN and original construction remains DISABLED_NOT_RUN.
+
+The actual evidence and log/end-record hashes are in
+[the component contract](../docs/DCA-PROJECT-CONTEXT.md#enum-preflight-result-and-fixed-facade-follow-up-2026-10-22)
+and private `task009-constructor-windows/enum01*` artifacts. This follow-up admits
+only the exact previously pinned netstandard facade to the reflection-only
+enum resolver, after both fixed input hashes and identities pass. Missing,
+extra or wrong-hash inputs fail; every other dependency still fails. Neither
+the prior eight-input route nor the disabled nine-input constructor pinset is
+expanded. New owned source guards test ordering and the fixed resolver; the
+negative staged files are owned fixtures only.
+
+Fresh source02/build02/inputs-enum02 staging, Windows owned re-verification,
+independent review and an enum02 retry remain pending. Original Project
+invocation remains source-disabled, not merely unattempted. Task-009 remains
+**Blocked**, creation_route is **INCONCLUSIVE**, and no acceptance criterion
+or gate is satisfied by this diagnostic correction.
+
+Follow-up owned local verification PASS: Roslyn C#5/x64/warnings-as-errors
+compilation against the six exact pinned net48 framework references, PowerShell
+parsing, the checked-in source-order/fixed-resolver guard block, unchanged
+nine-pin/other-source comparison, repository scope and whitespace checks. These
+do not replace the pending clean-Windows build/tests or enum02 evidence. The
+two changed tool hashes are recorded in the component contract; source commit
+and actual enum02 results remain pending.
+
 
 ## First Windows diagnostic freeze results, 2026-10-22
 
@@ -676,3 +710,40 @@ initialization, UI/state proof, hardware result or gate acceptance is asserted.
 Task-009 remains Blocked. Critical source/result review precedes any original
 enum metadata inspection; an observed literal and second reviewed source freeze
 remain prerequisites for the original constructor diagnostic.
+
+## Corrected facade-route Windows owned results
+
+The coordinator's corrected Windows C#5/x64/net48 build **PASS** retains compiler
+4.8.9221.0 and its exact prior hash. Actual owned suites **PASS** 11/11 Session0
+and 19/19 interactive cases, including the fixed two-hash source guard and
+missing-facade case. Interactive context is session 2, UserInteractive=true,
+administrator_role=false; the end record reports exit 0, OWNED_TESTS_ONLY and
+original/vendor execution NOT_RUN. The first generation's 10/17 suites and
+enum01 FAIL exit 2 remain separate evidence, not overwritten results.
+
+Canonical private evidence is `task009-constructor-windows/source-freeze-02.json`,
+`build02-report.json`, `owned-session0-02-stdout.txt`,
+`owned-interactive02-driver.stdout.txt.utf8`, its context/end records and
+`owned-interactive02-log-encoding.json`. The component contract records their
+hashes and the built ProjectConstructorProbe.exe hash
+`7447540d8ec318ab1ab2b8c36b2ab6bc9fd4b2ef7ab291b083868af0b3f166b5`.
+Local read-only checks PASS for all ten frozen source hashes, suite counts and
+strict raw/decoded stream provenance. These audit the coordinator's actual
+owned runs; they are not an independent Windows rerun. Detailed case logs,
+cleanup and independent follow-up review are recorded separately when available.
+
+This supersedes the follow-up freeze's Windows build/owned-tests NOT RUN only.
+Enum02 remains **NOT RUN**, GroupAddressStyle remains **UNKNOWN**, and original
+Project construction remains source-disabled and **NOT RUN**. Task-009 stays
+**Blocked**; no working Project, DCA context, initialization/UI/state, hardware
+or gate acceptance follows. The correction's source commit and original enum02
+result remain pending.
+
+Coordinator follow-up: owned case logs and cleanup are now preserved. The
+cleanup record reports LastTaskResult=0, task removed, zero owned processes
+and no junction. Independent verification and critical source/result review
+PASS; their audit records are under `private/evidence/task009-constructor-windows/`
+`verifier02/independent-audit.log` and `review02/critical-review-source-result.txt`.
+These are evidence audits, not independent Windows reruns or target-binary
+rehashes. The reviewed facade-only correction may proceed to a fixed enum-only
+metadata retry; original construction remains disabled.

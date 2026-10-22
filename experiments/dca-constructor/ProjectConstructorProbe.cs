@@ -66,6 +66,7 @@ internal static class ProjectConstructorProbe
     static FileStream log;
     static string stage, mode, fixture;
     static volatile bool unexpected, rejected;
+    static volatile bool enumInputsPinned;
     static int logBytes, assemblyCount;
     static object constructed;
     static bool EnumOnly { get { return mode == "project-enum-metadata"; } }
@@ -97,6 +98,16 @@ internal static class ProjectConstructorProbe
         foreach (string entry in Directory.EnumerateFileSystemEntries(stage)) { count++; ProbeFiles.Require(count <= expected, "PROJECT_EXACT_INPUTS"); }
         ProbeFiles.Require(count == expected, "PROJECT_EXACT_INPUTS");
     }
+    static void PinEnumInputs()
+    {
+        CountInputs(2);
+        string common = Path.Combine(stage, "Knx.Ets.Common.Types.dll"), facade = Path.Combine(stage, "netstandard.dll");
+        Pin(common, CommonHash);
+        Pin(facade, Hashes[6]);
+        ProbeFiles.Require(AssemblyName.GetAssemblyName(common).FullName == CommonIdentity, "INPUT_IDENTITY");
+        ProbeFiles.Require(AssemblyName.GetAssemblyName(facade).FullName == Identities[6], "INPUT_IDENTITY");
+        enumInputsPinned = true;
+    }
     static bool Framework(Assembly assembly)
     {
         AssemblyName name = assembly.GetName();
@@ -116,8 +127,9 @@ internal static class ProjectConstructorProbe
         bool allowed = assembly == typeof(ProjectConstructorProbe).Assembly;
         if (!assembly.IsDynamic) {
             if (Framework(assembly)) allowed = true;
-            if (EnumOnly && assembly.ReflectionOnly && assembly.FullName == CommonIdentity
-                && ProbeFiles.Same(assembly.Location, Path.Combine(stage, "Knx.Ets.Common.Types.dll"))) allowed = true;
+            if (EnumOnly && enumInputsPinned && assembly.ReflectionOnly
+                && ((assembly.FullName == CommonIdentity && ProbeFiles.Same(assembly.Location, Path.Combine(stage, "Knx.Ets.Common.Types.dll")))
+                    || (assembly.FullName == Identities[6] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, "netstandard.dll"))))) allowed = true;
             if (Original) for (int i = 0; i < Names.Length; i++)
                 if (assembly.FullName == Identities[i] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
             if (!Original && !EnumOnly && assembly.FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" && ProbeFiles.Same(assembly.Location, fixture)) allowed = true;
@@ -135,8 +147,15 @@ internal static class ProjectConstructorProbe
         rejected = true;
         throw new FileNotFoundException("PROJECT_DEPENDENCY_NOT_ALLOWLISTED", args.Name);
     }
-    static Assembly ReflectionReject(object sender, ResolveEventArgs args)
+    static Assembly ReflectionResolve(object sender, ResolveEventArgs args)
     {
+        if (EnumOnly && enumInputsPinned && args.Name == Identities[6]) {
+            Assembly facade = Assembly.ReflectionOnlyLoadFrom(Path.Combine(stage, "netstandard.dll"));
+            ProbeFiles.Require(facade.ReflectionOnly && facade.FullName == Identities[6]
+                && ProbeFiles.Same(facade.Location, Path.Combine(stage, "netstandard.dll")), "PROJECT_REFLECTION_FACADE_IDENTITY");
+            Record("PROJECT_REFLECTION_FACADE_ALLOW requested=" + Text(args.Name));
+            return facade;
+        }
         rejected = true; Record("PROJECT_REFLECTION_DEPENDENCY_REJECT requested=" + Text(args.Name));
         throw new FileNotFoundException("PROJECT_REFLECTION_DEPENDENCY_NOT_ALLOWLISTED", args.Name);
     }
@@ -256,8 +275,7 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(new FileInfo(config).Length <= 4096 && File.ReadAllText(config) == ProbeFiles.ConfigText, "EXACT_CONFIG_REQUIRED");
             if (EnumOnly) {
                 Record("PROJECT_PHASE enum-reflection-only-metadata");
-                CountInputs(1); string path = Path.Combine(stage, "Knx.Ets.Common.Types.dll"); Pin(path, CommonHash);
-                ProbeFiles.Require(AssemblyName.GetAssemblyName(path).FullName == CommonIdentity, "INPUT_IDENTITY");
+                PinEnumInputs();
             } else if (Original) {
                 CountInputs(9);
                 for (int i = 0; i < Names.Length; i++) Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
@@ -267,7 +285,7 @@ internal static class ProjectConstructorProbe
                 ProbeFiles.Require(AssemblyName.GetAssemblyName(fixture).FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", "OWNED_IDENTITY");
             }
             AppDomain.CurrentDomain.AssemblyResolve += Resolve;
-            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += ReflectionReject;
+            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += ReflectionResolve;
             AppDomain.CurrentDomain.AssemblyLoad += delegate(object sender, AssemblyLoadEventArgs e) { Audit(e.LoadedAssembly); };
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) Audit(assembly);
             ProbeFiles.Require(!unexpected, "UNEXPECTED_BASELINE_ASSEMBLY");

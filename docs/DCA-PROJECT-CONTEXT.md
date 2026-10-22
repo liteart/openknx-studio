@@ -880,6 +880,72 @@ checks PASS. No original inputs were read or executed during these owned
 checks. The source commit, Windows artifact hashes and independent review
 remain pending; the actual private enum report must be recorded separately.
 
+## Enum preflight result and fixed facade follow-up, 2026-10-22
+
+The coordinator's first clean-Windows enum metadata run at source
+`61c768d1785c723c94985ac36e952601ed38f0b6` is **FAIL**, exit 2. The preceding
+owned Windows suite passed 10 Session-0 and 17 interactive cases. Its actual
+enum context was interactive session 2, administrator role false. The unchanged
+215,504-byte Common.Types input passed its exact hash and reflection-only audit;
+enum type materialization then requested `netstandard, Version=2.0.0.0,
+Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51`. The first source freeze
+correctly denied that unallowlisted reflection-only dependency. No enum literal
+or underlying type was observed, and no original constructor executed. The
+GroupAddressStyle value remains **UNKNOWN**; this outcome does not establish a
+working constructor or fixture.
+
+Canonical private evidence is under `private/evidence/task009-constructor-windows`:
+`enum01-plan.json`, `enum01-context.json`, `enum01-done.json`,
+`enum01-driver.stdout.txt`, `enum01-driver.stderr.txt` and `enum01.log`. The log
+is 2,512 bytes, SHA-256
+`2552c34920de231b079ebba7048d1a105c9ad63876b7bc1db2e95381b2955446`;
+its end record is 286 bytes, SHA-256
+`674b0987c1a00740e28b17e300ed8522537e4465816f836de3eee1fcb8e313e8`.
+The JSON end record explicitly retains metadata-only status, vendor execution
+NOT_RUN, original constructor DISABLED_NOT_RUN and hardware NOT_RUN. This actual
+failure supersedes the first freeze's pending enum run, not its constructor
+disablement or the retained failed evidence.
+
+The smallest follow-up changes only the enum metadata route to exactly two
+fixed input files: Common.Types plus the already selected 102,856-byte
+`netstandard.dll`, SHA-256
+`bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb`,
+identity `netstandard, Version=2.0.0.0, Culture=neutral,
+PublicKeyToken=cc7b13ffcd2ddd51`. Both held input handles are hashed before
+either identity inspection or reflection-only load. A completed-pin flag is
+set only after both exact identities are checked. The reflection-only resolver
+allows only that facade identity, only in enum mode after the flag, and only
+via `ReflectionOnlyLoadFrom` of its fixed staged path. Its returned identity,
+path and ReflectionOnly flag are checked; the assembly audit likewise allows
+only the exact facade metadata identity/path. All other dependencies still
+fail. This is no generic resolver fallback or runtime SDK dependency expansion.
+The original eight-input route and disabled nine-input constructor pinset are
+unchanged; `OriginalConstructorReady` remains false.
+
+Owned test changes use two deliberately renamed owned fixture files for the
+hash-negative route, one file for missing-facade rejection and three files for
+extra-input rejection. Source invariants check two hashes before either
+identity, completion only after both identities, the fixed reflection-only
+resolver and the disabled original stage. The coordinator will use fresh
+`source02`, `build02` and `inputs-enum02` paths; the prior run and first freeze
+remain intact. The normalized commands above apply with those fresh paths,
+and the enum input directory must now contain exactly the two pinned files.
+Owned Windows re-verification and independent review precede any enum02 retry.
+The retry, literal selection, original Project invocation and fixture
+qualification are **NOT RUN** at this follow-up source freeze. Task-009 remains
+**Blocked** and no gate advances.
+
+At the follow-up freeze, local Roslyn C#5/x64/warnings-as-errors compilation
+against the six exact net48 framework references PASS, PowerShell parsing PASS,
+and the exact checked-in source-invariant block PASS. The nine constructor pins
+and seven other build/host/fixture sources compare byte-identical with source
+`61c768d1785c723c94985ac36e952601ed38f0b6`. Scope and whitespace checks PASS.
+These are owned local checks; Windows re-verification and enum02 remain NOT RUN.
+Changed tool hashes are ProjectConstructorProbe.cs
+`3f3cfd986f89a7737af0ad1c281d667e626c77e6205004981f9ea5dbbc14a3af`
+and Test-ConstructorProbe.ps1
+`61f6e8048f62faed4ff83617e15493fe8395e0822f1311f673a31ad3eb4ec4ff`.
+
 
 ## First Windows diagnostic freeze results, 2026-10-22
 
@@ -935,3 +1001,64 @@ initialization, UI/state proof, hardware result or gate acceptance is asserted.
 Task-009 remains Blocked. Critical source/result review precedes any original
 enum metadata inspection; an observed literal and second reviewed source freeze
 remain prerequisites for the original constructor diagnostic.
+
+## Corrected facade-route Windows owned results, 2026-10-22
+
+The coordinator rebuilt the frozen facade correction on the clean Windows host
+with the same pinned C#5/x64/net48 compiler 4.8.9221.0, SHA-256
+`46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00`,
+and six framework-reference pins. Build **PASS** is recorded in
+`private/evidence/task009-constructor-windows/build02-report.json`, 5,164 bytes,
+SHA-256 `d45470a971ce86be056b4cc2dc40b1b3ff67f3b3d72e1e58a9ff3112ccdc9b0f`.
+The built ProjectConstructorProbe.exe is 51,712 bytes, SHA-256
+`7447540d8ec318ab1ab2b8c36b2ab6bc9fd4b2ef7ab291b083868af0b3f166b5`.
+The manifest `source-freeze-02.json`, 1,379 bytes, SHA-256
+`73b624d0bb74bb855d9ab736e9b614bcc7e354775e51360160182a2e2de6e9b2`,
+records baseline `61c768d1785c723c94985ac36e952601ed38f0b6` plus ten frozen owned
+source hashes, metadata input count 2 and original_constructor_ready=false.
+A local read-only check confirms all ten current source hashes match it.
+This correction's source commit remains pending.
+
+The actual corrected owned Windows suites **PASS**: Session0 11/11 cases and
+interactive 19/19 cases. These are two suites, not 30 distinct assertions. The
+interactive context is session 2, UserInteractive=true, administrator_role=false;
+its end record reports exit 0 and OWNED_TESTS_ONLY. New cases cover the two-hash
+source guard and the missing facade, alongside the corrected two-file hash
+negative and three-file extra-input negative. Original Project dispatch stays
+blocked by ENUM_LITERAL_NOT_REVIEWED. All test artifacts identify original/vendor
+execution and hardware as NOT_RUN. No original input is used by these tests.
+
+Canonical files under the same private evidence directory include:
+
+| Evidence | SHA-256 |
+|---|---|
+| `owned-session0-02-stdout.txt` | `6389329464b0922e2d303f8c332ed8569be44680116c55129e69ade36d5ba5ca` |
+| `owned-interactive02-driver.stdout.txt.utf8` | `5574918423fc3619f7c0eeedb7902201367de7fbfef58224db12722a07ce3a1e` |
+| `owned-interactive02-context.json` | `e4cef95d2c65a8e38399dff7ace56a3a87fd133390c2bd6b91b1847590677774` |
+| `owned-interactive02-done.json` | `f0133e973a21d556006b7483135f83fc4b5b14863c836c5efede64cca86262fb` |
+| `owned-interactive02-log-encoding.json` | `f2a7e27b46c5bf357d7b5136ae8d21e8c7ee6eea1238bd1c598602efd446037a` |
+
+The encoding manifest preserves the raw UTF-16LE streams and links their exact
+hashes to strictly decoded UTF-8 derivatives; local byte/hash/decoding checks
+PASS for stdout and empty stderr. Decoding is not another run. The 11/19 case
+counts were checked from the actual suite logs. Detailed case-log collection
+and cleanup evidence are being recorded separately by the coordinator;
+independent follow-up verification/review remains pending here.
+
+This supersedes only the facade follow-up freeze's Windows build/owned-tests
+NOT_RUN. The first generation's 10/17 PASS and original enum01 **FAIL**, exit 2,
+remain preserved. Enum02 is **NOT RUN**; GroupAddressStyle is **UNKNOWN**.
+Original Project construction remains source-disabled and **NOT RUN**. There
+is no Project fixture, DCA initialization, UI/state, hardware or gate success
+claim. Task-009 remains **Blocked**. Independent verification/review precedes
+any original enum02 retry and no constructor can proceed without the observed
+literal and a second reviewed source freeze.
+
+Coordinator follow-up: owned case logs and cleanup are now preserved. The
+cleanup record reports LastTaskResult=0, task removed, zero owned processes
+and no junction. Independent verification and critical source/result review
+PASS; their audit records are under `private/evidence/task009-constructor-windows/`
+`verifier02/independent-audit.log` and `review02/critical-review-source-result.txt`.
+These are evidence audits, not independent Windows reruns or target-binary
+rehashes. The reviewed facade-only correction may proceed to a fixed enum-only
+metadata retry; original construction remains disabled.

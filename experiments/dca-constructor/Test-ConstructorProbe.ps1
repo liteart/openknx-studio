@@ -54,6 +54,20 @@ $current=[IO.Directory]::GetParent($output);while($null -ne $current){if(Test-Pa
 $launcher=Local (Join-Path $build 'bin\ProbeLauncher.exe');$fixtures=Local (Join-Path $build 'fixtures')
 $null=New-Item -ItemType Directory -Path $output;$utf8=[Text.UTF8Encoding]::new($false)
 Write-Output ('OWNED_SUITE_START session='+$session+' interactive='+$interactive+' administrator-role='+$administrator+' original=NOT_RUN')
+# These are source invariants for the fixed original metadata route; no original
+# input is opened by the owned tests. Both hashes must precede either identity.
+$projectSource=[IO.File]::ReadAllText((Local (Join-Path $PSScriptRoot 'ProjectConstructorProbe.cs')))
+$pinMatch=[regex]::Match($projectSource,'(?s)static void PinEnumInputs\(\)\s*\{(.*?)\n    \}')
+if(-not $pinMatch.Success){Fail 'ENUM_PIN_SOURCE'}
+$pinBody=$pinMatch.Groups[1].Value
+$firstPin=$pinBody.IndexOf('Pin(common, CommonHash);',[StringComparison]::Ordinal)
+$secondPin=$pinBody.IndexOf('Pin(facade, Hashes[6]);',[StringComparison]::Ordinal)
+$firstIdentity=$pinBody.IndexOf('AssemblyName.GetAssemblyName(common)',[StringComparison]::Ordinal)
+$secondIdentity=$pinBody.IndexOf('AssemblyName.GetAssemblyName(facade)',[StringComparison]::Ordinal)
+$complete=$pinBody.IndexOf('enumInputsPinned = true;',[StringComparison]::Ordinal)
+if(-not $pinBody.Contains('CountInputs(2);') -or $firstPin -lt 0 -or $secondPin -le $firstPin -or $firstIdentity -le $secondPin -or $secondIdentity -le $firstIdentity -or $complete -le $secondIdentity -or $pinBody.Contains('LoadFrom(')){Fail 'ENUM_PIN_ORDER'}
+if(-not $projectSource.Contains('if (EnumOnly && enumInputsPinned && args.Name == Identities[6])') -or -not $projectSource.Contains('Assembly.ReflectionOnlyLoadFrom(Path.Combine(stage, "netstandard.dll"))') -or -not $projectSource.Contains('static readonly bool OriginalConstructorReady = false;')){Fail 'ENUM_FIXED_RESOLVER_SOURCE'}
+Write-Output 'OWNED_CASE PASS enum-source-guards two-hashes-before-identities=true resolver=fixed-reflection-only original-ready=false'
 $invalidLog='\\owned-invalid\share\never.log'
 Run 'unc-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$invalidLog) 127 'LOCAL_PATH_REQUIRED'
 Run 'drive-relative-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log','C:owned-never.log') 127 'LOCAL_PATH_REQUIRED'
@@ -88,6 +102,8 @@ if(-not $interactive){
   $enumBad=Join-Path $output 'enum-bad-hash';$null=New-Item -ItemType Directory -Path $enumBad
   # Deliberately renamed OWNED bytes test rejection; no SDK identity is supplied.
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $enumBad 'Knx.Ets.Common.Types.dll')
+  Case 'project-enum-missing-facade' 'project-enum-metadata' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $enumBad
+  Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $enumBad 'netstandard.dll')
   Case 'project-enum-wrong-hash' 'project-enum-metadata' 2 'INPUT_HASH' 'INPUT_HASH' $enumBad
   [IO.File]::WriteAllText((Join-Path $enumBad 'extra.txt'),'owned-extra',$utf8)
   Case 'project-enum-extra-input' 'project-enum-metadata' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $enumBad
