@@ -489,3 +489,158 @@ is added by this record. No additional human input is required to complete
 this static evidence update. SDK/vendor implementation execution, Windows
 execution, original initialization retry, UI/state round trips and hardware
 remain **NOT RUN** for this increment.
+
+## Fixed provider-relationship lookup contract
+
+A separate `project-providers` mode starts from reviewed source
+`69a4c16c0ced39f9c95b5bd1fb2e613267893a7e`. It uses the same four exact inputs
+and guarded route. Its only targets are SDK `ExecutionContext`, `ISdkFactory`,
+`ISdkContext`, and ObjectModel `IFactory`, `IProjectStore`, `IObjectContext`,
+all observed in earlier actual metadata. Targets are fixed by owner assembly
+and full type name, not supplied by the caller.
+
+The lookup scans direct TypeDef base and InterfaceImpl edges within the
+existing bounded tables. A matching candidate records its input identity,
+token, full name, attributes and exact direct edge/target ownership. Target
+ownership must equal the selected SDK/ObjectModel assembly identity; a
+same-named type from another assembly/version/token is not a match. At most
+64 matching candidate types and 128 matching edges may be reported; exceeding
+either fails explicitly. No method, constructor, custom attribute, implementation,
+recursive inheritance or parameter graph is inspected. Ordinary type names
+alone do not identify providers.
+
+Generic/unsupported edges and unresolved owner shapes are counted as
+uncertainty without dumping a global type catalog. Indirect and external
+implementation routes are explicitly unsearched. Empty direct matches remain
+INCONCLUSIVE for creation, and positive matches prove only a relationship,
+not construction or usable services. All hashes are verified before any PE
+reader; the fourth ObjectModel MethodDef exception remains 65,536 only, while
+other table/input and file, aggregate, output/report and deadline bounds stay
+unchanged. Existing modes/commands/reports retain their behavior. Owned tests,
+source freeze and independent review precede coordinator-only original lookup.
+
+
+The provider mode's owned verification reports **PASS 89 / FAIL 0** for the
+PowerShell suite and **PASS**, 17 Python harness tests. Synthetic cases prove
+local TypeDef and exact cross-assembly TypeRef matches, internal/abstract
+candidate attributes, foreign-owner/version/token and prefix-name exclusion,
+indirect inheritance not claimed, generic TypeSpec uncertainty, missing and
+duplicate fixed targets, empty-result INCONCLUSIVE, and acceptance of exactly
+64 candidates/128 edges with explicit failure at 65 candidates or 129 edges.
+Malformed method signatures on targets and matching candidates remain unread.
+All earlier reader reports are compared byte-for-byte after provider lookup.
+
+The reviewed fourth-input MethodDef cases remain accepted at 38,472 and
+65,536 and fail at 65,537; earlier-slot row bounds, all-pin verification before
+PE reading, input counts and exclusive worker modes are exercised. Python
+tests cover the new fixed switch/operation through the existing restriction,
+identity, pin and output guards. A read-only AST comparison against source
+`69a4c16` verifies eleven prior pin, guard, bound and command expressions are
+unchanged. The relationship walk is additionally bounded to 262,144 non-nil
+direct edges, derived from four unchanged TypeDef/InterfaceImpl table limits;
+per-type interface and report limits are retained.
+
+Scope and whitespace checks **PASS**. Source baseline is
+`69a4c16c0ced39f9c95b5bd1fb2e613267893a7e`; at that freeze the provider source
+commit and independent verification/review were pending. Coordinator guarded
+`project-providers` extraction was **NOT RUN** at that freeze. No original
+method, constructor or vendor implementation executes. Task-009 remains
+**Blocked**; an actual guarded relationship report is required before choosing
+any matched constructor surface. Windows, initialization/UI/state and hardware
+proofs remain **NOT RUN**.
+
+
+## Guarded provider-relationship result, 2026-10-22
+
+The coordinator's fixed lookup completed **PASS** for static metadata at source
+`b11c234273e3e61e0563c6474cfd694dacf674eb`, on macOS/Darwin arm64 with
+PowerShell 7.6.7. This supersedes the provider freeze's **NOT RUN** and pending
+source review. The normalized exact guarded command was:
+
+```text
+python3 -B experiments/dca-metadata/run_probe.py --stage "$PRIVATE_STAGE" --pwsh "$PWSH" --experiment project-providers --output "$PRIVATE_STAGE/project-providers-report-task009.json"
+```
+
+The preserved private report is
+`private/evidence/task009-providers/project-providers-report-task009.json`,
+10,498 bytes, SHA-256
+`3433af94b9c47ea2218b1b0b59a72bbe59ea880f8173057e0db5d01691560dd7`.
+The JSON-only re-read verified bytes/hash, both denial probes true, all four
+exact input sizes/hashes/identities, six targets, eighteen candidates/eighteen
+direct edges, `runtime_execution=NOT_RUN` and
+`creation_route=INCONCLUSIVE`. It records 829 `TYPESPEC_NOT_INSPECTED` edges.
+Generic/indirect/external routes remain unresolved; these matches do not give
+a complete implementation inventory.
+
+Every SDK name below is under `Knx.Ets.Sdk`; every ObjectModel name is under
+`Knx.Ets.ObjectModel`. The candidate index is its zero-based index in
+`metadata.candidates` in the private report. The owner identity on every listed
+edge exactly matches the selected SDK or ObjectModel 6.4.8718.0 assembly.
+
+| Index | Candidate type / token | Raw attributes | Direct relationship |
+|---|---|---|---|
+| 0 | SDK `AddinExecutionContext`, `02000007` | `1048576` | extends SDK `ExecutionContext` |
+| 1 | SDK `CompatibilityExecutionContext`, `02000009` | `1048576` | extends SDK `ExecutionContext` |
+| 2 | SDK `Context`, `0200000B` | `1048576` | implements SDK `ISdkContext` |
+| 3 | SDK `DataProviderExecutionContext`, `0200000C` | `1048576` | extends SDK `ExecutionContext` |
+| 4 | SDK `DcaExecutionContext`, `0200000D` | `1048576` | extends SDK `ExecutionContext` |
+| 5 | SDK `DeviceInfoExecutionContext`, `02000011` | `1048576` | extends SDK `ExecutionContext` |
+| 6 | SDK `DeviceScriptExecutionContext`, `02000012` | `1048576` | extends SDK `ExecutionContext` |
+| 7 | SDK `DevicePluginExecutionContext`, `02000013` | `1048576` | extends SDK `ExecutionContext` |
+| 8 | SDK `DownloadPluginExecutionContext`, `02000019` | `1048576` | extends SDK `ExecutionContext` |
+| 9 | SDK `ParameterTypePluginExecutionContext`, `02000023` | `1048576` | extends SDK `ExecutionContext` |
+| 10 | SDK `SdkFactory`, `0200002D` | `1048576` | implements SDK `ISdkFactory` |
+| 11 | SDK `DataHandlerExecutionContext`, `0200003E` | `1048576` | extends SDK `ExecutionContext` |
+| 12 | ObjectModel `Factory`, `02000023` | `1048577` | implements ObjectModel `IFactory` |
+| 13 | ObjectModel `ObjectContext`, `0200007D` | `1048577` | implements ObjectModel `IObjectContext` |
+| 14 | ObjectModel `ZipContainerStore.ZipContainerProjectStore`, `020000BE` | `1048577` | implements ObjectModel `IProjectStore` |
+| 15 | ObjectModel `FileSystemStore.FileProjectStore`, `02000DCA` | `1048577` | implements ObjectModel `IProjectStore` |
+| 16 | ObjectModel `FileSystemStore.IFileProjectStore`, `02000DD1` | `1048737` | interface edge to ObjectModel `IProjectStore` |
+| 17 | ObjectModel `FileSystemStore.ImportFileProjectStore`, `02000DD7` | `1048576` | implements ObjectModel `IProjectStore` |
+
+`1048576` (`0x100000`) means nonpublic/nonabstract/noninterface with
+BeforeFieldInit; it does not establish constructor access. `1048577`
+(`0x100001`) is public/nonabstract/noninterface with BeforeFieldInit.
+`1048737` (`0x1000A1`) is public/abstract/interface with BeforeFieldInit;
+`IFileProjectStore` is therefore not a concrete store implementation. No
+candidate constructor, method, custom attribute, activation or implementation
+was inspected. The prior report's abstract ExecutionContext is distinct from
+these nonabstract derived type declarations. Names such as DcaExecutionContext
+are evidence for selecting a next inquiry, not proof of correct DCA behavior.
+
+The original store class names are observed dependencies only. GOALS excludes
+requiring an ETS project store after migration or for a new project. Finding
+FileProjectStore/ZipContainerProjectStore does not approve that dependence,
+vendor persistence as editor authority, or provisioning either class. Their
+requirements and independent-use behavior remain untested.
+
+The coordinator reports independent owned PowerShell **PASS 89 / FAIL 0**,
+Python **PASS** (17 tests), scope/whitespace **PASS**, and source review **PASS**.
+The verifier originally wrote four logs under worktree-relative
+`private/evidence/task009-providers`. The coordinator copied those unchanged to
+the canonical evidence directory while preserving the originals; this was a
+copy operation, not another test execution. Canonical filenames are
+`verifier-powershell.log`, `verifier-python.log`, `verifier-scope.log` and
+`verifier-diff-check.log`. The JSON-only re-read of
+`private/evidence/task009-providers/log-copy-provenance.json`, 851 bytes,
+SHA-256 `23783ce1091f9eb7f2e6bd84d6b16179fdc928b479cfd66a1d88c36ca5e22e6f`,
+confirms the recorded source path, unchanged-copy operation, four file
+sizes/hashes and preserved-originals flag. No relocated execution is claimed.
+
+The private provider `source-freeze-success.json` is 876 bytes, SHA-256
+`f404fd0b51ef9d858456c55f722f6ace09b77db7e955228a4543668510a6d4ed`.
+Its JSON-only read verifies source commit
+`b11c234273e3e61e0563c6474cfd694dacf674eb` and the explicit post-execution
+recording flag. All six recorded owned code hashes match the current committed
+files on re-hash. This successful-run source record does not replace or rewrite
+historical freezes or the log-copy provenance.
+
+The smallest next technical inquiry is constructor declarations only for the
+five now-observed types: SDK `DcaExecutionContext`, `Context`, `SdkFactory`,
+and ObjectModel `Factory`, `ObjectContext`. No new mode or root is added now,
+and no store constructors or recursive parameter catalog are selected. A
+separate reviewed inspection must precede any decision about a genuine fixture
+or invocation. This documentation update changes no code and reads no DLL.
+Task-009 remains **Blocked**; creation remains **INCONCLUSIVE**. Windows/vendor
+execution, nonpublic activation, original initialization, UI/state and hardware
+remain **NOT RUN** for this increment.

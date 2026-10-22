@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; service inquiry source `5c7bc46e43f1cdd013214fce796b5b8fd6962719` (baseline `e037bead9c00d116342baa561d833253adb5c615`) |
-| Tests executed | Metadata-only owned PowerShell 68 cases PASS; Python harness 16 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy construction extraction PASS (static only); project-services guarded extraction PASS (static only); scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction` and `task009-services` reports/verifier logs; dated records below |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; service inquiry source `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; provider lookup source `b11c234273e3e61e0563c6474cfd694dacf674eb` (baseline `69a4c16c0ced39f9c95b5bd1fb2e613267893a7e`) |
+| Tests executed | Metadata-only owned PowerShell 89 cases PASS; Python harness 17 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy construction extraction PASS (static only); project-services guarded extraction PASS (static only); project-providers guarded extraction PASS (static relationship only); scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Construction roots and five service roots inspected. Nonpublic SDK context/factory and interface-only ObjectModel factory/store contracts are observed; concrete implementations/state semantics and a compatible standalone creation route remain unresolved |
+| Technical outcome | Eighteen direct provider candidates/edges observed, including nonpublic SDK Context/DcaExecutionContext/SdkFactory and public ObjectModel Factory/ObjectContext; constructors and behavior uninspected, 829 TypeSpec edges unknown, creation route INCONCLUSIVE |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Independent construction/service static verification and source review PASS; final service-result documentation review PASS; no runtime service acceptance |
+| Reviewer | Independent construction/service/provider static verification and source review PASS; final provider-result documentation review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -406,3 +406,96 @@ SDK context/factory requirements. No new mode, root, parameter catalog, service
 implementation or experiment is added. Current static documentation work needs
 no additional human input. Windows/SDK implementation execution, original
 initialization retry, UI/state round trips and hardware remain **NOT RUN**.
+
+
+## Direct provider lookup source freeze
+
+From reviewed baseline `69a4c16c0ced39f9c95b5bd1fb2e613267893a7e`, a separate
+fixed `project-providers` mode uses the same four exact pins and guarded route.
+Its six targets are SDK `ExecutionContext`, `ISdkFactory`, `ISdkContext`, and
+ObjectModel `IFactory`, `IProjectStore`, `IObjectContext`, all named by actual
+prior metadata. It records only direct base/interface matching candidates,
+their identities/tokens/attributes and exact target owner relationships.
+There is no constructor/method inventory, recursive hierarchy/parameter graph,
+implementation, runtime loader expansion or original execution.
+
+The contract was written before code in
+[DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md). Match limits are 64
+candidate types and 128 edges, with explicit failure rather than truncation.
+Generic/unsupported edges and target-name owner mismatches remain uncertain;
+indirect/external implementations are unsearched. Empty results remain
+INCONCLUSIVE for creation, and positive relationships do not qualify services.
+All existing pin, row, file/aggregate, selected-work, report/output and deadline
+bounds remain in force.
+
+The owned PowerShell suite reports **PASS 89 / FAIL 0** and Python harness
+**PASS**, 17 tests. Fixtures exercise exact ownership and foreign/version/token
+collisions, abstract/internal candidates, direct versus indirect relationships,
+generic uncertainty, empty results and exact match ceilings/failures. Malformed
+method signatures in matching candidates are ignored. Earlier reader reports
+remain byte-for-byte identical after provider lookup; a read-only AST comparison
+against the baseline verifies eleven prior pin/guard/bound/command expressions
+unchanged. Scope/whitespace checks **PASS**.
+
+Independent verification/review and the coordinator's guarded original
+`project-providers` extraction are **NOT RUN** at source freeze. No matched
+constructor surface is inspected before actual candidates are known. Task-009
+remains **Blocked** with all service acceptance criteria unchecked. No new
+runtime, Windows, initialization/UI/state or hardware proof is produced.
+
+
+## Guarded provider result, 2026-10-22
+
+The coordinator's fixed provider lookup completed **PASS** for static metadata
+at source `b11c234273e3e61e0563c6474cfd694dacf674eb` on macOS/Darwin arm64,
+PowerShell 7.6.7. The preserved private report is
+`private/evidence/task009-providers/project-providers-report-task009.json`,
+10,498 bytes, SHA-256
+`3433af94b9c47ea2218b1b0b59a72bbe59ea880f8173057e0db5d01691560dd7`.
+Its JSON-only re-read verified the report hash, both denial probes true, four
+exact pins/identities, six targets and eighteen direct candidates/edges.
+`runtime_execution=NOT_RUN`; `creation_route=INCONCLUSIVE`; 829 TypeSpec edges
+remain uninspected. This supersedes the provider source-freeze's **NOT RUN**
+and pending source review, without establishing a usable service.
+
+Observed SDK candidates include internal/nonabstract `Context` (`0200000B`),
+`DcaExecutionContext` (`0200000D`) and `SdkFactory` (`0200002D`), each with
+attributes `1048576`. ObjectModel `Factory` (`02000023`) and `ObjectContext`
+(`0200007D`) are public/nonabstract, attributes `1048577`. Their exact direct
+relationships and all eighteen candidate identities/tokens/raw flags are
+listed in [DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md), together
+with the normalized exact guarded command.
+
+Public/nonabstract ObjectModel store candidates are
+`ZipContainerStore.ZipContainerProjectStore` (`020000BE`) and
+`FileSystemStore.FileProjectStore` (`02000DCA`); internal/nonabstract
+`FileSystemStore.ImportFileProjectStore` is `02000DD7`. The additional
+`FileSystemStore.IFileProjectStore` (`02000DD1`, attributes `1048737`) is an
+interface, not a concrete store. GOALS excludes dependence on an ETS project
+store: these original type names do not approve provisioning or using vendor
+storage as editor authority. No candidate constructors, methods, custom
+attributes, implementation behavior or activation were inspected.
+
+The coordinator reports independent owned PowerShell **PASS 89 / FAIL 0**,
+Python **PASS** (17 tests), scope/whitespace **PASS**, and source review **PASS**.
+Four verifier logs were originally written under the worktree-relative
+`private/evidence/task009-providers`; unchanged copies now reside in the
+canonical evidence directory, with originals preserved. This was not another
+execution. The canonical `log-copy-provenance.json` is 851 bytes, SHA-256
+`23783ce1091f9eb7f2e6bd84d6b16179fdc928b479cfd66a1d88c36ca5e22e6f`,
+and records the four source filenames, identical hashes and copy operation.
+
+The post-execution provider `source-freeze-success.json` is 876 bytes,
+SHA-256 `f404fd0b51ef9d858456c55f722f6ace09b77db7e955228a4543668510a6d4ed`;
+it records source `b11c234273e3e61e0563c6474cfd694dacf674eb`, and all six
+owned code hashes match the committed files. The manifest and copy provenance
+were read as JSON only; no vendor DLL was read or executed in this update.
+
+Only result documents change now. The next minimal inquiry is constructor-only
+metadata for the five observed SDK DcaExecutionContext/Context/SdkFactory and
+ObjectModel Factory/ObjectContext types; it is not implemented or run here.
+No unrelated store constructors, recursive catalog, original invocation or
+nonpublic activation is authorized by this report. Task-009 remains **Blocked**
+on a genuine fixture/context route with all service acceptance criteria
+unchecked. Windows/vendor execution, original initialization, UI/state and
+hardware remain **NOT RUN** for this increment.
