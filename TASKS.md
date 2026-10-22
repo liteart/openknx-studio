@@ -1,6 +1,6 @@
 # Task Index
 
-This backlog contains **147 individually specified tasks**, numbered Task-001 through Task-147. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
+This backlog contains **148 individually specified tasks**, numbered Task-001 through Task-148. Every task has its own Markdown file. The remaining IDs through 999 are unallocated, not empty files.
 
 All implementation/report statuses initially are **Not started**. This kit specifies work; it does not assert that tests, forks, code or releases already exist. Task dependencies and explicit phase-gate outcomes both govern readiness. A NO-GO report does not unlock the next stage.
 
@@ -15,7 +15,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | Stage | Task IDs | Count | Gate |
 |---|---|---:|---|
 | PoCs and feasibility gate | Task-001 to Task-028 | 28 | Task-028 |
-| Additional PoC input investigations and test reliability | Task-139 to Task-147 | 9 | No gate unlocked; Task-005 still governs provisioning |
+| Additional PoC input investigations and test reliability | Task-139 to Task-148 | 10 | No gate unlocked; Task-005 still governs provisioning |
 | Alpha integration | Task-029 to Task-092 | 64 | Task-092 |
 | Beta functionality | Task-093 to Task-112 | 20 | Task-112 |
 | Release candidate | Task-113 to Task-125 | 13 | Task-125 |
@@ -208,7 +208,8 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-145](tasks/Task-145.md) | Inspect the explicit Glass V3.1 static profile | Editor offline product inspection | Accepted bounded Task-023 parser and reviewed reference investigation; no gate unlocked |
 | [Task-146](tasks/Task-146.md) | Reject frame lengths shorter than the fixed header | knust-fork / malformed-input parser bounds | Accepted Tasks 015 and 141; no phase gate unlocked |
 | [Task-147](tasks/Task-147.md) | Check frame constructor lengths before narrowing | knust-fork / checked frame construction | Accepted Tasks 015, 141 and 146; no phase gate unlocked |
+| [Task-148](tasks/Task-148.md) | Probe the original DCA constructor on a clean Windows host | Bounded original-DCA runtime research | Accepted Tasks 143 and 144; owned tests/review first; explicit constructor-only owner exception despite isolation FAIL; no gate unlocked |
 
 ## How to extend the backlog
 
-Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-148), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
+Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-149), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
