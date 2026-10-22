@@ -1,5 +1,83 @@
 # Static Project context qualification
 
+## Fixed ProjectId metadata contract, source increment after project06
+
+Baseline `28398f0de002c6bef613325dc3431fe48e7cb656` contains the reviewed
+project06 result. Its unsupported `IProjectStore.get_Id` request motivates a
+separate `project-id` metadata mode; it supplies no ProjectId value or service.
+The guarded mode accepts only Knx.Ets.Ids.dll, 318,928 bytes, SHA-256
+`43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877`,
+identity `Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159`.
+The hash is verified before PEReader; metadata identity precedes type selection.
+The sole fixed root is `Knx.Ets.Ids.Project.ProjectId`, with at most sixteen
+same-assembly base definitions. Type flags, base/interface declarations, all
+declared constructors, public/protected methods, and declared field flags and
+signatures are recorded. No field values, custom attributes, bodies, dependency
+resolution or target execution are permitted. External bases remain unresolved;
+a bounded TypeSpec base declaration is retained with
+`TYPESPEC_BASE_NOT_FOLLOWED`, without following generic ancestry.
+
+Existing 16 MiB file/32 MiB aggregate, 32,768 rows per table, 128-byte/128-node
+signatures, depth sixteen, 32 parameters/interfaces, 256 methods per type/2,048
+total, 1,024 selected types and 512 KiB report bounds remain. Fields separately
+use 256 per type/2,048 total. The guarded child retains restriction probes,
+30-second deadline and 2 MiB combined capture. No ObjectModel row exception is
+used. Missing/duplicate root, bad identity/hash/signature and bounds fail closed.
+The separate worker has no mode, root or identity override. Owned tests use an
+explicit reader requiring unsigned `Task009.OwnedProjectId` 1.0.0.0 metadata;
+they never impersonate the original signing identity. Earlier modes, pins and
+reports remain unchanged. Original ProjectId extraction and APIs are **NOT RUN /
+UNKNOWN** until independent source review and the coordinator's guarded run.
+Task-009 remains Blocked; no fixture, DCA initialization or hardware claim follows.
+
+Owned macOS verification at this source freeze: provisioned PowerShell 7.6.7
+compiled the reader/fixtures and reported **PASS 151 / FAIL 0**; Python reported
+**PASS 19**. Commands from the worktree:
+
+```text
+pwsh -NoLogo -NoProfile -NonInteractive -File experiments/dca-integration/Test-EntrypointMetadata.ps1
+python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+The PowerShell command used the already provisioned private
+`toolchains/powershell-7.6.7/pwsh`. Scope and diff checks **PASS**. New synthetic
+checks cover one fixed root; missing/duplicate roots; distinct unsigned identity;
+original-pin/hash rejection before parsing; private constructors, public/protected
+methods and private/public field declarations; omitted constant values and ignored
+private nonconstructor signatures; generic-base stop and local bases; field
+headers (including reserved flags), empty/truncated/void/trailing signatures,
+128-byte/128-node/depth/string bounds; 256 field/method boundaries and overflow
+of the 2,048 totals; 32,768 TypeDef/MethodDef boundaries; interface and report
+limits. The report-limit fixture selects four types with 200 fields each and
+1,000-character field-name prefixes; it fails `DCAENTRY_REPORT_LIMIT` without
+raising any cap. These images contain no vendor bytes or method bodies.
+
+Earlier reader reports compare byte-for-byte equal. Removing only the additive
+ProjectId blocks reproduces the baseline reader, fixture and prior test source;
+the legacy Method decoder, SelectChain and ReadInternal are unchanged. All old
+Python pin/command constants, the earlier worker and constructor tools are
+unchanged. The wrapper test uses mocked child output and owned one-byte input;
+it tests restriction-first fixed worker/pin/identity/root selection, no original
+parse. No original API, value construction or service behavior is established.
+
+| Frozen source | SHA-256 |
+|---|---|
+| EntrypointMetadata.cs | `d2141d41233dc0da91ff8676c0d8bd72b188031a5a6ed9dfd139a248448dd3b8` |
+| OwnedEntrypointFixtures.cs | `468f72504cad76e3df34f508ccf3a05854ca5a8b093f89ac9ed6d9472b58ffb9` |
+| Test-EntrypointMetadata.ps1 | `bc07178c8c80178d64f3ea11a27a146f9c99e508290238a4b29e252af14f4756` |
+| Read-ProjectIdMetadata.ps1 | `6f3c24ae0ec9184a14ff748b53486510da102316dc042315760b000c1b457d2b` |
+| run_probe.py | `76638cf02e64d60fe6d17d04f4ec8751ac3feb0dbbd3872be682407fd947f32f` |
+| test_run_probe.py | `7b43ad0c981609c468ea9b1aebdaaf3c3605897b6aa60efa2d8af757e120e792` |
+
+Source commit and independent verification/review are pending. After those
+steps, only the coordinator may run the fixed guarded `--experiment project-id`
+with a fresh private stage and output. Original metadata extraction, new Windows
+execution, fixture construction, DCA initialization/UI/state and hardware are
+**NOT RUN for this increment**; prior project06 runtime/service observations
+remain the reviewed diagnostic FAIL below. Task-009 remains Blocked.
+
 Task-009 remains blocked on concrete SDK construction evidence. The accepted
 Task-008 dependency analysis identified one denied `get_Project` request, not
 successful initialization. This artifact defines the bounded static follow-up;
@@ -1624,3 +1702,14 @@ they do not establish constructor body/caller provenance or supply a getter
 value. No Windows rerun, original DLL read, source change, retry, fixture
 qualification or phase approval follows. ProjectId contract investigation
 remains a separate prerequisite before any positive fixture implementation.
+
+Independent fixed ProjectId metadata-source verification and critical review
+PASS. Records are `private/evidence/task009-project-id-metadata/verifier/` and
+`review/critical-review-source-result.txt`. Both independently reran the owned
+PowerShell 151-case and Python 19-test suites, scope and whitespace checks;
+legacy modes and reports remain preserved. The reviewer additionally checked
+malformed method handles and the report's escaped JSON size bound. These
+checks do not read original DLL bytes or establish the ProjectId API. After
+the explicit source commit, one fixed guarded metadata-only extraction may
+follow. Runtime constructors, getter values, fixtures and DCA/hardware/gate
+qualification remain outside this source increment; Task-009 stays Blocked.

@@ -198,5 +198,34 @@ try{
  Reject {[Task144.EntrypointMetadata]::ReadConstructors($broken,(Hash $broken),@($reference,$constructorSdk,$constructorOm),@((Hash $reference),(Hash $constructorSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
  Reject {[Task144.EntrypointMetadata]::ReadConstructors($dca,(Hash $dca),@($constructorSdk,$constructorOm),@((Hash $constructorSdk),(Hash $constructorOm)))} 'DCAENTRY_INPUT_COUNT'
  Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructorSdk,$constructorOm) -ReferenceSha256 @((Hash $reference),(Hash $constructorSdk),(Hash $constructorOm)) -ProjectConstructors -ProjectProviders} 'DCAENTRY_MODE'
+ $id=Join-Path $root 'OwnedProjectId.dll';[Task144OwnedFixtures]::CreateProjectId($id)
+ function ProjectId([string] $p=$id){[Task144.EntrypointMetadata]::ReadOwnedProjectId($p,(Hash $p))}
+ $idRaw=ProjectId;$idReport=$idRaw|ConvertFrom-Json;$idType=$idReport.types[0]
+ Assert ($idReport.operation -eq 'static_dca_project_id' -and $idReport.runtime_execution -eq 'NOT_RUN' -and $idReport.inputs.Count -eq 1 -and $idReport.inputs[0].identity -eq 'Task009.OwnedProjectId, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $idReport.selected_root -eq 'Knx.Ets.Ids.Project.ProjectId') 'Owned identity and sole fixed ProjectId root';$passed++
+ Assert ($idType.attributes -eq 257 -and $idType.methods.Count -eq 3 -and $idType.methods[0].name -eq '.ctor' -and $idType.methods[0].accessibility -eq 'Private' -and $idType.methods[1].name -eq 'Parse' -and $idType.methods[2].accessibility -eq 'Family') 'ProjectId raw type flags and constructor/public/protected declarations';$passed++
+ Assert ($idType.fields.Count -eq 2 -and $idType.fields[0].attributes -eq 33 -and $idType.fields[0].signature -eq '[mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null]System.Guid' -and $idType.fields[1].signature -eq 'String') 'Declared private/public field flags and bounded signatures';$passed++
+ Assert (-not $idRaw.Contains('OWNED_CONSTANT_VALUE') -and -not $idRaw.Contains('PrivateIgnored') -and -not $idRaw.Contains($root) -and @([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedProjectId'}).Count -eq 0) 'No field values/private methods/private paths/fixture runtime load';$passed++
+ foreach($profile in @(1,2,3,4,5,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,28,30,31)){
+  $bad=Join-Path $root ('ProjectIdBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectId($bad,$profile)
+  $code=@{1='ROOT_NOT_FOUND';2='DUPLICATE_ROOT';3='MALFORMED_SIGNATURE';4='MALFORMED_SIGNATURE';5='INPUT_IDENTITY';8='FIELD_LIMIT';9='METHOD_LIMIT';10='ROW_LIMIT';11='STRING_LIMIT';12='SIGNATURE_LIMIT';13='SIGNATURE_SHAPE';14='SIGNATURE_SHAPE';15='SIGNATURE_LIMIT';16='REPORT_LIMIT';17='BASE_CYCLE';18='BASE_LIMIT';20='SIGNATURE_SHAPE';21='INTERFACE_LIMIT';22='FIELD_LIMIT';23='METHOD_LIMIT';24='SIGNATURE_SHAPE';28='ROW_LIMIT';30='SIGNATURE_LIMIT';31='MALFORMED_SIGNATURE'}[$profile]
+  Reject {ProjectId $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(25,26,27,29)){
+  $boundary=Join-Path $root ('ProjectIdBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectId($boundary,$profile)
+  $boundaryReport=ProjectId $boundary|ConvertFrom-Json
+  Assert ($boundaryReport.types.Count -eq 1 -and ($profile -ne 25 -or $boundaryReport.types[0].fields.Count -eq 256) -and ($profile -ne 26 -or $boundaryReport.types[0].methods.Count -eq 256)) ('ProjectId field/method/table boundary '+$profile);$passed++
+ }
+ foreach($profile in @(6,19)){
+  $positive=Join-Path $root ('ProjectIdChain'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectId($positive,$profile)
+  $chain=ProjectId $positive|ConvertFrom-Json
+  if($profile -eq 6){Assert ($chain.types.Count -eq 1 -and $chain.base_chain_disposition -eq 'TYPESPEC_BASE_NOT_FOLLOWED' -and $chain.types[0].base_type.Contains('<String>')) 'TypeSpec base declaration retained without ancestry resolution'}
+  else{Assert ($chain.types.Count -eq 2 -and $chain.base_chain_disposition -eq 'EXTERNAL_BASE_NOT_RESOLVED') 'Bounded same-assembly base declarations'};$passed++
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectId($broken,('0'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectId($id,(Hash $id))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectId($broken,'43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877')} 'DCAENTRY_INPUT_HASH'
+ $idWorker=Join-Path $PSScriptRoot 'Read-ProjectIdMetadata.ps1'
+ Reject {& $idWorker -InputPath $id -InputSha256 (Hash $id)} 'DCAENTRY_INPUT_PIN'
+ Assert ((Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All earlier reader reports unchanged after ProjectId metadata';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

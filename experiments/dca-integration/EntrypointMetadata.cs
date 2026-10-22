@@ -81,6 +81,12 @@ public static class EntrypointMetadata {
    ReturnType=s.ReturnType;
    return Bound((s.Header.IsInstance?"instance ":"static ")+s.ReturnType+"("+string.Join(",",s.ParameterTypes)+") generic="+s.GenericParameterCount);
   }
+  public string Field(BlobHandle h){
+   nodes=0;checkedNodes=0;var b=r.GetBlobReader(h);if(b.Length>128)throw Fail("SIGNATURE_LIMIT");
+   var pre=b;if(pre.ReadByte()!=6)throw Fail("SIGNATURE_SHAPE");
+   CheckType(ref pre,0);if(pre.RemainingBytes!=0)throw Fail("SIGNATURE_SHAPE");
+   var d=new SignatureDecoder<string,object>(this,r,null);return Bound(d.DecodeFieldSignature(ref b));
+  }
   public string GetArrayType(string t,ArrayShape a){throw Fail("UNSUPPORTED_ARRAY");}
   public string GetByReferenceType(string t){return Bound(t+"&");}
   public string GetFunctionPointerType(MethodSignature<string> s){throw Fail("UNSUPPORTED_FUNCTION_POINTER");}
@@ -204,6 +210,57 @@ public static class EntrypointMetadata {
  }
  public static string ReadConstructors(string dca,string hash,string[] refs,string[] hashes){
   return ReadInternal(dca,hash,refs,hashes,true,true,false,true);
+ }
+ const string ProjectIdHash="43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877";
+ const string ProjectIdIdentity="Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string OwnedProjectIdIdentity="Task009.OwnedProjectId, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string ProjectIdRoot="Knx.Ets.Ids.Project.ProjectId";
+ public static string ReadProjectId(string path,string hash){
+  if(hash!=ProjectIdHash)throw Fail("INPUT_PIN");
+  return ReadProjectIdInternal(path,hash,false);
+ }
+ // Explicit synthetic route: rejects original identities and cannot be selected by the worker.
+ public static string ReadOwnedProjectId(string path,string hash){return ReadProjectIdInternal(path,hash,true);}
+ static string ReadProjectIdInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);
+  if(!owned&&bytes.Length!=318928)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   CheckRows(r,false,0);string identity=AssemblyIdentity(r);
+   if(identity!=(owned?OwnedProjectIdIdentity:ProjectIdIdentity))throw Fail("INPUT_IDENTITY");
+   TypeDefinitionHandle root=default;
+   foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)==ProjectIdRoot){if(!root.IsNil)throw Fail("DUPLICATE_ROOT");root=h;}
+   if(root.IsNil)throw Fail("ROOT_NOT_FOUND");
+   var selected=new HashSet<TypeDefinitionHandle>();var current=root;string disposition;
+   while(true){
+    if(!selected.Add(current))throw Fail("BASE_CYCLE");if(selected.Count>16)throw Fail("BASE_LIMIT");
+    var b=r.GetTypeDefinition(current).BaseType;if(b.IsNil){disposition="NO_BASE";break;}
+    if(b.Kind==HandleKind.TypeDefinition){current=(TypeDefinitionHandle)b;continue;}
+    if(b.Kind==HandleKind.TypeReference){disposition="EXTERNAL_BASE_NOT_RESOLVED";break;}
+    if(b.Kind==HandleKind.TypeSpecification){disposition="TYPESPEC_BASE_NOT_FOLLOWED";break;}
+    throw Fail("BASE_SHAPE");
+   }
+   var types=new List<object>();int methods=0,fields=0;
+   foreach(var h in r.TypeDefinitions){
+    if(!selected.Contains(h))continue;if(types.Count>=1024)throw Fail("TYPE_LIMIT");var t=r.GetTypeDefinition(h);
+    var interfaces=new List<string>();foreach(var ih in t.GetInterfaceImplementations()){if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");interfaces.Add(new Names(r,true).Named(r.GetInterfaceImplementation(ih).Interface));}
+    var declared=new List<object>();foreach(var mh in t.GetMethods()){
+     var m=r.GetMethodDefinition(mh);string name=Str(r,m.Name);var access=m.Attributes&MethodAttributes.MemberAccessMask;bool constructor=name==".ctor"||name==".cctor";
+     if(!constructor&&access!=MethodAttributes.Public&&access!=MethodAttributes.Family&&access!=MethodAttributes.FamORAssem&&access!=MethodAttributes.FamANDAssem)continue;
+     if(++methods>2048||declared.Count>=256)throw Fail("METHOD_LIMIT");string signature;
+     try{signature=new Names(r,true).Method(m.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     declared.Add(Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",name,"attributes",(int)m.Attributes,"accessibility",access.ToString(),"signature",signature));
+    }
+    var fieldDeclarations=new List<object>();foreach(var fh in t.GetFields()){
+     if(++fields>2048||fieldDeclarations.Count>=256)throw Fail("FIELD_LIMIT");var f=r.GetFieldDefinition(fh);string signature;
+     try{signature=new Names(r,true).Field(f.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     fieldDeclarations.Add(Obj("token",MetadataTokens.GetToken(fh).ToString("X8"),"name",Str(r,f.Name),"attributes",(int)f.Attributes,"signature",signature));
+    }
+    types.Add(Obj("token",MetadataTokens.GetToken(h).ToString("X8"),"name",new Names(r,true).Named(h),"attributes",(int)t.Attributes,"base_type",new Names(r,true).Named(t.BaseType),"interfaces",interfaces,"methods",declared,"fields",fieldDeclarations));
+   }
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_id","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_root",ProjectIdRoot,"base_chain_disposition",disposition,"types",types,"limitations",new[]{"Fixed ProjectId and bounded same-assembly bases only; TypeSpec ancestry is not followed, external declarations remain unresolved.","Constructor/method/field declarations only; no field values, custom attributes, bodies, dependency resolution or target execution. No ProjectId value or working service is supplied."}));
+   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
  }
  static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project,bool construction=false,bool services=false,bool constructors=false){
   if(refs==null||hashes==null||refs.Length!=hashes.Length||(construction?refs.Length!=3:refs.Length<1||refs.Length>2))throw Fail("INPUT_COUNT");

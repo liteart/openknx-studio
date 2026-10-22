@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; project06 FAIL exit 10 on first observed SDK service request, explicit unsupported get_Id response; no qualified fixture/service |
-| Source commit(s) | Prior increments recorded below; profile12 source and actual project06 run `de5d65056510b240deb93971313bca9f164b7b40`; project06 result documentation commit pending |
-| Tests executed | Earlier results retained. Generation06 pinned build/owned suites PASS 11 Session0/20 limited/16 elevated. Project06 original diagnostic FAIL exit 10 after twelve pins/OS facade PASS: one unsupported get_Id request, invocation ATTEMPTED_NOT_RETURNED, body entry NOT_ESTABLISHED_BY_STACK_TRACE. DCA initialization/UI/state/hardware NOT RUN |
+| Source commit(s) | Prior increments recorded below; profile12 source and actual project06 run `de5d65056510b240deb93971313bca9f164b7b40`; reviewed project06 result `28398f0de002c6bef613325dc3431fe48e7cb656`; fixed ProjectId metadata increment commit pending |
+| Tests executed | Earlier results retained. Generation06 pinned build/owned suites PASS 11 Session0/20 limited/16 elevated. Project06 original diagnostic FAIL exit 10 after twelve pins/OS facade PASS: one unsupported get_Id request, invocation ATTEMPTED_NOT_RETURNED, body entry NOT_ESTABLISHED_BY_STACK_TRACE. New ProjectId synthetic metadata checks PASS 151 PowerShell/19 Python; original ProjectId extraction NOT RUN. DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Ids runtime load and first SDK IProjectStore.get_Id request OBSERVED; explicit unsupported denial, no constructor return or call-origin/body-entry proof. No dependency blocker or unexpected audit. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Profile12 source/owned-result audit and critical review PASS; project06 result verification/review pending; no runtime service acceptance |
+| Reviewer | Profile12 source/owned-result and project06 result independent verification/critical review PASS; new ProjectId metadata source verification/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1094,3 +1094,44 @@ they do not establish constructor body/caller provenance or supply a getter
 value. No Windows rerun, original DLL read, source change, retry, fixture
 qualification or phase approval follows. ProjectId contract investigation
 remains a separate prerequisite before any positive fixture implementation.
+
+## Fixed ProjectId metadata source increment
+
+After reviewed project06 result commit
+`28398f0de002c6bef613325dc3431fe48e7cb656`, add only a separate `project-id`
+metadata experiment for `Knx.Ets.Ids.Project.ProjectId`. The fixed one-file
+Ids pin is 318,928 bytes, SHA-256
+`43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877`,
+6.4.8718.0/neutral/PKT61439873ec5e1159. The original reader checks this hash
+before PEReader and metadata identity before root selection. A separate unsigned
+owned reader and fixture identity cannot impersonate the fixed original input.
+No original ProjectId bytes were read for this increment; declarations remain
+UNKNOWN until the coordinator's later reviewed guarded extraction.
+
+The [fixed contract and six source hashes](../docs/DCA-PROJECT-CONTEXT.md)
+record declared constructors/public-protected methods and fields, flags,
+bounded local bases and an explicit TypeSpec ancestry stop. No values, method
+bodies, custom attributes, dependency loading or service implementation are added.
+All prior pins, modes, reader reports and constructor tools are preserved.
+
+Commands: provisioned PowerShell 7.6.7 runs
+`-NoLogo -NoProfile -NonInteractive -File experiments/dca-integration/Test-EntrypointMetadata.ps1`
+(**PASS 151 / FAIL 0**); `python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py`
+(**PASS 19**); `python3 -B scripts/check_project_scope.py` and
+`git diff --check` (**PASS**). Tests are synthetic metadata/owned process fixtures
+on macOS, including field decoding/selection/output bounds and unchanged reports;
+they are not original parsing or Windows runtime evidence. Independent source
+verification/review and commit are pending. Original ProjectId extraction and
+new Windows/fixture/DCA initialization/UI/state/hardware execution are **NOT RUN**.
+Task-009 remains Blocked; the observed get_Id request receives no guessed value.
+
+Independent fixed ProjectId metadata-source verification and critical review
+PASS. Records are `private/evidence/task009-project-id-metadata/verifier/` and
+`review/critical-review-source-result.txt`. Both independently reran the owned
+PowerShell 151-case and Python 19-test suites, scope and whitespace checks;
+legacy modes and reports remain preserved. The reviewer additionally checked
+malformed method handles and the report's escaped JSON size bound. These
+checks do not read original DLL bytes or establish the ProjectId API. After
+the explicit source commit, one fixed guarded metadata-only extraction may
+follow. Runtime constructors, getter values, fixtures and DCA/hardware/gate
+qualification remain outside this source increment; Task-009 stays Blocked.
