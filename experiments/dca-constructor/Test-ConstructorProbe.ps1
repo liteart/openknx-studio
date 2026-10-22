@@ -71,12 +71,12 @@ foreach($literal in @('static readonly bool OriginalConstructorReady = true;','c
 $originalMatch=[regex]::Match($projectSource,'(?s)else if \(Original\)\s*\{(.*?)\n            \} else')
 if(-not $originalMatch.Success){Fail 'ORIGINAL_PIN_SOURCE'}
 $originalBody=$originalMatch.Groups[1].Value
-$countEleven=$originalBody.IndexOf('CountInputs(11);',[StringComparison]::Ordinal)
-$pinEleven=$originalBody.IndexOf('for (int i = 0; i < Names.Length; i++) Pin(',[StringComparison]::Ordinal)
+$countTwelve=$originalBody.IndexOf('CountInputs(12);',[StringComparison]::Ordinal)
+$pinTwelve=$originalBody.IndexOf('for (int i = 0; i < Names.Length; i++) Pin(',[StringComparison]::Ordinal)
 $platformPreflight=$originalBody.IndexOf('PinPlatformFacade();',[StringComparison]::Ordinal)
-$identityEleven=$originalBody.IndexOf('for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(',[StringComparison]::Ordinal)
-if($countEleven -lt 0 -or $pinEleven -le $countEleven -or $platformPreflight -le $pinEleven -or $identityEleven -le $platformPreflight -or $originalBody.Contains('LoadFrom(')){Fail 'ORIGINAL_PIN_ORDER'}
-foreach($pin in @('"FluentResults"','"99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159"','"FluentResults, Version=3.16.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"','"Knx.Ets.Common" };','"4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd" };','"Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159" };')){if(-not $projectSource.Contains($pin)){Fail 'PRIVATE_PIN_SOURCE'}}
+$identityTwelve=$originalBody.IndexOf('for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(',[StringComparison]::Ordinal)
+if($countTwelve -lt 0 -or $pinTwelve -le $countTwelve -or $platformPreflight -le $pinTwelve -or $identityTwelve -le $platformPreflight -or $originalBody.Contains('LoadFrom(')){Fail 'ORIGINAL_PIN_ORDER'}
+foreach($pin in @('"FluentResults"','"99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159"','"FluentResults, Version=3.16.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"','"Knx.Ets.Common"','"4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd"','"Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"','"Knx.Ets.Ids" };','"43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877" };','"Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159" };')){if(-not $projectSource.Contains($pin)){Fail 'PRIVATE_PIN_SOURCE'}}
 $platformMatch=[regex]::Match($projectSource,'(?s)static void PinPlatformFacade\(\)\s*\{(.*?)\n    \}')
 if(-not $platformMatch.Success){Fail 'PLATFORM_PIN_SOURCE'}
 $platformBody=$platformMatch.Groups[1].Value
@@ -86,7 +86,7 @@ $platformComplete=$platformBody.IndexOf('platformFacadePinned = true;',[StringCo
 if($platformHash -lt 0 -or $platformIdentity -le $platformHash -or $platformComplete -le $platformIdentity -or -not $platformBody.Contains('FileShare.Read') -or -not $platformBody.Contains('stream.Length == 102856') -or -not $platformBody.Contains('OWNED_PLATFORM_FACADE_INCOMPLETE_PIN') -or $platformBody.Contains('Record("PIN ')){Fail 'PLATFORM_PIN_ORDER'}
 foreach($guard in @('const string PlatformFacadeRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\netstandard\\v4.0_2.0.0.0__cc7b13ffcd2ddd51\\netstandard.dll";','return (Original || mode == "owned-project") && platformFacadePinned && identity == Identities[6]','ProbeFiles.Same(location, platformFacadePath) && cache && !reflectionOnly;','assembly.GetName().Name == "netstandard"','" reflection-only=" + assembly.ReflectionOnly','" pinned-file-sha256=" + (platform ? Hashes[6] : "NOT_ESTABLISHED")')){if(-not $projectSource.Contains($guard)){Fail 'PLATFORM_ALIAS_SOURCE'}}
 if([regex]::Matches($projectSource,'platformFacadePinned\s*=').Count -ne 1 -or $pinBody.Contains('PinPlatformFacade')){Fail 'PLATFORM_PIN_BOUNDARY'}
-Write-Output 'OWNED_CASE PASS enum-source-guards two-hashes-before-identities=true resolver=fixed-reflection-only reviewed-literal=ThreeLevel-byte-1 eleven-hashes-before-platform-and-identities=true platform=exact-held-pin private-common=exact-pin'
+Write-Output 'OWNED_CASE PASS enum-source-guards two-hashes-before-identities=true resolver=fixed-reflection-only reviewed-literal=ThreeLevel-byte-1 twelve-hashes-before-platform-and-identities=true platform=exact-held-pin private-common-ids=exact-pins'
 $invalidLog='\\owned-invalid\share\never.log'
 Run 'unc-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$invalidLog) 127 'LOCAL_PATH_REQUIRED'
 Run 'drive-relative-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log','C:owned-never.log') 127 'LOCAL_PATH_REQUIRED'
@@ -117,15 +117,15 @@ if(-not $interactive){
   foreach($marker in @('OWNED_PROJECT_ENUM_PASS','OWNED_PROJECT_DENIAL_PASS','PROJECT_CONSTRUCTOR_END returned=False denied-requests=1 qualification=NOT_ESTABLISHED','PROJECT_CONSTRUCTOR_END returned=True denied-requests=1 qualification=NOT_ESTABLISHED','PROJECT_CONSTRUCTOR_END returned=True denied-requests=0 qualification=NOT_ESTABLISHED')){if(-not $projectLog.Contains($marker)){Fail 'PROJECT_OWNED_QUALIFICATION'}}
   foreach($marker in @('OWNED_PLATFORM_FACADE_INCOMPLETE_PIN_PASS','OWNED_PLATFORM_FACADE_PASS microsoft-only=true exact-pin=true wrong-identity-path-cache-reflection=denied','PLATFORM_FACADE_AUDIT alias-allowed=True','origin=FIXED_OS_GAC_PATH','gac=True','reflection-only=False')){if(-not $projectLog.Contains($marker)){Fail 'OWNED_PLATFORM_ALIAS'}}
   if([regex]::Matches($projectLog,' PIN name=').Count -ne 1 -or [regex]::Matches($projectLog,' PLATFORM_FACADE_PIN ').Count -ne 1){Fail 'PLATFORM_PRIVATE_PIN_COUNT'}
-  # Only OWNED bytes are used: missing input count and exact-eleven wrong-hash
+  # Only OWNED bytes are used: missing input count and exact-twelve wrong-hash
   # dispatch must stop before any original identity inspection or assembly load.
-  $projectBad=Join-Path $output 'project-eleven-bad-hash';$null=New-Item -ItemType Directory -Path $projectBad
-  $projectNames=@('MDT-DaliDcaPlus.dll','Knx.Ets.Sdk.dll','Knx.Ets.Sdk.AddIns.AddInViews.dll','Knx.Ets.Common.Types.dll','Knx.Ets.Common.Resources.dll','Microsoft.Bcl.AsyncInterfaces.dll','netstandard.dll','System.Threading.Tasks.Extensions.dll','Knx.Ets.ObjectModel.dll','FluentResults.dll','Knx.Ets.Common.dll')
-  foreach($name in $projectNames[0..9]){Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $projectBad $name)}
-  Case 'project-missing-eleven' 'original-project' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $projectBad
-  Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $projectBad $projectNames[10])
-  Case 'project-eleven-wrong-hash' 'original-project' 2 'INPUT_HASH' 'INPUT_HASH' $projectBad
-  foreach($name in @('project-missing-eleven','project-eleven-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('PROJECT_PHASE original-type-materialization')){Fail 'PROJECT_NEGATIVE_LOADED'}}
+  $projectBad=Join-Path $output 'project-twelve-bad-hash';$null=New-Item -ItemType Directory -Path $projectBad
+  $projectNames=@('MDT-DaliDcaPlus.dll','Knx.Ets.Sdk.dll','Knx.Ets.Sdk.AddIns.AddInViews.dll','Knx.Ets.Common.Types.dll','Knx.Ets.Common.Resources.dll','Microsoft.Bcl.AsyncInterfaces.dll','netstandard.dll','System.Threading.Tasks.Extensions.dll','Knx.Ets.ObjectModel.dll','FluentResults.dll','Knx.Ets.Common.dll','Knx.Ets.Ids.dll')
+  foreach($name in $projectNames[0..10]){Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $projectBad $name)}
+  Case 'project-missing-twelve' 'original-project' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $projectBad
+  Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $projectBad $projectNames[11])
+  Case 'project-twelve-wrong-hash' 'original-project' 2 'INPUT_HASH' 'INPUT_HASH' $projectBad
+  foreach($name in @('project-missing-twelve','project-twelve-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('PROJECT_PHASE original-type-materialization')){Fail 'PROJECT_NEGATIVE_LOADED'}}
   $enumBad=Join-Path $output 'enum-bad-hash';$null=New-Item -ItemType Directory -Path $enumBad
   # Deliberately renamed OWNED bytes test rejection; no SDK identity is supplied.
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $enumBad 'Knx.Ets.Common.Types.dll')

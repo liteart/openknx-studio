@@ -1517,3 +1517,69 @@ and `review-project05/critical-review-result.txt`. They reproduce source/report/
 provenance consistency and scope/whitespace checks without rerunning Windows
 or reading original DLLs. No source change, runtime widening, retry, fixture
 qualification or phase approval follows from this result review.
+
+## Profile12 Ids source-freeze contract
+
+Baseline `167740ea8e724b6f69bacfcf75c10a9fa72bab06` retains reviewed project05
+FAIL. The next separate prerequisite profile appends only its exact observed Ids
+dependency as private input twelve. All twelve hashes must pass before the
+unchanged OS facade preflight or original identities/load. First eleven pins,
+config, resolvers, facade policy/diagnostics, enum and public-constructor/proxy
+checks remain unchanged. Owned missing-twelve and exact-twelve wrong-hash tests
+must stop before OS pinning; every other case remains. No new activation/service
+or redirect is introduced. New Windows build/tests and the original twelve-input
+attempt are NOT RUN at this initial source freeze; Task-009 remains Blocked.
+
+Private `task009-ids/reference-inventory.json` records the unchanged 318,928-byte
+Knx.Ets.Ids.dll, SHA-256
+`43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877`,
+identity `Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral,
+PublicKeyToken=61439873ec5e1159`. Guarded `static-reference-observation.json`,
+SHA-256 `2f9fd4d2091630f454b0432ded48ed24c14e844a2a68635d8652881ddef4c939`,
+records exit 0, write/network denial probes true, target execution NOT_RUN and
+only mscorlib/System.Core/System 4.0.0.0 direct references. No extra pin follows.
+
+Local C#5/x64/warnings-as-errors compilation against six exact net48 reference
+pins, PowerShell parsing and checked-in guards PASS. First-eleven-pin,
+seven-other-source, whole non-pin-code/method and owned negative-order comparisons
+PASS. The fresh private helper `knx-task009-profile12-check.ps1` SHA-256
+`f01c328f2f31c5f25356b841123bf5a4e91faa459e88270698eb865fc93e14fe`
+runs with provisioned pwsh and the same Worktree/FrameworkReferences arguments
+as profile11. Changed ProjectConstructorProbe.cs SHA-256:
+`8580c897fcc5346c770ffe0294612ae99687c0f51a96928c8dcd9090662b3b35`;
+Test-ConstructorProbe.ps1:
+`26ee361344c3772d4567ee84a1b575ea500249ff3fa7e7ca7e839ac47da3837b`.
+Generation06 Windows evidence, source review/commit and any original attempt
+remain separate coordinator steps; no fixture/DCA/hardware or gate qualifies.
+
+### Generation06 owned Windows result
+
+Coordinator Windows build PASS with the unchanged pinned C#5/x64/net48 toolchain.
+Private `source-freeze-06.json` SHA-256
+`c821734872ffda0a3dac61427a282167d52853c07b184524df2fe2adc3f9c85e`
+matches all ten owned sources; `build06-report.json` SHA-256
+`2e5c1b43d687389b2fff6ba8979081257f219903dad085b68221056c0359d52e`
+records ProjectConstructorProbe.exe, 55,808 bytes, SHA-256
+`276b1d71d1188d2dfa02842e8c80c8d8922fc483515ae72e14908640ee2a6854`.
+Owned suites PASS 11/11 Session0, 20/20 limited and 16/16 elevated interactive,
+session 2 with expected roles and exit 0. Existing facade proof/negatives remain
+passing: limited project-proxy.log, 8,432 bytes, SHA-256
+`c084d9c56cd6f5328aed26915a141fad8c273e6cac7bab6f781732bc1f51b203`.
+Canonical `owned-*-06-*`/interactive06/admin06 evidence preserves raw/decoded
+stream provenance, contexts/end and cleanup. Both interactive cleanup inventories
+record task removed, LastTaskResult=0, zero owned processes/no junction, and
+53 limited/41 elevated case files. Generation06 has no failed setup/early
+collection or test rerun. These owned results supersede only the initial freeze's
+Windows NOT RUN; vendor/hardware and the original twelve-input attempt remain
+NOT RUN. Independent source/result verification/review and source commit precede
+that separate attempt. Task-009 remains Blocked; no fixture or gate qualifies.
+
+Independent source06/profile12 audit and critical review PASS. Records are
+`private/evidence/task009-constructor-windows/verifier06/independent-audit.log`
+and `review06/critical-review-source-result.txt`. The twelve-name wrong-hash
+owned set fails at its first private pin; it is not an isolated twelfth-input
+hash test. Source/report and Windows evidence audits do not rerun Windows or
+rehash target binaries. After the explicit source commit, one fixed 15-second
+original diagnostic may follow; failures stop without automatic expansion or
+retry. Original twelve-input execution remains NOT RUN at this source commit;
+Task-009 stays Blocked and no fixture, DCA, hardware or gate qualifies.

@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; project05 diagnostic FAIL during reflection invocation, exact Ids dependency denied; no SDK service |
-| Source commit(s) | Prior increments recorded below; profile11 source and actual project05 run `1b0eb7dcb9158778ae4ce3e40c554f2956f800c4`; project05 result documentation commit pending |
-| Tests executed | Earlier results retained. Generation05 pinned build/owned suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Original project05 FAIL exit 2 after eleven pins/fixed OS alias PASS; reflection invocation ATTEMPTED_NOT_RETURNED, body entry NOT_ESTABLISHED, zero denied proxy requests. DCA initialization/UI/state/hardware NOT RUN |
+| Source commit(s) | Prior increments recorded below; project05 source `1b0eb7dcb9158778ae4ce3e40c554f2956f800c4`; reviewed result/profile12 baseline `167740ea8e724b6f69bacfcf75c10a9fa72bab06`; profile12 source commit pending |
+| Tests executed | Earlier results/project05 FAIL retained. Generation06 pinned build/owned suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive, including preserved facade proof and new twelve-input negatives. Original twelve-input attempt and DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Project05 confirms its exact OS alias and Common runtime load, then denies exact Knx.Ets.Ids during public constructor reflection invocation. No return/body-entry proof or service request; creation INCONCLUSIVE, fixture NOT_QUALIFIED. Project04 origin still unknown |
+| Technical outcome | Project05 FAIL retained; separate profile12 adds only the observed exact Ids pin. All facade/constructor/proxy behavior unchanged; new original attempt NOT RUN. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Profile11 source/owned-result verification and critical review PASS; project05 result verification/review pending; no runtime service acceptance |
+| Reviewer | Project05 result audit/critical review PASS; profile12 source/Windows verification and review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1029,3 +1029,40 @@ and `review-project05/critical-review-result.txt`. They reproduce source/report/
 provenance consistency and scope/whitespace checks without rerunning Windows
 or reading original DLLs. No source change, runtime widening, retry, fixture
 qualification or phase approval follows from this result review.
+
+## Profile12 Ids source freeze
+
+Baseline `167740ea8e724b6f69bacfcf75c10a9fa72bab06` preserves reviewed project05
+FAIL. Only exact Ids 6.4.8718.0/neutral/token 61439873ec5e1159 is appended as pin
+twelve, 318,928 bytes, SHA-256
+`43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877`.
+Private inventory and guarded static-reference evidence are recorded in the
+component contract; direct references are only three existing framework names.
+All twelve hashes precede unchanged OS facade preflight and original identity/load.
+
+Owned negatives use eleven renamed owned files, then the twelfth for wrong hash,
+and stop before OS pinning. Prior cases and exact Microsoft facade proof remain.
+Local pinned-reference C#5 compile, PS parse/guards, first-eleven/other-seven-source
+and whole non-pin-method comparisons PASS. Contract records helper/tool hashes.
+Generation06 Windows build/tests, source review/commit and original twelve-input
+attempt remain NOT RUN at freeze. No new service/redirect/activation; Task-009
+**Blocked**, creation INCONCLUSIVE, fixture/DCA/hardware NOT_QUALIFIED/NOT_RUN.
+
+Generation06 actual Windows pinned build and owned suites PASS 11/20/16,
+session 2 expected limited/elevated roles and exit 0. Existing exact facade proof
+and negatives pass. Private source-freeze06/build06/artifact/log hashes are in
+the component contract; raw/decoded provenance and cleanup inventories retain
+53 limited/41 elevated case files, task removal and zero processes/junctions.
+No setup failure, early collection or rerun occurred in generation06. Original
+twelve-input execution remains NOT RUN; verification/review/source commit are
+pending. Task-009 stays Blocked, without fixture/DCA/hardware/gate qualification.
+
+Independent source06/profile12 audit and critical review PASS. Records are
+`private/evidence/task009-constructor-windows/verifier06/independent-audit.log`
+and `review06/critical-review-source-result.txt`. The twelve-name wrong-hash
+owned set fails at its first private pin; it is not an isolated twelfth-input
+hash test. Source/report and Windows evidence audits do not rerun Windows or
+rehash target binaries. After the explicit source commit, one fixed 15-second
+original diagnostic may follow; failures stop without automatic expansion or
+retry. Original twelve-input execution remains NOT RUN at this source commit;
+Task-009 stays Blocked and no fixture, DCA, hardware or gate qualifies.
