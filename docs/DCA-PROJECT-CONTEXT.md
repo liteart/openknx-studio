@@ -1376,3 +1376,104 @@ review PASS; the recorded experiment remains FAIL, exit 2. Records are
 and `review-project04/critical-review-result.txt` under the same directory.
 Neither audit reran Windows or changes the unknown loaded origin, pinset,
 constructor-not-reached outcome or closed fixture/DCA qualification.
+
+## Profile11 and fixed OS facade source freeze
+
+Baseline `ad8f2e84b5dc1e5932bc9e89384bebdee9ac7c6c` retains reviewed project04
+FAIL. Private Knx.Ets.Common.dll acquisition and guarded static metadata qualify only
+the observed missing identity for input eleven: `Knx.Ets.Common, Version=6.4.8718.0,
+Culture=neutral, PublicKeyToken=61439873ec5e1159`, 503,248 bytes, SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`.
+Private `task009-common/static-reference-observation.json`, SHA-256
+`67195f1f476ec44eefbf0ba6f43f436b014e9e83729fc91569ec8286a53d2731`,
+records exit 0, write/network denial probes true and target execution NOT_RUN.
+No declared transitive dependency, Logging pin or redirect is added.
+
+The separate Microsoft-only Windows observation
+`task009-framework-facade/framework-observation.json`, SHA-256
+`f0e0c54095432f3704848fff059251eeddd174a2d110478a2cc008d308f7af34`,
+records normal runtime netstandard 2.0.0.0/token cc7b13ffcd2ddd51 in the GAC,
+102,856 bytes, same SHA-256 as staged netstandard:
+`bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb`.
+Its fixed Windows-relative path is
+`Microsoft.Net\assembly\GAC_MSIL\netstandard\v4.0_2.0.0.0__cc7b13ffcd2ddd51\netstandard.dll`.
+This independent observation does not establish project04's unknown origin.
+
+Only original-project/owned-project runtime classification gets this exact alias.
+All eleven private hashes precede OS preflight and original identities/load.
+Preflight validates the fixed local path, exact length/hash and AssemblyName
+identity, retaining FileAccess.Read/FileShare.Read until process exit; only then
+does its completed flag become true. Audit also requires exact loaded identity,
+path, GlobalAssemblyCache=true and ReflectionOnly=false. No caller-supplied proof
+or new general framework allowance is added. Owned mode needs only its fixture and the
+Microsoft OS file; the two-input reflection-only mode and old eight-input route,
+first ten pins, config, resolvers, enum/constructor checks and bounds are unchanged.
+
+PLATFORM_FACADE_PIN is distinct from private PIN records. Facade-name audit logs
+actual identity/location/cache/reflection and alias decision, including denied
+cases; a held-file hash is attributed only to a matching alias. Unknown locations
+remain after-load audit failures; prevention is not claimed. Owned tests load
+only the Microsoft facade and check matching facts with incomplete pin, plus
+wrong identity/path/cache/reflection. Ten-file missing-eleven and eleven-file
+wrong-hash sets use owned bytes and fail before OS pinning. Existing proxy,
+enum, session and admin regressions remain. No original activation route expands.
+
+Local C#5/x64/warnings-as-errors compile against six exact net48 reference pins,
+PowerShell parse and source guards PASS. First-ten-pin, seven-other-source,
+unchanged enum/framework/resolver and negative-order checks PASS. The private
+reproduction helper `knx-task009-profile11-check.ps1` SHA-256 is
+`cdbdac2a76151d924ab81a93c2e0e993a76cc78d4d837c82db8746b3555e2728`;
+run it with the provisioned pwsh, `-Worktree <task-worktree>` and
+`-FrameworkReferences <private-framework-references>`. This is local compilation,
+not Windows execution. Generation05 Windows results are recorded separately;
+original eleven-input execution remains NOT RUN. Task-009 stays **Blocked**,
+creation route INCONCLUSIVE, with no fixture/DCA/hardware qualification.
+
+| Changed tool | SHA-256 |
+|---|---|
+| `ProjectConstructorProbe.cs` | `60606baced3ff31b8b898f244e140149427ced85a1f27e0b92ceec5815dec921` |
+| `Test-ConstructorProbe.ps1` | `87da923296f48ee5442e80d25da063c687d57df4ddee453041760dd0f4f4da41` |
+
+### Generation05 owned Windows result
+
+The coordinator's pinned Windows C#5/x64/net48 build PASS. Private
+`task009-constructor-windows/source-freeze-05.json` SHA-256
+`a836a4bfd89b23112a11d9dada6de3939b7920822c6f8dd876bd3541675bb7cf`
+binds ten owned sources; `build05-report.json` SHA-256
+`4e68ebbeb09c72b3cb5507d70afc9574eb1cd17e86909ad59cfa94357586728a`
+retains compiler 4.8.9221.0 and its existing exact compiler/framework pins.
+ProjectConstructorProbe.exe is 55,808 bytes, SHA-256
+`978c138bc9adfec4409758f9563203892024463815b5ec481d6137b593cb07bc`.
+Actual owned suites PASS: Session0 11/11, limited interactive 20/20 and elevated
+interactive 16/16. Both interactive runs use session 2 with the recorded expected
+admin role and exit 0; vendor execution/hardware are NOT_RUN. These are three
+suites, not 47 distinct assertions. The limited `project-proxy.log` is 8,432 bytes,
+SHA-256 `77bf886e01aa91edaf5f7b4ed50ba7cbb2692cc39021685c415d64f94e778423`;
+it records matching-facts/incomplete-pin denial, the held OS pin, exact actual
+GAC alias and wrong-identity/path/cache/reflection rejection. No SDK input is
+needed for this owned proof. Original eleven-input execution is still NOT RUN.
+
+Private `owned-session0-05-*`, `owned-interactive05-*` and `owned-admin05-*`
+preserve contexts, raw streams and strict UTF-16/UTF-8 provenance. Both interactive
+cleanup records report LastTaskResult=0, task removed, zero owned processes and
+no junction; 53 limited and 41 elevated case files were retained. The initial
+fresh-source directory precheck failure and corrected source05-prepare02 PASS
+precede the build. An early result collection preceded the done file; diagnostic02
+then observed completion and canonical status03 was retained. These preserved
+harness observations are not failed tests or additional test executions.
+Independent source/result verification and review remain pending before source
+commit or any original generation05 attempt; no fixture/service/gate qualifies.
+
+Independent source05/profile11 verification and critical review PASS. Records
+are `private/evidence/task009-constructor-windows/verifier05/independent-audit.log`
+and `review05/critical-review-source-result.txt`. The verifier retained its
+original report and appended a test-source hash transcription correction;
+corrected audit SHA-256 is
+`05bcc1bcc483f8291d2eae6e46eb00de6c5dd61fcc9095c800c2623b78b58002`.
+Review also corrected the component wording to distinguish the unchanged
+framework allowlist from the new exact facade alias. Neither correction changes
+source bytes or test runs. These audits do not rerun Windows or rehash target
+binaries. After the explicit source commit, one fixed 15-second original
+diagnostic may follow; any failure stops without automatic pin expansion or
+retry. Original generation05 remains NOT RUN at this source commit. Task-009
+remains Blocked, without Project fixture, DCA, hardware or gate qualification.

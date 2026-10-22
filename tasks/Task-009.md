@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; project04 runtime diagnostic FAIL before constructor, unexpected assembly audit plus denied dependency, no SDK service |
-| Source commit(s) | Prior increments recorded below; ten-input source and actual project04 run `d4af5da8af23ce6039042b935ab310b2d6cf445f`; project04 result documentation commit pending |
-| Tests executed | Prior metadata/enum/project03 results preserved. Owned Windows suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Project04 runtime diagnostic FAIL exit 2 after ten pins PASS: netstandard audit rejection and denied Knx.Ets.Common; constructor invocation NOT_REACHED, body entry NOT_ESTABLISHED. DCA initialization/UI/state and hardware NOT RUN |
+| Source commit(s) | Prior increments recorded below; project04 source `d4af5da8af23ce6039042b935ab310b2d6cf445f`; reviewed result/profile11 baseline `ad8f2e84b5dc1e5932bc9e89384bebdee9ac7c6c`; new source commit pending |
+| Tests executed | Prior results and project04 FAIL retained. Generation05 pinned Windows build and owned suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive, including exact OS facade and negatives. Original generation05 attempt NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Original ObjectModel/Common.Types/FluentResults runtime loads observed; unexpected runtime netstandard origin unknown from log, then exact Knx.Ets.Common denied. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Project04 FAIL retained; separate profile11 adds only exact Common and a hash-held exact OS GAC facade alias. Project04 facade origin remains unknown. New original runtime NOT RUN; creation route INCONCLUSIVE, no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Ten-input source/owned-result verification and critical review PASS; project04 result review pending; no runtime service acceptance |
+| Reviewer | Project04 evidence audit and critical review PASS; profile11 source/Windows-result verification and review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -955,3 +955,51 @@ review PASS; the recorded experiment remains FAIL, exit 2. Records are
 and `review-project04/critical-review-result.txt` under the same directory.
 Neither audit reran Windows or changes the unknown loaded origin, pinset,
 constructor-not-reached outcome or closed fixture/DCA qualification.
+
+## Profile11 and fixed OS facade source freeze
+
+Baseline `ad8f2e84b5dc1e5932bc9e89384bebdee9ac7c6c` preserves project04 FAIL.
+Only exact Common 6.4.8718.0/neutral/token 61439873ec5e1159 is private input eleven,
+503,248 bytes, SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`.
+All eleven hashes precede a fixed OS netstandard length/hash/identity preflight
+with held read handle, then original identity/load. The runtime-only alias also
+requires exact GAC path/identity, cache=true and ReflectionOnly=false. Its source
+is a separate Microsoft-only observation; it does not identify project04 origin.
+No new transitive pins, redirects, generic whitelist or caller proof is added.
+
+Owned tests cover incomplete pin, wrong facade identity/path/cache/reflection,
+actual Microsoft facade load, and missing-eleven/exact-eleven wrong-hash failure
+before OS pinning, with owned bytes only. Prior proxy/enum/session/admin cases
+remain. Local pinned-reference C#5 compile, PS parse, source/ownership comparisons
+and guards PASS; seven other sources, old ten pins, enum/config/resolvers remain
+unchanged. The component contract records exact provenance/tool hashes and local
+reproduction. Windows generation05 results are separate; original eleven-input
+attempt NOT RUN. Task-009 **Blocked**, creation INCONCLUSIVE; no service/gate or
+fixture/DCA/hardware qualification. New source commit and review remain pending.
+
+Generation05 actual Windows build PASS with existing pinned compiler/frameworks;
+owned suites PASS 11/11 Session0, 20/20 limited and 16/16 elevated interactive.
+The two interactive contexts are session 2, expected admin roles and exit 0.
+Exact alias/incomplete-pin/negative tests pass with Microsoft/owned inputs only;
+vendor execution and hardware remain NOT_RUN. The component contract records
+freeze/build/artifact and 8,432-byte facade-log hashes. Raw/decoded provenance,
+53 limited and 41 elevated case files, task removal/zero-process/no-junction
+cleanup are preserved privately. Initial directory precheck and early collection
+observations were corrected before build/completion collection, not failed tests
+or test reruns. Source/result independent verification/review and source commit
+remain pending before original generation05 invocation, which is NOT RUN.
+
+Independent source05/profile11 verification and critical review PASS. Records
+are `private/evidence/task009-constructor-windows/verifier05/independent-audit.log`
+and `review05/critical-review-source-result.txt`. The verifier retained its
+original report and appended a test-source hash transcription correction;
+corrected audit SHA-256 is
+`05bcc1bcc483f8291d2eae6e46eb00de6c5dd61fcc9095c800c2623b78b58002`.
+Review also corrected the component wording to distinguish the unchanged
+framework allowlist from the new exact facade alias. Neither correction changes
+source bytes or test runs. These audits do not rerun Windows or rehash target
+binaries. After the explicit source commit, one fixed 15-second original
+diagnostic may follow; any failure stops without automatic pin expansion or
+retry. Original generation05 remains NOT RUN at this source commit. Task-009
+remains Blocked, without Project fixture, DCA, hardware or gate qualification.
