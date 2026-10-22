@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; initial Windows diagnostic `61c768d1785c723c94985ac36e952601ed38f0b6`; corrected facade route/enum02 source `41b5f6927c8b17d2d7781e4f2955595e09904250`; reviewed enum result `4ad5b523194103b51ea1ab400566bcc10f7424fc`; second constructor freeze source commit pending |
-| Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded static extractions PASS, with historical ROW_LIMIT failure retained. Initial Windows owned tests PASS (10 Session-0, 17 interactive); enum01 FAIL exit 2 on denied netstandard dependency. Corrected Windows build/owned tests PASS (11 Session-0, 19 interactive); enum02 reflection-only literal observation PASS exit 0. Original Project invocation, DCA initialization/UI/state and hardware NOT RUN |
+| Implementation / report status | Blocked; project03 runtime diagnostic FAIL before constructor invocation, no SDK service |
+| Source commit(s) | Prior static/enum increments recorded below; second constructor diagnostic source and actual project03 run `b8fcc21ef126a4d00f8f4c6c65101f23cd4b1358`; project03 result documentation commit pending |
+| Tests executed | Prior metadata/enum and owned Windows results preserved below. Second-freeze owned Windows suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Project03 runtime diagnostic FAIL exit 2 on denied FluentResults dependency after nine pins PASS; constructor invocation NOT_REACHED, body entry NOT_ESTABLISHED. DCA initialization/UI/state and hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Enum02 ThreeLevel field 04000176=1 / type 0200008E / System.Byte independently verified/reviewed. Separate second source freeze enables only the existing fixed nine-pin deny-all public constructor diagnostic; its Windows build/tests and original invocation NOT RUN at freeze. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Original ObjectModel/Common.Types runtime loads observed; exact FluentResults 3.16.0.0 identity denied during type materialization, before constructor/proxy phase. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior construction/service/provider/constructor static verification and source/result review PASS; new diagnostic Windows verification/review pending; no runtime service acceptance |
+| Reviewer | Second-freeze source/owned-result verification and critical review PASS; project03 result review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -852,3 +852,29 @@ source commit. A constructor-begin marker proves a reflection invocation attempt
 not body entry; return does not qualify a Project fixture. Any dependency or
 constructor failure stops this attempt without pin widening or automatic retry.
 Original invocation remains NOT RUN at this reviewed source commit.
+
+## Project03 runtime diagnostic result
+
+Source `b8fcc21ef126a4d00f8f4c6c65101f23cd4b1358`: actual project03 **FAIL**,
+exit 2, interactive session 2, non-admin. Nine exact pins PASS; original
+ObjectModel/Common.Types runtime assembly loads are observed. Type materialization
+requests `FluentResults, Version=3.16.0.0, Culture=neutral,
+PublicKeyToken=61439873ec5e1159`; the fixed resolver denies it and reports
+PROJECT_DEPENDENCY_BLOCKER. No constructor-begin or proxy request occurs:
+invocation **NOT_REACHED**, body entry **NOT_ESTABLISHED**. This is a failed
+runtime diagnostic, not an all-runtime NOT RUN claim.
+
+Private `task009-constructor-windows/project03-observation.json`, 5,030 bytes,
+SHA-256 `f55f82bdea5ee8edf7a30ce5d9cda8c96930a0f6d4833d2183d431be93334486`,
+binds the raw log and eight-file provenance. Child exit 2 is confirmed; cleanup
+records expected/last exit 2, task removed and zero owned processes/scratch files.
+Task-009 remains **Blocked**, creation_route INCONCLUSIVE, fixture NOT_QUALIFIED;
+DCA initialization/UI/state/hardware remain NOT RUN. No source change, pin
+expansion or retry occurs. A future dependency inquiry is a separate increment.
+
+Independent project03 evidence audit PASS (17 assertions) and critical result
+review PASS; the experiment itself remains FAIL, exit 2. Records are
+`private/evidence/task009-constructor-windows/verifier-project03/independent-audit.log`
+and `review-project03/critical-review-result.txt` under the same directory.
+They verify retained evidence without rerunning Windows or reading DLLs; neither
+review changes the pinset or establishes constructor/fixture/DCA qualification.

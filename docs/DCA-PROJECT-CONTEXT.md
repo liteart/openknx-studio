@@ -1224,3 +1224,41 @@ source commit. A constructor-begin marker proves a reflection invocation attempt
 not body entry; return does not qualify a Project fixture. Any dependency or
 constructor failure stops this attempt without pin widening or automatic retry.
 Original invocation remains NOT RUN at this reviewed source commit.
+
+## Project03 runtime diagnostic result
+
+At source `b8fcc21ef126a4d00f8f4c6c65101f23cd4b1358`, the coordinator's single
+Windows project03 diagnostic **FAIL**, exit 2, in interactive session 2,
+administrator_role=false. All nine exact input pins PASS. Original ObjectModel
+and Common.Types assemblies load into runtime context; this is not an all-runtime
+NOT RUN result. During `original-type-materialization`, the resolver requests
+`FluentResults, Version=3.16.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159`
+and correctly denies that identity outside the fixed allowlist. The final error
+is `PROJECT_DEPENDENCY_BLOCKER` after `PROJECT_DEPENDENCY_NOT_ALLOWLISTED`.
+
+No PROJECT_CONSTRUCTOR_BEGIN, proxy-materialization or service-denial request is
+recorded: constructor invocation is **NOT_REACHED**, body entry
+**NOT_ESTABLISHED**. Project fixture qualification remains **NOT_QUALIFIED** and
+creation_route **INCONCLUSIVE**. DCA initialization/UI/state and hardware are
+**NOT RUN**. No binary, pinset, service response or source is changed by this
+result; there is no automatic retry or dependency widening.
+
+Private `task009-constructor-windows/project03.log` is 4,335 bytes, SHA-256
+`59dc4073855b9c38149a61ff86dd0cb46f9bf92fa14b97f1b7c41b4c51caf31b`.
+The deterministic private `project03-observation.json` is 5,030 bytes, SHA-256
+`f55f82bdea5ee8edf7a30ce5d9cda8c96930a0f6d4833d2183d431be93334486`;
+it binds source, nine pins, runtime loads, blocker, context/end and eight-file
+provenance, with a 16 KiB bound and no generated timestamp or self/docs hash.
+The actual plan/context/done/summary and driver streams remain alongside it.
+The supervisor confirms child exit 2 within its 15-second bound; stderr is empty.
+Cleanup reports expected_exit=2, LastTaskResult=2, task removed, zero owned
+processes and scratch files. Network/descendant containment is not established.
+Earlier enum02 PASS and enum01 FAIL remain preserved. Task-009 stays **Blocked**;
+any future exact dependency qualification requires a separate reviewed increment.
+
+Independent project03 evidence audit PASS (17 assertions) and critical result
+review PASS; the experiment itself remains FAIL, exit 2. Records are
+`private/evidence/task009-constructor-windows/verifier-project03/independent-audit.log`
+and `review-project03/critical-review-result.txt` under the same directory.
+They verify retained evidence without rerunning Windows or reading DLLs; neither
+review changes the pinset or establishes constructor/fixture/DCA qualification.
