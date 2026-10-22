@@ -104,6 +104,7 @@ public static class EntrypointMetadata {
  static readonly string[] ObjectModelRoots={"Knx.Ets.ObjectModel.Project.Project"};
  static readonly string[] SdkServiceRoots={"Knx.Ets.Sdk.ExecutionContext","Knx.Ets.Sdk.ISdkFactory"};
  static readonly string[] ObjectModelServiceRoots={"Knx.Ets.ObjectModel.IFactory","Knx.Ets.ObjectModel.IProjectStore","Knx.Ets.ObjectModel.IObjectContext"};
+ static readonly string[] SdkProviderTargets={"Knx.Ets.Sdk.ExecutionContext","Knx.Ets.Sdk.ISdkFactory","Knx.Ets.Sdk.ISdkContext"};
  static string[] Roots(string assembly,bool services=false){return assembly=="Knx.Ets.Sdk"?(services?SdkServiceRoots:SdkRoots):assembly=="Knx.Ets.ObjectModel"?(services?ObjectModelServiceRoots:ObjectModelRoots):Array.Empty<string>();}
  static bool ReturnContains(string returns,string atom){
   int start=0;while(start<returns.Length){int at=returns.IndexOf(atom,start,StringComparison.Ordinal);if(at<0)return false;int end=at+atom.Length;
@@ -129,6 +130,64 @@ public static class EntrypointMetadata {
    throw Fail("BASE_SHAPE");
   }
  }
+ static void CheckRows(MetadataReader r,bool fourInputs,int index){
+  bool objectModelSlot=fourInputs&&index==3&&Str(r,r.GetAssemblyDefinition().Name)=="Knx.Ets.ObjectModel";
+  foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);int limit=objectModelSlot&&table==TableIndex.MethodDef?ConstructionObjectModelMethodLimit:RowLimit;if(count>limit){if(fourInputs)throw new RowLimitObservationException(table,count);throw Fail("ROW_LIMIT");}}
+ }
+ sealed class ProviderTarget {public string Assembly,Name,Token;}
+ static void Uncertain(Dictionary<string,int> counts,string reason){counts.TryGetValue(reason,out int count);counts[reason]=checked(count+1);}
+ static ProviderTarget DirectTarget(MetadataReader r,string inputIdentity,EntityHandle edge,Dictionary<string,ProviderTarget> targets,Dictionary<string,int> uncertainty){
+  if(edge.IsNil)return null;
+  string name,owner;
+  if(edge.Kind==HandleKind.TypeDefinition){name=new Names(r).Named(edge);owner=inputIdentity;}
+  else if(edge.Kind==HandleKind.TypeReference){
+   var reference=r.GetTypeReference((TypeReferenceHandle)edge);
+   if(reference.ResolutionScope.Kind!=HandleKind.AssemblyReference){Uncertain(uncertainty,"UNSUPPORTED_REFERENCE_SCOPE");return null;}
+   owner=ReferenceIdentity(r,(AssemblyReferenceHandle)reference.ResolutionScope);
+   string qualified=new Names(r).Named(edge);name=qualified.Substring(owner.Length+2);
+  }else{Uncertain(uncertainty,edge.Kind==HandleKind.TypeSpecification?"TYPESPEC_NOT_INSPECTED":"UNSUPPORTED_EDGE_KIND");return null;}
+  if(!targets.TryGetValue(name,out var target))return null;
+  if(owner!=target.Assembly){Uncertain(uncertainty,"TARGET_NAME_OWNER_MISMATCH");return null;}
+  return target;
+ }
+ public static string ReadProviders(string dca,string hash,string[] refs,string[] hashes){
+  if(refs==null||hashes==null||refs.Length!=3||hashes.Length!=3)throw Fail("INPUT_COUNT");
+  var paths=new List<string>{dca};paths.AddRange(refs);var pins=new List<string>{hash};pins.AddRange(hashes);var bytes=new List<byte[]>();long total=0;
+  for(int i=0;i<paths.Count;i++)bytes.Add(Pinned(paths[i],pins[i],ref total));
+  var readers=new List<PEReader>();var metadata=new List<MetadataReader>();var identities=new List<string>();var assemblyNames=new List<string>();var inputs=new List<object>();
+  try{
+   for(int i=0;i<paths.Count;i++){
+    var pe=new PEReader(ImmutableArray.Create(bytes[i]));readers.Add(pe);if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");CheckRows(r,true,i);
+    string identity=AssemblyIdentity(r);metadata.Add(r);identities.Add(identity);assemblyNames.Add(Str(r,r.GetAssemblyDefinition().Name));
+    inputs.Add(Obj("filename",Path.GetFileName(paths[i]),"bytes",bytes[i].Length,"sha256",pins[i].ToLowerInvariant(),"identity",identity));
+   }
+   var owners=new HashSet<string>(StringComparer.Ordinal);var targets=new Dictionary<string,ProviderTarget>(StringComparer.Ordinal);var targetReports=new List<object>();
+   for(int i=0;i<metadata.Count;i++){
+    string owner=assemblyNames[i];if(owner!="Knx.Ets.Sdk"&&owner!="Knx.Ets.ObjectModel")continue;if(!owners.Add(owner))throw Fail("DUPLICATE_PROVIDER_OWNER");
+    string[] selected=owner=="Knx.Ets.Sdk"?SdkProviderTargets:ObjectModelServiceRoots;var r=metadata[i];
+    foreach(var h in r.TypeDefinitions){string name=new Names(r).Named(h);if(Array.IndexOf(selected,name)<0)continue;
+     var target=new ProviderTarget{Assembly=identities[i],Name=name,Token=MetadataTokens.GetToken(h).ToString("X8")};
+     if(!targets.TryAdd(name,target))throw Fail("DUPLICATE_PROVIDER_TARGET");targetReports.Add(Obj("assembly",target.Assembly,"name",name,"token",target.Token));
+    }
+   }
+   if(targets.Count!=6)throw Fail("PROVIDER_TARGET_NOT_FOUND");
+   var candidates=new List<object>();var uncertainty=new Dictionary<string,int>(StringComparer.Ordinal);int edgeCount=0,work=0;
+   for(int i=0;i<metadata.Count;i++){
+    var r=metadata[i];foreach(var h in r.TypeDefinitions){
+     var type=r.GetTypeDefinition(h);var matches=new List<object>();
+     void Edge(EntityHandle edge,string kind){
+      if(edge.IsNil)return;if(++work>262144)throw Fail("PROVIDER_WORK_LIMIT");var target=DirectTarget(r,identities[i],edge,targets,uncertainty);if(target==null)return;
+      if(++edgeCount>128)throw Fail("PROVIDER_EDGE_LIMIT");matches.Add(Obj("kind",kind,"target_assembly",target.Assembly,"target_name",target.Name,"target_token",target.Token));
+     }
+     Edge(type.BaseType,"extends");int interfaces=0;foreach(var ih in type.GetInterfaceImplementations()){if(++interfaces>32)throw Fail("INTERFACE_LIMIT");Edge(r.GetInterfaceImplementation(ih).Interface,"implements");}
+     if(matches.Count==0)continue;if(candidates.Count>=64)throw Fail("PROVIDER_TYPE_LIMIT");
+     candidates.Add(Obj("input",Path.GetFileName(paths[i]),"assembly",identities[i],"token",MetadataTokens.GetToken(h).ToString("X8"),"name",new Names(r).Named(h),"attributes",(int)type.Attributes,"relationships",matches));
+    }
+   }
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_providers","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"targets",targetReports,"candidates",candidates,"matching_edges",edgeCount,"uncertainty_counts",uncertainty,"creation_route","INCONCLUSIVE","limitations",new[]{"Only direct base/interface matches to six exact selected target owners; indirect inheritance, external implementations and TypeSpec/generic edges are not searched. Empty matches do not prove absence.","Candidate relationships and raw attributes do not establish concrete construction, public accessibility or usable services. No methods, constructors, method bodies or custom attributes inspected; no dependency resolution or vendor execution."}));
+   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }finally{foreach(var reader in readers)reader.Dispose();}
+ }
  public static string Read(string dca,string hash,string[] refs,string[] hashes){
   return ReadInternal(dca,hash,refs,hashes,false);
  }
@@ -151,8 +210,7 @@ public static class EntrypointMetadata {
   for(int i=0;i<paths.Count;i++)using(var pe=new PEReader(ImmutableArray.Create(bytes[i]))){
    if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
    // The guarded four-input route pins this slot to the exact acquired ObjectModel bytes.
-   bool objectModelSlot=construction&&i==3&&Str(r,r.GetAssemblyDefinition().Name)=="Knx.Ets.ObjectModel";
-   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);int limit=objectModelSlot&&table==TableIndex.MethodDef?ConstructionObjectModelMethodLimit:RowLimit;if(count>limit){if(construction)throw new RowLimitObservationException(table,count);throw Fail("ROW_LIMIT");}}
+   CheckRows(r,construction,i);
    var input=Obj("filename",Path.GetFileName(paths[i]),"bytes",bytes[i].Length,"sha256",pins[i].ToLowerInvariant(),"identity",AssemblyIdentity(r));
    if(project){var assemblyRefs=new List<string>();foreach(var ah in r.AssemblyReferences){if(assemblyRefs.Count>=256)throw Fail("REFERENCE_LIMIT");assemblyRefs.Add(ReferenceIdentity(r,ah));}input.Add("assembly_references",assemblyRefs);}
    inputs.Add(input);

@@ -6,6 +6,56 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ static TypeDefinitionHandle ProviderType(MetadataBuilder m,string name,TypeAttributes attributes,EntityHandle parent,int methodStart=2){return m.AddTypeDefinition(attributes,m.GetOrAddString("Owned"),m.GetOrAddString(name),parent,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(methodStart));}
+ public static void CreateProviders(string path,bool objectModel=false,int profile=0,int methodRows=1){
+  if(methodRows<1||methodRows>65537)throw new ArgumentOutOfRangeException();
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProviders.dll"),m.GetOrAddGuid(new Guid("00950000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(objectModel?"Knx.Ets.ObjectModel":"Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);var obj=m.AddTypeReference(runtime,m.GetOrAddString("System"),m.GetOrAddString("Object"));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  string ns=objectModel?"Knx.Ets.ObjectModel":"Knx.Ets.Sdk";var iface=TypeAttributes.Interface|TypeAttributes.Abstract;
+  m.AddTypeDefinition(objectModel?TypeAttributes.Public|iface:TypeAttributes.NotPublic|TypeAttributes.Abstract,m.GetOrAddString(ns),m.GetOrAddString(objectModel?"IFactory":"ExecutionContext"),objectModel?default:obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(TypeAttributes.NotPublic|iface,m.GetOrAddString(ns),m.GetOrAddString(objectModel?"IProjectStore":"ISdkFactory"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(methodRows+1));
+  m.AddTypeDefinition(TypeAttributes.NotPublic|iface,m.GetOrAddString(ns),m.GetOrAddString(profile==2?"Missing":objectModel?"IObjectContext":"ISdkContext"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(methodRows+1));
+  // Deliberately malformed signatures prove the relationship mode never inspects methods.
+  for(int i=0;i<methodRows;i++)Method(m,"IgnoredInvalidSignature",MethodAttributes.Public,new byte[]{0x20,1});
+  int start=methodRows+1;
+  if(profile==3)m.AddTypeDefinition(TypeAttributes.NotPublic|iface,m.GetOrAddString(ns),m.GetOrAddString(objectModel?"IFactory":"ISdkContext"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(start));
+  if(profile!=1){
+   if(objectModel){
+    var provider=ProviderType(m,"ObjectProvider",TypeAttributes.Public,obj,start);foreach(int target in new[]{2,3,4})m.AddInterfaceImplementation(provider,MetadataTokens.TypeDefinitionHandle(target));
+    Method(m,"IgnoredCandidateSignature",MethodAttributes.Public,new byte[]{0x20,1});start++;
+    var sdk=m.AddAssemblyReference(m.GetOrAddString("Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,default);var sdkFactory=m.AddTypeReference(sdk,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("ISdkFactory"));
+    var cross=ProviderType(m,"CrossAssemblyProvider",TypeAttributes.Public,obj,start);m.AddInterfaceImplementation(cross,sdkFactory);
+   }else{
+    var provider=ProviderType(m,"InternalProvider",TypeAttributes.NotPublic,MetadataTokens.TypeDefinitionHandle(2),start);m.AddInterfaceImplementation(provider,MetadataTokens.TypeDefinitionHandle(3));m.AddInterfaceImplementation(provider,MetadataTokens.TypeDefinitionHandle(4));
+    Method(m,"IgnoredCandidateSignature",MethodAttributes.Public,new byte[]{0x20,1});start++;
+    ProviderType(m,"AbstractProvider",TypeAttributes.Public|TypeAttributes.Abstract,MetadataTokens.TypeDefinitionHandle(2),start);
+    ProviderType(m,"IndirectProvider",TypeAttributes.Public,provider,start);
+    foreach(int foreign in new[]{0,1,2}){
+     var owner=m.AddAssemblyReference(m.GetOrAddString(foreign==0?"Owned.Foreign":"Knx.Ets.Sdk"),new Version(foreign==1?2:1,0,0,0),default,foreign==2?m.GetOrAddBlob(new byte[]{1,2,3,4,5,6,7,8}):default,0,default);
+     var target=m.AddTypeReference(owner,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("ISdkFactory"));var collision=ProviderType(m,"ForeignOwner"+foreign,TypeAttributes.Public,obj,start);m.AddInterfaceImplementation(collision,target);
+    }
+    var own=m.AddAssemblyReference(m.GetOrAddString("Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,default);var prefix=m.AddTypeReference(own,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("ISdkFactoryExtra"));
+    var prefixProvider=ProviderType(m,"PrefixProvider",TypeAttributes.Public,obj,start);m.AddInterfaceImplementation(prefixProvider,prefix);
+    var generic=m.AddTypeReference(own,m.GetOrAddString("Owned"),m.GetOrAddString("GenericBase`1"));var sig=new BlobBuilder();sig.WriteByte(0x15);sig.WriteByte(0x12);sig.WriteCompressedInteger((MetadataTokens.GetRowNumber(generic)<<2)|1);sig.WriteByte(1);sig.WriteByte(0x0e);
+    ProviderType(m,"GenericProvider",TypeAttributes.Public,m.AddTypeSpecification(m.GetOrAddBlob(sig)),start);
+   }
+  }
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
+ public static void CreateProviderBounds(string path,int candidates,int interfacesPerCandidate=0,bool extraEdge=false){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProviderBounds.dll"),m.GetOrAddGuid(new Guid("00960000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString("Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  foreach(string name in new[]{"ExecutionContext","ISdkFactory","ISdkContext"})m.AddTypeDefinition(TypeAttributes.NotPublic|(name=="ExecutionContext"?TypeAttributes.Abstract:TypeAttributes.Interface|TypeAttributes.Abstract),m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString(name),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  for(int i=0;i<candidates;i++){
+   var type=ProviderType(m,"Candidate"+i,TypeAttributes.NotPublic,MetadataTokens.TypeDefinitionHandle(2),1);
+   for(int j=0;j<interfacesPerCandidate;j++)m.AddInterfaceImplementation(type,MetadataTokens.TypeDefinitionHandle(3+j));
+   if(extraEdge&&i==0)m.AddInterfaceImplementation(type,MetadataTokens.TypeDefinitionHandle(4));
+  }
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  public static void CreateServices(string path,bool objectModel=false,int profile=0,int methodRows=3,int typeRows=4){
   if(methodRows<3||methodRows>65537||typeRows<4||typeRows>32769)throw new ArgumentOutOfRangeException();
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedServices.dll"),m.GetOrAddGuid(new Guid("00940000-1111-1111-1111-111111111111")),default,default);

@@ -134,5 +134,41 @@ try{
  Reject {[Task144.EntrypointMetadata]::ReadServices($broken,(Hash $broken),@($reference,$serviceSdk,$serviceOm),@((Hash $reference),(Hash $serviceSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
  Reject {[Task144.EntrypointMetadata]::ReadServices($dca,(Hash $dca),@($serviceSdk,$serviceOm),@((Hash $serviceSdk),(Hash $serviceOm)))} 'DCAENTRY_INPUT_COUNT'
  Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$serviceSdk,$serviceOm) -ReferenceSha256 @((Hash $reference),(Hash $serviceSdk),(Hash $serviceOm)) -ProjectServices -ProjectConstruction} 'DCAENTRY_MODE'
+ $providerSdk=Join-Path $root 'ProviderSdk.dll';$providerOm=Join-Path $root 'ProviderObjectModel.dll'
+ [Task144OwnedFixtures]::CreateProviders($providerSdk);[Task144OwnedFixtures]::CreateProviders($providerOm,$true)
+ function Providers([string] $s=$providerSdk,[string] $o=$providerOm){[Task144.EntrypointMetadata]::ReadProviders($dca,(Hash $dca),@($reference,$s,$o),@((Hash $reference),(Hash $s),(Hash $o)))}
+ $providerRaw=Providers;$providers=$providerRaw|ConvertFrom-Json
+ Assert ($providers.operation -eq 'static_dca_project_providers' -and $providers.targets.Count -eq 6 -and $providers.candidates.Count -eq 4 -and $providers.matching_edges -eq 8 -and $providers.creation_route -eq 'INCONCLUSIVE' -and $providers.runtime_execution -eq 'NOT_RUN') 'Six exact targets/direct relationship counts/creation uncertainty';$passed++
+ $internal=$providers.candidates|Where-Object name -eq 'Owned.InternalProvider';$abstract=$providers.candidates|Where-Object name -eq 'Owned.AbstractProvider'
+ Assert (($internal.attributes -band 7) -eq 0 -and $internal.relationships.Count -eq 3 -and ($abstract.attributes -band 128) -eq 128 -and $internal.token -match '^02[0-9A-F]{6}$') 'Internal/abstract attributes and candidate token retained';$passed++
+ $cross=$providers.candidates|Where-Object name -eq 'Owned.CrossAssemblyProvider'
+ Assert ($cross.relationships[0].target_assembly -ceq $providers.inputs[2].identity -and $cross.relationships[0].target_name -eq 'Knx.Ets.Sdk.ISdkFactory' -and $cross.relationships[0].kind -eq 'implements' -and $cross.relationships[0].target_token -eq '02000003') 'Exact selected TypeRef owner and target token';$passed++
+ Assert ($providers.uncertainty_counts.TARGET_NAME_OWNER_MISMATCH -eq 3 -and $providers.uncertainty_counts.TYPESPEC_NOT_INSPECTED -eq 1 -and @($providers.candidates|Where-Object name -match 'ForeignOwner|PrefixProvider|IndirectProvider|GenericProvider').Count -eq 0) 'Foreign name/version/token/prefix excluded; indirect/generic not claimed';$passed++
+ Assert (-not $providerRaw.Contains($root) -and @($internal.PSObject.Properties.Name|Where-Object {$_ -in @('methods','constructors')}).Count -eq 0 -and $providers.limitations[0].Contains('indirect')) 'No methods/constructors/private paths or global absence claim';$passed++
+ Assert ((Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All previous reader reports preserved after provider lookup';$passed++
+ $emptySdk=Join-Path $root 'ProviderEmptySdk.dll';$emptyOm=Join-Path $root 'ProviderEmptyOm.dll';[Task144OwnedFixtures]::CreateProviders($emptySdk,$false,1);[Task144OwnedFixtures]::CreateProviders($emptyOm,$true,1)
+ $empty=Providers $emptySdk $emptyOm|ConvertFrom-Json
+ Assert ($empty.candidates.Count -eq 0 -and $empty.matching_edges -eq 0 -and $empty.creation_route -eq 'INCONCLUSIVE') 'Empty direct lookup remains inconclusive';$passed++
+ foreach($objectModel in @($false,$true)){foreach($profile in @(2,3)){
+  $bad=Join-Path $root ('ProviderTargetBad'+$objectModel+$profile+'.dll');[Task144OwnedFixtures]::CreateProviders($bad,$objectModel,$profile)
+  $code=if($profile -eq 2){'DCAENTRY_PROVIDER_TARGET_NOT_FOUND'}else{'DCAENTRY_DUPLICATE_PROVIDER_TARGET'}
+  if($objectModel){Reject {Providers $providerSdk $bad} $code}else{Reject {Providers $bad} $code}
+ }}
+ $providerBounds=Join-Path $root 'ProviderBounds.dll';[Task144OwnedFixtures]::CreateProviderBounds($providerBounds,64,1)
+ $atLimit=Providers $providerBounds $emptyOm|ConvertFrom-Json
+ Assert ($atLimit.candidates.Count -eq 64 -and $atLimit.matching_edges -eq 128) 'Exact candidate/edge ceilings accepted';$passed++
+ [Task144OwnedFixtures]::CreateProviderBounds($providerBounds,65);Reject {Providers $providerBounds $emptyOm} 'DCAENTRY_PROVIDER_TYPE_LIMIT'
+ [Task144OwnedFixtures]::CreateProviderBounds($providerBounds,64,1,$true);Reject {Providers $providerBounds $emptyOm} 'DCAENTRY_PROVIDER_EDGE_LIMIT'
+ foreach($rows in @(38472,65536)){
+  $counted=Join-Path $root ('ProviderMethodRows'+$rows+'.dll');[Task144OwnedFixtures]::CreateProviders($counted,$true,1,$rows)
+  $accepted=Providers $emptySdk $counted|ConvertFrom-Json
+  Assert ($accepted.candidates.Count -eq 0 -and $accepted.creation_route -eq 'INCONCLUSIVE') ('Provider fourth MethodDef '+$rows+' accepted without method decoding');$passed++
+ }
+ $providerRows=Join-Path $root 'ProviderMethodRows65537.dll';[Task144OwnedFixtures]::CreateProviders($providerRows,$true,1,65537)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$emptySdk,$providerRows) -ReferenceSha256 @((Hash $reference),(Hash $emptySdk),(Hash $providerRows)) -ProjectProviders} 'DCAENTRY_ROW_LIMIT_METHODDEF_65537'
+ Reject {[Task144.EntrypointMetadata]::ReadProviders($dca,(Hash $dca),@($oversized,$providerSdk,$providerOm),@((Hash $oversized),(Hash $providerSdk),(Hash $providerOm)))} 'DCAENTRY_ROW_LIMIT'
+ Reject {[Task144.EntrypointMetadata]::ReadProviders($broken,(Hash $broken),@($reference,$providerSdk,$providerOm),@((Hash $reference),(Hash $providerSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadProviders($dca,(Hash $dca),@($providerSdk,$providerOm),@((Hash $providerSdk),(Hash $providerOm)))} 'DCAENTRY_INPUT_COUNT'
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$providerSdk,$providerOm) -ReferenceSha256 @((Hash $reference),(Hash $providerSdk),(Hash $providerOm)) -ProjectProviders -ProjectServices} 'DCAENTRY_MODE'
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

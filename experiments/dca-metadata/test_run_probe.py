@@ -187,6 +187,12 @@ class PolicyTests(unittest.TestCase):
         self.assertNotEqual(run_probe.SERVICES_COMMAND, run_probe.CONSTRUCTION_COMMAND)
         self.assertNotIn(" -ProjectConstruction", run_probe.SERVICES_COMMAND)
 
+    def test_providers_mode_has_four_fixed_pins_and_restriction_first(self):
+        self.assert_four_input_mode("project-providers", "static_dca_project_providers",
+                                    run_probe.PROVIDERS_COMMAND, " -ProjectProviders")
+        self.assertNotEqual(run_probe.PROVIDERS_COMMAND, run_probe.CONSTRUCTION_COMMAND)
+        self.assertNotIn(" -ProjectServices", run_probe.PROVIDERS_COMMAND)
+
     def assert_four_input_mode(self, experiment, operation, expected_command, switch):
         self.assertEqual(len(run_probe.PINS), 3)
         self.assertNotIn(run_probe.OBJECT_MODEL_PIN, run_probe.PINS)
