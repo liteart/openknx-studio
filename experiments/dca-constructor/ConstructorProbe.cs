@@ -1,4 +1,4 @@
-// Owned constructor-only research tool. No SDK implementation, UI API or bus service.
+// Owned constructor/explicit initialization research tool. No SDK or bus service.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -91,6 +91,9 @@ internal static class ConstructorProbe
     static volatile bool dependencyRejected;
     static int assemblyCount, logBytes, thread;
     static object constructed;
+    static InitializeContextProbe initialization;
+    static bool Original { get { return mode == "original" || mode == "original-initialize"; } }
+    static bool Initializing { get { return mode == "original-initialize" || mode == "owned-initialize"; } }
 
     static string Text(string value)
     {
@@ -140,7 +143,7 @@ internal static class ConstructorProbe
         if (Interlocked.Increment(ref assemblyCount) > 96) { unexpected = true; throw new IOException("ASSEMBLY_COUNT_BOUND"); }
         string location = assembly.IsDynamic ? "dynamic" : assembly.Location;
         bool allowed = assembly == typeof(ConstructorProbe).Assembly;
-        if (!assembly.IsDynamic && mode == "original") {
+        if (!assembly.IsDynamic && Original) {
             for (int i = 0; i < Names.Length; i++)
                 if (assembly.FullName == Identities[i] && ProbeFiles.Same(location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
         } else if (!assembly.IsDynamic && assembly.FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" && ProbeFiles.Same(location, fixture)) allowed = true;
@@ -152,7 +155,7 @@ internal static class ConstructorProbe
     {
         string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
         Record("RESOLVE requested=" + Text(args.Name) + " policy=" + Text(policy));
-        if (mode == "original") {
+        if (Original) {
             for (int i = 1; i < Identities.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
         }
         dependencyRejected = true;
@@ -163,19 +166,26 @@ internal static class ConstructorProbe
     {
         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
         Record("CONSTRUCTOR_DISPATCHER_STA_PASS mode=" + mode);
-        Assembly assembly = Assembly.LoadFrom(mode == "original" ? Path.Combine(stage, Names[0] + ".dll") : fixture);
+        Assembly assembly = Assembly.LoadFrom(Original ? Path.Combine(stage, Names[0] + ".dll") : fixture);
         ProbeFiles.Require(!unexpected, "UNEXPECTED_ASSEMBLY_BEFORE_CONSTRUCTOR");
-        string typeName = mode == "original" ? "Mdt.Dali.DcaApp.DcaAppMain" : "Owned.Task148." + mode.Substring("owned-".Length);
+        if (mode == "owned-initialize") { InitializeContextProbe.TestOwned(assembly, Record); return; }
+        string typeName = Original ? "Mdt.Dali.DcaApp.DcaAppMain" : "Owned.Task148." + mode.Substring("owned-".Length);
         Type type = assembly.GetType(typeName, true, false);
         ConstructorInfo ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
         ProbeFiles.Require(ctor != null, "PUBLIC_PARAMETERLESS_CONSTRUCTOR_REQUIRED");
-        if (mode == "original") ProbeFiles.Require(ctor.MetadataToken == 0x0600000e && type.MetadataToken == 0x02000004, "ORIGINAL_ENTRYPOINT_TOKEN");
+        if (Original) ProbeFiles.Require(ctor.MetadataToken == 0x0600000e && type.MetadataToken == 0x02000004, "ORIGINAL_ENTRYPOINT_TOKEN");
+        if (mode == "original-initialize") initialization = InitializeContextProbe.ForOriginal(type, Record);
         ProbeFiles.Require(!unexpected, "UNEXPECTED_ASSEMBLY_BEFORE_CONSTRUCTOR");
         Record("CONSTRUCTOR_BEGIN type=" + typeName + " token=" + ctor.MetadataToken.ToString("X8"));
         constructed = ctor.Invoke(new object[0]);
         ProbeFiles.Require(!unexpected, "UNEXPECTED_ASSEMBLY_DURING_CONSTRUCTOR");
         ProbeFiles.Require(!dependencyRejected, "DEPENDENCY_REJECTED_DURING_CONSTRUCTOR");
-        Record((mode == "original" ? "ORIGINAL_CONSTRUCTOR_RETURN" : "OWNED_CONSTRUCTOR_RETURN") + " type=" + typeName + " ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
+        Record((Original ? "ORIGINAL_CONSTRUCTOR_RETURN" : "OWNED_CONSTRUCTOR_RETURN") + " type=" + typeName + " ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
+        if (initialization != null) {
+            initialization.InvokeOriginal(constructed);
+            ProbeFiles.Require(!unexpected, "UNEXPECTED_ASSEMBLY_DURING_INITIALIZE");
+            ProbeFiles.Require(!dependencyRejected, "DEPENDENCY_REJECTED_DURING_INITIALIZE");
+        }
     }
     [STAThread]
     internal static int Main(string[] args)
@@ -184,7 +194,7 @@ internal static class ConstructorProbe
         try {
             ProbeFiles.Require(args.Length == 6 && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "ARGUMENTS");
             mode = args[1];
-            ProbeFiles.Require(mode == "original" || mode == "owned-Success" || mode == "owned-Throw" || mode == "owned-Missing" || mode == "owned-Hang" || mode == "owned-Flood", "MODE");
+            ProbeFiles.Require(Original || mode == "owned-initialize" || mode == "owned-Success" || mode == "owned-Throw" || mode == "owned-Missing" || mode == "owned-Hang" || mode == "owned-Flood", "MODE");
             string logPath = ProbeFiles.Local(args[5], false, false);
             log = new FileStream(logPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             int session; using (Process process = Process.GetCurrentProcess()) session = process.SessionId;
@@ -193,10 +203,11 @@ internal static class ConstructorProbe
             Record("PROBE_START mode=" + mode + " process=" + (Environment.Is64BitProcess ? "x64" : "x86") + " apartment=" + Thread.CurrentThread.GetApartmentState() + " session=" + session + " interactive=" + Environment.UserInteractive + " administrator-role=" + administrator);
             if (Environment.OSVersion.Platform != PlatformID.Win32NT || !Environment.Is64BitProcess) { Record("WINDOWS_X64_REQUIRED"); return 3; }
             if (!Environment.UserInteractive || session == 0) { Record("INTERACTIVE_SESSION_REQUIRED"); return 4; }
+            if (Initializing && administrator) { Record("INITIALIZE_NONADMIN_REQUIRED"); return 5; }
             stage = ProbeFiles.Local(args[3], true, true);
             string config = ProbeFiles.Local(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, true, false);
             ProbeFiles.Require(new FileInfo(config).Length <= 4096 && File.ReadAllText(config) == ProbeFiles.ConfigText, "EXACT_CONFIG_REQUIRED");
-            if (mode == "original") {
+            if (Original) {
                 int count = 0;
                 foreach (string entry in Directory.EnumerateFileSystemEntries(stage)) { count++; ProbeFiles.Require(count <= Names.Length, "EXACT_EIGHT_INPUTS_REQUIRED"); }
                 ProbeFiles.Require(count == Names.Length, "EXACT_EIGHT_INPUTS_REQUIRED");
@@ -221,8 +232,9 @@ internal static class ConstructorProbe
             }));
             app.Run();
             GC.KeepAlive(constructed);
+            GC.KeepAlive(initialization);
             ProbeFiles.Require(!unexpected, "UNEXPECTED_ASSEMBLY_AFTER_CONSTRUCTOR");
-            Record("PROBE_RESULT mode=" + mode + " exit=" + result + " constructor-only=true ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
+            Record("PROBE_RESULT mode=" + mode + " exit=" + result + (Initializing ? " constructor-only=false initialization-qualification=NOT_ESTABLISHED" : " constructor-only=true") + " ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
             return result;
         } catch (Exception error) {
             if (log != null) { try { Exceptions(error); } catch (IOException) { } }
