@@ -1262,3 +1262,73 @@ review PASS; the experiment itself remains FAIL, exit 2. Records are
 and `review-project03/critical-review-result.txt` under the same directory.
 They verify retained evidence without rerunning Windows or reading DLLs; neither
 review changes the pinset or establishes constructor/fixture/DCA qualification.
+
+## Controlled FluentResults source freeze
+
+Baseline `8d5482406b7d7c20720b9c44dcebad1069c6113f` retains the stopped project03
+FAIL and its independent result audit/review. The exact observed dependency was
+privately acquired unchanged: FluentResults.dll, 139,776 bytes, SHA-256
+`99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159`,
+identity `FluentResults, Version=3.16.0.0, Culture=neutral,
+PublicKeyToken=61439873ec5e1159`. The private acquisition inventory is
+`task009-fluentresults/private-candidate/reference-inventory.json`.
+
+The guarded static reference observation PASS (exit 0, write/network denial
+probes true), `static-reference-observation.json` SHA-256
+`ad82c8475108bf32c9a663ee68c158e625a4d678ae01727e0c7830f4593c320d`,
+records netstandard 2.0.0.0, Tasks.Extensions 4.2.0.1 and Logging.Abstractions
+2.1.1.0 references. This is metadata only, target execution NOT_RUN. The existing
+Tasks.Extensions 4.2.0.1 to 4.2.1.0 redirect is unchanged. The separate Logging
+candidate is not qualified, added, redirected or loaded by this increment.
+
+Only the fixed original-project profile adds that exact FluentResults pin as
+input ten. All ten hashes precede identities/load; every other dependency still
+fails. The original eight-input route, prior nine pins, enum report/literal,
+public constructor tokens/signature, deny-all proxies, config, non-admin checks
+and bounds are unchanged. Fresh source04/build04/inputs-project04 are a separate
+controlled attempt after review, not an automatic retry of project03.
+
+Owned tests use nine-file missing-ten and exact-ten-wrong-hash sets of only owned
+bytes; source guards assert the exact added pin and ten-hash ordering. Local
+pinned-reference C#5/x64/warnings-as-errors compile, PowerShell parse, source
+guards, prior-nine-pin/seven-other-source comparison PASS. New Windows build,
+owned suites and original ten-input execution are **NOT RUN** at freeze; they
+require coordinator execution and separate source verification/review/commit.
+Task-009 remains **Blocked**, creation route INCONCLUSIVE; no fixture qualifies.
+
+Changed tool SHA-256: ProjectConstructorProbe.cs
+`0deaa1a02d588f3926396004b4c118cd7e3e1a88f0b4a81f3b35e1bcecef407b`;
+Test-ConstructorProbe.ps1
+`81f4f8dd49dd155b9bb21a5fdfa2c77ac48e80d1e780061a5e015f576648e799`.
+
+### Ten-input profile Windows owned verification
+
+Pinned Windows build04 PASS. Owned suites PASS: 11/11 Session0, 20/20
+limited interactive and 16/16 elevated interactive (separate suites). Both
+interactive contexts are session 2; limited/admin roles are confirmed separately.
+Missing-ten, exact-ten wrong-hash and original-project-admin cases stop before
+original input identity/load/invocation. Both scheduled tasks were removed,
+with zero owned processes and no junctions. Original execution remains NOT RUN
+in these owned suites; the ten-input runtime attempt is still NOT RUN.
+
+Private `task009-constructor-windows/source-freeze-04.json` SHA-256
+`105f5b6a5e4939b0b132f43271efd011d5ffa081585709185f8ad6f10bd8e315`
+and `build04-report.json` SHA-256
+`405345fb701d52f9f353a4792c4a36f5b130843fbf4046104fc554adc62436a4`
+bind the ten owned sources, unchanged compiler/framework pins and twelve built
+artifacts. ProjectConstructorProbe.exe is 52,736 bytes, SHA-256
+`965239f941a08dce5101aa8e11910e61164355c7b5fdb9b7f886687d60c55b18`. The same private directory retains
+`owned-session0-04-*`, `owned-interactive04-*` and `owned-admin04-*`: raw
+streams, strict UTF-16/UTF-8 provenance, contexts/end records, case logs and
+cleanup. This supersedes only the ten-input freeze's Windows build/owned-tests
+NOT RUN. Independent source/result verification and review must precede its
+source commit and single original attempt. Project03 FAIL is preserved;
+Task-009 remains Blocked, with no Project fixture or DCA qualification.
+
+Independent source04 verification and critical review PASS. Records are
+`private/evidence/task009-constructor-windows/verifier04/independent-audit.log`
+and `review04/critical-review-source-result.txt` under the same directory.
+Only the exact observed FluentResults dependency is added; Logging remains
+excluded. A single fixed 15-second ten-input attempt follows the source commit;
+any next dependency or constructor failure stops without automatic widening or
+retry. The new original attempt remains NOT RUN at this reviewed source commit.

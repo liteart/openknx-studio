@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; project03 runtime diagnostic FAIL before constructor invocation, no SDK service |
-| Source commit(s) | Prior static/enum increments recorded below; second constructor diagnostic source and actual project03 run `b8fcc21ef126a4d00f8f4c6c65101f23cd4b1358`; project03 result documentation commit pending |
+| Source commit(s) | Prior increments recorded below; project03 source `b8fcc21ef126a4d00f8f4c6c65101f23cd4b1358`; reviewed result/baseline `8d5482406b7d7c20720b9c44dcebad1069c6113f`; controlled ten-input FluentResults source commit pending |
 | Tests executed | Prior metadata/enum and owned Windows results preserved below. Second-freeze owned Windows suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Project03 runtime diagnostic FAIL exit 2 on denied FluentResults dependency after nine pins PASS; constructor invocation NOT_REACHED, body entry NOT_ESTABLISHED. DCA initialization/UI/state and hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Original ObjectModel/Common.Types runtime loads observed; exact FluentResults 3.16.0.0 identity denied during type materialization, before constructor/proxy phase. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Project03 stopped before constructor on exact FluentResults dependency. Separate controlled source profile adds only its acquired exact pin, total ten; new Windows tests/runtime NOT RUN at freeze. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Second-freeze source/owned-result verification and critical review PASS; project03 result review pending; no runtime service acceptance |
+| Reviewer | Project03 evidence audit and critical result review PASS; controlled ten-input source/Windows verification and review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -878,3 +878,53 @@ review PASS; the experiment itself remains FAIL, exit 2. Records are
 and `review-project03/critical-review-result.txt` under the same directory.
 They verify retained evidence without rerunning Windows or reading DLLs; neither
 review changes the pinset or establishes constructor/fixture/DCA qualification.
+
+## Controlled FluentResults source freeze
+
+Baseline `8d5482406b7d7c20720b9c44dcebad1069c6113f` preserves reviewed project03
+FAIL before constructor. Private identity/hash inventory and guarded static
+reference observation qualify only the exact observed FluentResults file for
+the next diagnostic pin: 139,776 bytes, SHA-256
+`99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159`,
+version 3.16.0.0, neutral, token 61439873ec5e1159. The fixed profile now requires
+ten inputs, all hashes before identity/load; every other dependency stays denied.
+Logging is not added/redirected and no config or old eight-input route changes.
+
+Owned source guards/negative sets now require ten inputs, with owned bytes only.
+Local C#5 compile, PowerShell parse, source guards and unchanged prior-nine-pin/
+seven-other-source checks PASS. New Windows build/tests, source review/commit
+and original ten-input attempt remain **NOT RUN** pending coordinator handling.
+The component contract records provenance and tool hashes. Task-009 stays
+**Blocked**, creation route INCONCLUSIVE; no fixture/DCA/hardware qualification.
+
+### Ten-input profile Windows owned verification
+
+Pinned Windows build04 PASS. Owned suites PASS: 11/11 Session0, 20/20
+limited interactive and 16/16 elevated interactive (separate suites). Both
+interactive contexts are session 2; limited/admin roles are confirmed separately.
+Missing-ten, exact-ten wrong-hash and original-project-admin cases stop before
+original input identity/load/invocation. Both scheduled tasks were removed,
+with zero owned processes and no junctions. Original execution remains NOT RUN
+in these owned suites; the ten-input runtime attempt is still NOT RUN.
+
+Private `task009-constructor-windows/source-freeze-04.json` SHA-256
+`105f5b6a5e4939b0b132f43271efd011d5ffa081585709185f8ad6f10bd8e315`
+and `build04-report.json` SHA-256
+`405345fb701d52f9f353a4792c4a36f5b130843fbf4046104fc554adc62436a4`
+bind the ten owned sources, unchanged compiler/framework pins and twelve built
+artifacts. ProjectConstructorProbe.exe is 52,736 bytes, SHA-256
+`965239f941a08dce5101aa8e11910e61164355c7b5fdb9b7f886687d60c55b18`. The same private directory retains
+`owned-session0-04-*`, `owned-interactive04-*` and `owned-admin04-*`: raw
+streams, strict UTF-16/UTF-8 provenance, contexts/end records, case logs and
+cleanup. This supersedes only the ten-input freeze's Windows build/owned-tests
+NOT RUN. Independent source/result verification and review must precede its
+source commit and single original attempt. Project03 FAIL is preserved;
+Task-009 remains Blocked, with no Project fixture or DCA qualification.
+
+Independent source04 verification and critical review PASS. Records are
+`private/evidence/task009-constructor-windows/verifier04/independent-audit.log`
+and `review04/critical-review-source-result.txt` under the same directory.
+Only the exact observed FluentResults dependency is added; Logging remains
+excluded. A single fixed 15-second ten-input attempt follows the source commit;
+any next dependency or constructor failure stops without automatic widening or
+retry. The new original attempt remains NOT RUN at this reviewed source commit.
