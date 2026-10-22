@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Prior Project-only increment `f9549f67c10b81216021fe8de5ccdf7f496cb614`; reviewed four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc` |
-| Tests executed | Metadata-only owned PowerShell 50 cases PASS; Python harness 15 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy guarded extraction PASS (static only); scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction` report/verifier logs; dated records below |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; service inquiry source `5c7bc46e43f1cdd013214fce796b5b8fd6962719` (baseline `e037bead9c00d116342baa561d833253adb5c615`) |
+| Tests executed | Metadata-only owned PowerShell 68 cases PASS; Python harness 16 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy construction extraction PASS (static only); project-services guarded extraction PASS (static only); scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction` and `task009-services` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Five fixed roots/eleven types inspected; SDK Project/collection/Root internal constructors and nonpublic context observed; ObjectModel Project has five public constructors requiring uninspected services. A compatible creation/service route and runtime compatibility remain unresolved |
+| Technical outcome | Construction roots and five service roots inspected. Nonpublic SDK context/factory and interface-only ObjectModel factory/store contracts are observed; concrete implementations/state semantics and a compatible standalone creation route remain unresolved |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior Project-only increment committed at `f9549f6`; independent four-input static verification and final critical source/evidence review PASS; no runtime service acceptance |
+| Reviewer | Independent construction/service static verification and source review PASS; final service-result documentation review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -325,3 +325,84 @@ remain uninspected. No root growth, null/uninitialized object, nonpublic
 activation, runtime loader expansion or service implementation occurs now.
 Windows/SDK implementation execution, original initialization retry, UI/state
 round trips and hardware remain **NOT RUN** for this increment.
+
+
+## Fixed project-services inquiry source freeze
+
+At reviewed baseline `e037bead9c00d116342baa561d833253adb5c615`, a separate
+`project-services` metadata mode now selects only SDK `ExecutionContext` and
+`ISdkFactory`, plus ObjectModel `IFactory`, `IProjectStore` and `IObjectContext`.
+These names were observed in the prior construction report. Existing
+construction roots, commands and report schema/content are preserved. The new
+mode uses the same four exact pins and guarded route, including the reviewed
+fourth ObjectModel MethodDef ceiling only; no other limit changes.
+
+The mode reports attributes, interfaces, constructors/public/protected member
+signatures and bounded local bases, with declaration-only return annotations.
+No interface reference or constructor parameter is recursively catalogued, no
+method body/attribute is inspected, and no service implementation, extra DLL,
+SDK load or runtime allowlist expansion is supplied. The contract was written
+before code in [DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md).
+
+The owned PowerShell suite reports **PASS 68 / FAIL 0**, and Python harness
+**PASS**, 16 tests. Tests preserve earlier reports byte-for-byte, cover exact
+service roots and missing/duplicate/nonpublic-interface cases, and retain the
+selected-method and row-bound failure paths. Scope/whitespace **PASS**.
+Independent source verification/review and the coordinator's original guarded
+`project-services` extraction are **NOT RUN** at this freeze. A selected-method
+limit failure must remain FAIL pending coordinator review; it does not permit
+an automatic bound or root increase. Task-009 remains **Blocked** with all
+service acceptance criteria unchecked. Runtime/Windows/UI/state and hardware
+proofs remain **NOT RUN** for this inquiry.
+
+
+## Guarded project-services result, 2026-10-22
+
+The coordinator's fixed service inquiry completed **PASS** for static metadata
+extraction at source `5c7bc46e43f1cdd013214fce796b5b8fd6962719` on
+macOS/Darwin arm64, PowerShell 7.6.7. The private report is
+`private/evidence/task009-services/project-services-report-task009.json`,
+54,190 bytes, SHA-256
+`19194b3a2c0b4faf91ef412045291f2c3ea7dc155a72842079566ed174899cdd`.
+Its JSON-only re-read verified both denial probes true, all four exact pins
+and identities, five selected roots/five types and `runtime_execution=NOT_RUN`.
+This supersedes the prior service-freeze **NOT RUN** and pending source review,
+while runtime proof remains unavailable. The normalized guarded command and
+detailed member evidence are in
+[DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md).
+
+SDK `ExecutionContext` (`0200001A`, attributes `1048704`) is nonpublic/abstract;
+its protected constructor `0600015C` takes ObjectModel `IDomObject` and Object.
+The reader reports 20 declarations. SDK `ISdkFactory` (`02000020`, attributes
+`1048736`) is a nonpublic interface with 13 declarations. ObjectModel `IFactory`
+is a public interface with 52 declarations; `IObjectContext` has 25 declarations
+and inherited `ICacheProvider`, while `IProjectStore` has 36 declarations and
+inherited `IProductStore`. Referenced interfaces were not expanded.
+
+`IFactory` declares two public instance `CreateProject` methods, `060001FE`
+and `060001FF`, returning ObjectModel Project from store/name/style or
+Guid/collection/store inputs. No concrete factory/store implementation was
+qualified. Their `NOT_SELECTED_RETURN` tag only means the return is outside
+the five service roots, not that creation declarations are absent. The sole
+`DECLARATION_ONLY` match, `IProjectStore.Clone` (`06000315`), requires an existing
+store receiver and ProjectId and does not prove a startup factory. No method
+or constructor was invoked; the previously inspected SDK Root constructor remains
+internal.
+A compatible standalone creation/context route is still unproven.
+
+The coordinator reports independent owned PowerShell **PASS 68 / FAIL 0**,
+Python **PASS** (16 tests), scope/whitespace **PASS**, and source review **PASS**.
+Private verifier logs under `task009-services` are `verifier-powershell.log`,
+`verifier-python.log`, `verifier-scope.log` and `verifier-diff-check.log`.
+The post-execution `source-freeze-success.json` is 876 bytes, SHA-256
+`6c113b623ff78bd11d2df3985b44779cffafc850c4a923045b20928a47ef2f79`;
+all six owned source hashes match its committed-source record.
+
+This update changes only task/evidence documents. Task-009 remains **Blocked**
+on concrete fixture/runtime context semantics, with all service acceptance
+criteria unchecked. Remaining contract questions concern actual factory/store
+provisioning, inherited `IProductStore`/`ICacheProvider` obligations and nonpublic
+SDK context/factory requirements. No new mode, root, parameter catalog, service
+implementation or experiment is added. Current static documentation work needs
+no additional human input. Windows/SDK implementation execution, original
+initialization retry, UI/state round trips and hardware remain **NOT RUN**.
