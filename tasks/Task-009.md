@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; project05 diagnostic FAIL during reflection invocation, exact Ids dependency denied; no SDK service |
-| Source commit(s) | Prior increments recorded below; project05 source `1b0eb7dcb9158778ae4ce3e40c554f2956f800c4`; reviewed result/profile12 baseline `167740ea8e724b6f69bacfcf75c10a9fa72bab06`; profile12 source commit pending |
-| Tests executed | Earlier results/project05 FAIL retained. Generation06 pinned build/owned suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive, including preserved facade proof and new twelve-input negatives. Original twelve-input attempt and DCA initialization/UI/state/hardware NOT RUN |
+| Implementation / report status | Blocked; project06 FAIL exit 10 on first observed SDK service request, explicit unsupported get_Id response; no qualified fixture/service |
+| Source commit(s) | Prior increments recorded below; profile12 source and actual project06 run `de5d65056510b240deb93971313bca9f164b7b40`; project06 result documentation commit pending |
+| Tests executed | Earlier results retained. Generation06 pinned build/owned suites PASS 11 Session0/20 limited/16 elevated. Project06 original diagnostic FAIL exit 10 after twelve pins/OS facade PASS: one unsupported get_Id request, invocation ATTEMPTED_NOT_RETURNED, body entry NOT_ESTABLISHED_BY_STACK_TRACE. DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Project05 FAIL retained; separate profile12 adds only the observed exact Ids pin. All facade/constructor/proxy behavior unchanged; new original attempt NOT RUN. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
+| Technical outcome | Ids runtime load and first SDK IProjectStore.get_Id request OBSERVED; explicit unsupported denial, no constructor return or call-origin/body-entry proof. No dependency blocker or unexpected audit. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Project05 result audit/critical review PASS; profile12 source/Windows verification and review pending; no runtime service acceptance |
+| Reviewer | Profile12 source/owned-result audit and critical review PASS; project06 result verification/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1066,3 +1066,31 @@ rehash target binaries. After the explicit source commit, one fixed 15-second
 original diagnostic may follow; failures stop without automatic expansion or
 retry. Original twelve-input execution remains NOT RUN at this source commit;
 Task-009 stays Blocked and no fixture, DCA, hardware or gate qualifies.
+
+## Project06 observed service-request result
+
+At `de5d65056510b240deb93971313bca9f164b7b40`, project06 **FAIL**, exit 10:
+twelve pins/OS facade PASS, Ids runtime load allowed, no dependency/audit blocker.
+After public constructor token 06002830 begin, SDK request **OBSERVED**:
+IProjectStore.get_Id, 060002F5, zero arguments, first request. Explicit unsupported
+denial yields TargetInvocationException → NotSupportedException; END false,
+denied-requests=1. Invocation ATTEMPTED_NOT_RETURNED, body entry
+**NOT_ESTABLISHED_BY_STACK_TRACE**; no constructor/initializer origin is inferred.
+
+Private `project06-observation.json`, 7,782 bytes, SHA-256
+`0b6dbcc79c3f280b75137f0824982ab692fbd8f73fa6e03efc7a452e72cf474f`,
+binds raw log and eight-file provenance. Non-admin session 2, child exit 10 and
+expected/last cleanup 10/removal/zero processes/scratch are confirmed. No value,
+fixture/service implementation, source/pin change or retry follows. Task-009
+**Blocked**, creation INCONCLUSIVE, fixture NOT_QUALIFIED; DCA initialization/
+UI/state/hardware NOT RUN. Result verification/review pending; earlier failures
+and project04's unknown origin remain intact.
+
+Independent project06 result audit and critical review PASS. Records are
+`private/evidence/task009-constructor-windows/verifier-project06/independent-audit.log`
+and `review-project06/critical-review-result.txt`. These consistency audits
+retain the diagnostic FAIL exit 10 and observed unsupported service request;
+they do not establish constructor body/caller provenance or supply a getter
+value. No Windows rerun, original DLL read, source change, retry, fixture
+qualification or phase approval follows. ProjectId contract investigation
+remains a separate prerequisite before any positive fixture implementation.

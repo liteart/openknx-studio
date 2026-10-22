@@ -1583,3 +1583,44 @@ rehash target binaries. After the explicit source commit, one fixed 15-second
 original diagnostic may follow; failures stop without automatic expansion or
 retry. Original twelve-input execution remains NOT RUN at this source commit;
 Task-009 stays Blocked and no fixture, DCA, hardware or gate qualifies.
+
+## Project06 observed service-request result
+
+The single project06 attempt at `de5d65056510b240deb93971313bca9f164b7b40`
+**FAIL**, exit 10, with a controlled unsupported-service response. All twelve
+private pins/fixed OS facade PASS; Ids loads in allowed runtime context. There
+is no dependency-resolution blocker or unexpected-assembly audit marker.
+After public constructor begin token 06002830, the first observed SDK request is
+`Knx.Ets.ObjectModel.IProjectStore.get_Id`, method 060002F5, zero arguments,
+number 1/first-for-interface=True. It receives the explicit
+`PROJECT_FIXTURE_UNSUPPORTED` denial; no value is supplied.
+
+END records returned=False and denied-requests=1, followed by
+TargetInvocationException → NotSupportedException and PROJECT_RESULT exit=10.
+Reflection invocation remains **ATTEMPTED_NOT_RETURNED**; SDK service request is
+**OBSERVED**, but body entry is **NOT_ESTABLISHED_BY_STACK_TRACE**. The log does
+not identify constructor-body versus type-initializer call origin. This is
+distinct from the prior dependency failures, not Project/fixture qualification.
+The getter's return/value contract is a future inquiry; this result guesses none.
+
+Private `task009-constructor-windows/project06.log`, 6,513 bytes, SHA-256
+`6214345621218b7e69771a0ec5ec1a1b6e3e1e6be7a0f77e484c620ebe44db91`,
+is bound by deterministic `project06-observation.json`, 7,782 bytes, SHA-256
+`0b6dbcc79c3f280b75137f0824982ab692fbd8f73fa6e03efc7a452e72cf474f`.
+The bounded report contains source/pins/alias, exact request, exception/end and
+eight-file provenance, with no generated timestamp/self/docs hash. Context is
+non-admin interactive session 2; child exit 10 is confirmed under 15-second/
+64 KiB bounds, stderr empty. Cleanup has expected/last exit 10, task removed,
+zero owned processes/scratch. Earlier project05 FAIL/project04 unknown origin
+remain preserved. No source/pin change, retry or fixture response is added.
+Task-009 remains **Blocked**, creation INCONCLUSIVE, fixture NOT_QUALIFIED;
+DCA initialization/UI/state/hardware NOT RUN, independent result review pending.
+
+Independent project06 result audit and critical review PASS. Records are
+`private/evidence/task009-constructor-windows/verifier-project06/independent-audit.log`
+and `review-project06/critical-review-result.txt`. These consistency audits
+retain the diagnostic FAIL exit 10 and observed unsupported service request;
+they do not establish constructor body/caller provenance or supply a getter
+value. No Windows rerun, original DLL read, source change, retry, fixture
+qualification or phase approval follows. ProjectId contract investigation
+remains a separate prerequisite before any positive fixture implementation.
