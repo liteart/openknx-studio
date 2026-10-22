@@ -22,8 +22,9 @@ limited exception for loading the exact pinned original inputs and invoking the
 constructor once, in a bounded non-elevated interactive process. This replaces
 the isolation prerequisite only for that experiment. It grants no intentional
 KNX/device operation, device fixture, Initialize, UI, Dispose or other original
-entrypoint call. Original execution is still NOT RUN; owned interactive tests
-and pre-original critical review now PASS. No isolation, mediation, offline-operation,
+entrypoint call. Owned interactive tests and pre-original critical review
+PASSed before the coordinator ran the constructor once. That actual call
+returned successfully. No isolation, mediation, offline-operation,
 safety PASS or product/phase GO is claimed. Task-005's technical qualification
 does not complete automatically.
 
@@ -117,12 +118,13 @@ the owner exception in the non-elevated interactive desktop on the network-
 capable VM (never directly in SSH session 0):
 
 ```powershell
-& "$NewBuild\bin\ProbeLauncher.exe" --seconds 20 --mode original `
+& "$NewBuild\bin\ProbeLauncher.exe" --seconds 15 --mode original `
   --input $PrivateExactEightInputStage --log $FreshOriginalLog
 ```
 
 The stage contains only the eight fixed Task-143 DLLs; the app-local config is
-built beside ConstructorProbe.exe. This command is planned, not executed. Record executable,
+built beside ConstructorProbe.exe. This normalized command was executed through
+the reviewed private guarded runner. Record executable,
 source, config, input and private log hashes, OS/CLR/compiler/session identity,
 exit/cleanup evidence and the exact reviewed source commit. PASS owned fixtures
 never implies vendor PASS. Original UI, state, mediation and hardware are NOT RUN.
@@ -149,10 +151,10 @@ no process for any of the three owned executable paths remained.
 
 Both controlled egress connections remain FAIL for isolation. The explicit
 2026-10-22 owner exception permits only the bounded constructor experiment after
-those now-satisfied owned prerequisites; original execution remains NOT RUN.
-The coordinator will stage the exact eight privately inventoried inputs and run
-the separate constructor experiment next. No source commit, final runtime review
-or gate approval is claimed. Coordinator evidence stays private under
+those prerequisites were satisfied before the actual original run. Reviewed
+implementation checkpoint `1daec2717b16625452eae8020c54e4eaa35385b6` was committed
+before execution. Final runtime evidence verification and critical review PASS;
+no gate approval is claimed. Coordinator evidence stays private under
 `private/evidence/task148-clean-host`.
 
 Independent verifier `constructor_verify` checked all 48 evidence-manifest hashes
@@ -164,6 +166,63 @@ The reviewed `original01-runner.ps1` has SHA-256
 `b0721968ea470ae1c0ffebc2626f6dfcf78f7e499ef9a85273588a9eb7052f7f`;
 it verifies the actual non-elevated interactive session and three runtime artifact
 pins before launch. The private eight-input inventory is
-`private-input-manifest.json`. These observations precede original staging and
-record no original constructor outcome. The five owned source hashes remain
-unchanged.
+`private-input-manifest.json`. Those checks preceded original staging. The five
+owned source hashes remain unchanged from the reviewed committed checkpoint.
+
+
+## Actual original constructor result
+
+On 2026-10-22 at 17:12 UTC the coordinator executed the guarded original probe
+in actual session 2, interactive=True and administrator-role=False. All eight
+fixed Task-143 inputs matched their SHA-256 pins before original loading. The
+log records `CONSTRUCTOR_BEGIN` for `Mdt.Dali.DcaApp.DcaAppMain`, token
+`0600000E`, then `ORIGINAL_CONSTRUCTOR_RETURN` and `PROBE_RESULT ... exit=0`.
+The launcher recorded `reason=EXIT child-exit=0 child-exit-confirmed=true`,
+zero captured stdout/stderr bytes and a configured 15-second deadline. The
+scheduled task's last result was 0. Technical result: PASS for this one call.
+
+Only three private assemblies actually loaded: `MDT-DaliDcaPlus` 4.0.0.0,
+`Knx.Ets.Sdk` 6.4.8718.0 and `Knx.Ets.Sdk.AddIns.AddInViews` 6.4.8718.0, each
+from the exact private input stage. The other five files were staged and pinned;
+this run does not establish that they were exercised. All other recorded
+assemblies were expected Microsoft framework assemblies. No unexpected assembly
+or dependency-rejection marker was recorded. No Initialize, GetAddInUI, GetDcaUi,
+Dispose, state operation or intentional device operation was supplied.
+
+This proves constructor return on this selected machine and exact inputs. It
+does not establish full DCA initialization, UI hosting, state round trips,
+activation/dependency closure for other methods, mediation, isolation or PoC A
+success. Both isolation checks remain FAIL under the explicit owner exception.
+Task-005 and Tasks 007–012 remain unchanged. Task-148 is Done for the bounded
+constructor experiment after independent evidence verification and critical
+review PASS.
+
+Private result identities observed locally from the collected files:
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| original01-result-stdout.txt | 6,261 | `7dcbb8c1e2adb1900ec7628f36e1f82ec4de34138aaef7ddd0e282db09232245` |
+| original01.log | 5,049 | `a4212bb8f14ee48b3f7106350ca999df90f76dc2255642b6447b33ee13acb424` |
+| original01-driver.stdout.txt | 212 | `ada32b48295e26761fc944d0430c1681d8d20972d2b60fb68a6b1de0942184a2` |
+| original-evidence-manifest.json | 734 | `f5ca99b07da207f843650acc41ae55908914deb335a6309675a6912306aac5fd` |
+| private-input-manifest.json | 1,219 | `208f4751a3308dcb34b4c795d62e6e676fcccc74a2411c7494a6ebb412d0be8a` |
+| original01-cleanup-stdout.txt | 2,463 | `489176312d0ccc3cd7f9a17b0af84e9177f6b998cb10c8c8fe93f481bc82cf45` |
+
+Post-run integrity/cleanup PASS: all eight input byte counts and hashes match
+the exact pre-run private manifest (7,955,816 aggregate bytes). All five raw
+original evidence files match their evidence manifest. The exact scheduled task
+was removed; zero processes matched the owned executable paths and no selected
+ETS process names were present. Descendants remain explicitly NOT CONTAINED.
+These are the recorded bounded checks, not proof of network isolation or absence
+of every possible process/effect.
+
+No Windows execution was performed by the documentation agent. It inspected the
+actual private result/log bytes, verified all five raw evidence manifest entries,
+compared all eight pre/post input records and computed the hashes above.
+Independent verifier `constructor_verify` matched the five raw original files,
+one-call markers, source and pre/post input hashes, result envelope and cleanup:
+PASS. This was evidence verification without another Windows invocation.
+Critical reviewer `binding_review` independently checked the actual original
+evidence and returned final PASS with no unresolved findings. AC-001 through
+AC-005 are met for this bounded experiment; isolation remains FAIL and no
+broader DCA capability or phase gate is accepted.

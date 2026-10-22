@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Task ID | Task-148 |
-| Status | In progress |
+| Status | Done |
 | Component | Bounded original-DCA runtime research |
 | Requirements | R-001, R-003, R-011, R-023, R-028, R-030 |
 | Source baseline | `2be14c0` |
@@ -29,10 +29,10 @@ non-elevated interactive process. It authorizes no intentional KNX/device
 operation, device fixture, Initialize/UI/Dispose call or other vendor entrypoint.
 The exception replaces the isolation prerequisite for this limited experiment;
 it does not establish isolation, mediation, offline operation or safety PASS.
-Original execution remains NOT RUN. Owned interactive evidence and the
-pre-original critical review now PASS; this record grants no phase GO or safety
-approval and does not close
-Task-005's technical qualification.
+Owned interactive evidence and pre-original critical review PASSed before
+execution. The reviewed source checkpoint was committed before the coordinator
+ran the original constructor once: PASS for that call. This grants no phase GO
+or safety approval and does not close Task-005's technical qualification.
 
 ## Scope and acceptance
 
@@ -78,14 +78,16 @@ frozen for independent verification/review before original execution.
 
 | Field | Observed result |
 |---|---|
-| Implementation/report status | In progress under explicit constructor-only owner exception; owned tooling implemented, original runtime/acceptance evidence pending |
-| Source commit(s) | Baseline `2be14c0`; implementation not committed |
+| Implementation/report status | Done for the bounded constructor experiment; runtime evidence, independent verification and critical review PASS |
+| Source commit(s) | Baseline `2be14c0`; reviewed implementation `1daec2717b16625452eae8020c54e4eaa35385b6` committed before original execution; evidence record identified by this file's Git history |
 | Local checks | PASS: PowerShell parser, prior five-reference C#5 static compilation and amended six-reference compilation of all four targets, scope and whitespace; no executable was run by this agent |
 | New-host build/owned tests | Initial script invocation blocked by execution policy; first compiler build FAILed CS0012 and produced only fixture DLL. Fresh amended six-reference build02 PASS. Session-0 suite PASS, six cases (administrator-role=True). Interactive suite PASS, twelve cases in actual session 2 with administrator-role=False; neutral open/render/close, timeout 124 and flood 125 with confirmed direct-child exit. Exact temporary task removed; zero remaining processes for all three owned executable paths. |
-| Original constructor | NOT RUN; owned interactive prerequisites and pre-original critical review PASS. Exact original inputs still await coordinator staging/execution under the explicit owner exception despite isolation FAIL. |
-| Original UI/state/hardware | NOT RUN; outside this increment |
+| Original constructor | PASS: actual x64/STA session 2, interactive=True, administrator-role=False; all eight fixed input pins checked before loading; constructor token 0600000E returned, probe/launcher exit 0 and direct-child exit confirmed under a 15-second deadline. Only MDT primary, SDK 6.4 and AddInViews 6.4 actually loaded from the private input stage; other five inputs were pinned, not necessarily exercised. |
+| Original post-run integrity/cleanup | PASS: all eight sizes/hashes identical to pre-run private manifest; five raw evidence files match manifest; exact scheduled task removed, zero matching owned executable processes and no selected ETS process names. Descendants NOT CONTAINED. |
+| Original UI/state/hardware | NOT RUN: no Initialize/GetAddInUI/GetDcaUi/Dispose or state call and no intentional device operation; constructor transitive effects are not excluded by this marker |
+| Technical outcome | PASS for one unchanged original parameterless constructor on the selected machine and exact staged inputs; isolation remains FAIL, no full DCA/PoC A/mediation qualification |
 | Evidence location | Private coordinator evidence under `private/evidence/task148-clean-host`; concise report in linked contract |
-| Independent verification/review | constructor_verify PASS for independent verification of all 48 evidence-manifest hashes and Windows logs, not an independently executed Windows rerun. binding_review pre-original critical review PASS for frozen source, 48-artifact evidence and private runner; no findings or safety/isolation/gate approval. Final runtime/evidence review pending. |
+| Independent verification/review | constructor_verify PASS for the 48 owned evidence files and all five raw original evidence files, source hashes, one-call markers, pre/post inputs and cleanup; no independent Windows rerun. binding_review final critical review PASS for source, runner and actual result evidence, with no unresolved findings. AC-001 through AC-005 met for this bounded experiment; no safety/isolation/gate approval. |
 | Phase/product gate | No gate advanced; Task-005 and Tasks 007–012 unchanged |
 
 The coordinator authorized the narrowly evidenced sixth public reference after
@@ -96,12 +98,14 @@ did not establish this older Windows compiler's build requirements. The added
 `f88a02dcc1dc1037884032624f3ab092aa5a3e85d215598d7d13ad7ddc814d81`
 and comes from the unchanged pinned net48 package. Task-144's historical five
 reference selection is unchanged. The partial failed output is retained; retry
-uses a fresh build directory. No vendor code was executed.
+uses a fresh build directory. No vendor code executed during these build checks;
+the later original constructor run is recorded separately.
 
 Before original staging, the coordinator recorded the private original runner
 `original01-runner.ps1`, SHA-256
 `b0721968ea470ae1c0ffebc2626f6dfcf78f7e499ef9a85273588a9eb7052f7f`.
 It checks the actual session/administrator role before launch and pins the three
 reviewed runtime artifacts. Exact eight-input inventory remains in the private
-`private-input-manifest.json`. This evidence reconciles owned-test prerequisites;
-it records no original execution result. The five source hashes are unchanged.
+`private-input-manifest.json`. The later actual result is recorded in
+`original01-result-stdout.txt` and the raw original-evidence files. The five
+source hashes are unchanged from the committed reviewed checkpoint.
