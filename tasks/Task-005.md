@@ -468,3 +468,6 @@ local coordinator acceptance, not maintainer release or phase-gate approval.
 The reviewed implementation and qualification commit is the commit containing
 this record; its exact revision is recorded in the subsequent evidence record.
 Next ready task: Task-007 neutral shell acceptance.
+
+Reviewed implementation/qualification source commit:
+`ee3cbdf0afd1e80184c43a0a9c4a1a2f2127f75b`.
