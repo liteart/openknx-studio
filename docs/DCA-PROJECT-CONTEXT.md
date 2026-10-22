@@ -1062,3 +1062,80 @@ PASS; their audit records are under `private/evidence/task009-constructor-window
 These are evidence audits, not independent Windows reruns or target-binary
 rehashes. The reviewed facade-only correction may proceed to a fixed enum-only
 metadata retry; original construction remains disabled.
+
+## Successful enum02 observation, 2026-10-22
+
+The coordinator's fixed two-input reflection-only enum02 run **PASS**, exit 0,
+uses source `41b5f6927c8b17d2d7781e4f2955595e09904250`. The actual context is
+Windows interactive session 2, administrator_role=false, metadata_only=true.
+Common.Types and the previously selected netstandard facade both pass their
+exact input hash/size pins before reflection-only loading:
+
+| Input | Bytes | SHA-256 |
+|---|---:|---|
+| `Knx.Ets.Common.Types.dll` | 215,504 | `5c4e08541a123825b0ed501aec1f5fbbbc3d1f756b3be41ff2728925f906c9f0` |
+| `netstandard.dll` | 102,856 | `bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb` |
+
+The log records both selected assemblies as allowed and ReflectionOnly=true,
+then the one exact facade resolution. It observes
+`Knx.Ets.Common.Types.Enumerations.GroupAddressStyle`, type token `0200008E`,
+underlying type `System.Byte`, four declared fields and these three literals:
+
+| Literal | Field token | Raw byte value |
+|---|---|---:|
+| `TwoLevel` | `04000175` | 0 |
+| `ThreeLevel` | `04000176` | 1 |
+| `Free` | `04000177` | 2 |
+
+The selected next diagnostic input is **ThreeLevel=1**, with exactly the
+observed enum type, underlying type and field token. This is a proposed input
+for a constructor diagnostic, not a qualified Project configuration or working
+fixture. Source still records original-constructor-ready=false; no original
+constructor marker or runtime-loaded Knx assembly is present. The original
+constructor remains DISABLED_NOT_RUN. No activation source edit occurs in this
+result increment. Independent review of this frozen observation precedes the
+separate source freeze that could enable constructor dispatch.
+
+The deterministic private `enum02-observation.json` is 4,062 bytes, SHA-256
+`59323bf7eb53d6c6a130c523e49d82bb3e3d58830f43dcc2f13b2dcabb58bcf7`.
+It records the source commit, two input pins/identities, raw log hash, actual
+context/end records, supervisor result, bounded literal entries, selected
+diagnostic literal, cleanup and eight-file provenance. It has sorted JSON keys,
+UTF-8/LF, no generated timestamp, and no changing documentation or self hash.
+Its 16 KiB maximum is enforced during generation. The selected literal's review
+status is explicitly PENDING_AT_REPORT_FREEZE; constructor/fixture qualification
+is NOT_ESTABLISHED. This private report must remain separate from proprietary
+DLLs and is not a redistribution of those inputs.
+
+Canonical evidence is under `private/evidence/task009-constructor-windows`:
+
+| Evidence | Bytes | SHA-256 |
+|---|---:|---|
+| `enum02.log` | 2,912 | `c78cf325972616b3bfe3730fd8c16f8765ff6181e995ac731ebb69498684d8f0` |
+| `enum02-plan.json` | 2,836 | `f37a1e968ddf858a920a5cd4dc8bd705dd20726de7c333f77ae5a54a709df161` |
+| `enum02-done.json` | 286 | `c384ed3596f31c9b222e8c7b9f3386b0de51151f97707db412b00f2b99d52b06` |
+| `enum02-summary.json` | 714 | `4605598945a90dd637f76084f58d02e8011f64b484f787e5f82a0c844ef45f57` |
+| `enum02-cleanup-stdout.txt` | 116 | `1c244a6c0025a5197dd26e9e8e3de18ce258909ff37bb7af6a63ab8f392863c2` |
+
+The supervisor records a 15-second deadline, 64 KiB capture bound, child exit 0
+and direct-child exit confirmed. Driver stderr is empty. The cleanup record
+reports LastTaskResult=0, task removed, zero owned processes and zero scratch
+files. These are owned-scope checks, not systemwide network or descendant
+containment. Context and both driver-stream hashes are included in the private
+observation provenance; all summary bytes/hashes and parsed literal records were
+checked locally without reading or executing original assemblies.
+
+This supersedes only enum02's earlier NOT RUN and the unknown literal value.
+The earlier enum01 **FAIL**, exit 2, and both generations of owned test results
+remain preserved. Original Project invocation, DCA initialization/UI/state,
+fixture qualification and hardware remain **NOT RUN** or **NOT_QUALIFIED** as
+recorded in the observation. Creation route remains **INCONCLUSIVE** and
+Task-009 remains **Blocked**. No gate or service acceptance advances.
+
+Independent enum02 verification PASS (58 assertions) and critical observation
+review PASS. Records: `private/evidence/task009-constructor-windows/`
+`verifier-enum02/independent-audit.log` and
+`review-enum02/critical-review-observation-result.txt`. Review confirms only the
+observed ThreeLevel=1 literal and provenance as input to a separate reviewed
+source freeze; original constructor dispatch remains disabled. Neither reviewer
+nor verifier reran Windows or read original DLLs. Task-009 remains Blocked.

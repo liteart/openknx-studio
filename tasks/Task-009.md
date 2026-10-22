@@ -82,11 +82,11 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; initial Windows diagnostic `61c768d1785c723c94985ac36e952601ed38f0b6`; fixed-facade follow-up source commit pending |
-| Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded static extractions PASS, with historical ROW_LIMIT failure retained. Initial Windows owned tests PASS (10 Session-0, 17 interactive); enum01 FAIL exit 2 on denied netstandard reflection-only dependency, no literals. Corrected fixed-facade Windows build/owned tests PASS (11 Session-0, 19 interactive); enum02 NOT RUN. Original Project invocation and hardware NOT RUN |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; initial Windows diagnostic `61c768d1785c723c94985ac36e952601ed38f0b6`; corrected facade route and actual enum02 source `41b5f6927c8b17d2d7781e4f2955595e09904250`; enum result documentation commit pending |
+| Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded static extractions PASS, with historical ROW_LIMIT failure retained. Initial Windows owned tests PASS (10 Session-0, 17 interactive); enum01 FAIL exit 2 on denied netstandard dependency. Corrected Windows build/owned tests PASS (11 Session-0, 19 interactive); enum02 reflection-only literal observation PASS exit 0. Original Project invocation, DCA initialization/UI/state and hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Initial enum metadata run denied the exact previously pinned netstandard facade; follow-up allows only that facade in reflection-only enum context after both pins. Enum value UNKNOWN; original construction remains disabled before any original load. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Enum02 observes GroupAddressStyle type 0200008E / System.Byte and three literals; ThreeLevel field 04000176=1 selected for the next diagnostic, pending independent observation review. Original construction remains source-disabled. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
 | Reviewer | Prior construction/service/provider/constructor static verification and source/result review PASS; new diagnostic Windows verification/review pending; no runtime service acceptance |
 
@@ -747,3 +747,44 @@ PASS; their audit records are under `private/evidence/task009-constructor-window
 These are evidence audits, not independent Windows reruns or target-binary
 rehashes. The reviewed facade-only correction may proceed to a fixed enum-only
 metadata retry; original construction remains disabled.
+
+## Actual enum02 observation
+
+The coordinator's clean-Windows enum02 reflection-only metadata run **PASS**,
+exit 0, at source `41b5f6927c8b17d2d7781e4f2955595e09904250`. Both exact
+Common.Types/netstandard inputs passed their pins; both assemblies and the
+facade resolution are recorded in reflection-only context. Session 2 is
+interactive, administrator_role=false. GroupAddressStyle has type token
+`0200008E`, underlying `System.Byte`, four declared fields, and literals
+TwoLevel `04000175`=0, ThreeLevel `04000176`=1 and Free `04000177`=2.
+The selected next diagnostic value is **ThreeLevel=1**, not a working Project
+configuration or qualified service response.
+
+The bounded deterministic private `task009-constructor-windows/enum02-observation.json`
+is 4,062 bytes, SHA-256
+`59323bf7eb53d6c6a130c523e49d82bb3e3d58830f43dcc2f13b2dcabb58bcf7`.
+It records source/input pins, exact literals, selected diagnostic input and
+eight-file provenance including context/end/supervision/cleanup. The raw log
+is 2,912 bytes, SHA-256
+`c78cf325972616b3bfe3730fd8c16f8765ff6181e995ac731ebb69498684d8f0`.
+The component contract records the plan, summary and cleanup hashes. Cleanup
+reports LastTaskResult=0, task removed, zero owned processes and scratch files;
+the supervisor does not establish systemwide network or descendant containment.
+
+This actual result supersedes enum02 NOT RUN and the unknown literal; enum01
+FAIL and both owned-test generations remain preserved. The source still has
+OriginalConstructorReady=false, and no activation edit occurs in this result
+increment. Original Project invocation remains **DISABLED_NOT_RUN**; Project
+fixture qualification is **NOT_QUALIFIED**, creation_route **INCONCLUSIVE**,
+DCA initialization/UI/state and hardware **NOT RUN**. Task-009 remains
+**Blocked** with all service acceptance criteria unchecked. Independent
+verification/review of this observation is required before a separate source
+freeze can enable the already bounded constructor diagnostic.
+
+Independent enum02 verification PASS (58 assertions) and critical observation
+review PASS. Records: `private/evidence/task009-constructor-windows/`
+`verifier-enum02/independent-audit.log` and
+`review-enum02/critical-review-observation-result.txt`. Review confirms only the
+observed ThreeLevel=1 literal and provenance as input to a separate reviewed
+source freeze; original constructor dispatch remains disabled. Neither reviewer
+nor verifier reran Windows or read original DLLs. Task-009 remains Blocked.
