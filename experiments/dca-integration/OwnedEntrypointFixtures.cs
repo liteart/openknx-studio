@@ -6,6 +6,69 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ public static void CreateOversizedMethodTable(string path){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedOversized.dll"),m.GetOrAddGuid(new Guid("00920000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString("Knx.Ets.ObjectModel"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Owned"),m.GetOrAddString("Oversized"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  for(int i=0;i<32769;i++)Method(m,"OwnedMethod",MethodAttributes.Public,new byte[]{0x20,0,1});
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
+ public static void CreateCountedConstruction(string path,int methodRows,int typeRows=3,bool objectModel=true){
+  if(methodRows<0||methodRows>65537||typeRows<3||typeRows>32769)throw new ArgumentOutOfRangeException();
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedCounted.dll"),m.GetOrAddGuid(new Guid("00930000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(objectModel?"Knx.Ets.ObjectModel":"Owned.Other"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.ObjectModel.Project"),m.GetOrAddString("Project"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  // Padding belongs only to unselected types, preserving the selected-method budget.
+  for(int i=2;i<typeRows;i++)m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"+i),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(i==2?1:methodRows+1));
+  for(int i=0;i<methodRows;i++)Method(m,"OwnedMethod",MethodAttributes.Public,new byte[]{0x20,0,1});
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
+ static void Method(MetadataBuilder m,string name,MethodAttributes attributes,byte[] signature){
+  m.AddMethodDefinition(attributes,MethodImplAttributes.IL,m.GetOrAddString(name),m.GetOrAddBlob(signature),0,MetadataTokens.ParameterHandle(1));
+ }
+ public static void CreateConstruction(string path,bool objectModel=false,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedConstruction.dll"),m.GetOrAddGuid(new Guid("00910000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(objectModel?"Knx.Ets.ObjectModel":"Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);
+  var obj=m.AddTypeReference(runtime,m.GetOrAddString("System"),m.GetOrAddString("Object"));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Owned"),m.GetOrAddString("Base"),profile==5?MetadataTokens.TypeDefinitionHandle(3):obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  var ctor=MethodAttributes.SpecialName|MethodAttributes.RTSpecialName;
+  if(objectModel){
+   m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.ObjectModel.Project"),m.GetOrAddString(profile==3?"Other":"Project"),MetadataTokens.TypeDefinitionHandle(2),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+   Method(m,".ctor",MethodAttributes.Public|ctor,new byte[]{0x20,0,1});
+   Method(m,"Create",MethodAttributes.Public|MethodAttributes.Static,new byte[]{0,0,0x12,12});
+   if(profile==4)m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.ObjectModel.Project"),m.GetOrAddString("Project"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(3));
+  }else{
+   var om=m.AddAssemblyReference(m.GetOrAddString("Knx.Ets.ObjectModel"),new Version(1,0,0,0),default,default,0,default);
+   m.AddTypeReference(om,m.GetOrAddString("Knx.Ets.ObjectModel.Project"),m.GetOrAddString("Project"));
+   m.AddTypeReference(runtime,m.GetOrAddString("System.Collections.Generic"),m.GetOrAddString("IEnumerable`1"));
+   var foreign=m.AddAssemblyReference(m.GetOrAddString("Owned.Foreign"),new Version(1,0,0,0),default,default,0,default);
+   m.AddTypeReference(foreign,m.GetOrAddString("Knx.Ets.Sdk.Project"),m.GetOrAddString("Project"));
+   m.AddTypeDefinition(TypeAttributes.Public|TypeAttributes.Sealed,m.GetOrAddString("Knx.Ets.Sdk.Project"),m.GetOrAddString("Project"),MetadataTokens.TypeDefinitionHandle(2),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+   Method(m,".ctor",MethodAttributes.Assembly|ctor,profile==6?new byte[]{0x20,1}:new byte[]{0x20,3,1,0x12,16,0x12,9,0x12,20});
+   m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.Sdk.Project"),m.GetOrAddString("ProjectCollection"),MetadataTokens.TypeDefinitionHandle(2),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(2));
+   Method(m,".ctor",MethodAttributes.Public|ctor,new byte[]{0x20,0,1});
+   Method(m,"Create",MethodAttributes.Public,new byte[]{0x20,0,0x12,12});
+   Method(m,"ParameterOnly",MethodAttributes.Public,new byte[]{0x20,1,0x0e,0x12,12});
+   Method(m,"GetRoot",MethodAttributes.Family,new byte[]{0x20,0,0x12,24});
+   Method(m,"HiddenFactory",MethodAttributes.Private,new byte[]{0x20,0,0x12,12});
+   m.AddTypeDefinition(TypeAttributes.NotPublic|TypeAttributes.Interface|TypeAttributes.Abstract,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString(profile==1?"OtherContext":"ISdkContext"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(7));
+   Method(m,"get_Root",MethodAttributes.Public|MethodAttributes.Abstract|MethodAttributes.Virtual,new byte[]{0x20,0,0x12,24});
+   m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("Root"),MetadataTokens.TypeDefinitionHandle(2),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(8));
+   Method(m,".ctor",MethodAttributes.Public|ctor,new byte[]{0x20,0,1});
+   Method(m,"GetProjects",MethodAttributes.Public,new byte[]{0x20,0,0x12,16});
+   Method(m,"GetNested",MethodAttributes.Public,new byte[]{0x20,0,0x15,0x12,13,1,0x12,12});
+   Method(m,"GetForeign",MethodAttributes.Public,new byte[]{0x20,0,0x12,17});
+   Method(m,"GetPrefix",MethodAttributes.Public,new byte[]{0x20,0,0x12,28});
+   m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.Sdk.Project"),m.GetOrAddString(profile==7?"ProjectCollection>":"ProjectCollectionFactoryValue"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(13));
+   Method(m,".ctor",MethodAttributes.Public|ctor,new byte[]{0x20,0,1});
+   if(profile==2)m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("Root"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(14));
+  }
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  // Task-009 images contain only declarations; even constructors have no bodies.
  public static void CreateProject(string path,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProject.dll"),m.GetOrAddGuid(new Guid("00900000-1111-1111-1111-111111111111")),default,default);

@@ -43,5 +43,63 @@ try{
   Reject {Project $bad} ('DCAENTRY_'+$code)
  }
  Reject {[Task144.EntrypointMetadata]::ReadProject($dca,(Hash $dca),@($sdk,$sdk),@((Hash $sdk),(Hash $sdk)))} 'DCAENTRY_DUPLICATE_PROJECT'
+ $constructionSdk=Join-Path $root 'ConstructionSdk.dll';$om=Join-Path $root 'ConstructionObjectModel.dll'
+ [Task144OwnedFixtures]::CreateConstruction($constructionSdk);[Task144OwnedFixtures]::CreateConstruction($om,$true)
+ function Construction([string] $s=$constructionSdk,[string] $o=$om){[Task144.EntrypointMetadata]::ReadConstruction($dca,(Hash $dca),@($reference,$s,$o),@((Hash $reference),(Hash $s),(Hash $o)))}
+ $constructionRaw=Construction;$c=$constructionRaw|ConvertFrom-Json
+ Assert ($c.operation -eq 'static_dca_project_construction' -and $c.runtime_execution -eq 'NOT_RUN' -and $c.inputs.Count -eq 4 -and $c.selected_roots.Count -eq 5 -and $c.types.Count -eq 7) 'Fixed construction roots and deduplicated local bases';$passed++
+ $context=$c.selected_roots|Where-Object name -eq 'Knx.Ets.Sdk.ISdkContext'
+ $contextType=$c.types|Where-Object name -eq 'Knx.Ets.Sdk.ISdkContext'
+ Assert ($context.base_chain_disposition -eq 'NO_BASE' -and $null -eq $contextType.base_type -and ($contextType.attributes -band 32) -eq 32) 'Interface nil base is valid explicit NO_BASE';$passed++
+ $sdkProject=$c.types|Where-Object name -eq 'Knx.Ets.Sdk.Project.Project'
+ Assert ($sdkProject.methods.Count -eq 1 -and ($sdkProject.methods[0].attributes -band 7) -eq 3 -and $sdkProject.methods[0].signature.Contains('Knx.Ets.Sdk.Project.ProjectCollection') -and $sdkProject.methods[0].signature.Contains('Knx.Ets.ObjectModel.Project.Project') -and $sdkProject.methods[0].signature.Contains('Knx.Ets.Sdk.ISdkContext')) 'Internal constructor actual parameter categories';$passed++
+ $collection=$c.types|Where-Object name -eq 'Knx.Ets.Sdk.Project.ProjectCollection'
+ Assert (@($collection.methods|Where-Object name -eq 'HiddenFactory').Count -eq 0 -and ($collection.methods|Where-Object name -eq 'Create').factory_candidate -eq 'DECLARATION_ONLY' -and ($collection.methods|Where-Object name -eq 'ParameterOnly').factory_candidate -eq 'NOT_SELECTED_RETURN' -and ($collection.methods|Where-Object name -eq 'GetRoot').factory_candidate -eq 'DECLARATION_ONLY') 'Return-only/public/protected candidate declaration selection';$passed++
+ $rootType=$c.types|Where-Object name -eq 'Knx.Ets.Sdk.Root'
+ Assert (($rootType.methods|Where-Object name -eq 'GetNested').factory_candidate -eq 'DECLARATION_ONLY' -and ($rootType.methods|Where-Object name -eq 'GetForeign').factory_candidate -eq 'NOT_SELECTED_RETURN' -and ($rootType.methods|Where-Object name -eq 'GetPrefix').factory_candidate -eq 'NOT_SELECTED_RETURN' -and @($c.types|Where-Object name -eq 'Knx.Ets.Sdk.Project.ProjectCollectionFactoryValue').Count -eq 0 -and -not $constructionRaw.Contains($root)) 'Generic return/foreign assembly/prefix/nonrecursive boundary';$passed++
+ foreach($profile in @(1,2,3,4)){
+  $bad=Join-Path $root ('ConstructionBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateConstruction($bad,($profile -ge 3),$profile)
+  $code=if($profile -in @(1,3)){'DCAENTRY_ROOT_NOT_FOUND'}else{'DCAENTRY_DUPLICATE_ROOT'}
+  if($profile -ge 3){Reject {Construction $constructionSdk $bad} $code}else{Reject {Construction $bad} $code}
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadConstruction($dca,(Hash $dca),@($reference,$constructionSdk,$om),@((Hash $reference),(Hash $constructionSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
+ # A later pin failure wins over an earlier invalid PE: every input is pinned before any reader.
+ Reject {[Task144.EntrypointMetadata]::ReadConstruction($broken,(Hash $broken),@($reference,$constructionSdk,$om),@((Hash $reference),(Hash $constructionSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadConstruction($dca,(Hash $dca),@($constructionSdk,$om),@((Hash $constructionSdk),(Hash $om)))} 'DCAENTRY_INPUT_COUNT'
+ Reject {[Task144.EntrypointMetadata]::ReadProject($dca,(Hash $dca),@($reference,$constructionSdk,$om),@((Hash $reference),(Hash $constructionSdk),(Hash $om)))} 'DCAENTRY_INPUT_COUNT'
+ foreach($profile in @(5,6,7)){
+  $bad=Join-Path $root ('ConstructionBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateConstruction($bad,$false,$profile)
+  Reject {Construction $bad} $(@{5='DCAENTRY_BASE_CYCLE';6='DCAENTRY_MALFORMED_SIGNATURE';7='DCAENTRY_TYPE_IDENTIFIER'}[$profile])
+ }
+ $oversized=Join-Path $root 'OwnedOversized.dll';[Task144OwnedFixtures]::CreateOversizedMethodTable($oversized)
+ $rowSeen=$false
+ try{$null=[Task144.EntrypointMetadata]::ReadConstruction($dca,(Hash $dca),@($oversized,$constructionSdk,$om),@((Hash $oversized),(Hash $constructionSdk),(Hash $om)))}catch{
+  $ownedException=$_.Exception
+  for($depth=0;$depth -lt 8 -and $null -ne $ownedException;$depth++){
+   if($ownedException -is [Task144.EntrypointMetadata+RowLimitObservationException]){$rowSeen=$ownedException.TableName -eq 'METHODDEF' -and $ownedException.RowCount -eq 32769;break}
+   $ownedException=$ownedException.InnerException
+  }
+ }
+ Assert $rowSeen 'Construction preserves structured finite table/count before type walking';$passed++
+ $worker=Join-Path $PSScriptRoot 'Read-EntrypointMetadata.ps1'
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($oversized,$constructionSdk,$om) -ReferenceSha256 @((Hash $oversized),(Hash $constructionSdk),(Hash $om)) -ProjectConstruction} 'DCAENTRY_ROW_LIMIT_METHODDEF_32769'
+ $oldCode=$null
+ try{[Task144.EntrypointMetadata]::ReadProject($dca,(Hash $dca),@($oversized),@((Hash $oversized)))}catch{$oldCode=$_.Exception.ToString()}
+ Assert ($null -ne $oldCode -and $oldCode.Contains('DCAENTRY_ROW_LIMIT') -and -not $oldCode.Contains('DCAENTRY_ROW_LIMIT_METHODDEF')) 'Old-mode generic row limit remains unchanged';$passed++
+ foreach($rows in @(38472,65536)){
+  $counted=Join-Path $root ('CountedMethods'+$rows+'.dll');[Task144OwnedFixtures]::CreateCountedConstruction($counted,$rows)
+  $accepted=Construction $constructionSdk $counted|ConvertFrom-Json
+  Assert ($accepted.operation -eq 'static_dca_project_construction' -and $accepted.selected_roots.Count -eq 5 -and $accepted.runtime_execution -eq 'NOT_RUN') ('Fourth ObjectModel MethodDef '+$rows+' accepted as metadata only');$passed++
+ }
+ $tooMany=Join-Path $root 'CountedMethods65537.dll';[Task144OwnedFixtures]::CreateCountedConstruction($tooMany,65537)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructionSdk,$tooMany) -ReferenceSha256 @((Hash $reference),(Hash $constructionSdk),(Hash $tooMany)) -ProjectConstruction} 'DCAENTRY_ROW_LIMIT_METHODDEF_65537'
+ # Every earlier slot and every earlier mode keeps the original 32768 ceiling.
+ Reject {[Task144.EntrypointMetadata]::ReadConstruction($oversized,(Hash $oversized),@($reference,$constructionSdk,$om),@((Hash $reference),(Hash $constructionSdk),(Hash $om)))} 'DCAENTRY_ROW_LIMIT'
+ Reject {[Task144.EntrypointMetadata]::ReadConstruction($dca,(Hash $dca),@($reference,$oversized,$om),@((Hash $reference),(Hash $oversized),(Hash $om)))} 'DCAENTRY_ROW_LIMIT'
+ Reject {[Task144.EntrypointMetadata]::Read($dca,(Hash $dca),@($oversized),@((Hash $oversized)))} 'DCAENTRY_ROW_LIMIT'
+ $otherTable=Join-Path $root 'CountedTypes32769.dll';[Task144OwnedFixtures]::CreateCountedConstruction($otherTable,0,32769)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructionSdk,$otherTable) -ReferenceSha256 @((Hash $reference),(Hash $constructionSdk),(Hash $otherTable)) -ProjectConstruction} 'DCAENTRY_ROW_LIMIT_TYPEDEF_32769'
+ $otherOwner=Join-Path $root 'CountedOtherOwner32769.dll';[Task144OwnedFixtures]::CreateCountedConstruction($otherOwner,32769,3,$false)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructionSdk,$otherOwner) -ReferenceSha256 @((Hash $reference),(Hash $constructionSdk),(Hash $otherOwner)) -ProjectConstruction} 'DCAENTRY_ROW_LIMIT_METHODDEF_32769'
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

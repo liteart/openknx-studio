@@ -13,6 +13,14 @@ using System.Text.Json;
 namespace Task144 {
 public static class EntrypointMetadata {
  const int FileLimit=16*1024*1024, TotalLimit=32*1024*1024, RowLimit=32768;
+ const int ConstructionObjectModelMethodLimit=65536;
+ public sealed class RowLimitObservationException : Exception {
+  public string TableName { get; }
+  public int RowCount { get; }
+  internal RowLimitObservationException(TableIndex table,int count):base("DCAENTRY_ROW_LIMIT"){
+   TableName=table.ToString().ToUpperInvariant();RowCount=count;
+  }
+ }
  static Exception Fail(string code) { return new InvalidDataException("DCAENTRY_"+code); }
  static Dictionary<string,object> Obj(params object[] pairs) {
   var d=new Dictionary<string,object>();for(int i=0;i<pairs.Length;i+=2)d.Add((string)pairs[i],pairs[i+1]);return d;
@@ -34,10 +42,11 @@ public static class EntrypointMetadata {
  static string AssemblyIdentity(MetadataReader r) {var a=r.GetAssemblyDefinition();return Identity(r,a.Name,a.Version,a.Culture,a.PublicKey,true);}
  static string ReferenceIdentity(MetadataReader r,AssemblyReferenceHandle h) {var a=r.GetAssemblyReference(h);return Identity(r,a.Name,a.Version,a.Culture,a.PublicKeyOrToken,(a.Flags&AssemblyFlags.PublicKey)!=0);}
  sealed class Names : ISignatureTypeProvider<string,object> {
-  readonly MetadataReader r;int nodes,scopeDepth;
-  public Names(MetadataReader reader){r=reader;}
+  readonly MetadataReader r;readonly bool strictIdentifiers;int nodes,scopeDepth;
+  public string ReturnType { get; private set; }
+  public Names(MetadataReader reader,bool strict=false){r=reader;strictIdentifiers=strict;}
   string Bound(string s){if(++nodes>128||s.Length>4096)throw Fail("SIGNATURE_LIMIT");return s;}
-  string Atom(string ns,string name){if(name.Contains('.')||name.Contains('+')||ns.Contains('+'))throw Fail("TYPE_IDENTIFIER");return ns.Length==0?name:ns+"."+name;}
+  string Atom(string ns,string name){if(name.Contains('.')||name.Contains('+')||ns.Contains('+')||(strictIdentifiers&&(name.IndexOfAny("[]<>,&*()".ToCharArray())>=0||ns.IndexOfAny("[]<>,&*()".ToCharArray())>=0)))throw Fail("TYPE_IDENTIFIER");return ns.Length==0?name:ns+"."+name;}
   public string Named(EntityHandle h,int depth=0){
    if(depth>=16)throw Fail("SCOPE_LIMIT");if(h.IsNil)return null;
    if(h.Kind==HandleKind.TypeDefinition){var t=r.GetTypeDefinition((TypeDefinitionHandle)h);var p=t.GetDeclaringType();string ns=Str(r,t.Namespace),name=Str(r,t.Name);if(!p.IsNil&&ns.Length!=0)throw Fail("TYPE_IDENTIFIER");return Bound(p.IsNil?Atom(ns,name):Named(p,depth+1)+"+"+Atom("",name));}
@@ -69,6 +78,7 @@ public static class EntrypointMetadata {
    int count=pre.ReadCompressedInteger();if(count<0||count>32)throw Fail("SIGNATURE_LIMIT");
    CheckType(ref pre,0,true);for(int i=0;i<count;i++)CheckType(ref pre,0);if(pre.RemainingBytes!=0)throw Fail("SIGNATURE_SHAPE");
    var d=new SignatureDecoder<string,object>(this,r,null);var s=d.DecodeMethodSignature(ref b);
+   ReturnType=s.ReturnType;
    return Bound((s.Header.IsInstance?"instance ":"static ")+s.ReturnType+"("+string.Join(",",s.ParameterTypes)+") generic="+s.GenericParameterCount);
   }
   public string GetArrayType(string t,ArrayShape a){throw Fail("UNSUPPORTED_ARRAY");}
@@ -90,26 +100,69 @@ public static class EntrypointMetadata {
  }
  static bool Visible(MetadataReader r,TypeDefinitionHandle h,int depth=0){if(depth>=16)throw Fail("SCOPE_LIMIT");var t=r.GetTypeDefinition(h);var v=t.Attributes&TypeAttributes.VisibilityMask;return v==TypeAttributes.Public||(v==TypeAttributes.NestedPublic&&Visible(r,t.GetDeclaringType(),depth+1));}
  static readonly HashSet<string> Contracts=new HashSet<string>(StringComparer.Ordinal){"Knx.Ets.Sdk.AddIns.AddInViews.IDeviceConfigurationAddIn","Knx.Ets.Sdk.AddIns.AddInViews.IEts4AddInV2","Knx.Ets.Sdk.AddIns.AddInViews.IEts4AddIn","Knx.Ets.Sdk.AddIns.AddInViews.IInitializationContext","Knx.Ets.Sdk.AddIns.AddInViews.IHostNotification"};
+ static readonly string[] SdkRoots={"Knx.Ets.Sdk.Project.Project","Knx.Ets.Sdk.Project.ProjectCollection","Knx.Ets.Sdk.ISdkContext","Knx.Ets.Sdk.Root"};
+ static readonly string[] ObjectModelRoots={"Knx.Ets.ObjectModel.Project.Project"};
+ static string[] Roots(string assembly){return assembly=="Knx.Ets.Sdk"?SdkRoots:assembly=="Knx.Ets.ObjectModel"?ObjectModelRoots:Array.Empty<string>();}
+ static bool ReturnContains(string returns,string atom){
+  int start=0;while(start<returns.Length){int at=returns.IndexOf(atom,start,StringComparison.Ordinal);if(at<0)return false;int end=at+atom.Length;
+   if((at==0||returns[at-1]=='<'||returns[at-1]==',')&&(end==returns.Length||returns[end]=='>'||returns[end]==','||returns[end]=='['||returns[end]=='&'||returns[end]=='*'))return true;start=at+1;
+  }return false;
+ }
+ static List<string> ReturnAtoms(MetadataReader r){
+  var atoms=new List<string>(Roots(Str(r,r.GetAssemblyDefinition().Name)));
+  foreach(var h in r.AssemblyReferences){var a=r.GetAssemblyReference(h);foreach(string root in Roots(Str(r,a.Name)))atoms.Add("["+ReferenceIdentity(r,h)+"]"+root);}
+  return atoms;
+ }
+ static bool FactoryCandidate(List<string> atoms,string returns){
+  foreach(string atom in atoms)if(ReturnContains(returns,atom))return true;return false;
+ }
+ static string SelectChain(MetadataReader r,TypeDefinitionHandle root,HashSet<TypeDefinitionHandle> selected){
+  var chain=new HashSet<TypeDefinitionHandle>();var current=root;
+  while(true){
+   if(chain.Contains(current))throw Fail("BASE_CYCLE");if(chain.Count>=16)throw Fail("BASE_LIMIT");chain.Add(current);selected.Add(current);
+   var b=r.GetTypeDefinition(current).BaseType;
+   if(b.IsNil)return "NO_BASE";
+   if(b.Kind==HandleKind.TypeDefinition){current=(TypeDefinitionHandle)b;continue;}
+   if(b.Kind==HandleKind.TypeReference){var tr=r.GetTypeReference((TypeReferenceHandle)b);if(tr.ResolutionScope.Kind!=HandleKind.AssemblyReference)throw Fail("BASE_SCOPE");return "EXTERNAL_BASE_NOT_RESOLVED";}
+   throw Fail("BASE_SHAPE");
+  }
+ }
  public static string Read(string dca,string hash,string[] refs,string[] hashes){
   return ReadInternal(dca,hash,refs,hashes,false);
  }
  public static string ReadProject(string dca,string hash,string[] refs,string[] hashes){
   return ReadInternal(dca,hash,refs,hashes,true);
  }
- static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project){
-  if(refs==null||hashes==null||refs.Length<1||refs.Length>2||refs.Length!=hashes.Length)throw Fail("INPUT_COUNT");
+ public static string ReadConstruction(string dca,string hash,string[] refs,string[] hashes){
+  return ReadInternal(dca,hash,refs,hashes,true,true);
+ }
+ static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project,bool construction=false){
+  if(refs==null||hashes==null||refs.Length!=hashes.Length||(construction?refs.Length!=3:refs.Length<1||refs.Length>2))throw Fail("INPUT_COUNT");
   var paths=new List<string>{dca};paths.AddRange(refs);var pins=new List<string>{hash};pins.AddRange(hashes);var bytes=new List<byte[]>();long total=0;
   // Verify every selected file before creating any reader.
   for(int i=0;i<paths.Count;i++)bytes.Add(Pinned(paths[i],pins[i],ref total));
   var inputs=new List<object>();var types=new List<object>();int methods=0,projectRoots=0;string baseDisposition=null;
+  var rootReports=new List<object>();var foundRoots=new HashSet<string>(StringComparer.Ordinal);
   for(int i=0;i<paths.Count;i++)using(var pe=new PEReader(ImmutableArray.Create(bytes[i]))){
    if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
-   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex)))if(r.GetTableRowCount(table)>RowLimit)throw Fail("ROW_LIMIT");
+   // The guarded four-input route pins this slot to the exact acquired ObjectModel bytes.
+   bool objectModelSlot=construction&&i==3&&Str(r,r.GetAssemblyDefinition().Name)=="Knx.Ets.ObjectModel";
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);int limit=objectModelSlot&&table==TableIndex.MethodDef?ConstructionObjectModelMethodLimit:RowLimit;if(count>limit){if(construction)throw new RowLimitObservationException(table,count);throw Fail("ROW_LIMIT");}}
    var input=Obj("filename",Path.GetFileName(paths[i]),"bytes",bytes[i].Length,"sha256",pins[i].ToLowerInvariant(),"identity",AssemblyIdentity(r));
    if(project){var assemblyRefs=new List<string>();foreach(var ah in r.AssemblyReferences){if(assemblyRefs.Count>=256)throw Fail("REFERENCE_LIMIT");assemblyRefs.Add(ReferenceIdentity(r,ah));}input.Add("assembly_references",assemblyRefs);}
    inputs.Add(input);
+   var returnAtoms=construction?ReturnAtoms(r):null;
    var selected=new HashSet<TypeDefinitionHandle>();
-   if(project&&i!=0&&Str(r,r.GetAssemblyDefinition().Name)=="Knx.Ets.Sdk"){
+   if(construction&&i!=0){
+    string assembly=Str(r,r.GetAssemblyDefinition().Name);string[] roots=Roots(assembly);
+    foreach(var h in r.TypeDefinitions){
+     string name=new Names(r).Named(h);if(Array.IndexOf(roots,name)<0)continue;
+     if(!foundRoots.Add(assembly+":"+name))throw Fail("DUPLICATE_ROOT");
+     if(name==SdkRoots[0]&&(!Visible(r,h)||(r.GetTypeDefinition(h).Attributes&TypeAttributes.Interface)!=0))throw Fail("PROJECT_TYPE");
+     rootReports.Add(Obj("input",Path.GetFileName(paths[i]),"name",name,"token",MetadataTokens.GetToken(h).ToString("X8"),"base_chain_disposition",SelectChain(r,h,selected)));
+    }
+   }
+   else if(project&&i!=0&&Str(r,r.GetAssemblyDefinition().Name)=="Knx.Ets.Sdk"){
     TypeDefinitionHandle root=default;
     foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)=="Knx.Ets.Sdk.Project.Project"){if(!root.IsNil)throw Fail("DUPLICATE_PROJECT");root=h;}
     if(!root.IsNil){
@@ -136,15 +189,19 @@ public static class EntrypointMetadata {
      var m=r.GetMethodDefinition(mh);string mn=Str(r,m.Name);bool pub=(m.Attributes&MethodAttributes.MemberAccessMask)==MethodAttributes.Public;
      var access=m.Attributes&MethodAttributes.MemberAccessMask;bool constructor=mn==".ctor"||mn==".cctor";
      if(project?!(constructor||pub||access==MethodAttributes.Family||access==MethodAttributes.FamORAssem||access==MethodAttributes.FamANDAssem):!pub&&(m.Attributes&MethodAttributes.Virtual)==0)continue;if(++methods>2048||declared.Count>=256)throw Fail("METHOD_LIMIT");
-     string signature;try{signature=new Names(r).Method(m.Signature);}catch(InvalidDataException){throw;}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
-     declared.Add(Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",mn,"attributes",(int)m.Attributes,"signature_header",r.GetBlobReader(m.Signature).ReadByte(),"signature",signature));
+     string signature;var names=new Names(r,construction);try{signature=names.Method(m.Signature);}catch(InvalidDataException){throw;}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     var method=Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",mn,"attributes",(int)m.Attributes,"signature_header",r.GetBlobReader(m.Signature).ReadByte(),"signature",signature);
+     if(construction)method.Add("factory_candidate",!constructor&&FactoryCandidate(returnAtoms,names.ReturnType)?"DECLARATION_ONLY":"NOT_SELECTED_RETURN");
+     declared.Add(method);
     }
     types.Add(Obj("input",Path.GetFileName(paths[i]),"token",MetadataTokens.GetToken(h).ToString("X8"),"name",name,"attributes",(int)t.Attributes,"base_type",new Names(r).Named(t.BaseType),"interfaces",interfaces,"methods",declared));
    }
   }
-  if(project&&projectRoots!=1)throw Fail("PROJECT_NOT_FOUND");
-  var result=Obj("schema_version",1,"operation",project?"static_dca_project_context":"static_dca_entrypoint_map","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"types",types,"limitations",project?new[]{"Fixed Project root and bounded same-assembly base declarations only; external bases unresolved; declared constructors and public/protected methods are metadata observations, not construction or runtime compatibility proof.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:new[]{"DCA method details only for direct AddInViews interface implementers; public type inventory and selected contract declarations only; no inherited member or runtime activation proof.","Names/signatures are metadata observations; no SDK implementation or method bodies inspected."});
-  if(project)result.Add("base_chain_disposition",baseDisposition);
+  if(construction&&foundRoots.Count!=5)throw Fail("ROOT_NOT_FOUND");
+  if(project&&!construction&&projectRoots!=1)throw Fail("PROJECT_NOT_FOUND");
+  var result=Obj("schema_version",1,"operation",construction?"static_dca_project_construction":project?"static_dca_project_context":"static_dca_entrypoint_map","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"types",types,"limitations",construction?new[]{"Five fixed construction roots and bounded same-assembly base declarations only; external dependencies unresolved. Return-type candidate annotations are declarations only, not working factories or global construction-route inventory.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:project?new[]{"Fixed Project root and bounded same-assembly base declarations only; external bases unresolved; declared constructors and public/protected methods are metadata observations, not construction or runtime compatibility proof.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:new[]{"DCA method details only for direct AddInViews interface implementers; public type inventory and selected contract declarations only; no inherited member or runtime activation proof.","Names/signatures are metadata observations; no SDK implementation or method bodies inspected."});
+  if(construction)result.Add("selected_roots",rootReports);
+  else if(project)result.Add("base_chain_disposition",baseDisposition);
   string report=JsonSerializer.Serialize(result);
   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
  }

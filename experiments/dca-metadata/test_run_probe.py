@@ -177,6 +177,60 @@ class PolicyTests(unittest.TestCase):
                         with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_REPORT_SHAPE$"):
                             run_probe.run(str(stage), str(pwsh), experiment="project-context")
 
+    def test_construction_mode_has_four_fixed_pins_and_restriction_first(self):
+        self.assertEqual(len(run_probe.PINS), 3)
+        self.assertNotIn(run_probe.OBJECT_MODEL_PIN, run_probe.PINS)
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory).resolve()
+            stage.chmod(0o700)
+            pwsh = stage / "owned-pwsh"
+            pwsh.write_bytes(b"never executed")
+            pwsh.chmod(0o700)
+            pins = tuple(("Owned" + str(i) + ".dll", 1, str(i) * 64) for i in range(3))
+            object_model = ("OwnedObjectModel.dll", 1, "3" * 64)
+            for name, _, _ in (*pins, object_model):
+                path = stage / name
+                path.write_bytes(b"x")
+                path.chmod(0o600)
+            report = {"schema_version": 1, "operation": "static_dca_project_construction",
+                      "runtime_execution": "NOT_RUN", "rights": "UNRESOLVED", "inputs": [
+                          {"filename": name, "bytes": size, "sha256": digest}
+                          for name, size, digest in (*pins, object_model)]}
+            report["inputs"][3]["identity"] = run_probe.OBJECT_MODEL_IDENTITY
+            with mock.patch.object(run_probe.sys, "platform", "darwin"), \
+                    mock.patch.object(run_probe, "PINS", pins), \
+                    mock.patch.object(run_probe, "OBJECT_MODEL_PIN", object_model):
+                with mock.patch.object(run_probe, "negative_probes", side_effect=run_probe.ProbeError("DCAPROBE_RESTRICTION")):
+                    with mock.patch.object(run_probe, "bounded_child") as child:
+                        with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_RESTRICTION$"):
+                            run_probe.run(str(stage), str(pwsh), experiment="project-construction")
+                        child.assert_not_called()
+                with mock.patch.object(run_probe, "negative_probes", return_value={"owned": True}):
+                    with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(report).encode(), b"")) as child:
+                        run_probe.run(str(stage), str(pwsh), str(stage / "report.json"), experiment="project-construction")
+                        command = base64.b64decode(child.call_args.args[0][-1]).decode("utf-16le")
+                        self.assertEqual(command, run_probe.CONSTRUCTION_COMMAND)
+                        self.assertIn("$pins.Count -ne 4", command)
+                        self.assertIn(" -ProjectConstruction", command)
+                        self.assertEqual(child.call_args.args[0][2], run_probe.PROFILE)
+                        environment = child.call_args.args[1]
+                        observed = json.loads(environment["DCAMETA_INPUTS_JSON"])
+                        self.assertEqual([(p["filename"], p["bytes"], p["sha256"]) for p in observed], list((*pins, object_model)))
+                        self.assertEqual(Path(environment["DCAMETA_WORKER"]).name, "Read-EntrypointMetadata.ps1")
+                    for field, value, code in (("identity", "Owned.Wrong", "REPORT_IDENTITY"), ("sha256", "f" * 64, "REPORT_PINS")):
+                        changed = json.loads(json.dumps(report))
+                        changed["inputs"][3][field] = value
+                        with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(changed).encode(), b"")):
+                            with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_" + code + "$"):
+                                run_probe.run(str(stage), str(pwsh), experiment="project-construction")
+                    with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(dict(report, operation="static_dca_project_context")).encode(), b"")):
+                        with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_REPORT_SHAPE$"):
+                            run_probe.run(str(stage), str(pwsh), experiment="project-construction")
+                with mock.patch.object(run_probe, "bounded_child") as child:
+                    with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_OUTPUT_PATH$"):
+                        run_probe.run(str(stage), str(pwsh), str(stage / object_model[0]), experiment="project-construction")
+                    child.assert_not_called()
+
     def test_probe_failure_is_closed(self):
         result = (0, b'{"powershell_version":"7.6.7","write_denied":true,"network_denied":false}', b"")
         with mock.patch.object(run_probe, "bounded_child", return_value=result):
