@@ -9,7 +9,7 @@ Map the actual ETS SDK surface used by the reference DCA
 | Field | Value |
 |---|---|
 | Task ID | Task-008 |
-| Status | In progress |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host analysis |
@@ -37,9 +37,9 @@ Identify the minimum external services and identities needed by this DCA rather 
 
 ## Acceptance Criteria
 
-- [ ] AC-001: Every attempted initialization failure maps to a named dependency with evidence.
-- [ ] AC-002: A small ordered shim plan exists for the single reference DCA.
-- [ ] AC-003: Strong naming or proprietary concrete types are not dismissed as solved by interface naming.
+- [x] AC-001: Every attempted initialization failure maps to a named dependency with evidence.
+- [x] AC-002: A small ordered shim plan exists for the single reference DCA.
+- [x] AC-003: Strong naming or proprietary concrete types are not dismissed as solved by interface naming.
 
 ## Dependencies to Other Tasks
 
@@ -111,14 +111,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Observed result |
 |---|---|
-| Implementation / report status | In progress; frozen-source Windows build and owned diagnostic tests PASS; original Initialize pending |
-| Source commit(s) | Uncommitted Task-008 increment on accepted Task-007 base `3282a515d44aed7e9ccfc0bdd438811264827128` |
-| Tests executed | Static guarded-report/code comparison PASS; `python3 -B scripts/check_project_scope.py` PASS; `git diff --check` PASS. Coordinator Windows build PASS; owned Session-0 suite 7 cases PASS; owned interactive suite 13 cases PASS, including six getter denials, direct/wrapped failure and caught-denial unqualified return. Original Initialize NOT RUN. Local Mono commands FAIL before managed execution with bad CPU type. |
+| Implementation / report status | Done as dependency analysis/report; named original initialization dependencies captured; initialization completion INCONCLUSIVE after supervised timeout |
+| Source commit(s) | Reviewed implementation/owned-evidence checkpoint `89b08d24631021eb9863e7f1737753af0b8cfbd9`, based on accepted Task-007 `3282a515d44aed7e9ccfc0bdd438811264827128`; original-result documentation update pending commit |
+| Tests executed | Static guarded-report/code comparison PASS; scope and diff checks PASS. Coordinator Windows build PASS; owned Session-0 7 cases PASS; owned interactive 13 cases PASS. Controlled original diagnostic captured an ObjectModel dependency rejection and one unsupported Project getter request, then launcher TIMEOUT/124 with direct child exit confirmed. Successful original initialization INCONCLUSIVE. All eight input hashes unchanged; cleanup PASS. Local Mono commands FAIL before managed execution with bad CPU type. |
 | Evidence location | [DCA-INITIALIZATION-MAP.md](../docs/DCA-INITIALIZATION-MAP.md); private coordinator evidence `private/evidence/task008-initialization`, including `build-report.json`, `interactive01-result.json`, `owned-evidence-manifest.json` and cleanup evidence |
-| Acceptance criteria met | AC-002 draft ordered plan present; AC-001 runtime evidence pending; AC-003 explicitly retains strong-name/concrete-type limits. No acceptance asserted. |
-| Technical outcome | Owned net48/x64 diagnostic compatibility PASS on the selected Windows environment; original initialization dependency outcome NOT RUN |
+| Acceptance criteria met | AC-001: the sole attempt maps ObjectModel rejection, Project request/denial disposition and an explicit unknown timeout blocker. AC-002: ordered reference-specific plan present. AC-003: strong-name/concrete-type limits retained. Analysis evidence is ready for acceptance; no successful initialization asserted. |
+| Technical outcome | Owned net48/x64 diagnostic compatibility PASS; original run identifies two dependencies but has no return/exception/end result, so initialization completion remains INCONCLUSIVE |
 | Gate outcome, when applicable | None; no phase gate advanced |
-| Reviewer | Independent pre-execution source/evidence review PASS; owned evidence verification PASS. Final original-result review pending. |
+| Reviewer | Predefined `constructor_verify`: PASS for source, owned and actual original evidence integrity. Predefined `binding_review`: final PASS, no blocking findings; acceptance is dependency analysis only. |
 
 ### Implementer verification (2026-10-22)
 
@@ -193,8 +193,90 @@ Private evidence SHA-256 pins:
 | `owned-evidence/interactive01/initialize-proxy.log` | `e7dcfbf7b28c84f214b4d749918c5ef27042e17fb77d3ef7a4bc9621a8acf313` |
 | `interactive01-cleanup-stdout.txt` | `9e07c11aa3ae182d44730ee44f8e62a6306d075e7b998a2d46bbf214eeb464a7` |
 
-Original Initialize, original UI/state behavior, hardware and network
-mediation remain NOT RUN or unqualified. The owned PASS results do not
-satisfy TEST-002 or accept Task-008.
+These owned PASS results alone do not satisfy TEST-002 or accept Task-008.
+
+### Coordinator original diagnostic (2026-10-22)
+
+The source checkpoint was `89b08d24631021eb9863e7f1737753af0b8cfbd9`.
+The coordinator's recorded authorization covers the standing Task-008 Windows
+execution and explicit user direction to test on this VM despite outgoing
+connectivity. Isolation remained **FAIL**; this is not Task-148's exception
+or a containment claim. The initial long command was rejected with
+`The command line is too long.` before execution. A shorter file launcher
+then performed exactly one actual original run; it did not retry Initialize.
+
+`original01-runner.ps1` pins the built probe/config/launcher and records the
+actual session: x64/STA, session 2, interactive true, administrator false.
+Its actual launcher arguments, with private locations parameterized, were:
+
+```text
+ProbeLauncher.exe --seconds 15 --mode original-initialize --input "$OriginalEightInputStage" --log "$Stage\original01.log"
+```
+
+The log records all six reflected context contracts with their exact getter
+tokens and return identities. One constructor `0600000E` began and returned;
+one Initialize `0600001A` began. After that:
+
+1. Assembly resolution requested `Knx.Ets.ObjectModel, Version=6.4.8718.0,
+   Culture=neutral, PublicKeyToken=61439873ec5e1159`. The request was rejected
+   because it was outside the exact eight-input allowlist. No substitute or
+   extra assembly was loaded to satisfy it.
+2. The actual context requested `get_Project`, token `0600002F`, once. The
+   deny-all proxy logged an explicit-denial disposition,
+   `DCA_UNSUPPORTED_SERVICE`; no Project was supplied. No original exception
+   return was observed. Exception propagation is proven only by the owned
+   fixture tests, not by this original run.
+3. No `INITIALIZE_END`, `PROBE_EXCEPTION` or `PROBE_RESULT` was emitted.
+   After 15 seconds the launcher reported `reason=TIMEOUT`, direct child
+   exit confirmed, and returned 124. The reason Initialize did not return is
+   **INCONCLUSIVE**; the evidence does not establish a causal relationship
+   between either named dependency and the timeout.
+
+No explicit original UI, state, vendor Dispose or intentional device
+operation was invoked. The runtime may execute internal vendor behavior;
+network isolation and mediation remain unqualified. Cleanup records zero
+owned processes and removal of the temporary task. The eight post-run input
+sizes/hashes match the pre-run inventory. Direct-child termination is proven;
+the launcher still reports descendants `NOT_CONTAINED`.
+
+The six-file original evidence manifest was locally verified. Private pins:
+
+| Evidence | SHA-256 |
+|---|---|
+| `original01-runner.ps1` | `3b4d4918b8e7426ceeb48aad7b4fa6a59d72468b9f87db869456d75daa1d4816` |
+| `original01-result.json` | `c2a75edadccb1f5f5db05bcdf318e3d40764c6205824ee42cb807de5ca9f8f92` |
+| `original-evidence-manifest.json` (six files) | `b93d4ce680427cb01ac78a1428fee76e9c10a2201cc0ac200dbd147410140e96` |
+| `original-evidence/original01.log` | `083af4049ab864a1b80d3f5e2a40bab36eb02c254b8347dddd8daf1d20f7be16` |
+| `original-post-inputs.json` (eight unchanged inputs) | `17e9ad5b16e4e727135e12ca69cf942b20734c628f5455c746cc2b1ecab82876` |
+| `original01-cleanup-stdout.txt` | `561d55422a811ea17c87fdeadb871e4404bd4b951c147f0dab011cd2a8e0b832` |
+
+Next, qualify the actual ObjectModel assembly reference/provisioning before
+changing any input allowlist, then investigate the concrete Project contract.
+Preserve the unexplained timeout as a separate unknown. No additional SDK
+service, original execution, UI/state qualification or phase gate is accepted
+by this result record.
+
+The analysis report can be accepted independently of successful initialization:
+TEST-002 captured the first named missing/not-allowlisted dependency, while
+the attempt's runtime result is FAIL (timeout 124) and original initialization
+compatibility remains INCONCLUSIVE. Final independent review PASS and coordinator acceptance apply to this analysis
+report; they do not imply readiness for UI or another original execution.
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Coordinator acceptance
+
+Task-008 Done as a dependency-analysis task. All three criteria are evidenced:
+the sole attempt is mapped chronologically to the named ObjectModel resolution
+rejection and unsupported Project boundary, the later timeout cause remains an
+explicit UNKNOWN, and the ordered plan preserves strong-name and concrete-type
+constraints. The reviewer accepts this analysis without claiming a resolved
+timeout root cause. Runtime outcome remains FAIL (124), original initialization
+compatibility INCONCLUSIVE. No full PoC or phase gate passes.
+
+Reviewed implementation source: `89b08d24631021eb9863e7f1737753af0b8cfbd9`.
+Independent verifier checked source 8/8, owned evidence 53/53, original evidence
+6/6, eight unchanged inputs and cleanup. Final critical review PASS includes
+the observed result chronology and limits. Required scope and whitespace checks
+PASS. Next task is Task-009's offline dependency/context qualification; its
+affected original runtime path requires the exact ObjectModel candidate first.

@@ -29,7 +29,7 @@ It has no inherited interfaces and exactly these instance parameterless getters:
 
 | Token | Getter | Actual return type | Current disposition |
 |---|---|---|---|
-| `0600002F` | `get_Project` | `Knx.Ets.Sdk.Project.Project`, SDK 6.4.8718.0 | Unsupported; proprietary concrete type remains unresolved |
+| `0600002F` | `get_Project` | `Knx.Ets.Sdk.Project.Project`, SDK 6.4.8718.0 | Request logged once with explicit-denial disposition; original exception propagation unobserved; concrete compatibility unresolved |
 | `06000030` | `get_Resources` | `Knx.Ets.Common.Resources.IEtsResources`, Common.Resources 6.4.8718.0 | Unsupported; contract usage unknown |
 | `06000031` | `get_Configuration` | `System.Xml.XmlDocument`, System.Xml 4.0.0.0 | Unsupported; required original state and semantics unknown |
 | `06000032` | `get_UserConfiguration` | `System.Xml.XmlDocument`, System.Xml 4.0.0.0 | Unsupported; required original state and semantics unknown |
@@ -48,27 +48,44 @@ no additional private compiler reference is needed for the reflected proxy.
 |---|---|---|
 | Eight exact original/runtime inputs | Allowed reference under the accepted selected-route provisioning record | Private unchanged files; no redistribution or general rights decision |
 | Reflected initialization context | Implementable bridge contract for an explicit unsupported diagnostic | Actual interface/tokens validated; no production service is implemented |
-| Project, resources, state documents, notification and dialog services | Unknown | Every member remains unsupported until an actual request and compatible implementation are reviewed |
+| `Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159` | Blocker for the selected route | Actual resolution request rejected outside the eight-input allowlist; additional file/hash/provisioning not qualified by this run |
+| Concrete Project service | Unknown compatibility; unsupported | Actual `get_Project` request logged once with explicit-denial disposition; no Project object supplied or original exception return observed |
+| Resources, state documents, notification and dialog services | Unknown | Every member remains unsupported; no original request observed before timeout |
+| Initialize completion/timeout cause | Unknown | No return, exception or end marker before the 15-second supervised timeout |
 | Activation and concrete SDK object behavior | Unknown | A matching identity or interface cannot establish these behaviors |
 | Direct network/download access | Unknown; blocker if it bypasses Rust mediation | No driver, hook or bus service is supplied or exercised intentionally |
 
+The static surface below is inherited from accepted Tasks 142/143/144; it was
+not re-extracted or invoked to complete this report.
+
+| Required area | Actual static surface | Runtime disposition and limit |
+|---|---|---|
+| Storage | Context `get_Configuration` `06000031` and `get_UserConfiguration` `06000032` return `System.Xml.XmlDocument` | No original request observed; required XML/state semantics unknown; no empty document or persistence service supplied |
+| Project context | Context `get_Project` `0600002F` returns concrete `Knx.Ets.Sdk.Project.Project` | One original request logged with denial disposition; concrete construction/behavior and original exception propagation unknown |
+| Device context | DCA `GetDcaUi` `0600001E` accepts `IEnumerable<Knx.Ets.Sdk.Project.Device>` and returns `FrameworkElement` | Static Task-144 declaration only; no Device object or UI invocation supplied |
+| Network services | DCA MemberRefs `0A0001F6`/`0A0001F7` name `Knx.Ets.Sdk.Network.DeviceManagement.ReadProperty`/`WriteProperty`; Task-143 reflection-only policy resolves SDK MethodDefs `06001C5D`/`06001C60` | Static/member-binding evidence only; actual runtime use and mediation UNKNOWN; no property operation invoked intentionally |
+| Download hooks | No download hook is qualified by these selected declarations or property-service member bindings | Required load/download behavior UNKNOWN; ReadProperty/WriteProperty binding is not download proof |
+| UI entrypoints | `GetAddInUI` `06000017`: `FrameworkElement ()`; `GetDcaUi` `0600001E`: `FrameworkElement (IEnumerable<Device>)` | Task-144 signatures only; both uninvoked and UI readiness unqualified |
+| Host callbacks | Context `get_HostNotification` `06000033` returns `IHostNotification`; its declarations are `SelectionChanged(IEnumerable<Object>)`, `SetStatusbarText(String,String)`, `ShowAppHelp()`, `SuggestContentSelectorWidth(Double)` returning void, and `GetToolbarItem(String)` returning `IAddInToolbarItem` | Task-144 public metadata only; context getter unrequested and callbacks unimplemented/uninvoked |
+| Dialog service | Context `get_DialogService` `06000034` returns `IDialogService` | Task-144 getter signature only; this selected report does not inventory IDialogService members; getter unrequested, service unimplemented/uninvoked |
+
 ## Ordered plan
 
-1. Verify an owned public six-getter interface on the pinned Windows net48
-   runtime. Each getter must throw the stable unsupported-service code, direct
-   owned callers must observe it, and reflective Initialize must preserve it
-   inside `TargetInvocationException`. No vendor assembly is used in this test.
-2. Validate the actual reflected type, member tokens, signatures and return
-   identities before constructing the unchanged original entrypoint. Retain
-   the exact binding configuration and eight pinned read handles.
-3. On the coordinator-authorized interactive non-administrator session, call
-   one constructor and one Initialize. Record every requested member, then
-   fail explicitly. A named unsupported-service failure is useful evidence;
-   an assembly/type/load/activation failure is a different named dependency.
-4. Review the first actual dependency before implementing any bridge member.
-   Configuration blobs require genuine state; Project requires actual concrete
-   SDK compatibility evidence; callbacks require bounded marshaling. None can
-   be replaced with a guessed service, empty document or null return.
+1. Completed owned prerequisite: the pinned Windows net48 six-getter proxy
+   test proves explicit denial, direct/wrapped failures and an unqualified
+   normal return after a caught denial.
+2. Completed original diagnostic: exact context contracts validated; one
+   constructor returned and one Initialize began. The run recorded ObjectModel
+   resolution rejection and one Project request with explicit-denial
+   disposition, then timed out.
+3. Qualify the actual ObjectModel reference: establish the exact unchanged
+   file, identity/hash, permitted provisioning and dependency surface before
+   proposing any additional allowlisted input. Do not invent the assembly or
+   satisfy its name with a replacement implementation.
+4. Investigate the concrete SDK Project compatibility required by the observed
+   getter. Providing a same-named interface, null, empty project or guessed
+   configuration cannot satisfy it. Preserve timeout causality as unknown;
+   any later controlled diagnostic requires its own reviewed bounded plan.
 5. Inspect any later network/download expectation without enabling it. A
    private unmediated driver blocks compliance. Rust owns policy and state;
    public knust services own protocol execution.
@@ -83,7 +100,16 @@ interactive owned test cases. The interactive session was 2, administrator
 false; its log shows all six getters denied, direct/wrapped exception
 propagation, and a normal caught-denial return remaining
 `qualification=NOT_ESTABLISHED`. These are owned-fixture results. The original
-Initialize call is **NOT RUN**. The local Mono executables failed with
+run at reviewed source `89b08d24631021eb9863e7f1737753af0b8cfbd9` validated
+all six contracts, returned from one constructor and began one Initialize.
+It rejected the named ObjectModel dependency, logged one `get_Project`
+request with explicit-denial disposition and reached the 15-second launcher timeout (exit 124, direct child
+exit confirmed). There is no Initialize end, exception or result marker;
+initialization completion and timeout cause are **INCONCLUSIVE**. Actual
+exception propagation into original Initialize was not observed; only the
+owned fixture proves that failure shape. The runtime attempt is **FAIL**
+(timeout 124), while this dependency-analysis report remains subject to
+separate acceptance. The local Mono executables failed with
 `bad CPU type in executable` and provide no Windows compatibility evidence.
 
 Private evidence is under `private/evidence/task008-initialization`.
@@ -95,6 +121,20 @@ was locally verified against every file's bytes and hash. All compiled source
 hashes match the worktree. Cleanup confirms zero owned processes and removal
 of the temporary task. Full pins and test limits are in
 [Task-008](../tasks/Task-008.md).
+
+Original evidence has a separate six-file manifest, SHA-256
+`b93d4ce680427cb01ac78a1428fee76e9c10a2201cc0ac200dbd147410140e96`;
+all six bytes/hashes were locally verified. The original log SHA-256 is
+`083af4049ab864a1b80d3f5e2a40bab36eb02c254b8347dddd8daf1d20f7be16`.
+Post-run inspection confirms the eight original input sizes/hashes unchanged;
+cleanup confirms zero owned processes and task removal. The coordinator
+records standing Task-008 authority plus the user's explicit VM connectivity
+exception; actual isolation remains **FAIL**. No explicit UI/state/Dispose or
+intentional device operation was requested, and no network containment or
+bus-mediation claim follows.
+Only offline reference/provisioning and concrete-context investigation is
+ready as follow-up work. This report does not establish Task-009 UI readiness
+or authorize another original execution.
 
 The proxy supplies no SDK implementation and returns no service objects.
 It logs at most 16 context requests with member text limited to 512 characters;
