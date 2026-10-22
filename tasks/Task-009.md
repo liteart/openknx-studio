@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; project04 runtime diagnostic FAIL before constructor, unexpected assembly audit plus denied dependency, no SDK service |
-| Source commit(s) | Prior increments recorded below; project04 source `d4af5da8af23ce6039042b935ab310b2d6cf445f`; reviewed result/profile11 baseline `ad8f2e84b5dc1e5932bc9e89384bebdee9ac7c6c`; new source commit pending |
-| Tests executed | Prior results and project04 FAIL retained. Generation05 pinned Windows build and owned suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive, including exact OS facade and negatives. Original generation05 attempt NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
+| Implementation / report status | Blocked; project05 diagnostic FAIL during reflection invocation, exact Ids dependency denied; no SDK service |
+| Source commit(s) | Prior increments recorded below; profile11 source and actual project05 run `1b0eb7dcb9158778ae4ce3e40c554f2956f800c4`; project05 result documentation commit pending |
+| Tests executed | Earlier results retained. Generation05 pinned build/owned suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Original project05 FAIL exit 2 after eleven pins/fixed OS alias PASS; reflection invocation ATTEMPTED_NOT_RETURNED, body entry NOT_ESTABLISHED, zero denied proxy requests. DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Project04 FAIL retained; separate profile11 adds only exact Common and a hash-held exact OS GAC facade alias. Project04 facade origin remains unknown. New original runtime NOT RUN; creation route INCONCLUSIVE, no compatible fixture supplied |
+| Technical outcome | Project05 confirms its exact OS alias and Common runtime load, then denies exact Knx.Ets.Ids during public constructor reflection invocation. No return/body-entry proof or service request; creation INCONCLUSIVE, fixture NOT_QUALIFIED. Project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Project04 evidence audit and critical review PASS; profile11 source/Windows-result verification and review pending; no runtime service acceptance |
+| Reviewer | Profile11 source/owned-result verification and critical review PASS; project05 result verification/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1003,3 +1003,29 @@ binaries. After the explicit source commit, one fixed 15-second original
 diagnostic may follow; any failure stops without automatic pin expansion or
 retry. Original generation05 remains NOT RUN at this source commit. Task-009
 remains Blocked, without Project fixture, DCA, hardware or gate qualification.
+
+## Project05 reflection invocation result
+
+At source `1b0eb7dcb9158778ae4ce3e40c554f2956f800c4`, project05 **FAIL**, exit 2,
+non-admin interactive session 2. Eleven pins/fixed OS alias PASS; actual alias
+path/held hash and Common runtime load are logged, with no unexpected-assembly
+marker. This proves project05's alias only, not project04's unknown origin.
+Public constructor token 06002830 has a begin marker: invocation
+**ATTEMPTED_NOT_RETURNED**, body entry **NOT_ESTABLISHED** (JIT/type initialization
+may fail first). Exact Knx.Ets.Ids 6.4.8718.0/neutral/token 61439873ec5e1159 is denied;
+END returned=False, denied-requests=0, final PROJECT_DEPENDENCY_BLOCKER.
+
+Private `project05-observation.json`, 6,783 bytes, SHA-256
+`dd1dfc6bdc08ba6a61279273045f7f9deb8943183496be43ebb6f85ee0e27955`,
+binds raw log/eight-file provenance. Child exit 2 and expected/last cleanup exit 2,
+task removal and zero owned processes/scratch are confirmed. No source/pin change
+or retry; result verification/review pending. Task-009 **Blocked**, creation
+INCONCLUSIVE, fixture NOT_QUALIFIED; DCA initialization/UI/state/hardware NOT RUN.
+
+Independent project05 result audit and critical review PASS; the experiment
+remains FAIL, exit 2. Records are
+`private/evidence/task009-constructor-windows/verifier-project05/independent-audit.log`
+and `review-project05/critical-review-result.txt`. They reproduce source/report/
+provenance consistency and scope/whitespace checks without rerunning Windows
+or reading original DLLs. No source change, runtime widening, retry, fixture
+qualification or phase approval follows from this result review.

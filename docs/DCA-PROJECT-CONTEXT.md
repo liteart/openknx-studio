@@ -1477,3 +1477,43 @@ binaries. After the explicit source commit, one fixed 15-second original
 diagnostic may follow; any failure stops without automatic pin expansion or
 retry. Original generation05 remains NOT RUN at this source commit. Task-009
 remains Blocked, without Project fixture, DCA, hardware or gate qualification.
+
+## Project05 reflection invocation result
+
+The single original attempt at `1b0eb7dcb9158778ae4ce3e40c554f2956f800c4`
+**FAIL**, exit 2, in non-admin interactive session 2. All eleven input pins and
+the held fixed OS facade pin PASS. This run logs netstandard alias-allowed=True,
+the exact GAC path/identity, cache=True, ReflectionOnly=False and held-file hash
+`bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb`.
+Common is allowed in runtime context. There is no unexpected-assembly audit
+marker. These facts identify the alias only in project05; project04's origin
+remains historically unknown.
+
+After deny-proxy-materialization, PROJECT_CONSTRUCTOR_BEGIN names public token
+06002830. Reflection invocation is **ATTEMPTED_NOT_RETURNED**, not proof of body
+entry: JIT/type initialization may fail before body execution. The resolver denies
+`Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159`.
+Constructor END records returned=False, denied-requests=0. The recorded chain is
+TargetInvocationException, FileNotFoundException, explicit dependency denial;
+the final error is PROJECT_DEPENDENCY_BLOCKER. Body entry is **NOT_ESTABLISHED**,
+creation **INCONCLUSIVE**, fixture **NOT_QUALIFIED**. No proxy service request is
+logged; no DCA initialization/UI/state/hardware qualification follows.
+
+Private `task009-constructor-windows/project05.log`, 6,441 bytes, SHA-256
+`17fe086e2a727014634ecec4a06dd86b89b5ac4bc655d7e96c09b01780d7427e`,
+is bound by deterministic `project05-observation.json`, 6,783 bytes, SHA-256
+`dd1dfc6bdc08ba6a61279273045f7f9deb8943183496be43ebb6f85ee0e27955`.
+The bounded report includes eleven pins, actual facade path/held hash, context/end,
+supervision/cleanup and eight-file provenance; no generated timestamp/self/docs
+hash. Child exit 2 is confirmed under the 15-second/64 KiB bounds; stderr is empty.
+Cleanup has expected/last exit 2, task removed, zero owned processes/scratch files.
+Network/descendants are not contained. No source/pin change or retry occurs;
+independent result verification/review remains pending. Task-009 stays **Blocked**.
+
+Independent project05 result audit and critical review PASS; the experiment
+remains FAIL, exit 2. Records are
+`private/evidence/task009-constructor-windows/verifier-project05/independent-audit.log`
+and `review-project05/critical-review-result.txt`. They reproduce source/report/
+provenance consistency and scope/whitespace checks without rerunning Windows
+or reading original DLLs. No source change, runtime widening, retry, fixture
+qualification or phase approval follows from this result review.
