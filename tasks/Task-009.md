@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; project06 FAIL exit 10 on first observed SDK service request, explicit unsupported get_Id response; no qualified fixture/service |
-| Source commit(s) | Prior increments recorded below; profile12 source and actual project06 run `de5d65056510b240deb93971313bca9f164b7b40`; reviewed project06 result `28398f0de002c6bef613325dc3431fe48e7cb656`; fixed ProjectId metadata increment commit pending |
-| Tests executed | Earlier results retained. Generation06 pinned build/owned suites PASS 11 Session0/20 limited/16 elevated. Project06 original diagnostic FAIL exit 10 after twelve pins/OS facade PASS: one unsupported get_Id request, invocation ATTEMPTED_NOT_RETURNED, body entry NOT_ESTABLISHED_BY_STACK_TRACE. New ProjectId synthetic metadata checks PASS 151 PowerShell/19 Python; original ProjectId extraction NOT RUN. DCA initialization/UI/state/hardware NOT RUN |
+| Implementation / report status | Blocked; fixed ProjectId guarded metadata PASS declarations only; project06 remains FAIL exit 10 on unsupported get_Id, no qualified fixture/service |
+| Source commit(s) | Prior increments recorded below; profile12 source/project06 run `de5d65056510b240deb93971313bca9f164b7b40`; reviewed project06 result `28398f0de002c6bef613325dc3431fe48e7cb656`; ProjectId source/actual metadata `a2976171e6bd571243c8f1a0f3ab88bbf9674911`; result documentation commit pending |
+| Tests executed | Earlier results retained. Generation06 pinned build/owned suites PASS 11 Session0/20 limited/16 elevated. Project06 original diagnostic FAIL exit 10, one unsupported get_Id request; invocation ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. ProjectId synthetic checks PASS 151 PowerShell/19 Python; one actual guarded metadata extraction PASS after rejected setup NOT RUN. No ProjectId method/value construction; DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Ids runtime load and first SDK IProjectStore.get_Id request OBSERVED; explicit unsupported denial, no constructor return or call-origin/body-entry proof. No dependency blocker or unexpected audit. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
+| Technical outcome | ProjectId public UInt32/StringSection constructor and UInt32 getter declarations observed; no method/value semantics or getter response supplied. Prior get_Id remains explicitly unsupported, no Project constructor return/body-entry proof. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Profile12 source/owned-result and project06 result independent verification/critical review PASS; new ProjectId metadata source verification/review pending; no runtime service acceptance |
+| Reviewer | Profile12/project06 and ProjectId source/synthetic independent verification/critical review PASS; actual ProjectId metadata result audit/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1135,3 +1135,34 @@ checks do not read original DLL bytes or establish the ProjectId API. After
 the explicit source commit, one fixed guarded metadata-only extraction may
 follow. Runtime constructors, getter values, fixtures and DCA/hardware/gate
 qualification remain outside this source increment; Task-009 stays Blocked.
+
+## Actual fixed ProjectId metadata result
+
+At `a2976171e6bd571243c8f1a0f3ab88bbf9674911`, one guarded extraction
+**PASS**, exit 0, exact Ids pin and six source hashes unchanged; PowerShell
+7.6.7 write/network denial probes true, target runtime **NOT RUN**. The prior
+inside-Git/0755 setup was rejected `DCAPROBE_PRIVATE_STAGE`, exit 1, before
+parsing (**NOT RUN**); corrected outside-Git 0700 stage/0600 input/absolute
+immediate output follows existing rules. Both records remain; no automatic retry.
+Private project-id-report.json is 8,834 bytes, SHA-256
+`37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4`;
+project-id-observation.json is 7,734 bytes, SHA-256
+`89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a`.
+Four type declarations show ProjectId `0200002C` -> HexNumberId -> NumberId ->
+Id -> unresolved external System.Object. Public `.ctor(UInt32)` `060001EF`,
+`.ctor(StringSection)` `060001EE` and UInt32 getter `060001F2` are declaration
+facts; generators likewise were not invoked. No numeric value is chosen,
+constructed or supplied to get_Id. See the [result/provenance and normalized command](../docs/DCA-PROJECT-CONTEXT.md).
+Result audit/review and a separate runtime fixture experiment remain pending;
+Task-009 stays Blocked, project06 FAIL retained, no fixture/DCA/UI/state/hardware
+or gate qualification. Scope/diff checks PASS; source tools remain unchanged.
+
+Independent actual ProjectId metadata-result audit and critical review PASS.
+Records are `private/evidence/task009-project-id-metadata/verifier/result-audit.txt`
+and `review/critical-review-result.txt`. They verify all eleven provenance
+artifacts, six source hashes, exact declaration tokens, denial probes and
+staging chronology without reading original DLL bytes or rerunning extraction.
+Only PRIVATE_STAGE is the observed first rejection; later setup corrections
+satisfy unchanged guards. Public constructor/getter declarations do not qualify
+behavior or approve a future runtime fixture. Task-009 stays Blocked; the
+project06 FAIL and absence of DCA/hardware/gate qualification remain preserved.

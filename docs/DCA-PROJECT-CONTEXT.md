@@ -1,6 +1,47 @@
 # Static Project context qualification
 
-## Fixed ProjectId metadata contract, source increment after project06
+## ProjectId guarded metadata result
+
+At source `a2976171e6bd571243c8f1a0f3ab88bbf9674911`, the coordinator's
+single actual ProjectId extraction **PASS**, exit 0. PowerShell 7.6.7 reports
+`write_denied=true`, `network_denied=true`, `runtime_execution=NOT_RUN`.
+The exact single Ids pin/identity and all six frozen source hashes match.
+Private `task009-project-id-metadata/project-id-report.json`, 8,834 bytes,
+SHA-256 `37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4`,
+contains four selected types: public ProjectId `0200002C`, flags `1056769`,
+then HexNumberId -> NumberId -> Id -> external System.Object, disposition
+`EXTERNAL_BASE_NOT_RESOLVED`. Public root declarations include `.ctor(UInt32)`
+`060001EF`, `.ctor(StringSection)` `060001EE`, `get_ProjectNumber()` returning
+UInt32 `060001F2`, and static Generate(String)/GenerateUnique. These are
+declarations only: no method, constructor, generator or getter executed; no
+ProjectId value or IProjectStore response is supplied or chosen.
+
+The first owned setup (`run_fixed.py`/`fixed-run.json`) exited 1 with
+`DCAPROBE_PRIVATE_STAGE` before the metadata parser child: stage inside Git,
+mode 0755. Its extraction is **NOT RUN**. The separately corrected setup uses
+an outside-Git 0700 private stage, exact 0600 input and absolute immediate output.
+`fixed-run02.json`, SHA-256
+`d479408b109903df3881227d2bcd651c7c3119940647db4e800accc757fd6ff8`, records
+exit 0; no source, pin or guard rule changed, and no automatic metadata retry
+occurred. Both attempts/raw streams remain immutable. Normalized successful command:
+
+```text
+python3 -B experiments/dca-metadata/run_probe.py --stage PRIVATE_STAGE --pwsh PWSH --experiment project-id --output PRIVATE_STAGE/project-id-report.json
+```
+
+Deterministic private `project-id-observation.json`, 7,734 bytes, SHA-256
+`89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a`, binds
+eleven provenance files, source, probes, pin, hierarchy and selected declaration
+tokens. Historical `source-freeze.json` retains its pre-run NOT_RUN status;
+its 941 bytes/SHA-256 `1a04c44c8bf6667d3c694e464e0c07e0870ddb91c48366fb96c67a0f38055f6c`
+are preserved. Source/synthetic verification and critical review PASS; this
+actual result's independent audit/review are pending. Raw `rights=UNRESOLVED`
+certifies no rights decision; ADR-005's scope is unchanged. Probe denials do not
+claim systemwide isolation. The next runtime fixture experiment is **NOT RUN**
+and requires separate review. Task-009 remains Blocked; project06 FAIL exit 10
+is preserved, with no qualified fixture, DCA/UI/state/hardware or gate outcome.
+
+## Fixed ProjectId metadata contract, historical source freeze after project06
 
 Baseline `28398f0de002c6bef613325dc3431fe48e7cb656` contains the reviewed
 project06 result. Its unsupported `IProjectStore.get_Id` request motivates a
@@ -1713,3 +1754,13 @@ checks do not read original DLL bytes or establish the ProjectId API. After
 the explicit source commit, one fixed guarded metadata-only extraction may
 follow. Runtime constructors, getter values, fixtures and DCA/hardware/gate
 qualification remain outside this source increment; Task-009 stays Blocked.
+
+Independent actual ProjectId metadata-result audit and critical review PASS.
+Records are `private/evidence/task009-project-id-metadata/verifier/result-audit.txt`
+and `review/critical-review-result.txt`. They verify all eleven provenance
+artifacts, six source hashes, exact declaration tokens, denial probes and
+staging chronology without reading original DLL bytes or rerunning extraction.
+Only PRIVATE_STAGE is the observed first rejection; later setup corrections
+satisfy unchanged guards. Public constructor/getter declarations do not qualify
+behavior or approve a future runtime fixture. Task-009 stays Blocked; the
+project06 FAIL and absence of DCA/hardware/gate qualification remain preserved.
