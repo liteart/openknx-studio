@@ -82,11 +82,11 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; initial Windows diagnostic `61c768d1785c723c94985ac36e952601ed38f0b6`; corrected facade route and actual enum02 source `41b5f6927c8b17d2d7781e4f2955595e09904250`; enum result documentation commit pending |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; initial Windows diagnostic `61c768d1785c723c94985ac36e952601ed38f0b6`; corrected facade route/enum02 source `41b5f6927c8b17d2d7781e4f2955595e09904250`; reviewed enum result `4ad5b523194103b51ea1ab400566bcc10f7424fc`; second constructor freeze source commit pending |
 | Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded static extractions PASS, with historical ROW_LIMIT failure retained. Initial Windows owned tests PASS (10 Session-0, 17 interactive); enum01 FAIL exit 2 on denied netstandard dependency. Corrected Windows build/owned tests PASS (11 Session-0, 19 interactive); enum02 reflection-only literal observation PASS exit 0. Original Project invocation, DCA initialization/UI/state and hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Enum02 observes GroupAddressStyle type 0200008E / System.Byte and three literals; ThreeLevel field 04000176=1 selected for the next diagnostic, pending independent observation review. Original construction remains source-disabled. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Enum02 ThreeLevel field 04000176=1 / type 0200008E / System.Byte independently verified/reviewed. Separate second source freeze enables only the existing fixed nine-pin deny-all public constructor diagnostic; its Windows build/tests and original invocation NOT RUN at freeze. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
 | Reviewer | Prior construction/service/provider/constructor static verification and source/result review PASS; new diagnostic Windows verification/review pending; no runtime service acceptance |
 
@@ -788,3 +788,67 @@ review PASS. Records: `private/evidence/task009-constructor-windows/`
 observed ThreeLevel=1 literal and provenance as input to a separate reviewed
 source freeze; original constructor dispatch remains disabled. Neither reviewer
 nor verifier reran Windows or read original DLLs. Task-009 remains Blocked.
+
+## Second constructor-diagnostic source freeze
+
+At baseline `4ad5b523194103b51ea1ab400566bcc10f7424fc`, the enum02 observation
+has independent verification 58 PASS and critical review PASS. This separate
+source freeze pins its exact ThreeLevel/04000176/raw 1, enum 0200008E/System.Byte
+and report SHA-256, then sets readiness true for only the existing nine-pin
+public Project constructor diagnostic. Its public token/signature, deny-all
+proxies, loader policy and bounds are unchanged. No fixture success, private
+activation, new dependency or DCA operation is implemented.
+
+The owned driver checks source-pinned literal/report constants and nine-hash
+ordering, original dispatch Session-0/admin rejection, and missing-nine/exact-nine
+wrong-hash rejection using only renamed owned bytes. Prior proxy/enum regressions
+remain. Local pinned-reference C#5 compilation, PowerShell parse, source guards
+and unchanged pinset/other-source comparison PASS. Changed tool hashes are in
+the component contract. New Windows build/owned tests, independent source review
+and original constructor invocation remain **NOT RUN** pending coordinator
+execution after freeze. No source commit is claimed yet. Task-009 stays
+**Blocked**; creation_route is INCONCLUSIVE, no Project fixture is qualified,
+and DCA initialization/UI/state/hardware remain NOT RUN for this increment.
+
+### Second-freeze Windows owned verification
+
+The pinned Windows build03 PASS with the unchanged compiler and six framework
+reference pins. Owned suites PASS: 11/11 Session0 and 20/20 interactive cases
+(two suites, not 31 distinct assertions). Session 2 is interactive, non-admin,
+and exits 0. Exact-nine wrong-hash and missing-input cases stop before original
+identity/load/constructor phases. Cleanup reports task removed, zero owned
+processes and no junction. Original execution and hardware remain NOT RUN.
+
+Private `task009-constructor-windows/source-freeze-03.json` SHA-256
+`7e6ce5e837d9b84a051461ef80ef94aa7b7de6ef78a824f161afddcd5c0afe84`
+records ten source hashes. `build03-report.json` SHA-256
+`b0960fafe4c1747314dcb9dd5700fb131ec7c4b75928416003b69c1f8c42b598`
+records eight compiled source pins and twelve artifacts. ProjectConstructorProbe.exe
+is 52,224 bytes, SHA-256 `db5ac98023c39e4725b4a9543f2fcf36d0393fb337dffe239c805d86b875ab30`.
+The same private directory preserves `owned-session0-03-stdout.txt`,
+`owned-interactive03-context.json`, its end record, raw driver streams and
+strict UTF-16-to-UTF-8 provenance in `owned-interactive03-log-encoding.json`,
+case logs and `owned-interactive03-cleanup-stdout.txt`. This supersedes only
+the second freeze's Windows build/owned-tests NOT RUN. Independent source/result
+verification and review precede any single original constructor diagnostic;
+Task-009 remains Blocked, creation route INCONCLUSIVE and no fixture qualifies.
+
+An additional owned-only elevated interactive suite PASS, 16/16 cases,
+including original-project-admin rejection with exit 5 before original input
+inspection. Its context confirms session 2, interactive=true, administrator
+role=true. This closes the admin-branch runtime coverage gap; the Session0
+suite had exited on session identity first. Private `owned-admin03-*` records,
+raw/decoded provenance and case logs preserve this separate run. Cleanup
+reports exit 0, task removed, zero owned processes and no junction. Original
+SDK/manufacturer execution and hardware remain NOT RUN in all owned suites.
+Session0 stderr retains PowerShell CLIXML preparation progress; it is not
+classified as empty or a failing test result.
+
+Independent source/result verification and critical review PASS for the second
+freeze; records are `private/evidence/task009-constructor-windows/`
+`verifier03/independent-audit.log` and `review03/critical-review-source-result.txt`.
+The fixed single 15-second public constructor diagnostic may now follow its
+source commit. A constructor-begin marker proves a reflection invocation attempt,
+not body entry; return does not qualify a Project fixture. Any dependency or
+constructor failure stops this attempt without pin widening or automatic retry.
+Original invocation remains NOT RUN at this reviewed source commit.

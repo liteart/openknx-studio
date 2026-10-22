@@ -37,15 +37,15 @@ internal sealed class ProjectDenyProxy : RealProxy
 
 internal static class ProjectConstructorProbe
 {
-    // Second source freeze must supply observed enum identity/token/value/report hash.
-    // The first build cannot execute an original constructor, even with valid inputs.
-    static readonly bool OriginalConstructorReady = false;
-    const string ReviewedLiteral = "";
-    const string ReviewedRawValue = "";
-    static readonly int ReviewedLiteralToken = 0;
-    static readonly int ReviewedEnumTypeToken = 0;
-    const string ReviewedUnderlyingType = "";
-    const string ReviewedEnumReportSha256 = "";
+    // Observed enum02 metadata, independently verified/reviewed before this freeze.
+    // Enables only the fixed deny-all public constructor diagnostic, not a fixture.
+    static readonly bool OriginalConstructorReady = true;
+    const string ReviewedLiteral = "ThreeLevel";
+    const string ReviewedRawValue = "1";
+    static readonly int ReviewedLiteralToken = 0x04000176;
+    static readonly int ReviewedEnumTypeToken = 0x0200008e;
+    const string ReviewedUnderlyingType = "System.Byte";
+    const string ReviewedEnumReportSha256 = "59323bf7eb53d6c6a130c523e49d82bb3e3d58830f43dcc2f13b2dcabb58bcf7";
     const string EnumName = "Knx.Ets.Common.Types.Enumerations.GroupAddressStyle";
     const string FixtureName = "Task009 offline constructor diagnostic";
     const string OmIdentity = "Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
@@ -265,7 +265,7 @@ internal static class ProjectConstructorProbe
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || mode == "owned-project", "PROJECT_MODE");
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
-            // Stage boundary precedes input identity inspection and every original load.
+            // Source-frozen readiness precedes input pins and every original load.
             if (Original) ProbeFiles.Require(OriginalConstructorReady, "ENUM_LITERAL_NOT_REVIEWED");
             if (Environment.OSVersion.Platform != PlatformID.Win32NT || !Environment.Is64BitProcess) { Record("WINDOWS_X64_REQUIRED"); return 3; }
             using (Process process = Process.GetCurrentProcess()) if (!Environment.UserInteractive || process.SessionId == 0) { Record("INTERACTIVE_SESSION_REQUIRED"); return 4; }

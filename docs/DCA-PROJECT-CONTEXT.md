@@ -1139,3 +1139,88 @@ review PASS. Records: `private/evidence/task009-constructor-windows/`
 observed ThreeLevel=1 literal and provenance as input to a separate reviewed
 source freeze; original constructor dispatch remains disabled. Neither reviewer
 nor verifier reran Windows or read original DLLs. Task-009 remains Blocked.
+
+## Second constructor-diagnostic source freeze
+
+Baseline `4ad5b523194103b51ea1ab400566bcc10f7424fc` includes the reviewed
+enum02 observation: independent verification 58 PASS and critical review PASS.
+This separate source increment sets OriginalConstructorReady=true only for the
+existing fixed public Project constructor diagnostic. It pins ThreeLevel,
+literal token `04000176`, raw value `1`, enum type `0200008E`, underlying
+`System.Byte`, and the unchanged private observation SHA-256
+`59323bf7eb53d6c6a130c523e49d82bb3e3d58830f43dcc2f13b2dcabb58bcf7`.
+There is no runtime source override or caller-selected enum value.
+
+The nine exact input names/hashes/identities, public constructor `06002830`,
+type/signature/enum checks, deny-all RealProxy services, deadlines and loader
+policy are unchanged. All nine hashes precede identity inspection or original
+loading. No private Root/Factory activation, new dependency, service response,
+DCA Initialize, UI/state or hardware operation is added. Readiness means only
+that the fixed diagnostic can proceed after its input/environment checks;
+constructor return still cannot qualify a Project fixture.
+
+Owned regressions replace the former disabled-stage assertion with original
+dispatch Session-0/admin rejection and, in a limited interactive session,
+missing-nine-input and exact-nine-wrong-hash rejection before any original
+identity/load/constructor phase. The nine negative files contain only renamed
+owned fixture bytes. The positive owned proxy-denial cases and fixed enum-only
+guards remain. Source guards verify every reviewed literal constant/report hash
+and all-nine-hashes-before-identities ordering.
+
+Local Roslyn C#5/x64/warnings-as-errors compilation against the six exact net48
+framework references PASS; PowerShell parsing and the checked-in source guards
+PASS. Pinset/report comparison and seven unchanged host/build/fixture sources
+PASS. These are local checks. The new pinned Windows build/owned regressions,
+independent source review and original constructor invocation are **NOT RUN**
+at this freeze. The coordinator performs them in that order on the existing
+clean Windows host. Task-009 remains **Blocked**, creation_route INCONCLUSIVE,
+and no service acceptance or gate advances. Earlier disabled-stage logs remain
+historical evidence; the private enum02 observation is unchanged.
+
+| Changed tool | SHA-256 |
+|---|---|
+| `ProjectConstructorProbe.cs` | `14ccd1d2bf6fc956ef9a19453366825ab85ccc2a1de7a3843e7595732e834537` |
+| `Test-ConstructorProbe.ps1` | `478049621398da6a85b03d51128c8308ebaa500421945c57e3104be0d0fe6ee7` |
+
+### Second-freeze Windows owned verification
+
+The pinned Windows build03 PASS with the unchanged compiler and six framework
+reference pins. Owned suites PASS: 11/11 Session0 and 20/20 interactive cases
+(two suites, not 31 distinct assertions). Session 2 is interactive, non-admin,
+and exits 0. Exact-nine wrong-hash and missing-input cases stop before original
+identity/load/constructor phases. Cleanup reports task removed, zero owned
+processes and no junction. Original execution and hardware remain NOT RUN.
+
+Private `task009-constructor-windows/source-freeze-03.json` SHA-256
+`7e6ce5e837d9b84a051461ef80ef94aa7b7de6ef78a824f161afddcd5c0afe84`
+records ten source hashes. `build03-report.json` SHA-256
+`b0960fafe4c1747314dcb9dd5700fb131ec7c4b75928416003b69c1f8c42b598`
+records eight compiled source pins and twelve artifacts. ProjectConstructorProbe.exe
+is 52,224 bytes, SHA-256 `db5ac98023c39e4725b4a9543f2fcf36d0393fb337dffe239c805d86b875ab30`.
+The same private directory preserves `owned-session0-03-stdout.txt`,
+`owned-interactive03-context.json`, its end record, raw driver streams and
+strict UTF-16-to-UTF-8 provenance in `owned-interactive03-log-encoding.json`,
+case logs and `owned-interactive03-cleanup-stdout.txt`. This supersedes only
+the second freeze's Windows build/owned-tests NOT RUN. Independent source/result
+verification and review precede any single original constructor diagnostic;
+Task-009 remains Blocked, creation route INCONCLUSIVE and no fixture qualifies.
+
+An additional owned-only elevated interactive suite PASS, 16/16 cases,
+including original-project-admin rejection with exit 5 before original input
+inspection. Its context confirms session 2, interactive=true, administrator
+role=true. This closes the admin-branch runtime coverage gap; the Session0
+suite had exited on session identity first. Private `owned-admin03-*` records,
+raw/decoded provenance and case logs preserve this separate run. Cleanup
+reports exit 0, task removed, zero owned processes and no junction. Original
+SDK/manufacturer execution and hardware remain NOT RUN in all owned suites.
+Session0 stderr retains PowerShell CLIXML preparation progress; it is not
+classified as empty or a failing test result.
+
+Independent source/result verification and critical review PASS for the second
+freeze; records are `private/evidence/task009-constructor-windows/`
+`verifier03/independent-audit.log` and `review03/critical-review-source-result.txt`.
+The fixed single 15-second public constructor diagnostic may now follow its
+source commit. A constructor-begin marker proves a reflection invocation attempt,
+not body entry; return does not qualify a Project fixture. Any dependency or
+constructor failure stops this attempt without pin widening or automatic retry.
+Original invocation remains NOT RUN at this reviewed source commit.

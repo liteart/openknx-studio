@@ -66,8 +66,16 @@ $firstIdentity=$pinBody.IndexOf('AssemblyName.GetAssemblyName(common)',[StringCo
 $secondIdentity=$pinBody.IndexOf('AssemblyName.GetAssemblyName(facade)',[StringComparison]::Ordinal)
 $complete=$pinBody.IndexOf('enumInputsPinned = true;',[StringComparison]::Ordinal)
 if(-not $pinBody.Contains('CountInputs(2);') -or $firstPin -lt 0 -or $secondPin -le $firstPin -or $firstIdentity -le $secondPin -or $secondIdentity -le $firstIdentity -or $complete -le $secondIdentity -or $pinBody.Contains('LoadFrom(')){Fail 'ENUM_PIN_ORDER'}
-if(-not $projectSource.Contains('if (EnumOnly && enumInputsPinned && args.Name == Identities[6])') -or -not $projectSource.Contains('Assembly.ReflectionOnlyLoadFrom(Path.Combine(stage, "netstandard.dll"))') -or -not $projectSource.Contains('static readonly bool OriginalConstructorReady = false;')){Fail 'ENUM_FIXED_RESOLVER_SOURCE'}
-Write-Output 'OWNED_CASE PASS enum-source-guards two-hashes-before-identities=true resolver=fixed-reflection-only original-ready=false'
+if(-not $projectSource.Contains('if (EnumOnly && enumInputsPinned && args.Name == Identities[6])') -or -not $projectSource.Contains('Assembly.ReflectionOnlyLoadFrom(Path.Combine(stage, "netstandard.dll"))')){Fail 'ENUM_FIXED_RESOLVER_SOURCE'}
+foreach($literal in @('static readonly bool OriginalConstructorReady = true;','const string ReviewedLiteral = "ThreeLevel";','const string ReviewedRawValue = "1";','static readonly int ReviewedLiteralToken = 0x04000176;','static readonly int ReviewedEnumTypeToken = 0x0200008e;','const string ReviewedUnderlyingType = "System.Byte";','const string ReviewedEnumReportSha256 = "59323bf7eb53d6c6a130c523e49d82bb3e3d58830f43dcc2f13b2dcabb58bcf7";')){if(-not $projectSource.Contains($literal)){Fail 'REVIEWED_LITERAL_SOURCE'}}
+$originalMatch=[regex]::Match($projectSource,'(?s)else if \(Original\)\s*\{(.*?)\n            \} else')
+if(-not $originalMatch.Success){Fail 'ORIGINAL_PIN_SOURCE'}
+$originalBody=$originalMatch.Groups[1].Value
+$countNine=$originalBody.IndexOf('CountInputs(9);',[StringComparison]::Ordinal)
+$pinNine=$originalBody.IndexOf('for (int i = 0; i < Names.Length; i++) Pin(',[StringComparison]::Ordinal)
+$identityNine=$originalBody.IndexOf('for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(',[StringComparison]::Ordinal)
+if($countNine -lt 0 -or $pinNine -le $countNine -or $identityNine -le $pinNine -or $originalBody.Contains('LoadFrom(')){Fail 'ORIGINAL_PIN_ORDER'}
+Write-Output 'OWNED_CASE PASS enum-source-guards two-hashes-before-identities=true resolver=fixed-reflection-only original-ready=true reviewed-literal=ThreeLevel-byte-1 nine-hashes-before-identities=true'
 $invalidLog='\\owned-invalid\share\never.log'
 Run 'unc-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$invalidLog) 127 'LOCAL_PATH_REQUIRED'
 Run 'drive-relative-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log','C:owned-never.log') 127 'LOCAL_PATH_REQUIRED'
@@ -75,23 +83,20 @@ Run 'excessive-deadline' $launcher @('--seconds','31','--mode','owned-Success','
 $existing=Join-Path $output 'existing.log';[IO.File]::WriteAllText($existing,'owned-preserved',$utf8)
 Run 'existing-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$existing) 127 'NEW_PATH_REQUIRED'
 if([IO.File]::ReadAllText($existing) -cne 'owned-preserved'){Fail 'EXISTING_LOG_CHANGED'}
-# Original Project dispatch is frozen off before input pinning or original load,
-# including Session-0/admin callers. This test stages no original inputs.
-Case 'project-not-reviewed' 'original-project' 2 'ENUM_LITERAL_NOT_REVIEWED' 'ENUM_LITERAL_NOT_REVIEWED'
-$blocked=[IO.File]::ReadAllText((Join-Path $output 'project-not-reviewed.log'))
-if($blocked.Contains('PIN ') -or $blocked.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ')){Fail 'PROJECT_NOT_REVIEWED_LOADED'}
 if(-not $interactive){
  Case 'session0-probe' 'owned-Success' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-initialize' 'owned-initialize' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-neutral' 'neutral' 4 'child-exit-confirmed=true' 'NEUTRAL_INTERACTIVE_SESSION_REQUIRED' $build
  Case 'session0-project' 'owned-project' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-project-enum' 'project-enum-metadata' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-original-project' 'original-project' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
 }else{
  Case 'neutral' 'neutral' 0 'child-exit-confirmed=true' 'NEUTRAL_RESULT PASS' $build
  Case 'success' 'owned-Success' 0 'OWNED_FIXTURE_SUCCESS' 'OWNED_CONSTRUCTOR_RETURN'
  if($administrator){
   Case 'initialize-admin' 'owned-initialize' 5 'child-exit-confirmed=true' 'INITIALIZE_NONADMIN_REQUIRED'
   Case 'project-admin' 'owned-project' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'original-project-admin' 'original-project' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
  }else{
   Case 'initialize-proxy' 'owned-initialize' 0 'child-exit-confirmed=true' 'OWNED_INITIALIZE_PROXY_PASS getters=6 direct-denial=true wrapped-denial=true requests=8'
   $initializeLog=[IO.File]::ReadAllText((Join-Path $output 'initialize-proxy.log'))
@@ -99,6 +104,13 @@ if(-not $interactive){
   Case 'project-proxy' 'owned-project' 0 'child-exit-confirmed=true' 'OWNED_PROJECT_CONSTRUCTOR_PASS'
   $projectLog=[IO.File]::ReadAllText((Join-Path $output 'project-proxy.log'))
   foreach($marker in @('OWNED_PROJECT_ENUM_PASS','OWNED_PROJECT_DENIAL_PASS','PROJECT_CONSTRUCTOR_END returned=False denied-requests=1 qualification=NOT_ESTABLISHED','PROJECT_CONSTRUCTOR_END returned=True denied-requests=1 qualification=NOT_ESTABLISHED','PROJECT_CONSTRUCTOR_END returned=True denied-requests=0 qualification=NOT_ESTABLISHED')){if(-not $projectLog.Contains($marker)){Fail 'PROJECT_OWNED_QUALIFICATION'}}
+  # Only OWNED bytes are used: missing input count and exact-nine wrong-hash
+  # dispatch must stop before any original identity inspection or assembly load.
+  Case 'project-missing-nine' 'original-project' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS'
+  $projectBad=Join-Path $output 'project-nine-bad-hash';$null=New-Item -ItemType Directory -Path $projectBad
+  foreach($name in @('MDT-DaliDcaPlus.dll','Knx.Ets.Sdk.dll','Knx.Ets.Sdk.AddIns.AddInViews.dll','Knx.Ets.Common.Types.dll','Knx.Ets.Common.Resources.dll','Microsoft.Bcl.AsyncInterfaces.dll','netstandard.dll','System.Threading.Tasks.Extensions.dll','Knx.Ets.ObjectModel.dll')){Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $projectBad $name)}
+  Case 'project-nine-wrong-hash' 'original-project' 2 'INPUT_HASH' 'INPUT_HASH' $projectBad
+  foreach($name in @('project-missing-nine','project-nine-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('PROJECT_PHASE original-type-materialization')){Fail 'PROJECT_NEGATIVE_LOADED'}}
   $enumBad=Join-Path $output 'enum-bad-hash';$null=New-Item -ItemType Directory -Path $enumBad
   # Deliberately renamed OWNED bytes test rejection; no SDK identity is supplied.
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $enumBad 'Knx.Ets.Common.Types.dll')
