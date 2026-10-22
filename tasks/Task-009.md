@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; project03 runtime diagnostic FAIL before constructor invocation, no SDK service |
-| Source commit(s) | Prior increments recorded below; project03 source `b8fcc21ef126a4d00f8f4c6c65101f23cd4b1358`; reviewed result/baseline `8d5482406b7d7c20720b9c44dcebad1069c6113f`; controlled ten-input FluentResults source commit pending |
-| Tests executed | Prior metadata/enum and owned Windows results preserved below. Second-freeze owned Windows suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Project03 runtime diagnostic FAIL exit 2 on denied FluentResults dependency after nine pins PASS; constructor invocation NOT_REACHED, body entry NOT_ESTABLISHED. DCA initialization/UI/state and hardware NOT RUN |
+| Implementation / report status | Blocked; project04 runtime diagnostic FAIL before constructor, unexpected assembly audit plus denied dependency, no SDK service |
+| Source commit(s) | Prior increments recorded below; ten-input source and actual project04 run `d4af5da8af23ce6039042b935ab310b2d6cf445f`; project04 result documentation commit pending |
+| Tests executed | Prior metadata/enum/project03 results preserved. Owned Windows suites PASS: 11 Session0, 20 limited interactive, 16 elevated interactive. Project04 runtime diagnostic FAIL exit 2 after ten pins PASS: netstandard audit rejection and denied Knx.Ets.Common; constructor invocation NOT_REACHED, body entry NOT_ESTABLISHED. DCA initialization/UI/state and hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Project03 stopped before constructor on exact FluentResults dependency. Separate controlled source profile adds only its acquired exact pin, total ten; new Windows tests/runtime NOT RUN at freeze. Creation route INCONCLUSIVE; no compatible fixture supplied |
+| Technical outcome | Original ObjectModel/Common.Types/FluentResults runtime loads observed; unexpected runtime netstandard origin unknown from log, then exact Knx.Ets.Common denied. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Project03 evidence audit and critical result review PASS; controlled ten-input source/Windows verification and review pending; no runtime service acceptance |
+| Reviewer | Ten-input source/owned-result verification and critical review PASS; project04 result review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -928,3 +928,30 @@ Only the exact observed FluentResults dependency is added; Logging remains
 excluded. A single fixed 15-second ten-input attempt follows the source commit;
 any next dependency or constructor failure stops without automatic widening or
 retry. The new original attempt remains NOT RUN at this reviewed source commit.
+
+## Project04 runtime diagnostic result
+
+Source `d4af5da8af23ce6039042b935ab310b2d6cf445f`: single project04 **FAIL**,
+exit 2, non-admin interactive session 2; ten pins PASS. ObjectModel/Common.Types/
+FluentResults runtime loads occur. Runtime netstandard 2.0.0.0/token cc7b13ffcd2ddd51
+is audited allowed=False (after-load detection, prevention NOT_ESTABLISHED);
+its loaded path/hash and actual origin are not logged. The resolver then denies
+Knx.Ets.Common 6.4.8718.0/neutral/token 61439873ec5e1159. Both are blockers.
+No constructor-begin/proxy-request marker: invocation NOT_REACHED, body entry
+NOT_ESTABLISHED. Runtime loads are observed, not all NOT RUN.
+
+Private `project04-observation.json`, 5,805 bytes, SHA-256
+`81f8db7297802cbf222c4c9db85d3e827e3d4b4ad2d70e29051325bc64f5d1b4`,
+binds raw log and eight-file provenance. Child exit 2 is confirmed; cleanup has
+expected/last exit 2, task removed, zero owned processes/scratch files. Earlier
+project03 FAIL and owned 11/20/16 PASS remain. No source/pin/config change or
+retry; Task-009 **Blocked**, creation INCONCLUSIVE, fixture NOT_QUALIFIED,
+DCA initialization/UI/state/hardware NOT RUN. Separate inquiries are not part
+of this attempt and do not qualify the loaded facade's origin or expand runtime.
+
+Independent project04 evidence audit PASS (20 assertions) and critical result
+review PASS; the recorded experiment remains FAIL, exit 2. Records are
+`private/evidence/task009-constructor-windows/verifier-project04/independent-audit.log`
+and `review-project04/critical-review-result.txt` under the same directory.
+Neither audit reran Windows or changes the unknown loaded origin, pinset,
+constructor-not-reached outcome or closed fixture/DCA qualification.

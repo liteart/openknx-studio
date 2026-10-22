@@ -1332,3 +1332,47 @@ Only the exact observed FluentResults dependency is added; Logging remains
 excluded. A single fixed 15-second ten-input attempt follows the source commit;
 any next dependency or constructor failure stops without automatic widening or
 retry. The new original attempt remains NOT RUN at this reviewed source commit.
+
+## Project04 runtime diagnostic result
+
+The single ten-input project04 attempt at source
+`d4af5da8af23ce6039042b935ab310b2d6cf445f` **FAIL**, exit 2, during
+original-type-materialization. Context is interactive Windows session 2,
+administrator_role=false; all ten exact input pins PASS. ObjectModel,
+Common.Types and FluentResults runtime loads are observed. Two blockers remain:
+
+- Runtime `netstandard, Version=2.0.0.0, Culture=neutral,
+  PublicKeyToken=cc7b13ffcd2ddd51` is logged allowed=False, followed by
+  UNEXPECTED_ASSEMBLY_BLOCKER, detection=after-load, prevention=NOT_ESTABLISHED.
+  Its loaded path/hash is not logged; this attempt establishes neither GAC nor
+  framework origin. The passing staged netstandard pin does not identify the
+  loaded file.
+- The resolver then denies `Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral,
+  PublicKeyToken=61439873ec5e1159`. The final error is PROJECT_DEPENDENCY_BLOCKER;
+  the separate audit blocker remains a failure, not an accepted assembly.
+
+No constructor-begin, proxy-materialization or service request is recorded:
+invocation **NOT_REACHED**, body entry **NOT_ESTABLISHED**. SDK runtime loads
+are observed; they are not all NOT RUN. Creation remains **INCONCLUSIVE**,
+fixture **NOT_QUALIFIED**; DCA initialization/UI/state/hardware **NOT RUN**.
+
+Private `task009-constructor-windows/project04.log`, 4,929 bytes, has SHA-256
+`85cd1b9f3f92e7902d06961b6bc24eb6ea990916a69aea615e67191e19d285bb`.
+The deterministic bounded `project04-observation.json`, 5,805 bytes, SHA-256
+`81f8db7297802cbf222c4c9db85d3e827e3d4b4ad2d70e29051325bc64f5d1b4`,
+binds ten pins, both blockers, unknown facade origin, context/end/supervisor,
+cleanup and eight-file provenance. It has no generated timestamp/self/docs hash.
+Child exit 2 is confirmed under the 15-second bound; stderr is empty. Cleanup
+records expected/last exit 2, task removed, zero owned processes and scratch
+files. No network/descendant containment is established. Project03 FAIL and
+owned 11/20/16 PASS remain preserved. This result changes no source, pinset or
+configuration and performs no retry. No separate observation or acquisition is
+used here to infer the loaded facade's origin or widen runtime.
+Task-009 remains **Blocked**; no service acceptance or gate advances.
+
+Independent project04 evidence audit PASS (20 assertions) and critical result
+review PASS; the recorded experiment remains FAIL, exit 2. Records are
+`private/evidence/task009-constructor-windows/verifier-project04/independent-audit.log`
+and `review-project04/critical-review-result.txt` under the same directory.
+Neither audit reran Windows or changes the unknown loaded origin, pinset,
+constructor-not-reached outcome or closed fixture/DCA qualification.
