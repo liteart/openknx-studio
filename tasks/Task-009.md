@@ -528,3 +528,57 @@ commits are pending. No original constructor, initializer, nonpublic activation,
 SDK runtime load or device operation is attempted. Task-009 remains **Blocked**
 with no service acceptance asserted; Windows, initialization/UI/state and
 hardware proofs remain **NOT RUN** for this increment.
+
+
+## Guarded provider-constructor result, 2026-10-22
+
+The coordinator's constructor-only static observation PASS uses reviewed source
+`1df83e9385bf7bfcc46c927756eab06a5126e06d`.
+Independent verification and critical review reproduced owned PowerShell
+112/112, Python 18/18, scope and whitespace PASS. Logs and the source hash
+manifest are in `private/evidence/task009-constructors/verifier/`.
+The exact guarded command from this task worktree was:
+
+```sh
+python3 experiments/dca-metadata/run_probe.py --stage <private-four-pin-stage> --pwsh <provisioned-powershell-7.6.7> --experiment project-constructors --output <private-four-pin-stage>/project-constructors-report-task009.json
+```
+
+The placeholders normalize private local paths; they do not select inputs or
+weaken the fixed four pins. Exit status was 0 on macOS/Darwin arm64 with
+PowerShell 7.6.7. Both actual restriction probes report true: filesystem writes
+and network access were denied before the static read. The private result
+`private/evidence/task009-constructors/project-constructors-report-task009.json`
+is 5,969 bytes, SHA-256
+`df361cb84fc232b6f7da6943114096cd3e14b638495dcc8b68e10dbd42524ea9`.
+The post-run `source-freeze-success.json` records the exact source commit and
+six owned source hashes. All four pinned original input identities match.
+
+Exactly five types each declare one instance constructor and one private static
+initializer. Context and DcaExecutionContext instance constructors are internal;
+SdkFactory's is public although its declaring type is internal. ObjectModel
+Factory and ObjectContext types and instance constructors are public. Observed
+instance signatures, with owner versions retained in the private JSON:
+
+| Type | Instance constructor arguments |
+|---|---|
+| SDK Context | SDK Root, ObjectModel IProjectStore, ObjectModel Project, SDK ExecutionContext, ObjectModel IPluginInstaller, Autofac IComponentContext |
+| SDK DcaExecutionContext | Func of IEnumerable of ObjectModel Device, Object, String |
+| SDK SdkFactory | None |
+| ObjectModel Factory | Autofac IComponentContext, Knx.Kim.DataProvider IKimDataProvider |
+| ObjectModel ObjectContext | ObjectModel Project, IFactory, IProjectStore |
+
+Autofac is referenced at version 8.2.0.0; Knx.Kim.DataProvider at 1.0.0.0.
+These are signature dependencies, not provisioned runtime components or working
+services. No constructor or static initializer was invoked, and no null-backed
+or uninitialized Project was supplied. No original store is approved as editor
+authority. The earlier Root constructor declaration already accepts an
+ObjectModel Project, IProjectStore, ExecutionContext and IPluginInstaller; a
+controlled fixture route must resolve those arguments and its access before a
+Windows construction experiment. Factory method bodies and behavior remain
+unknown. Further metadata catalogs do not substitute for that experiment.
+
+Task-009 remains Blocked; creation_route is INCONCLUSIVE and runtime_execution
+is NOT_RUN. This supersedes only the constructor source-freeze's pending static
+extraction, verification and review. Windows hosting, initialization/UI/state,
+hardware, SDK runtime allowlist changes and nonpublic activation remain NOT RUN
+for this increment.
