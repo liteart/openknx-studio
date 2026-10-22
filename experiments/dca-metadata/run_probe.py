@@ -53,6 +53,7 @@ if ($pins.Count -ne 3) { throw 'DCAPROBE_INPUT_COUNT' }
 foreach ($pin in $pins) { if ([IO.FileInfo]::new($pin.path).Length -ne $pin.bytes) { throw 'DCAPROBE_INPUT_SIZE' } }
 & $env:DCAMETA_WORKER -DcaPath $pins[0].path -DcaSha256 $pins[0].sha256 -ReferencePath @($pins[1].path,$pins[2].path) -ReferenceSha256 @($pins[1].sha256,$pins[2].sha256)
 """
+PROJECT_COMMAND = METADATA_COMMAND.rstrip() + " -ProjectContext\n"
 
 
 class ProbeError(Exception):
@@ -184,7 +185,7 @@ def private_output(path, data):
 
 
 def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map"):
-    if experiment not in ("reference-map", "member-map", "entrypoint-map"):
+    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context"):
         raise ProbeError("DCAPROBE_EXPERIMENT")
     if sys.platform != "darwin":
         raise ProbeError("DCAPROBE_MACOS_REQUIRED")
@@ -203,6 +204,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         "reference-map": worker_base / "Read-ReferenceMetadata.ps1",
         "member-map": worker_base.parent / "dca-member-map" / "Read-MemberMetadata.ps1",
         "entrypoint-map": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
+        "project-context": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
     }[experiment]
     # Only fixed repository-owned experiments are selectable; never an arbitrary worker.
     worker = checked_path(worker_path)
@@ -224,13 +226,14 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     env = child_environment()
     probes = negative_probes(pwsh, env)
     env.update(DCAMETA_INPUTS_JSON=json.dumps(pins), DCAMETA_WORKER=str(worker))
-    raw = bounded_child(sandbox_command(pwsh, METADATA_COMMAND), env)
+    raw = bounded_child(sandbox_command(pwsh, PROJECT_COMMAND if experiment == "project-context" else METADATA_COMMAND), env)
     report = parse_child(raw, "DCAPROBE_METADATA_FAILED")
     if (not isinstance(report, dict) or type(report.get("schema_version")) is not int
             or report["schema_version"] != 1 or report.get("operation") != {
                 "reference-map": "static_candidate_contract_map",
                 "member-map": "static_candidate_member_map",
                 "entrypoint-map": "static_dca_entrypoint_map",
+                "project-context": "static_dca_project_context",
             }[experiment]
             or report.get("runtime_execution") != "NOT_RUN" or report.get("rights") != "UNRESOLVED"):
         raise ProbeError("DCAPROBE_REPORT_SHAPE")
@@ -254,7 +257,7 @@ def main():
     parser.add_argument("--stage", required=True)
     parser.add_argument("--pwsh", required=True)
     parser.add_argument("--output", help="New private report path immediately inside stage")
-    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map"), default="reference-map",
+    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context"), default="reference-map",
                         help="Fixed owned experiment; Task-140 default is unchanged")
     args = parser.parse_args()
     try:

@@ -1,12 +1,13 @@
 #requires -Version 7.6
-<# Metadata only. Real inputs MUST use run_probe.py's fixed entrypoint-map mode.
+<# Metadata only. Real inputs MUST use run_probe.py's fixed entrypoint-map or project-context mode.
 No assembly loading, dependency resolution, attributes, method bodies or vendor code. #>
 [CmdletBinding()]
 param(
  [Parameter(Mandatory)][string] $DcaPath,
  [Parameter(Mandatory)][string] $DcaSha256,
  [Parameter(Mandatory)][string[]] $ReferencePath,
- [Parameter(Mandatory)][string[]] $ReferenceSha256
+ [Parameter(Mandatory)][string[]] $ReferenceSha256,
+ [switch] $ProjectContext
 )
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
@@ -15,7 +16,8 @@ try {
  if (-not ('Task144.EntrypointMetadata' -as [type])) {
   Add-Type -ReferencedAssemblies @('System.Reflection.Metadata','System.Collections.Immutable','System.Collections','System.Text.Json','System.Security.Cryptography') -TypeDefinition ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'EntrypointMetadata.cs')))
  }
- [Task144.EntrypointMetadata]::Read($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)
+ if($ProjectContext){[Task144.EntrypointMetadata]::ReadProject($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
+ else{[Task144.EntrypointMetadata]::Read($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
 } catch {
  $code='DCAENTRY_IO_OR_METADATA'
  if ($_.Exception.ToString() -match 'DCAENTRY_[A-Z_]+') { $code=$Matches[0] }

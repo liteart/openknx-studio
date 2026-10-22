@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-The exact ObjectModel candidate and concrete Project contract evidence are missing. ADR-005 already governs owner-authorized private use; no legal-document gate is reopened. Do not replace the missing concrete SDK functionality with a guessed object or fixture.
+The exact ObjectModel candidate has been privately acquired and the Project constructor declaration has guarded metadata evidence. A compatible construction route and fixture semantics remain unresolved. ADR-005 already governs owner-authorized private use; no legal-document gate is reopened. Do not replace the missing concrete SDK functionality with a guessed object or fixture.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; dependency-readiness report only |
-| Source commit(s) | Baseline `73b869c56855851512badb3a70841dcd76c1fbd5`; blocker-record revision follows review |
-| Tests executed | Task-009 implementation tests NOT RUN; scope and whitespace checks PASS for this record |
-| Evidence location | Task-008 actual result and `docs/DCA-INITIALIZATION-MAP.md`; dated readiness record below |
+| Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
+| Source commit(s) | Current increment baseline `4808d8a797a122dd815f388c60d2afdcc5a7d7b5`; reviewed implementation/result commit pending |
+| Tests executed | Metadata-only owned PowerShell 23 cases PASS; Python harness 14 tests PASS; guarded three-input Project extraction PASS; scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory and guarded report; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Concrete Project compatibility and ObjectModel dependency qualification pending |
+| Technical outcome | ObjectModel file/hash/identity acquired; Project internal constructor and parameters observed; public construction/factory route and runtime compatibility unresolved |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Predefined `binding_review`: PASS, no findings for the blocker report only |
+| Reviewer | Prior blocker report: predefined `binding_review` PASS; current metadata increment review pending |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -136,3 +136,59 @@ Blocker-record validation: `python3 -B scripts/check_project_scope.py` PASS;
 `git diff --check` PASS. Predefined `binding_review` independently reproduced
 these checks and returned PASS without findings. This permits the report to
 commit; Task-009 remains Blocked and no implementation criteria are accepted.
+
+
+## Static Project qualification update, 2026-10-22
+
+This update supersedes the initial missing-source-connection and missing-file
+blockers above. The coordinator privately acquired `Knx.Ets.ObjectModel.dll`,
+14,204,880 bytes, SHA-256
+`73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a`.
+The private copy/source manifest verification and `reference-inventory.json`
+identify `Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral,
+PublicKeyToken=61439873ec5e1159`, exactly the identity rejected in Task-008.
+The inventory JSON is 860 bytes, SHA-256
+`ff4711dda239231aa51d80d2a20771d4658d8f024514a540a659825615d8e8ad`;
+it records compatibility UNVERIFIED and target assembly execution NOT_RUN.
+ADR-005's owner-authorized private-use scope remains in force. The file is not
+added to Git, distributions or a runtime allowlist.
+
+A fixed `project-context` mode now uses only the existing three exact input
+pins and guarded metadata reader. The coordinator's private guarded report,
+`private/evidence/task009-objectmodel/project-report-task009.json`, is 20,450
+bytes, SHA-256
+`85a3d77be7da708e7732618ab2b494457b342018f259f41e26b131985858bf40`.
+Write and network denial probes are both true; selected input hashes/sizes
+match the pins. The report was re-read as JSON and its bytes/hash verified.
+The exact normalized command and detailed observations are recorded in
+[DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md).
+
+Project `020001D1` is public/sealed. Its sole declared instance constructor,
+`06001409`, has attributes `6275`, access mask `3` (assembly/internal), and
+parameters SDK `ProjectCollection`, ObjectModel `Project.Project`, and SDK
+`ISdkContext`. The same-assembly bases are `ProjectRelatedObject` and
+`DomObject`, ending at unresolved external `System.Object`. Public
+`get_AddinData` (`0600140F`) and `get_Name` (`06001422`) agree with the previous
+member evidence; `get_Parent` returns SDK `Root`. No public Project instance
+constructor was observed. This is not proof that no public factory or
+collection route exists. Those parameter/factory contracts require the next
+bounded static inspection before any actual context service can be selected.
+No nonpublic activation, null/uninitialized object or guessed fixture is supplied.
+
+Validation: the provisioned PowerShell 7.6.7 owned metadata test command
+reported **PASS 23 / FAIL 0**; the Python harness command reported **PASS**,
+14 tests; guarded original Project metadata extraction **PASS**, with runtime
+execution **NOT RUN**. Scope and whitespace checks **PASS**. These results
+qualify only static tooling/observations. TEST-001/002/003 for an actual SDK
+service remain **NOT RUN**, all acceptance criteria remain unchecked, and
+Task-009 remains **Blocked**. No original initialization retry, Windows SDK
+execution, device operation or gate advancement occurs. Commit/review of this
+metadata increment precedes any separately reviewed four-input extension.
+
+Independent final review: predefined `project_review` PASS without findings
+for the bounded static metadata increment. It reproduced all 23 owned
+PowerShell cases, 14 Python tests, scope and whitespace checks, matched all six
+source-code hashes, and independently checked the guarded report JSON/pins and
+constructor observations. Predefined `objectmodel_verify` separately verified
+private candidate integrity and extraction-script provenance. Task-009 remains
+Blocked pending an evidenced construction/service route.

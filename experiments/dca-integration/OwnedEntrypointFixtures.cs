@@ -6,6 +6,25 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ // Task-009 images contain only declarations; even constructors have no bodies.
+ public static void CreateProject(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProject.dll"),m.GetOrAddGuid(new Guid("00900000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString("Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);
+  var obj=m.AddTypeReference(runtime,m.GetOrAddString("System"),m.GetOrAddString("Object"));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  int bases=profile==4?16:1;
+  for(int i=0;i<bases;i++)m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Owned"),m.GetOrAddString("Base"+i),i==0?(profile==3?MetadataTokens.TypeDefinitionHandle(bases+2):obj):MetadataTokens.TypeDefinitionHandle(i+1),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(profile==6?TypeAttributes.NotPublic:TypeAttributes.Public,m.GetOrAddString("Knx.Ets.Sdk.Project"),m.GetOrAddString(profile==2?"Other":"Project"),MetadataTokens.TypeDefinitionHandle(bases+1),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  MethodAttributes[] access={MethodAttributes.Private,MethodAttributes.Family,MethodAttributes.Public};
+  foreach(var a in access)m.AddMethodDefinition(a|MethodAttributes.SpecialName|MethodAttributes.RTSpecialName,MethodImplAttributes.IL,m.GetOrAddString(".ctor"),m.GetOrAddBlob(new byte[]{0x20,0,1}),0,MetadataTokens.ParameterHandle(1));
+  m.AddMethodDefinition(MethodAttributes.Private|MethodAttributes.Static|MethodAttributes.SpecialName|MethodAttributes.RTSpecialName,MethodImplAttributes.IL,m.GetOrAddString(".cctor"),m.GetOrAddBlob(new byte[]{0,0,1}),0,MetadataTokens.ParameterHandle(1));
+  m.AddMethodDefinition(MethodAttributes.Public,MethodImplAttributes.IL,m.GetOrAddString("get_Name"),m.GetOrAddBlob(profile==5?new byte[]{0x20,1}:new byte[]{0x20,0,0x0e}),0,MetadataTokens.ParameterHandle(1));
+  m.AddMethodDefinition(MethodAttributes.Family,MethodImplAttributes.IL,m.GetOrAddString("Changed"),m.GetOrAddBlob(new byte[]{0x20,0,1}),0,MetadataTokens.ParameterHandle(1));
+  m.AddMethodDefinition(MethodAttributes.Private,MethodImplAttributes.IL,m.GetOrAddString("Hidden"),m.GetOrAddBlob(new byte[]{0x20,0,1}),0,MetadataTokens.ParameterHandle(1));
+  if(profile==1)m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.Sdk.Project"),m.GetOrAddString("Project"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(8));
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  public static void Create(string path,bool contract=false,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("Owned.dll"),m.GetOrAddGuid(new Guid("14400000-1111-1111-1111-111111111111")),default,default);
   m.AddAssembly(m.GetOrAddString(contract?"OwnedContracts":"OwnedDca"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);

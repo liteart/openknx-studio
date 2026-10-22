@@ -91,32 +91,61 @@ public static class EntrypointMetadata {
  static bool Visible(MetadataReader r,TypeDefinitionHandle h,int depth=0){if(depth>=16)throw Fail("SCOPE_LIMIT");var t=r.GetTypeDefinition(h);var v=t.Attributes&TypeAttributes.VisibilityMask;return v==TypeAttributes.Public||(v==TypeAttributes.NestedPublic&&Visible(r,t.GetDeclaringType(),depth+1));}
  static readonly HashSet<string> Contracts=new HashSet<string>(StringComparer.Ordinal){"Knx.Ets.Sdk.AddIns.AddInViews.IDeviceConfigurationAddIn","Knx.Ets.Sdk.AddIns.AddInViews.IEts4AddInV2","Knx.Ets.Sdk.AddIns.AddInViews.IEts4AddIn","Knx.Ets.Sdk.AddIns.AddInViews.IInitializationContext","Knx.Ets.Sdk.AddIns.AddInViews.IHostNotification"};
  public static string Read(string dca,string hash,string[] refs,string[] hashes){
+  return ReadInternal(dca,hash,refs,hashes,false);
+ }
+ public static string ReadProject(string dca,string hash,string[] refs,string[] hashes){
+  return ReadInternal(dca,hash,refs,hashes,true);
+ }
+ static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project){
   if(refs==null||hashes==null||refs.Length<1||refs.Length>2||refs.Length!=hashes.Length)throw Fail("INPUT_COUNT");
   var paths=new List<string>{dca};paths.AddRange(refs);var pins=new List<string>{hash};pins.AddRange(hashes);var bytes=new List<byte[]>();long total=0;
   // Verify every selected file before creating any reader.
   for(int i=0;i<paths.Count;i++)bytes.Add(Pinned(paths[i],pins[i],ref total));
-  var inputs=new List<object>();var types=new List<object>();int methods=0;
+  var inputs=new List<object>();var types=new List<object>();int methods=0,projectRoots=0;string baseDisposition=null;
   for(int i=0;i<paths.Count;i++)using(var pe=new PEReader(ImmutableArray.Create(bytes[i]))){
    if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
    foreach(TableIndex table in Enum.GetValues(typeof(TableIndex)))if(r.GetTableRowCount(table)>RowLimit)throw Fail("ROW_LIMIT");
-   inputs.Add(Obj("filename",Path.GetFileName(paths[i]),"bytes",bytes[i].Length,"sha256",pins[i].ToLowerInvariant(),"identity",AssemblyIdentity(r)));
+   var input=Obj("filename",Path.GetFileName(paths[i]),"bytes",bytes[i].Length,"sha256",pins[i].ToLowerInvariant(),"identity",AssemblyIdentity(r));
+   if(project){var assemblyRefs=new List<string>();foreach(var ah in r.AssemblyReferences){if(assemblyRefs.Count>=256)throw Fail("REFERENCE_LIMIT");assemblyRefs.Add(ReferenceIdentity(r,ah));}input.Add("assembly_references",assemblyRefs);}
+   inputs.Add(input);
+   var selected=new HashSet<TypeDefinitionHandle>();
+   if(project&&i!=0&&Str(r,r.GetAssemblyDefinition().Name)=="Knx.Ets.Sdk"){
+    TypeDefinitionHandle root=default;
+    foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)=="Knx.Ets.Sdk.Project.Project"){if(!root.IsNil)throw Fail("DUPLICATE_PROJECT");root=h;}
+    if(!root.IsNil){
+     if(!Visible(r,root)||(r.GetTypeDefinition(root).Attributes&TypeAttributes.Interface)!=0)throw Fail("PROJECT_TYPE");
+     if(++projectRoots>1)throw Fail("DUPLICATE_PROJECT");var current=root;
+     while(!current.IsNil){
+      if(selected.Contains(current))throw Fail("BASE_CYCLE");if(selected.Count>=16)throw Fail("BASE_LIMIT");selected.Add(current);
+      var b=r.GetTypeDefinition(current).BaseType;
+      if(b.IsNil){baseDisposition="NO_BASE";break;}
+      if(b.Kind==HandleKind.TypeDefinition){current=(TypeDefinitionHandle)b;continue;}
+      if(b.Kind==HandleKind.TypeReference){var tr=r.GetTypeReference((TypeReferenceHandle)b);if(tr.ResolutionScope.Kind!=HandleKind.AssemblyReference)throw Fail("BASE_SCOPE");baseDisposition="EXTERNAL_BASE_NOT_RESOLVED";break;}
+      throw Fail("BASE_SHAPE");
+     }
+    }
+   }
    foreach(var h in r.TypeDefinitions){
-    var t=r.GetTypeDefinition(h);var n=new Names(r);string name=n.Named(h);if(!(i==0?Visible(r,h):Contracts.Contains(name)))continue;
+    var t=r.GetTypeDefinition(h);var n=new Names(r);string name=n.Named(h);if(project?!selected.Contains(h):!(i==0?Visible(r,h):Contracts.Contains(name)))continue;
     if(types.Count>=1024)throw Fail("TYPE_LIMIT");var interfaces=new List<string>();
     foreach(var ih in t.GetInterfaceImplementations()){if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");interfaces.Add(new Names(r).Named(r.GetInterfaceImplementation(ih).Interface));}
     var declared=new List<object>();
-    bool contractCandidate=i!=0||interfaces.Exists(x=>x.StartsWith("[Knx.Ets.Sdk.AddIns.AddInViews, Version=",StringComparison.Ordinal));
+    bool contractCandidate=project||i!=0||interfaces.Exists(x=>x.StartsWith("[Knx.Ets.Sdk.AddIns.AddInViews, Version=",StringComparison.Ordinal));
     foreach(var mh in t.GetMethods()){
      if(!contractCandidate)continue;
      var m=r.GetMethodDefinition(mh);string mn=Str(r,m.Name);bool pub=(m.Attributes&MethodAttributes.MemberAccessMask)==MethodAttributes.Public;
-     if(!pub&&(m.Attributes&MethodAttributes.Virtual)==0)continue;if(++methods>2048||declared.Count>=256)throw Fail("METHOD_LIMIT");
+     var access=m.Attributes&MethodAttributes.MemberAccessMask;bool constructor=mn==".ctor"||mn==".cctor";
+     if(project?!(constructor||pub||access==MethodAttributes.Family||access==MethodAttributes.FamORAssem||access==MethodAttributes.FamANDAssem):!pub&&(m.Attributes&MethodAttributes.Virtual)==0)continue;if(++methods>2048||declared.Count>=256)throw Fail("METHOD_LIMIT");
      string signature;try{signature=new Names(r).Method(m.Signature);}catch(InvalidDataException){throw;}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
      declared.Add(Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",mn,"attributes",(int)m.Attributes,"signature_header",r.GetBlobReader(m.Signature).ReadByte(),"signature",signature));
     }
     types.Add(Obj("input",Path.GetFileName(paths[i]),"token",MetadataTokens.GetToken(h).ToString("X8"),"name",name,"attributes",(int)t.Attributes,"base_type",new Names(r).Named(t.BaseType),"interfaces",interfaces,"methods",declared));
    }
   }
-  string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_entrypoint_map","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"types",types,"limitations",new[]{"DCA method details only for direct AddInViews interface implementers; public type inventory and selected contract declarations only; no inherited member or runtime activation proof.","Names/signatures are metadata observations; no SDK implementation or method bodies inspected."}));
+  if(project&&projectRoots!=1)throw Fail("PROJECT_NOT_FOUND");
+  var result=Obj("schema_version",1,"operation",project?"static_dca_project_context":"static_dca_entrypoint_map","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"types",types,"limitations",project?new[]{"Fixed Project root and bounded same-assembly base declarations only; external bases unresolved; declared constructors and public/protected methods are metadata observations, not construction or runtime compatibility proof.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:new[]{"DCA method details only for direct AddInViews interface implementers; public type inventory and selected contract declarations only; no inherited member or runtime activation proof.","Names/signatures are metadata observations; no SDK implementation or method bodies inspected."});
+  if(project)result.Add("base_chain_disposition",baseDisposition);
+  string report=JsonSerializer.Serialize(result);
   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
  }
 }
