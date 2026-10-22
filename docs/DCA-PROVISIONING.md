@@ -1,5 +1,9 @@
 # DCA and ETS SDK provisioning disposition
 
+Historical evidence snapshot. Active owner decision and current technical
+disposition are recorded at the end of this file; later decision supersedes
+historical legal-review prerequisites below.
+
 ## Scope and evidence boundary
 
 This report records the dependency evidence available for Task-005 on
@@ -159,3 +163,181 @@ manifest hash, timestamp, actual Windows suite results (19 PASS, 0 FAIL, 2 NOT R
 and ConsoleHost 5.1.26100.9168 observation. Selected candidate bytes are available
 privately for static analysis. This resolves candidate acquisition evidence, not
 the missing terms or an approved independent runtime. Task-005 remains Blocked.
+
+## Current owner decision and technical disposition, 2026-10-21
+
+Simon explicitly accepts responsibility and directs the project to assume local
+use is authorized. See [ADR-005](ADR-005-owner-authorized-private-dependencies.md).
+This is a binding project decision, not legal certification by an agent. The
+earlier requests for SDK/DCA license documents, lawyer review, or legal
+provisioning approval are historical and no longer prerequisites. The selected
+DLLs may be kept in private local storage under the existing extraction route;
+no original DLL may be committed to Git or included in any build distribution.
+
+Task-005 remains **Blocked on technical qualification only**. The DCA requests
+SDK/AddInViews `5.7.554.37315`, while the supplied private candidates are
+`6.4.8718.0`; the candidate map records 55 unmatched members and 209 unsupported
+TypeSpec member parents, with additional dependencies unsupplied. These counts
+are unresolved compatibility evidence, not a proven incompatibility. Clean
+ETS-free Windows runtime closure and binding/activation behavior remain
+unverified. Task-003 and Task-006 Windows/Rust checks have PASS evidence; tooling
+availability is not a blocker. Hardware identity, isolated bus/network path,
+operation-specific human authorization, and recovery requirements remain under
+the existing hardware process and are not waived by ADR-005.
+
+## Current static compatibility evidence after Task-142
+
+Reviewed source `0b3cfef884a2181e12bf58acf1d08b76312789ed` provides the bounded
+member comparison. It supersedes the earlier unresolved-count snapshot:
+53 direct structural signature matches, two unresolved external Common.Types
+identity comparisons, and 209 decoded TypeSpec owner scopes (none declares a
+member in the supplied candidate assemblies). Same-name ReadProperty and
+WriteProperty direct definitions exist; different PropType assembly identities
+remain deliberately unresolved. Static shape similarity is not ABI or binding
+compatibility. SDK versions still differ and runtime closure is unqualified.
+The static experiment's 31/9/12 suites, guarded private reproduction and review
+PASS do not advance the original-DCA runtime gate. ADR-005 remains applicable.
+
+## Exact additional private candidates, 2026-10-21
+
+The existing Task-139 extractor was reused on the authorized Windows host for
+exactly two filenames, first inventory then explicit private-copy mode. It uses
+`System.Reflection.AssemblyName.GetAssemblyName`; target execution was NOT_RUN.
+Inventory UTC: `2026-10-21T13:28:41.8012922Z`; complete copy UTC:
+`2026-10-21T13:28:58.0512005Z`. The task performed no writes to the installed ETS source. Only the
+owned remote temporary script/copy was removed after SFTP return.
+
+| Private candidate | Bytes | SHA-256 |
+|---|---:|---|
+| `Knx.Ets.Common.Types.dll` | 215,504 | `5c4e08541a123825b0ed501aec1f5fbbbc3d1f756b3be41ff2728925f906c9f0` |
+| `Knx.Ets.Common.Resources.dll` | 78,800 | `6e07df9e247b1d5e6a11c9e8131ec8cc8ab8aabeca9af02b1911608d1eefe661` |
+
+Both Windows metadata identities report version `6.4.8718.0`, neutral culture,
+and token `61439873ec5e1159`; tokens are not signature verification. The local
+manifest is 1,925 bytes, SHA-256
+`08122ad0600f7a226baf721060aa8cda3649835cbdaf0c91f19add499815c9ef`.
+The two files and manifest are private at
+`private/downloads/task005-sdk-dependencies/task005-20261021-01/` under the
+coordinator checkout, Git-ignored. Local size/hash/manifest comparisons PASS.
+No original DLL or generated manifest is committed.
+
+The previously guarded Task-140 AssemblyRef observations distinguish:
+
+- DCA row 13 requests Common.Types `5.7.286.36952`: the new candidate differs.
+- Supplied SDK row 5 requests Common.Types `6.4.8718.0`: identity fields agree.
+- AddInViews row 5 requests Common.Resources `6.4.8718.0`: identity fields agree.
+
+The earlier report was read as JSON for this comparison; the new DLLs received
+no additional unguarded metadata decoding. No candidate member body, dependency
+closure, CLR binding, activation, DCA or network operation was tested. Simon's
+assumed-use authorization applies. The older requested Types assembly and clean
+ETS-free runtime qualification remain unresolved; Task-005 is not Done.
+
+The explorer reported no `ETS6.exe.config` at the selected installation root
+from its bounded read-only exact-path check. XML parsing, file hashing and binding-redirect extraction
+were therefore NOT RUN. Other paths, configuration files and programmatic
+binding policies were not inspected. This is not evidence that ETS has no
+binding policy. The exact temporary reader script was removed afterward.
+
+
+## Current selected-route provisioning contract, 2026-10-22
+
+ADR-005 remains Simon's private-use assumption and responsibility decision.
+Accepted Task-143 proves its explicit app-local binding policy for the selected
+member references; Task-144 identifies actual public entrypoint/contracts.
+Accepted Task-148 at final record `134ebb4243c349f7128e655f60274f6465f526b8`
+provides actual ETS-free startup/one-constructor evidence. Tasks 003/006 are Done.
+Earlier unqualified counts, runtime absence and tooling-blocked snapshots above
+remain historical; they do not supersede those accepted results.
+
+The selected route uses separately inventoried, unchanged private DLLs without
+installed/running ETS on the execution machine. Startup/constructor qualification
+is sufficient for Task-005 AC-003. Additional initialization/UI/state SDK services
+are investigated in Tasks 008–012, not invented here or made a circular
+Task-005 prerequisite. This is neither complete SDK compatibility nor full PoC A.
+Actual isolation FAIL and the owner's narrow Task-148 exception remain recorded;
+this compile-only increment authorizes no further original code execution.
+
+| Selected item | Technical disposition | Evidence and limit |
+|---|---|---|
+| Private SDK/AddInViews 6.4.8718.0 | Available | Exact accepted hashes/identities from Tasks 140/143/144; compile-only proof PASS; see observed result below |
+| Private primary DCA 4.0.0.0 | Available | Unchanged constructor returned in accepted Task-148 on ETS-free Windows |
+| Common.Types, Common.Resources, BCL, netstandard and Tasks.Extensions stage inputs | Available, path-specific use unverified | Hash-pinned for Task-148; none was recorded loaded on its constructor path |
+| Public net48 compiler references and Framework64 C#5 compiler | Available | Accepted Task-148 six-file public profile and exact Windows compiler pin |
+| Installed/active ETS on runtime machine | Not required for selected startup/constructor route | Task-148 actual evidence; not a claim about later methods |
+| Other methods, activation and service dependencies | Unverified for later capabilities | Tasks 008–012; no fake service or broader compatibility inference |
+| Network isolation / device-operation mediation | Not qualified | Task-148 isolation FAIL/explicit constructor-only exception; no intentional device operation |
+
+### Exact-private-reference compile-only experiment
+
+The Task-005 contract is written before source. An owned interface-only library
+names six actual public types: IInitializationContext, IDeviceConfigurationAddIn,
+IEts4AddIn, IEts4AddInV2, Knx.Ets.Sdk.Project.Project and
+Knx.Ets.Sdk.Project.Device. The four interfaces reside in
+Knx.Ets.Sdk.AddIns.AddInViews. Their names/type references come from the accepted
+Task-144 guarded report (52,492 bytes, SHA-256
+`8195260cb622508d32c11946ddcef84887d5f8284b9c9ea3ed5539aeac70b0c5`).
+No contract implementation, device object or lifecycle method is supplied.
+
+Only two private compiler references are selected:
+
+| File | Bytes | SHA-256 |
+|---|---:|---|
+| Knx.Ets.Sdk.dll | 6,979,024 | `7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989` |
+| Knx.Ets.Sdk.AddIns.AddInViews.dll | 72,704 | `5a59b733cbbecb8afe67f54e3b354045a61e092470a13129971f4f99e0b6d87d` |
+
+Both identities are version 6.4.8718.0, neutral culture and public-key token
+61439873ec5e1159. Token matching is not signature verification; no checks are
+bypassed. The compiler is Framework64 csc.exe, file version
+`4.8.9221.0 built by: NET481REL1LAST_25H2`, SHA-256
+`46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00`.
+The fixed public profile is mscorlib, System, WindowsBase, PresentationCore,
+PresentationFramework and System.Xaml from the pinned net48 1.0.3 reference
+package; Task-148 records all six hashes. No other original DLL is a compiler
+reference. The output is a private net48/x64/C#5 library and manifest, never
+execution-loaded or distributed.
+
+The driver checks attributes before descent and permits only a specifically
+missing final output component. All input hashes and the two private metadata
+identities are checked before output creation. Fixed input files remain read-
+only through compilation. The compiler is supervised for 20 seconds with a live
+65,536-byte combined stdout/stderr cap and confirmed exit. A fresh output outside
+Git prevents overwriting prior evidence. This is a bounded selected experiment,
+not a race-free filesystem/security sandbox or generic upload service.
+
+Planned coordinator commands (not yet executed):
+
+```powershell
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass `
+  -File "$Source\Test-ReferenceCompilation.ps1" -Compiler $Framework64Compiler `
+  -ReferenceDirectory $PublicNet48References `
+  -PrivateReferenceDirectory $PrivateSdkStage -OutputDirectory $FreshCompileOutput
+# Missing case: use an empty private local directory; require nonzero exit and
+# no output directory. Mismatch case: use explicitly invalid owned bytes for
+# Knx.Ets.Sdk.dll; require the hash rejection before output creation.
+```
+
+The process-only owned-script invocation matches Task-148; it changes no machine
+execution policy, signature/activation setting or Windows feature. Positive
+compilation and both private-reference negative oracles are NOT RUN. Local
+checks and final independent verification/review are pending. Original binaries
+remain excluded from Git and every build distribution.
+
+### Observed Task-005 compile result, 2026-10-22
+
+The documented command above was executed on the ETS-free test VM. PASS:
+compiler exit 0 confirmed, no stdout/stderr bytes, six public references and
+exactly the two pinned SDK/AddInViews 6.4.8718.0 references. The 3,072-byte owned
+library SHA-256 is `4a6015e5f1ef1d54b71521301846daaab69c88172c053110a1d7ac4a13ae9780`.
+It and all original assemblies remained execution-unloaded in this experiment.
+Missing SDK input produced `REFERENCE_COMPILE_MISSING_PATH`; an invalid owned
+SDK-named file produced `REFERENCE_COMPILE_REFERENCE_HASH_Knx.Ets.Sdk.dll`. Both
+exited 1 before creating output. Frozen sources, exact compiler/reference/output
+identities and actual results are recorded in Task-005 and the ignored evidence
+directory `private/evidence/task005-selected-runtime`.
+
+This establishes the selected compile route alongside accepted Task-148's
+startup/constructor route, not complete SDK runtime closure. The five additional
+private staged dependencies were not compiler references and remain unexercised
+on that constructor path. Later Initialize/UI/state dependencies require their
+own evidence. Original DLLs remain excluded from Git and distributions.

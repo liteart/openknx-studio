@@ -140,22 +140,20 @@ missing_reason = "Human bench/write approval with scope, identity, purpose and r
 [[inputs]]
 id = "clean-windows"
 kind = "qualification"
-status = "Missing"
-identity = "UNVERIFIED: clean interactive Windows host without ETS"
+status = "Available"
+identity = "Selected ETS-free interactive Windows 11 Pro x64 VM; build 26200; .NET Release 533509"
 owner = "Project operator"
-source = "2026-10-20 coordinator RDP UI observation and user report"
-evidence = "RDP UI showed ETS 6 Home 6.4.1 Build 8718; subsequent automation reported noWindowsAvailable; OS/SDK inventory NOT RUN; this is not the clean qualification environment"
-missing_reason = "A clean Windows environment without ETS/runtime dependencies has not been established"
+source = "Task-148 accepted evidence 134ebb4243c349f7128e655f60274f6465f526b8"
+evidence = "2026-10-22 selected inventory absent ETS/KNX installations/services/processes; neutral STA lifecycle and original constructor PASS. Network isolation FAIL and explicit constructor exception remain separate; no device-operation or gate qualification."
 
 [[inputs]]
 id = "sdk-references-rights"
 kind = "qualification"
-status = "Missing"
-identity = "UNVERIFIED: exact SDK assembly identities, provisioning rights and pinned Windows build tools"
+status = "Available"
+identity = "Selected private SDK/AddInViews 6.4.8718.0; Framework64 C#5/net48/x64; owner-authorized private use"
 owner = "Project maintainer"
-source = "Task-003 Windows prerequisite; Task-005 SDK inventory"
-evidence = "Inventory is pending; file availability alone cannot establish provisioning or redistribution rights"
-missing_reason = "Actual SDK/reference identities, compatible build environment and human rights/provisioning review remain unresolved"
+source = "docs/ADR-005-owner-authorized-private-dependencies.md; Task-005; accepted Task-148"
+evidence = "2026-10-22 exact two-reference compilation PASS, missing/mismatched-reference negatives PASS; selected ETS-free startup/constructor PASS. Stable legacy ID retained. Owner assumption is not legal certification; original DLLs excluded from Git/distributions; later Initialize/UI/state services unverified."
 
 [[inputs]]
 id = "firmware-dca"

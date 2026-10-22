@@ -97,8 +97,8 @@ gateway endpoint, or approval. The manifest records each source and missing reas
 | `power-recovery` | Target-specific power, restoration and supported recovery procedure | Project operator |
 | `reversible-property` | Authoritative evidence for a bounded reversible property/read-back/restoration sequence | Project maintainer |
 | `human-write-grant` | Explicit human approval for the exact bench/target/operation | Project operator |
-| `clean-windows` | Clean interactive Windows environment without ETS/runtime dependency | Project operator |
-| `sdk-references-rights` | Exact SDK identities, compatible pinned build tools and human rights/provisioning review | Project maintainer |
+| `clean-windows` | Selected ETS-free Windows host; Task-148 startup/constructor evidence; network isolation remains FAIL | Project operator |
+| `sdk-references-rights` | Selected SDK 6.4 identities and pinned compile route; ADR-005 owner assumption; no original DLL distribution | Project maintainer |
 | `firmware-device` | Exact supported firmware-update target and recovery evidence | Project operator |
 | `knxproj` | Permitted export/hash and expected project inventory | Project operator |
 
@@ -233,3 +233,15 @@ five available-file hashes, expected rejection of missing target/grant, unique
 bounded archive-member byte equality, scope navigation and whitespace. The
 coordinator accepts only this inventory update; actual firmware target matching,
 rights, Windows runtime and physical effects remain unqualified.
+
+## Selected dependency qualifications, 2026-10-22
+
+The stable `clean-windows` and `sdk-references-rights` entries are Available for
+the selected Task-005 compile and Task-148 ETS-free startup/constructor routes.
+The new VM is distinct from the earlier ETS-installed machine. Task-005 records
+actual exact-reference compile PASS and both missing/mismatched negatives.
+ADR-005 governs the owner's private-use assumption; the historical ID is retained
+for checker compatibility, not a legal certification. No SDK DLL enters Git or
+a distribution. Later service/UI/state compatibility and actual bus safety are
+unverified. Network isolation FAIL remains recorded. All hardware, identity,
+recovery and operation-grant entries retain their existing dispositions.

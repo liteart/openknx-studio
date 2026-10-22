@@ -30,7 +30,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-002](tasks/Task-002.md) | Create two isolated repositories and preserve licenses | knx-editor + knust-fork / repository setup | [Task-001](tasks/Task-001.md) |
 | [Task-003](tasks/Task-003.md) | Pin minimum PoC toolchains and verification commands | knx-editor + knust-fork / build tooling | [Task-002](tasks/Task-002.md) |
 | [Task-004](tasks/Task-004.md) | Register reference artifacts and the isolated test bench | knx-editor / private test fixtures | [Task-001](tasks/Task-001.md), [Task-002](tasks/Task-002.md) |
-| [Task-005](tasks/Task-005.md) | Resolve lawful DCA and SDK dependency provisioning | knx-editor / dca-host dependency review | [Task-004](tasks/Task-004.md) |
+| [Task-005](tasks/Task-005.md) | Qualify owner-authorized DCA and SDK dependencies | knx-editor / dca-host dependency review | [Task-004](tasks/Task-004.md) |
 | [Task-006](tasks/Task-006.md) | Inspect the original MDT DCA package without executing it | knx-editor / poc/dca-inspect (Rust) | [Task-003](tasks/Task-003.md), [Task-004](tasks/Task-004.md) |
 | [Task-007](tasks/Task-007.md) | Build a minimum Windows STA DCA host shell | knx-editor / poc/dca-host (C#/.NET) | [Task-003](tasks/Task-003.md), [Task-005](tasks/Task-005.md) |
 | [Task-008](tasks/Task-008.md) | Map the actual ETS SDK surface used by the reference DCA | knx-editor / poc/dca-host analysis | [Task-005](tasks/Task-005.md), [Task-006](tasks/Task-006.md), [Task-007](tasks/Task-007.md) |
