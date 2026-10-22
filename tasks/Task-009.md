@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Current increment baseline `4808d8a797a122dd815f388c60d2afdcc5a7d7b5`; reviewed implementation/result commit pending |
-| Tests executed | Metadata-only owned PowerShell 23 cases PASS; Python harness 14 tests PASS; guarded three-input Project extraction PASS; scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory and guarded report; dated records below |
+| Source commit(s) | Prior Project-only increment `f9549f67c10b81216021fe8de5ccdf7f496cb614`; reviewed four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc` |
+| Tests executed | Metadata-only owned PowerShell 50 cases PASS; Python harness 15 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy guarded extraction PASS (static only); scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction` report/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | ObjectModel file/hash/identity acquired; Project internal constructor and parameters observed; public construction/factory route and runtime compatibility unresolved |
+| Technical outcome | Five fixed roots/eleven types inspected; SDK Project/collection/Root internal constructors and nonpublic context observed; ObjectModel Project has five public constructors requiring uninspected services. A compatible creation/service route and runtime compatibility remain unresolved |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior blocker report: predefined `binding_review` PASS; current metadata increment review pending |
+| Reviewer | Prior Project-only increment committed at `f9549f6`; independent four-input static verification and final critical source/evidence review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -192,3 +192,136 @@ source-code hashes, and independently checked the guarded report JSON/pins and
 constructor observations. Predefined `objectmodel_verify` separately verified
 private candidate integrity and extraction-script provenance. Task-009 remains
 Blocked pending an evidenced construction/service route.
+
+
+## Four-input construction mode source freeze
+
+Following the reviewed Project-only commit `f9549f6`, a separate fixed
+`project-construction` metadata mode adds the exact acquired ObjectModel pin.
+The five allowed roots are SDK `Project.Project`, `Project.ProjectCollection`,
+`ISdkContext`, `Root`, and ObjectModel `Project.Project`. Constructor parameters
+are not recursively catalogued. Root-specific nil bases are valid `NO_BASE`;
+external bases/dependencies remain unresolved. Public/protected methods returning
+a selected type, including generic wrappers, receive declaration-only inquiry
+annotations, without any claim that they construct a usable Project. Existing
+three-input modes and their pins remain unchanged. See the contract and bounded
+fixture evidence in [DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md).
+
+The existing PowerShell command now reports **PASS 39 / FAIL 0** using owned
+metadata images; the Python harness command reports **PASS**, 15 tests. Scope
+and whitespace checks **PASS**. The coordinator's guarded four-input original
+metadata extraction is **NOT RUN** at source freeze, pending independent
+review. No ObjectModel runtime load, SDK implementation execution, constructor
+activation or service fixture is supplied. Task-009 remains **Blocked** and
+all acceptance criteria remain unchecked. The next authorized action is source
+review followed by the coordinator's fixed guarded metadata extraction, not
+an initialization retry.
+
+
+## Four-input extraction limit and bounded diagnostic
+
+The coordinator's initial four-input guarded read failed closed before type
+inspection with `DCAENTRY_ROW_LIMIT` under the existing 32,768-row per-table
+bound. No report, type declarations, SDK execution or construction result was
+produced. An earlier staging attempt correctly rejected mode `0400` with
+`DCAPROBE_INPUT_ATTRIBUTES`; staging was corrected to the required `0600`,
+without changing validation. The coordinator retained private metadata-child
+stderr under `private/evidence/task009-construction/diagnostic-child-2-stderr.txt`.
+
+Before considering any limit change, construction mode now exposes the first
+exceeding table/count through an owned structured exception and a path-free
+worker diagnostic. The worker unwraps at most eight exceptions and preserves
+fields only from the exact owned exception type; generic exception redaction
+and all old-mode diagnostics remain unchanged. No row, file, aggregate,
+signature, report or process bound is increased.
+
+An owned metadata image containing exactly 32,769 MethodDef rows verifies the
+typed count and `DCAENTRY_ROW_LIMIT_METHODDEF_32769` worker failure. The owned
+PowerShell command reports **PASS 42 / FAIL 0**, Python harness **PASS**,
+15 tests, and scope/whitespace checks **PASS**. The original table count remains
+unknown; the diagnostic retry is **NOT RUN** pending source review and the
+coordinator's guarded invocation. Task-009 remains **Blocked**. No working
+service, fixture or construction route is asserted.
+
+
+## Measured MethodDef count and narrow policy
+
+The coordinator's guarded diagnostic retained
+`DCAENTRY_ROW_LIMIT_METHODDEF_38472` in private
+`task009-construction/row-observation-child-2-stderr.txt` for the exact fourth
+ObjectModel input, SHA-256
+`73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a`.
+That count explains this particular bound failure, without proving any SDK
+construction behavior. The coordinator supplied reviewer POLICY approval for
+only fourth-slot MethodDef rows in `project-construction`, with ceiling 65,536.
+
+The reader now applies that ceiling only to this mode/slot/table and requires
+the fourth assembly name `Knx.Ets.ObjectModel`; the guarded parent's exact
+ObjectModel pin and identity checks remain in force. Every other table,
+input slot or earlier mode stays at 32,768. File/aggregate, selected-work,
+signature, report/output and process bounds are unchanged. No new parameter,
+input discovery, original execution or runtime allowlist is added.
+
+The owned PowerShell suite reports **PASS 50 / FAIL 0**: complete synthetic
+reports at 38,472 and 65,536 MethodDef rows, rejection at 65,537, and unchanged
+32,769-row failures for old modes, the first three inputs, TypeDef, and another
+fourth-slot assembly owner. Python harness **PASS**, 15 tests; scope and
+whitespace checks **PASS**. The original policy-adjusted extraction retry is
+**NOT RUN** pending source review and the coordinator's guarded invocation.
+Windows execution, SDK/vendor implementation execution and hardware remain
+**NOT RUN**. Task-009 remains **Blocked** and no service acceptance is asserted.
+
+
+## Guarded construction result and remaining context boundary
+
+The coordinator's narrow-policy retry completed **PASS** for static metadata
+extraction on macOS/Darwin arm64, PowerShell 7.6.7. The private report is
+`private/evidence/task009-construction/project-construction-report-task009.json`,
+103,345 bytes, SHA-256
+`5253681cc48e42142a7d214e9229d2d9b68c8f3580152c0ff4a63fb6129d19a2`.
+A JSON-only re-read verified its bytes/hash, both denial probes true, all four
+fixed input sizes/hashes/identities, five selected roots, eleven types and
+`runtime_execution=NOT_RUN`. This supersedes the earlier freeze's **NOT RUN**
+for static extraction; it does not supersede any unavailable runtime proof.
+The normalized exact command, source hashes and parameter details are in
+[DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md).
+
+SDK `ISdkContext` (`0200001F`, attributes `1048736`) is a nonpublic interface
+with nil base. SDK `Root` constructor `0600026C` is internal and requires
+ObjectModel `Project.Project`, `IProjectStore`, SDK `ExecutionContext` and
+ObjectModel `Compatibility.IPluginInstaller`. Its `get_Projects` (`06000274`)
+returns SDK `ProjectCollection`. SDK Project constructor `06001409` and
+ProjectCollection constructor `06001446` are also internal and require the
+observed ObjectModel project/collection and SDK context/root objects.
+
+ObjectModel `Project.Project` declares five public constructors, `06002830`
+through `06002834`, all requiring `IFactory` and `IProjectStore`. Overloads add
+String/GroupAddressStyle, ProjectCollection, Guid and/or `IObjectContext`.
+These are signature observations, not a qualified constructor or fixture.
+All selected `DECLARATION_ONLY` return annotations are getters, indexers or an
+enumerator; none proves a creation factory. No global construction-route
+availability or impossibility is inferred from this selected surface.
+
+The coordinator reports independent owned PowerShell **PASS 50 / FAIL 0**,
+Python **PASS** (15 tests), scope/whitespace **PASS**, and independent static
+review **PASS**. Private `task009-construction` verifier logs are
+`verifier-powershell.log`, `verifier-python.log`, `verifier-scope.log` and
+`verifier-diff-check.log`. Source baseline remains
+`f9549f67c10b81216021fe8de5ccdf7f496cb614`; the reviewed four-input
+source is committed at `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; this evidence update follows source review. The private successful-run
+source record is `source-freeze-success.json`, 1,008 bytes, SHA-256
+`5e621640dd851b966a69f6de3fc63a57e1819f57a715ae3024422b54145ce2c6`;
+all six code hashes match the owned files. It was recorded after execution.
+Older freeze files are historical pre-policy snapshots, not current source
+records. Independent JSON verification also reports PASS for the report hash, guards,
+inputs and selected constructor declarations. No safety check was relaxed,
+and no code changes accompany this result update.
+
+Task-009 remains **Blocked** with all service acceptance criteria unchecked.
+SDK `ExecutionContext`/`ISdkFactory` and ObjectModel
+`IFactory`/`IProjectStore`/`IObjectContext` are the smallest next fixed technical
+inquiry named by actual declarations. Their contracts and all other dependencies
+remain uninspected. No root growth, null/uninitialized object, nonpublic
+activation, runtime loader expansion or service implementation occurs now.
+Windows/SDK implementation execution, original initialization retry, UI/state
+round trips and hardware remain **NOT RUN** for this increment.
