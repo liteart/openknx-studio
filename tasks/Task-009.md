@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; service inquiry source `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; provider lookup source `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor-only baseline `a110775b07dcdb9f1238abae24e54c716c2b3e12`, new source/result commit pending |
-| Tests executed | Metadata-only owned PowerShell 112 cases PASS; Python harness 18 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy construction extraction PASS (static only); project-services guarded extraction PASS (static only); project-providers guarded extraction PASS (static relationship only); project-constructors guarded extraction NOT RUN; scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; services `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; providers `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor metadata `1df83e9385bf7bfcc46c927756eab06a5126e06d`; public-constructor diagnostic baseline `9a4e283c98809c4e91bd89dd495f74166c2692df`, new source commit pending |
+| Tests executed | Prior static metadata owned PowerShell 112 cases PASS, Python 18 tests PASS and guarded Project/construction/services/providers/constructors extraction PASS, with historical ROW_LIMIT failure retained. New diagnostic: local C#5 syntax/PowerShell parse and owned fixture compile PASS; Windows net48 build/proxy tests and original enum/Project execution NOT RUN at source freeze. Hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Eighteen direct provider candidates/edges observed, including nonpublic SDK Context/DcaExecutionContext/SdkFactory and public ObjectModel Factory/ObjectContext; constructors and behavior uninspected, 829 TypeSpec edges unknown, creation route INCONCLUSIVE |
+| Technical outcome | Five provider-constructor declarations observed; public OM Project constructor selected for a deny-all diagnostic. Initial executable refuses original construction before any load because no enum literal is reviewed. Creation route INCONCLUSIVE; no compatible fixture supplied |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior construction/service/provider static verification and source/result review PASS; constructor-only verification/review pending; no runtime service acceptance |
+| Reviewer | Prior construction/service/provider/constructor static verification and source/result review PASS; new diagnostic Windows verification/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -582,3 +582,97 @@ is NOT_RUN. This supersedes only the constructor source-freeze's pending static
 extraction, verification and review. Windows hosting, initialization/UI/state,
 hardware, SDK runtime allowlist changes and nonpublic activation remain NOT RUN
 for this increment.
+
+## Public Project constructor diagnostic: first source freeze
+
+The source baseline is `9a4e283c98809c4e91bd89dd495f74166c2692df`.
+The approved bounded diagnostic and normalized commands are recorded in
+[DCA-PROJECT-CONTEXT](../docs/DCA-PROJECT-CONTEXT.md#public-project-constructor-diagnostic-first-source-freeze).
+This increment adds a separate fixed Windows tool and owned fixtures, with
+bounded integration into the existing build, launcher and test driver. Earlier
+metadata modes and the eight-input DCA constructor/Initialize behavior remain
+unchanged. No source ETS host execution, SDK Root activation, service success
+response or dependency expansion beyond the exact qualified ObjectModel pin
+is supplied.
+
+The only enabled original stage is reflection-only GroupAddressStyle metadata
+inspection from the single exact Common.Types input. No enum literal is guessed.
+The original Project constructor mode is source-frozen off and fails
+`ENUM_LITERAL_NOT_REVIEWED` before input pinning or any original load. An actual
+enum report must be reviewed, followed by a separately frozen literal identity,
+token/value/report hash, build, owned tests and independent review before the
+public constructor can be invoked. If later enabled, every IFactory and
+IProjectStore call still throws `PROJECT_FIXTURE_UNSUPPORTED`; constructor
+return remains unqualified, including a caught denial. This is an investigation
+of the first actual required service, not a working fixture implementation.
+
+Local macOS C#5 syntax checks PASS (seven sources), PowerShell parsing PASS
+(two scripts), and the new owned fixture compiles locally with signed enum
+constants verified. Local Roslyn C#5/x64/warnings-as-errors in-memory compilation
+against the exact six pinned net48 framework references PASS for all four owned
+assembly groups. This does not replace the pinned Windows compiler or execution.
+Windows net48 build, owned RealProxy regressions, original
+enum inspection and original Project constructor invocation are **NOT RUN** at
+this source freeze. The coordinator owns Windows staging/execution after source
+freeze and sequential independent verification/review. The existing supervisor
+has bounded direct-child termination; descendants and network are not contained.
+Task-009 remains **Blocked** with all service acceptance criteria unchecked;
+creation_route is **INCONCLUSIVE**, and hardware/UI/state/DCA initialization are
+**NOT RUN** for this increment. Source/result hashes and actual Windows results
+must be appended only after they exist.
+
+
+## First Windows diagnostic freeze results, 2026-10-22
+
+The coordinator transferred the ten owned tool/host sources recorded in
+`private/evidence/task009-constructor-windows/source-freeze-01.json` to the
+fresh clean-host stage. All staged source hashes match the frozen worktree.
+The pinned Windows C#5/x64/net48 build PASS uses compiler 4.8.9221.0,
+SHA-256 `46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00`,
+and the six existing fixed framework-reference pins. The raw `build01-report.json`
+records eight compiled source hashes and twelve output/config/sidecar artifacts;
+the two PowerShell tool hashes are also in the full source-freeze record.
+No SDK/DCA assembly was executed by the build.
+
+| Built owned executable | SHA-256 |
+|---|---|
+| ProjectConstructorProbe.exe | `1951c8f91b12ea2b2c356361f9b81e56ecb3ad2685bc6b3bbe2f9ca9e3426dcd` |
+| ProbeLauncher.exe | `49873f7bfd79183d7cef7bb118d681fc8265f8f93fec0a40d9d4b7f144040c13` |
+| ProjectConstructorProbe.exe.config | `b72d33cb400c6a9de0565ece3698308c569836dc41f9003d70d9d78a31b4315a` |
+
+The coordinator ran the stated owned test driver with fresh output directories:
+Session0 PASS 10/10 cases; limited interactive session 2 PASS 17/17 cases.
+These are two suites, not 27 distinct assertions. The interactive context
+records UserInteractive=true and administrator_role=false. Both test processes
+exit 0. The first-freeze original-project dispatch records
+ENUM_LITERAL_NOT_REVIEWED with no PIN, assembly or constructor marker.
+Inherited/generic/ref-out/void/property denials, saturated counters, enum
+metadata negatives, once-only constructor behavior and caught/request-free
+unqualified returns pass in the owned proxy case. Prior constructor/Initialize,
+timeout/output, hash/path and junction tests remain passing.
+
+Canonical evidence includes `owned-session0-01-stdout.txt`,
+`owned-interactive01-context.json`, `owned-interactive01-done.json`, the raw
+PowerShell driver streams and selected per-case logs. PowerShell's raw driver
+stdout is UTF-16LE; unchanged raw bytes and strictly decoded UTF-8 derivatives
+are linked by `owned-interactive01-log-encoding.json`. No test rerun is inferred
+from this decoding. Driver stderr is empty. The fresh owned scheduled task was
+removed after completion; cleanup records zero active owned tool processes,
+LastTaskResult=0 and no remaining test junction. Descendants and network access
+are not contained by this supervisor.
+
+Independent verification PASS audited all ten source hashes, source bounds and
+stage guards, raw/normalized log hashes, actual session/result evidence and
+build-report/runner preflight consistency for all twelve artifacts. The verifier
+did not independently rehash target binaries or rerun Windows execution.
+Its source/report/artifact audit, scope and whitespace logs are under
+`private/evidence/task009-constructor-windows/verifier/`. This is an independent
+audit of the coordinator's Windows runs, not another Windows run.
+
+This supersedes the first source-freeze's Windows build/owned-tests NOT RUN.
+Original enum inspection and Project constructor invocation remain NOT RUN.
+OriginalConstructorReady remains false. No working Project fixture, DCA
+initialization, UI/state proof, hardware result or gate acceptance is asserted.
+Task-009 remains Blocked. Critical source/result review precedes any original
+enum metadata inspection; an observed literal and second reviewed source freeze
+remain prerequisites for the original constructor diagnostic.

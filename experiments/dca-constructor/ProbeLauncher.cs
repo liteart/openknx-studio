@@ -31,10 +31,11 @@ internal static class ProbeLauncher
             ProbeFiles.Require(args.Length == 8 && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= 30 && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
             // Definite assignment is explicit for the C#5 compiler after compound validation.
             seconds = Int32.Parse(args[1]); string mode = args[3];
-            ProbeFiles.Require(mode == "neutral" || mode == "original" || mode == "original-initialize" || mode == "owned-initialize" || mode == "owned-Success" || mode == "owned-Throw" || mode == "owned-Missing" || mode == "owned-Hang" || mode == "owned-Flood", "LAUNCH_MODE");
+            bool project = mode == "project-enum-metadata" || mode == "original-project" || mode == "owned-project";
+            ProbeFiles.Require(project || mode == "neutral" || mode == "original" || mode == "original-initialize" || mode == "owned-initialize" || mode == "owned-Success" || mode == "owned-Throw" || mode == "owned-Missing" || mode == "owned-Hang" || mode == "owned-Flood", "LAUNCH_MODE");
             string input = ProbeFiles.Local(args[5], true, true), log = ProbeFiles.Local(args[7], false, false);
             string root = Path.GetDirectoryName(typeof(ProbeLauncher).Assembly.Location);
-            string exe = ProbeFiles.Local(Path.Combine(root, mode == "neutral" ? "NeutralStaHost.exe" : "ConstructorProbe.exe"), true, false);
+            string exe = ProbeFiles.Local(Path.Combine(root, mode == "neutral" ? "NeutralStaHost.exe" : project ? "ProjectConstructorProbe.exe" : "ConstructorProbe.exe"), true, false);
             ProbeFiles.Require(ProbeFiles.HashFile(exe) == ProbeFiles.OwnedHash(exe), "LAUNCH_CHILD_HASH");
             child = new Process(); child.StartInfo.FileName = exe;
             child.StartInfo.Arguments = mode == "neutral" ? "--seconds 1 --log " + ProbeFiles.Quote(log)
