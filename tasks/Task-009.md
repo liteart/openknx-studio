@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; guarded static Project qualification implemented, no SDK service |
-| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; service inquiry source `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; provider lookup source `b11c234273e3e61e0563c6474cfd694dacf674eb` (baseline `69a4c16c0ced39f9c95b5bd1fb2e613267893a7e`) |
-| Tests executed | Metadata-only owned PowerShell 89 cases PASS; Python harness 17 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy construction extraction PASS (static only); project-services guarded extraction PASS (static only); project-providers guarded extraction PASS (static relationship only); scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
+| Source commit(s) | Project-only `f9549f67c10b81216021fe8de5ccdf7f496cb614`; four-input tooling `6c9d03d7cb11be764d1ba572a7116ce7655c25dc`; service inquiry source `5c7bc46e43f1cdd013214fce796b5b8fd6962719`; provider lookup source `b11c234273e3e61e0563c6474cfd694dacf674eb`; constructor-only baseline `a110775b07dcdb9f1238abae24e54c716c2b3e12`, new source/result commit pending |
+| Tests executed | Metadata-only owned PowerShell 112 cases PASS; Python harness 18 tests PASS; guarded three-input Project extraction PASS; initial guarded four-input extraction FAIL with ROW_LIMIT; guarded diagnostic observed MethodDef 38472; narrow-policy construction extraction PASS (static only); project-services guarded extraction PASS (static only); project-providers guarded extraction PASS (static relationship only); project-constructors guarded extraction NOT RUN; scope and whitespace checks PASS. SDK service, Windows execution and hardware tests NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Eighteen direct provider candidates/edges observed, including nonpublic SDK Context/DcaExecutionContext/SdkFactory and public ObjectModel Factory/ObjectContext; constructors and behavior uninspected, 829 TypeSpec edges unknown, creation route INCONCLUSIVE |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Independent construction/service/provider static verification and source review PASS; final provider-result documentation review pending; no runtime service acceptance |
+| Reviewer | Prior construction/service/provider static verification and source/result review PASS; constructor-only verification/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -499,3 +499,32 @@ nonpublic activation is authorized by this report. Task-009 remains **Blocked**
 on a genuine fixture/context route with all service acceptance criteria
 unchecked. Windows/vendor execution, original initialization, UI/state and
 hardware remain **NOT RUN** for this increment.
+
+
+## Fixed provider-constructor source freeze
+
+At reviewed baseline `a110775b07dcdb9f1238abae24e54c716c2b3e12`, a separate
+`project-constructors` mode selects exactly the observed SDK DcaExecutionContext,
+Context, SdkFactory and ObjectModel Factory/ObjectContext types. Its contract
+was written before code in
+[DCA-PROJECT-CONTEXT.md](../docs/DCA-PROJECT-CONTEXT.md). The mode records
+only their type flags/base names and declared `.ctor`/`.cctor` signatures,
+accessibility and static flags, using the same four exact pins and guarded
+route. No nonconstructor member, base/interface closure, store constructor,
+parameter catalog, method body or custom attribute is inspected. No bound,
+prior command/report, runtime allowlist or service behavior is changed.
+
+Owned PowerShell **PASS 112 / FAIL 0**, Python harness **PASS** (18 tests),
+scope/whitespace **PASS**. Fixtures cover private, protected, public and internal constructor visibility categories,
+static declarations, missing/duplicate roots, malformed constructor failure,
+selected-method and table ceilings, and ignoring unrelated/member/base/store
+constructor signatures. Earlier reader reports remain byte-for-byte unchanged,
+and a read-only AST comparison confirms twelve previous pin/guard/bound/command
+expressions identical to baseline.
+
+Independent verification/review and the coordinator's original guarded
+constructor-only extraction are **NOT RUN** at source freeze. Source/result
+commits are pending. No original constructor, initializer, nonpublic activation,
+SDK runtime load or device operation is attempted. Task-009 remains **Blocked**
+with no service acceptance asserted; Windows, initialization/UI/state and
+hardware proofs remain **NOT RUN** for this increment.

@@ -10,18 +10,20 @@ param(
  [switch] $ProjectContext,
  [switch] $ProjectConstruction,
  [switch] $ProjectServices,
- [switch] $ProjectProviders
+ [switch] $ProjectProviders,
+ [switch] $ProjectConstructors
 )
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 try {
  if ($PSVersionTable.PSVersion.ToString() -ne '7.6.7') { throw 'DCAENTRY_RUNTIME' }
- $modeCount=0;foreach($mode in @($ProjectContext,$ProjectConstruction,$ProjectServices,$ProjectProviders)){if($mode){$modeCount++}}
+ $modeCount=0;foreach($mode in @($ProjectContext,$ProjectConstruction,$ProjectServices,$ProjectProviders,$ProjectConstructors)){if($mode){$modeCount++}}
  if ($modeCount -gt 1) { throw 'DCAENTRY_MODE' }
  if (-not ('Task144.EntrypointMetadata' -as [type])) {
   Add-Type -ReferencedAssemblies @('System.Reflection.Metadata','System.Collections.Immutable','System.Collections','System.Text.Json','System.Security.Cryptography') -TypeDefinition ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'EntrypointMetadata.cs')))
  }
- if($ProjectProviders){[Task144.EntrypointMetadata]::ReadProviders($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
+ if($ProjectConstructors){[Task144.EntrypointMetadata]::ReadConstructors($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
+ elseif($ProjectProviders){[Task144.EntrypointMetadata]::ReadProviders($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
  elseif($ProjectServices){[Task144.EntrypointMetadata]::ReadServices($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
  elseif($ProjectConstruction){[Task144.EntrypointMetadata]::ReadConstruction($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
  elseif($ProjectContext){[Task144.EntrypointMetadata]::ReadProject($DcaPath,$DcaSha256,$ReferencePath,$ReferenceSha256)}
@@ -30,7 +32,7 @@ try {
  $code='DCAENTRY_IO_OR_METADATA'
  $rowObserved=$false
  $rowType='Task144.EntrypointMetadata+RowLimitObservationException' -as [type]
- if(($ProjectConstruction -or $ProjectServices -or $ProjectProviders) -and $null -ne $rowType){
+ if(($ProjectConstruction -or $ProjectServices -or $ProjectProviders -or $ProjectConstructors) -and $null -ne $rowType){
   $exception=$_.Exception
   for($depth=0;$depth -lt 8 -and $null -ne $exception;$depth++){
    if($exception.GetType() -eq $rowType){

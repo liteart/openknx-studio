@@ -6,6 +6,36 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ public static void CreateConstructorCandidates(string path,bool objectModel=false,int profile=0,int methodRows=0){
+  int minimum=(objectModel?9:11)+(profile==4?257:0);if(methodRows==0)methodRows=minimum;if(methodRows<minimum||methodRows>65537)throw new ArgumentOutOfRangeException();
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedConstructors.dll"),m.GetOrAddGuid(new Guid("00970000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(objectModel?"Knx.Ets.ObjectModel":"Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);var obj=m.AddTypeReference(runtime,m.GetOrAddString("System"),m.GetOrAddString("Object"));
+  if(profile==5)for(int i=0;i<256;i++)m.AddAssemblyReference(m.GetOrAddString("Owned.Reference"+i),new Version(1,0,0,0),default,default,0,default);
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Owned"),m.GetOrAddString("UnselectedBase"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  Method(m,".ctor",MethodAttributes.Public,new byte[]{0x20,1});
+  m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Knx.Ets.ObjectModel.FileSystemStore"),m.GetOrAddString("FileProjectStore"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(2));
+  Method(m,".ctor",MethodAttributes.Public,new byte[]{0x20,1});int next=3;
+  void Add(string name,MethodAttributes attributes,byte[] signature){Method(m,name,attributes,signature);next++;}
+  for(int i=minimum;i<methodRows;i++)Add("UnselectedPadding",MethodAttributes.Public,new byte[]{0x20,1});
+  string ns=objectModel?"Knx.Ets.ObjectModel":"Knx.Ets.Sdk";string[] names=objectModel?new[]{"Factory","ObjectContext"}:new[]{"DcaExecutionContext","Context","SdkFactory"};
+  var ctor=MethodAttributes.SpecialName|MethodAttributes.RTSpecialName;
+  for(int i=0;i<names.Length;i++){
+   string name=profile==1&&i==names.Length-1?"Other":names[i];
+   m.AddTypeDefinition(objectModel?TypeAttributes.Public:TypeAttributes.NotPublic,m.GetOrAddString(ns),m.GetOrAddString(name),MetadataTokens.TypeDefinitionHandle(2),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(next));
+   if(i==0){
+    Add(".ctor",MethodAttributes.Private|ctor,profile==3?new byte[]{0x20,1}:new byte[]{0x20,0,1});
+    Add(".ctor",MethodAttributes.Family|ctor,new byte[]{0x20,1,1,0x0e});
+    Add(".ctor",MethodAttributes.Public|ctor,new byte[]{0x20,1,1,8});
+    Add(".cctor",MethodAttributes.Private|MethodAttributes.Static|ctor,new byte[]{0,0,1});
+    if(profile==4)for(int j=0;j<257;j++)Add(".ctor",MethodAttributes.Private|ctor,new byte[]{0x20,0,1});
+   }else Add(".ctor",(objectModel?MethodAttributes.Public:MethodAttributes.Assembly)|ctor,new byte[]{0x20,1,1,0x1c});
+   Add("UnrelatedMalformedMethod",MethodAttributes.Public,new byte[]{0x20,1});
+  }
+  if(profile==2)m.AddTypeDefinition(objectModel?TypeAttributes.Public:TypeAttributes.NotPublic,m.GetOrAddString(ns),m.GetOrAddString(names[0]),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(next));
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  static TypeDefinitionHandle ProviderType(MetadataBuilder m,string name,TypeAttributes attributes,EntityHandle parent,int methodStart=2){return m.AddTypeDefinition(attributes,m.GetOrAddString("Owned"),m.GetOrAddString(name),parent,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(methodStart));}
  public static void CreateProviders(string path,bool objectModel=false,int profile=0,int methodRows=1){
   if(methodRows<1||methodRows>65537)throw new ArgumentOutOfRangeException();

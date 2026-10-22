@@ -644,3 +644,63 @@ or invocation. This documentation update changes no code and reads no DLL.
 Task-009 remains **Blocked**; creation remains **INCONCLUSIVE**. Windows/vendor
 execution, nonpublic activation, original initialization, UI/state and hardware
 remain **NOT RUN** for this increment.
+
+## Fixed provider-constructor inspection contract
+
+A separate `project-constructors` mode begins from reviewed source `a110775`.
+Its only roots are the five types observed by the provider lookup: SDK
+`DcaExecutionContext` (`0200000D`), `Context` (`0200000B`), `SdkFactory`
+(`0200002D`), and ObjectModel `Factory` (`02000023`), `ObjectContext`
+(`0200007D`). Names and owner assemblies are fixed by the mode; the recorded
+production tokens are provenance, not caller-controlled selectors.
+
+The mode uses the same four exact pins, denial probes and all-hashes-before-PE
+ordering. It records only selected type identity/token/attributes/base name
+and declared `.ctor`/`.cctor` signatures with raw accessibility/static flags.
+Every declared constructor visibility is included. No base/interface closure,
+nonconstructor member, store constructor, parameter catalog, method body,
+custom attribute or implementation is inspected. Missing/duplicate roots and
+existing signature/method/table/report limits fail explicitly; old modes and
+commands retain their content and behavior. The fourth ObjectModel MethodDef
+ceiling remains 65,536 only on this fixed four-input route, with every other
+bound unchanged.
+
+Constructor declarations and public/nonpublic flags do not establish side-effect
+freedom, valid arguments, fixture semantics or a standalone creation route.
+No original constructor/static initializer is invoked, and no nonpublic
+activation, runtime allowlist expansion or service is supplied. Owned tests,
+source freeze and independent verification/review precede any coordinator-only
+guarded original extraction. Task-009 remains Blocked pending genuine context
+evidence.
+
+
+The constructor-only increment's owned verification reports **PASS 112 / FAIL 0**
+for the PowerShell suite and **PASS**, 18 Python harness tests. Synthetic images
+cover the exact five names, private/protected/public/internal constructor flags,
+static `.cctor` declarations, missing/duplicate roots in both owner assemblies,
+malformed constructor rejection and the unchanged selected-method ceiling.
+Malformed nonconstructor signatures, unselected base constructors and original
+store-name constructors remain unread; the report contains no nonconstructor
+member or interface inventory. Earlier entrypoint/Project/construction/service/
+provider reports are compared byte-for-byte after constructor-only lookup.
+
+Fourth-slot MethodDef counts 38,472 and 65,536 remain accepted, 65,537 fails;
+other-table and earlier-slot ceilings, hash-before-reader ordering, input
+counts and exclusive worker switches are tested. Python tests exercise the
+fixed constructor switch/operation through existing restriction, exact-pin,
+identity and output guards. A read-only AST comparison to baseline verifies
+twelve prior pin/guard/bound/command expressions unchanged. Scope and
+whitespace checks **PASS**.
+
+Source baseline is `a110775b07dcdb9f1238abae24e54c716c2b3e12`; new source and
+result commits are pending. Independent verification/review and the
+coordinator's original guarded `project-constructors` extraction are **NOT RUN**
+at this freeze. No original constructor or initializer invocation, nonpublic
+activation, SDK runtime load or service is supplied. Task-009 remains
+**Blocked**, and creation remains **INCONCLUSIVE** pending actual declarations
+and genuine context evidence. Windows, initialization/UI/state and hardware
+proofs remain **NOT RUN** for this increment.
+
+The constructor-only mode also retains the 256 AssemblyRef ceiling without
+reporting an assembly-reference catalog. Owned 257-reference images in both
+selected owner assemblies fail with `DCAENTRY_REFERENCE_LIMIT`.

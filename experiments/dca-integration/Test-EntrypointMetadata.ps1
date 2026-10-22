@@ -170,5 +170,33 @@ try{
  Reject {[Task144.EntrypointMetadata]::ReadProviders($broken,(Hash $broken),@($reference,$providerSdk,$providerOm),@((Hash $reference),(Hash $providerSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
  Reject {[Task144.EntrypointMetadata]::ReadProviders($dca,(Hash $dca),@($providerSdk,$providerOm),@((Hash $providerSdk),(Hash $providerOm)))} 'DCAENTRY_INPUT_COUNT'
  Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$providerSdk,$providerOm) -ReferenceSha256 @((Hash $reference),(Hash $providerSdk),(Hash $providerOm)) -ProjectProviders -ProjectServices} 'DCAENTRY_MODE'
+ $constructorSdk=Join-Path $root 'ConstructorSdk.dll';$constructorOm=Join-Path $root 'ConstructorOm.dll'
+ [Task144OwnedFixtures]::CreateConstructorCandidates($constructorSdk);[Task144OwnedFixtures]::CreateConstructorCandidates($constructorOm,$true)
+ function Constructors([string] $s=$constructorSdk,[string] $o=$constructorOm){[Task144.EntrypointMetadata]::ReadConstructors($dca,(Hash $dca),@($reference,$s,$o),@((Hash $reference),(Hash $s),(Hash $o)))}
+ $constructorRaw=Constructors;$constructors=$constructorRaw|ConvertFrom-Json
+ Assert ($constructors.operation -eq 'static_dca_project_constructors' -and $constructors.selected_roots.Count -eq 5 -and $constructors.types.Count -eq 5 -and $constructors.runtime_execution -eq 'NOT_RUN' -and $constructors.creation_route -eq 'INCONCLUSIVE') 'Fixed five constructor roots and no creation claim';$passed++
+ $dcaConstructor=$constructors.types|Where-Object name -eq 'Knx.Ets.Sdk.DcaExecutionContext'
+ Assert ($dcaConstructor.constructors.Count -eq 4 -and $dcaConstructor.constructors[0].accessibility -eq 'Private' -and $dcaConstructor.constructors[1].accessibility -eq 'Family' -and $dcaConstructor.constructors[2].accessibility -eq 'Public' -and $dcaConstructor.constructors[3].name -eq '.cctor' -and $dcaConstructor.constructors[3].is_static) 'Every constructor visibility and static declaration preserved';$passed++
+ $ctxConstructor=$constructors.types|Where-Object name -eq 'Knx.Ets.Sdk.Context'
+ Assert ($ctxConstructor.constructors[0].accessibility -eq 'Assembly' -and $ctxConstructor.constructors[0].signature -eq 'instance Void(Object) generic=0' -and -not $ctxConstructor.constructors[0].is_static -and ($ctxConstructor.attributes -band 7) -eq 0) 'Internal constructor signature and nonpublic type flags';$passed++
+ Assert (@($constructors.types|Where-Object name -match 'UnselectedBase|FileProjectStore').Count -eq 0 -and @($dcaConstructor.PSObject.Properties.Name|Where-Object {$_ -in @('methods','interfaces')}).Count -eq 0 -and -not $constructorRaw.Contains('UnrelatedMalformedMethod') -and -not $constructorRaw.Contains($root)) 'No inherited/store constructors, nonconstructor signatures, interfaces or paths';$passed++
+ Assert ((Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All earlier reader reports preserved after constructor-only selection';$passed++
+ foreach($objectModel in @($false,$true)){foreach($profile in @(1,2,3,4,5)){
+  $bad=Join-Path $root ('ConstructorBad'+$objectModel+$profile+'.dll');[Task144OwnedFixtures]::CreateConstructorCandidates($bad,$objectModel,$profile)
+  $code=@{1='DCAENTRY_ROOT_NOT_FOUND';2='DCAENTRY_DUPLICATE_ROOT';3='DCAENTRY_MALFORMED_SIGNATURE';4='DCAENTRY_METHOD_LIMIT';5='DCAENTRY_REFERENCE_LIMIT'}[$profile]
+  if($objectModel){Reject {Constructors $constructorSdk $bad} $code}else{Reject {Constructors $bad} $code}
+ }}
+ foreach($rows in @(38472,65536)){
+  $counted=Join-Path $root ('ConstructorMethodRows'+$rows+'.dll');[Task144OwnedFixtures]::CreateConstructorCandidates($counted,$true,0,$rows)
+  $accepted=Constructors $constructorSdk $counted|ConvertFrom-Json
+  Assert ($accepted.types.Count -eq 5 -and $accepted.creation_route -eq 'INCONCLUSIVE') ('Constructor mode fourth MethodDef '+$rows+' accepted without unrelated methods');$passed++
+ }
+ $constructorRows=Join-Path $root 'ConstructorMethodRows65537.dll';[Task144OwnedFixtures]::CreateConstructorCandidates($constructorRows,$true,0,65537)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructorSdk,$constructorRows) -ReferenceSha256 @((Hash $reference),(Hash $constructorSdk),(Hash $constructorRows)) -ProjectConstructors} 'DCAENTRY_ROW_LIMIT_METHODDEF_65537'
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructorSdk,$otherTable) -ReferenceSha256 @((Hash $reference),(Hash $constructorSdk),(Hash $otherTable)) -ProjectConstructors} 'DCAENTRY_ROW_LIMIT_TYPEDEF_32769'
+ Reject {[Task144.EntrypointMetadata]::ReadConstructors($dca,(Hash $dca),@($oversized,$constructorSdk,$constructorOm),@((Hash $oversized),(Hash $constructorSdk),(Hash $constructorOm)))} 'DCAENTRY_ROW_LIMIT'
+ Reject {[Task144.EntrypointMetadata]::ReadConstructors($broken,(Hash $broken),@($reference,$constructorSdk,$constructorOm),@((Hash $reference),(Hash $constructorSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadConstructors($dca,(Hash $dca),@($constructorSdk,$constructorOm),@((Hash $constructorSdk),(Hash $constructorOm)))} 'DCAENTRY_INPUT_COUNT'
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructorSdk,$constructorOm) -ReferenceSha256 @((Hash $reference),(Hash $constructorSdk),(Hash $constructorOm)) -ProjectConstructors -ProjectProviders} 'DCAENTRY_MODE'
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}
