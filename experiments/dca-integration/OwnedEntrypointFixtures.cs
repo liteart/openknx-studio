@@ -6,6 +6,46 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ public static void CreateServices(string path,bool objectModel=false,int profile=0,int methodRows=3,int typeRows=4){
+  if(methodRows<3||methodRows>65537||typeRows<4||typeRows>32769)throw new ArgumentOutOfRangeException();
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedServices.dll"),m.GetOrAddGuid(new Guid("00940000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(objectModel?"Knx.Ets.ObjectModel":"Knx.Ets.Sdk"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);
+  var obj=m.AddTypeReference(runtime,m.GetOrAddString("System"),m.GetOrAddString("Object"));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  var iface=TypeAttributes.Interface|TypeAttributes.Abstract;
+  if(objectModel){
+   var external=m.AddTypeReference(runtime,m.GetOrAddString("Owned"),m.GetOrAddString("IUnselected"));
+   var factory=m.AddTypeDefinition(TypeAttributes.Public|iface,m.GetOrAddString("Knx.Ets.ObjectModel"),m.GetOrAddString("IFactory"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));m.AddInterfaceImplementation(factory,external);
+   Method(m,"CreateContext",MethodAttributes.Public|MethodAttributes.Abstract|MethodAttributes.Virtual,new byte[]{0x20,0,0x12,16});
+   m.AddTypeDefinition(TypeAttributes.Public|iface,m.GetOrAddString("Knx.Ets.ObjectModel"),m.GetOrAddString(profile==1?"OtherStore":"IProjectStore"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(2));
+   Method(m,"get_Factory",MethodAttributes.Public|MethodAttributes.Abstract|MethodAttributes.Virtual,new byte[]{0x20,0,0x12,8});
+   m.AddTypeDefinition(TypeAttributes.NotPublic|iface,m.GetOrAddString("Knx.Ets.ObjectModel"),m.GetOrAddString("IObjectContext"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(3));
+   Method(m,"get_Store",MethodAttributes.Public|MethodAttributes.Abstract|MethodAttributes.Virtual,new byte[]{0x20,0,0x12,12});
+   if(profile==2)m.AddTypeDefinition(TypeAttributes.Public|iface,m.GetOrAddString("Knx.Ets.ObjectModel"),m.GetOrAddString("IFactory"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(4));
+   else{
+    int types=4;
+    if(methodRows>3){m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("MethodPadding"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(4));types++;}
+    for(int i=3;i<methodRows;i++)Method(m,"Padding",MethodAttributes.Public,new byte[]{0x20,0,1});
+    for(int i=types;i<typeRows;i++)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("TypePadding"+i),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(methodRows+1));
+   }
+  }else{
+   var om=m.AddAssemblyReference(m.GetOrAddString("Knx.Ets.ObjectModel"),new Version(1,0,0,0),default,default,0,default);
+   m.AddTypeReference(om,m.GetOrAddString("Knx.Ets.ObjectModel"),m.GetOrAddString("IProjectStore"));
+   m.AddTypeReference(om,m.GetOrAddString("Knx.Ets.ObjectModel"),m.GetOrAddString("IFactory"));
+   m.AddTypeDefinition(TypeAttributes.Public,m.GetOrAddString("Owned"),m.GetOrAddString("Base"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+   m.AddTypeDefinition(TypeAttributes.NotPublic|TypeAttributes.Sealed,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("ExecutionContext"),MetadataTokens.TypeDefinitionHandle(2),MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+   Method(m,".ctor",MethodAttributes.Assembly|MethodAttributes.SpecialName|MethodAttributes.RTSpecialName,new byte[]{0x20,1,1,0x12,16});
+   Method(m,"get_Store",MethodAttributes.Public,new byte[]{0x20,0,0x12,9});
+   Method(m,"ParameterOnly",MethodAttributes.Public,new byte[]{0x20,1,1,0x12,13});
+   Method(m,"Hidden",MethodAttributes.Private,new byte[]{0x20,0,1});
+   int extra=profile==3?257:0;for(int i=0;i<extra;i++)Method(m,"OverLimit",MethodAttributes.Public,new byte[]{0x20,0,1});
+   m.AddTypeDefinition(TypeAttributes.NotPublic|iface,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString(profile==1?"OtherFactory":"ISdkFactory"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(5+extra));
+   Method(m,"get_Context",MethodAttributes.Public|MethodAttributes.Abstract|MethodAttributes.Virtual,new byte[]{0x20,0,0x12,12});
+   if(profile==2)m.AddTypeDefinition(TypeAttributes.NotPublic|iface,m.GetOrAddString("Knx.Ets.Sdk"),m.GetOrAddString("ISdkFactory"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(6+extra));
+  }
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  public static void CreateOversizedMethodTable(string path){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedOversized.dll"),m.GetOrAddGuid(new Guid("00920000-1111-1111-1111-111111111111")),default,default);
   m.AddAssembly(m.GetOrAddString("Knx.Ets.ObjectModel"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);

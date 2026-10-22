@@ -102,15 +102,17 @@ public static class EntrypointMetadata {
  static readonly HashSet<string> Contracts=new HashSet<string>(StringComparer.Ordinal){"Knx.Ets.Sdk.AddIns.AddInViews.IDeviceConfigurationAddIn","Knx.Ets.Sdk.AddIns.AddInViews.IEts4AddInV2","Knx.Ets.Sdk.AddIns.AddInViews.IEts4AddIn","Knx.Ets.Sdk.AddIns.AddInViews.IInitializationContext","Knx.Ets.Sdk.AddIns.AddInViews.IHostNotification"};
  static readonly string[] SdkRoots={"Knx.Ets.Sdk.Project.Project","Knx.Ets.Sdk.Project.ProjectCollection","Knx.Ets.Sdk.ISdkContext","Knx.Ets.Sdk.Root"};
  static readonly string[] ObjectModelRoots={"Knx.Ets.ObjectModel.Project.Project"};
- static string[] Roots(string assembly){return assembly=="Knx.Ets.Sdk"?SdkRoots:assembly=="Knx.Ets.ObjectModel"?ObjectModelRoots:Array.Empty<string>();}
+ static readonly string[] SdkServiceRoots={"Knx.Ets.Sdk.ExecutionContext","Knx.Ets.Sdk.ISdkFactory"};
+ static readonly string[] ObjectModelServiceRoots={"Knx.Ets.ObjectModel.IFactory","Knx.Ets.ObjectModel.IProjectStore","Knx.Ets.ObjectModel.IObjectContext"};
+ static string[] Roots(string assembly,bool services=false){return assembly=="Knx.Ets.Sdk"?(services?SdkServiceRoots:SdkRoots):assembly=="Knx.Ets.ObjectModel"?(services?ObjectModelServiceRoots:ObjectModelRoots):Array.Empty<string>();}
  static bool ReturnContains(string returns,string atom){
   int start=0;while(start<returns.Length){int at=returns.IndexOf(atom,start,StringComparison.Ordinal);if(at<0)return false;int end=at+atom.Length;
    if((at==0||returns[at-1]=='<'||returns[at-1]==',')&&(end==returns.Length||returns[end]=='>'||returns[end]==','||returns[end]=='['||returns[end]=='&'||returns[end]=='*'))return true;start=at+1;
   }return false;
  }
- static List<string> ReturnAtoms(MetadataReader r){
-  var atoms=new List<string>(Roots(Str(r,r.GetAssemblyDefinition().Name)));
-  foreach(var h in r.AssemblyReferences){var a=r.GetAssemblyReference(h);foreach(string root in Roots(Str(r,a.Name)))atoms.Add("["+ReferenceIdentity(r,h)+"]"+root);}
+ static List<string> ReturnAtoms(MetadataReader r,bool services){
+  var atoms=new List<string>(Roots(Str(r,r.GetAssemblyDefinition().Name),services));
+  foreach(var h in r.AssemblyReferences){var a=r.GetAssemblyReference(h);foreach(string root in Roots(Str(r,a.Name),services))atoms.Add("["+ReferenceIdentity(r,h)+"]"+root);}
   return atoms;
  }
  static bool FactoryCandidate(List<string> atoms,string returns){
@@ -136,7 +138,10 @@ public static class EntrypointMetadata {
  public static string ReadConstruction(string dca,string hash,string[] refs,string[] hashes){
   return ReadInternal(dca,hash,refs,hashes,true,true);
  }
- static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project,bool construction=false){
+ public static string ReadServices(string dca,string hash,string[] refs,string[] hashes){
+  return ReadInternal(dca,hash,refs,hashes,true,true,true);
+ }
+ static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project,bool construction=false,bool services=false){
   if(refs==null||hashes==null||refs.Length!=hashes.Length||(construction?refs.Length!=3:refs.Length<1||refs.Length>2))throw Fail("INPUT_COUNT");
   var paths=new List<string>{dca};paths.AddRange(refs);var pins=new List<string>{hash};pins.AddRange(hashes);var bytes=new List<byte[]>();long total=0;
   // Verify every selected file before creating any reader.
@@ -151,10 +156,10 @@ public static class EntrypointMetadata {
    var input=Obj("filename",Path.GetFileName(paths[i]),"bytes",bytes[i].Length,"sha256",pins[i].ToLowerInvariant(),"identity",AssemblyIdentity(r));
    if(project){var assemblyRefs=new List<string>();foreach(var ah in r.AssemblyReferences){if(assemblyRefs.Count>=256)throw Fail("REFERENCE_LIMIT");assemblyRefs.Add(ReferenceIdentity(r,ah));}input.Add("assembly_references",assemblyRefs);}
    inputs.Add(input);
-   var returnAtoms=construction?ReturnAtoms(r):null;
+   var returnAtoms=construction?ReturnAtoms(r,services):null;
    var selected=new HashSet<TypeDefinitionHandle>();
    if(construction&&i!=0){
-    string assembly=Str(r,r.GetAssemblyDefinition().Name);string[] roots=Roots(assembly);
+    string assembly=Str(r,r.GetAssemblyDefinition().Name);string[] roots=Roots(assembly,services);
     foreach(var h in r.TypeDefinitions){
      string name=new Names(r).Named(h);if(Array.IndexOf(roots,name)<0)continue;
      if(!foundRoots.Add(assembly+":"+name))throw Fail("DUPLICATE_ROOT");
@@ -199,7 +204,7 @@ public static class EntrypointMetadata {
   }
   if(construction&&foundRoots.Count!=5)throw Fail("ROOT_NOT_FOUND");
   if(project&&!construction&&projectRoots!=1)throw Fail("PROJECT_NOT_FOUND");
-  var result=Obj("schema_version",1,"operation",construction?"static_dca_project_construction":project?"static_dca_project_context":"static_dca_entrypoint_map","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"types",types,"limitations",construction?new[]{"Five fixed construction roots and bounded same-assembly base declarations only; external dependencies unresolved. Return-type candidate annotations are declarations only, not working factories or global construction-route inventory.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:project?new[]{"Fixed Project root and bounded same-assembly base declarations only; external bases unresolved; declared constructors and public/protected methods are metadata observations, not construction or runtime compatibility proof.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:new[]{"DCA method details only for direct AddInViews interface implementers; public type inventory and selected contract declarations only; no inherited member or runtime activation proof.","Names/signatures are metadata observations; no SDK implementation or method bodies inspected."});
+  var result=Obj("schema_version",1,"operation",services?"static_dca_project_services":construction?"static_dca_project_construction":project?"static_dca_project_context":"static_dca_entrypoint_map","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",inputs,"types",types,"limitations",services?new[]{"Five fixed service-contract roots and bounded same-assembly base declarations only; referenced interfaces and parameter types are not followed. Return annotations are declarations only, not implemented services or working factories.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:construction?new[]{"Five fixed construction roots and bounded same-assembly base declarations only; external dependencies unresolved. Return-type candidate annotations are declarations only, not working factories or global construction-route inventory.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:project?new[]{"Fixed Project root and bounded same-assembly base declarations only; external bases unresolved; declared constructors and public/protected methods are metadata observations, not construction or runtime compatibility proof.","No SDK implementation, method bodies or attributes inspected; no dependency resolution or vendor execution."}:new[]{"DCA method details only for direct AddInViews interface implementers; public type inventory and selected contract declarations only; no inherited member or runtime activation proof.","Names/signatures are metadata observations; no SDK implementation or method bodies inspected."});
   if(construction)result.Add("selected_roots",rootReports);
   else if(project)result.Add("base_chain_disposition",baseDisposition);
   string report=JsonSerializer.Serialize(result);

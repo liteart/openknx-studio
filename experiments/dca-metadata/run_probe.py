@@ -65,6 +65,7 @@ if ($pins.Count -ne 4) { throw 'DCAPROBE_INPUT_COUNT' }
 foreach ($pin in $pins) { if ([IO.FileInfo]::new($pin.path).Length -ne $pin.bytes) { throw 'DCAPROBE_INPUT_SIZE' } }
 & $env:DCAMETA_WORKER -DcaPath $pins[0].path -DcaSha256 $pins[0].sha256 -ReferencePath @($pins[1].path,$pins[2].path,$pins[3].path) -ReferenceSha256 @($pins[1].sha256,$pins[2].sha256,$pins[3].sha256) -ProjectConstruction
 """
+SERVICES_COMMAND = CONSTRUCTION_COMMAND.replace(" -ProjectConstruction\n", " -ProjectServices\n")
 
 
 class ProbeError(Exception):
@@ -196,7 +197,7 @@ def private_output(path, data):
 
 
 def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map"):
-    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction"):
+    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services"):
         raise ProbeError("DCAPROBE_EXPERIMENT")
     if sys.platform != "darwin":
         raise ProbeError("DCAPROBE_MACOS_REQUIRED")
@@ -217,10 +218,11 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         "entrypoint-map": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
         "project-context": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
         "project-construction": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
+        "project-services": worker_base.parent / "dca-integration" / "Read-EntrypointMetadata.ps1",
     }[experiment]
     # Only fixed repository-owned experiments are selectable; never an arbitrary worker.
     worker = checked_path(worker_path)
-    selected_pins = PINS + (OBJECT_MODEL_PIN,) if experiment == "project-construction" else PINS
+    selected_pins = PINS + (OBJECT_MODEL_PIN,) if experiment in ("project-construction", "project-services") else PINS
     pins = []
     for filename, size, digest in selected_pins:
         path = checked_path(stage / filename)
@@ -239,7 +241,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     env = child_environment()
     probes = negative_probes(pwsh, env)
     env.update(DCAMETA_INPUTS_JSON=json.dumps(pins), DCAMETA_WORKER=str(worker))
-    command = CONSTRUCTION_COMMAND if experiment == "project-construction" else PROJECT_COMMAND if experiment == "project-context" else METADATA_COMMAND
+    command = SERVICES_COMMAND if experiment == "project-services" else CONSTRUCTION_COMMAND if experiment == "project-construction" else PROJECT_COMMAND if experiment == "project-context" else METADATA_COMMAND
     raw = bounded_child(sandbox_command(pwsh, command), env)
     report = parse_child(raw, "DCAPROBE_METADATA_FAILED")
     if (not isinstance(report, dict) or type(report.get("schema_version")) is not int
@@ -249,6 +251,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
                 "entrypoint-map": "static_dca_entrypoint_map",
                 "project-context": "static_dca_project_context",
                 "project-construction": "static_dca_project_construction",
+                "project-services": "static_dca_project_services",
             }[experiment]
             or report.get("runtime_execution") != "NOT_RUN" or report.get("rights") != "UNRESOLVED"):
         raise ProbeError("DCAPROBE_REPORT_SHAPE")
@@ -257,7 +260,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     if (not isinstance(observed, list) or not all(isinstance(item, dict) for item in observed)
             or [(item.get("filename"), item.get("bytes"), item.get("sha256")) for item in observed] != expected):
         raise ProbeError("DCAPROBE_REPORT_PINS")
-    if experiment == "project-construction" and observed[3].get("identity") != OBJECT_MODEL_IDENTITY:
+    if experiment in ("project-construction", "project-services") and observed[3].get("identity") != OBJECT_MODEL_IDENTITY:
         raise ProbeError("DCAPROBE_REPORT_IDENTITY")
     result = {"restriction_probes": probes, "metadata": report}
     payload = (json.dumps(result, ensure_ascii=True, separators=(",", ":")) + "\n").encode("utf-8")
@@ -274,7 +277,7 @@ def main():
     parser.add_argument("--stage", required=True)
     parser.add_argument("--pwsh", required=True)
     parser.add_argument("--output", help="New private report path immediately inside stage")
-    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction"), default="reference-map",
+    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services"), default="reference-map",
                         help="Fixed owned experiment; Task-140 default is unchanged")
     args = parser.parse_args()
     try:

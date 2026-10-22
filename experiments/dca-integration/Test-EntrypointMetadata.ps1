@@ -101,5 +101,38 @@ try{
  Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructionSdk,$otherTable) -ReferenceSha256 @((Hash $reference),(Hash $constructionSdk),(Hash $otherTable)) -ProjectConstruction} 'DCAENTRY_ROW_LIMIT_TYPEDEF_32769'
  $otherOwner=Join-Path $root 'CountedOtherOwner32769.dll';[Task144OwnedFixtures]::CreateCountedConstruction($otherOwner,32769,3,$false)
  Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$constructionSdk,$otherOwner) -ReferenceSha256 @((Hash $reference),(Hash $constructionSdk),(Hash $otherOwner)) -ProjectConstruction} 'DCAENTRY_ROW_LIMIT_METHODDEF_32769'
+ $serviceSdk=Join-Path $root 'OwnedServiceSdk.dll';$serviceOm=Join-Path $root 'OwnedServiceObjectModel.dll'
+ [Task144OwnedFixtures]::CreateServices($serviceSdk);[Task144OwnedFixtures]::CreateServices($serviceOm,$true)
+ function Services([string] $s=$serviceSdk,[string] $o=$serviceOm){[Task144.EntrypointMetadata]::ReadServices($dca,(Hash $dca),@($reference,$s,$o),@((Hash $reference),(Hash $s),(Hash $o)))}
+ $serviceRaw=Services;$services=$serviceRaw|ConvertFrom-Json
+ Assert ($services.operation -eq 'static_dca_project_services' -and $services.selected_roots.Count -eq 5 -and $services.types.Count -eq 6 -and $services.runtime_execution -eq 'NOT_RUN') 'Fixed five service roots plus local base only';$passed++
+ $serviceContext=$services.types|Where-Object name -eq 'Knx.Ets.ObjectModel.IObjectContext'
+ $sdkFactory=$services.types|Where-Object name -eq 'Knx.Ets.Sdk.ISdkFactory'
+ Assert (($serviceContext.attributes -band 7) -eq 0 -and ($sdkFactory.attributes -band 7) -eq 0 -and @($services.selected_roots|Where-Object base_chain_disposition -eq 'NO_BASE').Count -eq 4) 'Nonpublic service interfaces and explicit nil bases';$passed++
+ $execution=$services.types|Where-Object name -eq 'Knx.Ets.Sdk.ExecutionContext'
+ Assert (($execution.methods[0].attributes -band 7) -eq 3 -and $execution.methods.Count -eq 3 -and ($execution.methods|Where-Object name -eq 'get_Store').factory_candidate -eq 'DECLARATION_ONLY' -and ($execution.methods|Where-Object name -eq 'ParameterOnly').factory_candidate -eq 'NOT_SELECTED_RETURN') 'Declared constructor/return annotations/private exclusion';$passed++
+ $serviceFactory=$services.types|Where-Object name -eq 'Knx.Ets.ObjectModel.IFactory'
+ Assert ($serviceFactory.interfaces.Count -eq 1 -and $serviceFactory.interfaces[0].Contains('Owned.IUnselected') -and @($services.types|Where-Object name -eq 'Owned.IUnselected').Count -eq 0 -and -not $serviceRaw.Contains($root)) 'Referenced interface not recursively catalogued/path boundary';$passed++
+ Assert ((Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'Earlier mode reports unchanged after isolated service selection';$passed++
+ foreach($objectModel in @($false,$true)){foreach($profile in @(1,2)){
+  $bad=Join-Path $root ('ServiceBad'+$objectModel+$profile+'.dll');[Task144OwnedFixtures]::CreateServices($bad,$objectModel,$profile)
+  $code=if($profile -eq 1){'DCAENTRY_ROOT_NOT_FOUND'}else{'DCAENTRY_DUPLICATE_ROOT'}
+  if($objectModel){Reject {Services $serviceSdk $bad} $code}else{Reject {Services $bad} $code}
+ }}
+ $serviceMethods=Join-Path $root 'ServiceSelectedMethodLimit.dll';[Task144OwnedFixtures]::CreateServices($serviceMethods,$false,3)
+ Reject {Services $serviceMethods} 'DCAENTRY_METHOD_LIMIT'
+ foreach($rows in @(38472,65536)){
+  $counted=Join-Path $root ('ServiceMethodRows'+$rows+'.dll');[Task144OwnedFixtures]::CreateServices($counted,$true,0,$rows)
+  $accepted=Services $serviceSdk $counted|ConvertFrom-Json
+  Assert ($accepted.operation -eq 'static_dca_project_services' -and $accepted.selected_roots.Count -eq 5) ('New fixed service route fourth MethodDef '+$rows+' accepted');$passed++
+ }
+ $serviceRows=Join-Path $root 'ServiceMethodRows65537.dll';[Task144OwnedFixtures]::CreateServices($serviceRows,$true,0,65537)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$serviceSdk,$serviceRows) -ReferenceSha256 @((Hash $reference),(Hash $serviceSdk),(Hash $serviceRows)) -ProjectServices} 'DCAENTRY_ROW_LIMIT_METHODDEF_65537'
+ $serviceTypes=Join-Path $root 'ServiceTypeRows32769.dll';[Task144OwnedFixtures]::CreateServices($serviceTypes,$true,0,3,32769)
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$serviceSdk,$serviceTypes) -ReferenceSha256 @((Hash $reference),(Hash $serviceSdk),(Hash $serviceTypes)) -ProjectServices} 'DCAENTRY_ROW_LIMIT_TYPEDEF_32769'
+ Reject {[Task144.EntrypointMetadata]::ReadServices($dca,(Hash $dca),@($oversized,$serviceSdk,$serviceOm),@((Hash $oversized),(Hash $serviceSdk),(Hash $serviceOm)))} 'DCAENTRY_ROW_LIMIT'
+ Reject {[Task144.EntrypointMetadata]::ReadServices($broken,(Hash $broken),@($reference,$serviceSdk,$serviceOm),@((Hash $reference),(Hash $serviceSdk),('0'*64)))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadServices($dca,(Hash $dca),@($serviceSdk,$serviceOm),@((Hash $serviceSdk),(Hash $serviceOm)))} 'DCAENTRY_INPUT_COUNT'
+ Reject {& $worker -DcaPath $dca -DcaSha256 (Hash $dca) -ReferencePath @($reference,$serviceSdk,$serviceOm) -ReferenceSha256 @((Hash $reference),(Hash $serviceSdk),(Hash $serviceOm)) -ProjectServices -ProjectConstruction} 'DCAENTRY_MODE'
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}
