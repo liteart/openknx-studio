@@ -2,6 +2,9 @@
 
 ## Source19b subsequent owned verification and critical review
 
+Reviewed source/owned-evidence increment:
+`61b39b421a8b25a5fafd25f4f971756dc4993c37`.
+
 This later record supersedes the freeze-time Windows-owned NOT RUN snapshot
 below, preserving the failed source19 attempt and its exact-signature repair.
 Original19b remains NOT RUN; actual18 remains the latest original SDK diagnostic.
