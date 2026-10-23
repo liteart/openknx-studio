@@ -81,18 +81,38 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; actual14 static Common declaration PASS/creation INCONCLUSIVE; latest runtime original13 FAIL10 at unregistered service. No qualified Factory/Project/service |
-| Source commit(s) | Source15 candidate-declaration increment based on `d3ea5daa985d29a918cec788c0112d38c97b1b0e`, private six-source freeze below; Actual14 metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`; original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
-| Tests executed | Source15 owned declaration-only PASS276 PowerShell/22 Python; compile/parse/preservation/scope/diff PASS, actual candidate member extraction NOT RUN. Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-project-trace-encryptor-metadata/original14-report.json`, observation/raw/helper and verifier14/original-result-audit.txt; private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
+| Implementation / report status | Blocked; actual15 static constructor declaration PASS/semantics and creation INCONCLUSIVE; latest runtime original13 FAIL10 at unregistered service. No qualified Factory/Project/service |
+| Source commit(s) | Actual15 reviewed metadata source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`; Actual14 metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`; original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
+| Tests executed | Source15 owned declaration-only PASS276 PowerShell/22 Python; compile/parse/preservation/scope/diff PASS; actual15 fixed guarded extraction PASS0/denial probes true, target runtime NOT RUN. Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-project-trace-encryptor-construction-metadata/original15-report.json`, observation/raw/helper/verifier15/original-result-audit.txt; private `task009-project-trace-encryptor-metadata/original14-report.json`, observation/raw/helper and verifier14/original-result-audit.txt; private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; actual14 now identifies Common public interface02000077 and direct public sealed candidate0200007E. Candidate constructor/API, behavior/registration/semantics/licensing/KNX Secure relationship remain unqualified. No service implementation/qualification |
+| Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; actual14 now identifies Common public interface02000077 and direct public sealed candidate0200007E. Actual15 reports public ctor06000364 instanceVoid(Int32), without parameter name/flags/default/meaning/value or callability evidence. Behavior/registration/semantics/licensing/KNX Secure relationship remain unqualified. No service implementation/qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source15 independent source/owned verification and critical source review PASS (private verifier15/audit.txt and review15/critical-review-source.txt). Actual14 independent provenance/declaration audit and critical result documentation review PASS (private review14/critical-review-result.txt); creation remains INCONCLUSIVE. New Common source/owned independent verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
+| Reviewer | Actual15 independent provenance/result consistency audit and critical result documentation review PASS (private review15/critical-review-result.txt); creation remains INCONCLUSIVE. Source15 independent source/owned verification and critical source review PASS (private verifier15/audit.txt and review15/critical-review-source.txt). Actual14 independent provenance/declaration audit and critical result documentation review PASS (private review14/critical-review-result.txt); creation remains INCONCLUSIVE. New Common source/owned independent verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
-## Source15 fixed candidate-construction declaration freeze
+## Actual15 fixed Common constructor metadata result
+
+Source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`: ONE guarded static extraction
+**PASS0**, pwsh7.6.7/write/network denial probes true, exact Common503,248B/pin/identity.
+Candidate0200007E declares public .ctor06000364 attrs6278/header32,
+`instance Void(Int32) generic=0`; local DisposableBase/trace/IDisposable references
+remain declarations. No selected declared public-static factory in this fixed query,
+not global absence. Parameter name/flags/default/meaning/value UNKNOWN; no numeric
+invocation, registration or behavior/callability/KNX Secure claim. Creation INCONCLUSIVE.
+
+Report1845B SHA `436e169c2070a984d50a89b0116285397a797b57558391f29561e5649262e0df`;
+observation1708B SHA `8b1cc54bbe6455360b10f3c75e4ad6a7a841dc5c130a395d30977cbf1f0847ed`.
+Audit3948B PASS SHA `0dcfed07f498fd1d41d0ba87c39b2a5439911091d87177db0a6cc1e4479a4479`;
+exact command/raw/helper/source bindings and limits in contract. Coordinator ran
+read_common15.py once/noargs; two exit0 children (probes then metadata), empty stderr.
+Critical result documentation review PASS (private review15/critical-review-result.txt); source/owned276PS/22Python review PASS separate.
+Historical source15 NOT_RUN below predates extraction. Target runtime/new parameter
+inquiry NOT_RUN, no original13 retry; latest runtime13 FAIL10/Task Blocked/ACs unchecked,
+no service/Project/DCA/hardware qualification or gate advancement.
+
+## Source15 candidate-construction declaration: historical pre-extraction freeze
 
 Baseline `d3ea5daa985d29a918cec788c0112d38c97b1b0e`; separate fixed
 `project-trace-encryptor-construction` mode. SAME Common pin/identity; candidate

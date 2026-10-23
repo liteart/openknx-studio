@@ -1,6 +1,39 @@
 # Static Project context qualification
 
-## Source15 fixed candidate-construction metadata contract
+## Actual15 constructor declaration: static PASS, creation INCONCLUSIVE
+
+Reviewed source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`; coordinator ran once,
+noargs: `python3 private/evidence/task009-project-trace-encryptor-construction-metadata/read_common15.py`.
+Two exit0 children: denial probes then ONE static extraction; pwsh7.6.7/write_denied/
+network_denied true. Same Common503,248B/pin/identity and existing guard contract below;
+30s/2MiB per child, tables32768/report512KiB unchanged. Target runtime NOT_RUN.
+
+Candidate0200007E/attrs1048833 reports public .ctor06000364, attrs6278/header32,
+`instance Void(Int32) generic=0`. Local DisposableBase and trace-interface/netstandard
+IDisposable are declarations, not inspected base behavior. No selected declared
+public-static exact-owner-return factory; not global absence. Parameter name/flags/
+default/meaning/value/domain remain UNKNOWN. No numeric invocation, registration,
+callability/safety/encryption/licensing/KNX Secure inference or service qualification.
+
+Private evidence under `task009-project-trace-encryptor-construction-metadata`:
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| original15-report.json | 1845 | `436e169c2070a984d50a89b0116285397a797b57558391f29561e5649262e0df` |
+| original15-observation.json | 1708 | `8b1cc54bbe6455360b10f3c75e4ad6a7a841dc5c130a395d30977cbf1f0847ed` |
+| original15-child1-stdout.txt | 73 | `e9c5c00d6da57dcd7c6b108ab0502b297940908b1ce6240bfbd12c98d9ab07fc` |
+| original15-child2-stdout.txt | 1743 | `4bddeceb1d49c51f8187666623a126fdc175bea48750b54f5988637b873ea3de` |
+| read_common15.py | 3553 | `dbcbba20a0d6c9bd35b24f2942098b0a8ecf26768fc34365ed416f12ad423f79` |
+| verifier15/original-result-audit.txt | 3948 | `0dcfed07f498fd1d41d0ba87c39b2a5439911091d87177db0a6cc1e4479a4479` |
+
+Both stderr0B/SHA `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+Observation binds source/helper/freeze11e3377e.../raw/report. Independent result audit
+**PASS**, critical result documentation review **PASS** (private review15/critical-review-result.txt); source/owned276PS/22Python review
+PASS remains separate. Historical NOT_RUN below predates this extraction. Latest runtime
+original13 FAIL10/no retry; Task Blocked/ACs unchecked/no gate. Parameter metadata is
+future readiness only, not implemented/extracted here. No constructor was invoked.
+
+## Source15 candidate-construction contract: historical pre-extraction freeze
 
 Baseline `d3ea5daa985d29a918cec788c0112d38c97b1b0e`; actual14 declaration result
 reviewed/accepted as static evidence only. Latest runtime original13 remains FAIL10.
