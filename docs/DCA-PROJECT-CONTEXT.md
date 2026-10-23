@@ -1,5 +1,51 @@
 # Static Project context qualification
 
+## Factory11 original empty-container diagnostic result
+
+At reviewed source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`, exactly one
+original-factory-empty-container diagnostic **FAIL exit 2**, no retry/widening.
+Full eighteen-artifact/nineteen-input guards and exact policy preflight were bound
+to the committed source. Observed Autofac tokens: builder type `02000015`,
+public constructor `06000026` and Build `0600002E`. The builder constructor returned;
+during it, System.ValueTuple 4.0.0.0/neutral/PKTcc7b13ffcd2ddd51 was audited
+disallowed after loading. Its location/hash/origin remain UNKNOWN; this is not
+prevention or proof of a CLR/ABI failure.
+
+Build was subsequently invoked and returned nonnull despite the latched violation;
+only afterward EMPTY_CONTAINER_BUILD_DEPENDENCY rejected readiness. Managed
+container disposal returned once; post-disposal audit recorded scope-returned=False,
+provider requests=0. Neither EMPTY_CONTAINER_READY nor FACTORY_CONSTRUCTOR_BEGIN
+appears: Factory constructor **NOT ATTEMPTED**. The raw log has dependency exceptions
+but no standalone PROJECT_RESULT marker; launcher/done/summary/cleanup independently
+confirm 2. Builder/Build runtime was observed, not a qualified genuine context/Factory.
+
+Private task009-constructor-windows/factory11-observation.json, 6,078B, SHA-256
+`89873990517c6c9901a564bc5d926aa5dd4f706bc1cc7781e63aeef47e501ba4`,
+binds 25 files; raw factory11.log, 11,707B, SHA-256
+`62b7ba9c4c4b11306e56fdeae2e655f62885f6b984a88f9878e4888d844ec6db`.
+Independent result audit **PASS** for bounded provenance, 4,428B,
+verifier11/factory-result-audit.txt SHA-256
+`b8ac5e00816eb8987d854aa050175e7404eae72c02d516745fc7c083c3bb7b4b`;
+Critical actual-result documentation review PASS; the diagnostic remains FAIL exit 2. Context is limited interactive
+Session2, 15s/65,536B child capture/confirmed exit 2; cleanup expected/last 2,
+task removed/zero owned processes/scratch files. Coordinator executed once each:
+
+```text
+python3 private/evidence/task009-constructor-windows/prepare_factory11.py
+python3 private/evidence/task009-constructor-windows/run_factory11.py
+python3 private/evidence/task009-constructor-windows/collect_factory11.py
+python3 private/evidence/task009-constructor-windows/cleanup_factory11.py
+```
+
+Source11 review PASS/owned 27/58/32 and historical original-NOT_RUN source records
+remain chronological, as do source10 FAIL/no original10 attempt/no source10 commit.
+Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN;
+constructor internals UNKNOWN/network and descendants NOT_CONTAINED. No Factory/
+Project/service/DCA/hardware or gate qualification. Task009 Blocked/all ACs unchecked.
+The private next12 readiness note proposes a pre-Build latched-flag check and
+separate actual-OS ValueTuple investigation; neither is implemented or admitted
+by this result record. Unknown ValueTuple origin must remain unknown historically.
+
 ## Genuine empty Autofac constructor experiment contract
 
 Baseline `61f3e43c785b015abd22c2006260d8ea7d94c137` contains the reviewed

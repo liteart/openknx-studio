@@ -81,16 +81,36 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; latest original Factory09 exact-binding diagnostic FAIL exit10 at denied Autofac.get_ComponentRegistry; no qualified Factory/Project/fixture/service |
-| Source commit(s) | Prior increments retained; latest actual Factory09 source `28f53d27a24b4f11d5507df0a8178063f23bc872`; reviewed generation11 empty-container source recorded in this increment against baseline `61f3e43c785b015abd22c2006260d8ea7d94c137` |
-| Tests executed | Windows11 owned PASS 27/58/32 with all18 artifact preflight in all three runners; post-disposal caught-denial owned regression PASS. Historical Windows10 observed PASS 27 Session0 smoke (artifact binding INCONCLUSIVE)/58 limited/32 admin-negative; original empty-container NOT RUN. Windows09 owned PASS23 Session0/42 limited/28 admin-negative remains separate. Exactly one original Factory09 FAIL10 after policy/pins/pinned9 load; constructor not returned/one denied proxy request. Prior Factory08 FAIL2 and UndoManager declaration PASS retained. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; internals UNKNOWN |
+| Implementation / report status | Blocked; latest original Factory11 empty-container diagnostic FAIL2 after ValueTuple audit rejection/post-Build dependency guard; no qualified context/Factory/Project/service |
+| Source commit(s) | Latest original Factory11 reviewed source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`; prior increments preserved |
+| Tests executed | Windows11 owned PASS27/58/32 with full18 artifact preflight/regression remains separate. Exactly one original11 FAIL2, builder/Build returned then guard rejected, Factory constructor NOT ATTEMPTED. Historical source10 owned PASS27/58/32 and critical source review FAIL retained; prior originalFactory09 FAIL10/Factory08 FAIL2 and UndoManager declaration PASS preserved. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Exact8-to9 CLR preflight and actual pinned9 AssemblyLoad observed, no Bcl Resolve event. Prior dependency blocker NOT_REPRODUCED_THIS_ATTEMPT, not ABI proof. Factory0600012E ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED; denied get_ComponentRegistry06000035 zeroargs. No qualification or retry |
+| Technical outcome | Builder02000015/ctor06000026 returned; disallowed ValueTuple4 loaded with location/hash/origin UNKNOWN. Build0600002E then returned nonnull before EMPTY_CONTAINER_BUILD_DEPENDENCY; disposal once/audit scopeFalse requests0; no READY/Factory BEGIN. After-load detection not prevention/CLR or ABI proof; no qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Generation10 independent audits PASS within coverage/Session0 artifact-binding INCONCLUSIVE; critical review FAIL readiness at post-disposal provider-audit P2. Generation11 source/owned Windows11 independent verification and critical re-review PASS; the generation10 P2 is resolved in source11. Windows09 source/owned critical review PASS; Factory09 actual result independent audit and critical actual-result documentation review PASS; no runtime service acceptance |
+| Reviewer | Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; the diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Factory11 actual original result
+
+Source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`: one original11 **FAIL2**,
+no retry/widening, full18artifact/nineteen-input guards. Builder02000015 ctor06000026
+returned after disallowed ValueTuple4.0.0.0/cc7 loaded; path/hash/origin UNKNOWN,
+after-load detection not prevention or CLR/ABI proof. Build0600002E was then invoked
+and returned nonnull before EMPTY_CONTAINER_BUILD_DEPENDENCY stopped readiness.
+Disposal returned once/final audit scopeFalse requests0; no READY or Factory BEGIN,
+Factory constructor NOT ATTEMPTED. No standalone PROJECT_RESULT; launcher/done/
+cleanup confirm2. Session2 limited interactive15s/64KiB, cleanup expected/last2,
+task removed/zero processes/scratch. Observation6,078B SHA-256
+`89873990517c6c9901a564bc5d926aa5dd4f706bc1cc7781e63aeef47e501ba4`
+binds25files; raw11,707B SHA-256 `62b7ba9c4c4b11306e56fdeae2e655f62885f6b984a88f9878e4888d844ec6db`.
+Independent provenance audit PASS SHA-256
+`b8ac5e00816eb8987d854aa050175e7404eae72c02d516745fc7c083c3bb7b4b`;
+Critical result documentation review PASS; the diagnostic remains FAIL exit 2. Actual commands in contract. Source11 source/owned
+PASS27/58/32 and earlier NOTRUN/source10 FAIL history retained separately; no
+Project/Id/UndoManager/DCA/UI/state/hardware operations or qualification/gate.
+Task Blocked/ACs unchecked; pre-Build guard/ValueTuple readiness are proposals only.
 
 ## Empty-container diagnostic source freeze
 
