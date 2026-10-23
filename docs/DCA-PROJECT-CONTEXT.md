@@ -1,5 +1,158 @@
 # Static Project context qualification
 
+## Source19b subsequent owned verification and critical review
+
+This later record supersedes the freeze-time Windows-owned NOT RUN snapshot
+below, preserving the failed source19 attempt and its exact-signature repair.
+Original19b remains NOT RUN; actual18 remains the latest original SDK diagnostic.
+
+The saved Windows19b owned suites passed **41 Session0, 81 limited interactive,
+and 46 administrator-negative cases**. The original constructor/API-negative
+failure is covered by the repaired exact four-parameter guard and labeled
+refusal tests. The frozen source, same 19 private pins/two OS pins, unchanged
+configuration and 18-artifact profile remain fixed. Limited/admin cleanup
+recorded task removal, zero owned processes and no junction; outcomes are
+owned-fixture evidence, not Project/SDK-context qualification.
+
+`owned19b-observation.json`, 88,337 bytes, SHA-256
+`33207b10f165da039d122b5dd38daacce0140e3c2ced35dda7673e126b57191a`,
+binds 460 saved evidence files and freeze19b SHA-256
+`0eec09b10f59e8c3fcbcfeb9fb2b9137e44008e88838e6fed9274d6a5a6f41a0`.
+Independent `verifier19b/source-audit.txt` and
+`verifier19b/owned-result-audit.txt` PASS. The coordinator independently rehashed
+all ten frozen worktree sources and all 460 evidence entries, including sizes,
+and matched the observation's freeze digest: PASS. This is a local integrity
+audit; no new Windows/vendor execution was performed by these checks.
+
+The predefined critical reviewer returned PASS with no remaining code findings,
+independently checking the exact parameter vector, public IDisposable mapping,
+same genuine Factory object, Project-before-container-before-trace lifetime,
+and final store/provider denial audits after all managed lifetimes. It also
+checked the same source/observation hashes and the saved 41/81/46 case results.
+Scope and whitespace checks passed. This closes source/owned-evidence review
+only. Task-009 remains In progress, all ACs unchecked and no gate advances.
+
+The private critical review is `review19b/critical-review-source-current.txt`,
+SHA-256 `c57a5c4011ef54212252cf2b9db23d1035676da0e5e3aaadbc709d0ba02ba95c`.
+
+Next: commit the reviewed six-path source/documentation increment, then freeze
+the exact original19b plan and verify its prerequisites before any vendor call.
+No automatic retry, input widening, new SDK service or hardware operation is
+authorized by the owned-suite result. Network/descendants remain NOT_CONTAINED
+under the retained bounded diagnostic process; no isolation result is inferred.
+
+## Source19 owned failure and source19b exact-signature repair
+
+Failed source19 freeze `dad4f1b6f4939fcda5ebc45ba2106d41b2b167b173bcf2865e737604d60026e2`
+remains preserved with all ten source snapshots/build/logs. Windows Session0 passed41
+cases; limited Session2/nonadmin passed28 then stopped at the Project-scope API negative
+assertion: child10 confirmed, driver127. Admin19 and original19 were NOT_RUN. Cleanup
+Last127 removed the task with zero owned processes/no junction;47 partial case files.
+Private owned19-failure-manifest.json16,072B SHA
+`a2d859e11434e1daa2ab6b57163be2239d8cd767cbd719915a5e94194a16b680`
+binds83 files; source19-failure-observation.json1,830B SHA
+`1c1925af88f1b6974cc9573b39f0cda7558843cc778c672ba7026494f4ed377e`.
+The collector saved results before its exit0 assertion failed; it did not rerun the suite.
+
+Local owned public-reflection proof on .NET10.0.13 selected an Object parameter for a
+requested IFactory parameter using the default constructor binder, with zero constructor
+effects. Compatibility lookup does not establish the promised exact signature. The old
+Windows marker did not name the negative fixture; new labels make that observable.
+Source19b adds exact equality of all four constructor ParameterTypes inside the NEW
+ScopedProjectApi before effects. Legacy ProjectCtor remains unchanged; no acceptance
+condition, pin, configuration, limit or service is relaxed.
+
+Fresh source-freeze-19b.json5,112B SHA
+`0eec09b10f59e8c3fcbcfeb9fb2b9137e44008e88838e6fed9274d6a5a6f41a0`
+binds the failed source/failure provenance and new ten-source map. Only
+ProjectConstructorProbe.cs differs from failed19: the exact vector check and owned
+refusal labels; removing those edits restores the entire old file. Nine other source
+hashes, all ten failed snapshots,13 arrays and the generic legacy helper are unchanged.
+
+Fresh private source19b/local-sourcecheck.ps14,858B SHA
+`1b75788c4b3a48a70f37d997ea6e1acb09f95107458fa25cd1f39d9069800806`
+and its logs/results retain exact commands. C#5/x64/warnings-as-errors six-reference
+compile3, PS parse/ten driver guards plus private exact-vector guard/scope/diff PASS.
+Owned local reject-compatible/accept-exact proof passed, zero constructor invocation;
+source19b/binder-regression-stdout.txt329B SHA
+`a5719fd91f1b55c35c84a656c75c69c2c0bfe8fc8fb20951f226e6d60edbb0a2`.
+This is not Windows net48 behavior qualification. Windows19b owned and original19b
+NOT_RUN at this freeze; independent verification/critical review pending. Task In progress,
+ACs unchecked/no gate; actual18 PASS0 remains latest original SDK runtime. No original19
+attempt, dependency widening or change to historical Windows evidence.
+
+## Source19 Project with genuine Factory contract
+
+Baseline `d742cabdc4c6dbd571123fa2a15a8bdd8dd8aad7`; reviewed actual18 Factory return
+is a prerequisite diagnostic, not Project/SDK-context qualification. New explicit
+`original-project-genuine-factory` / `owned-project-genuine-factory` modes use the same
+19 private pins/two OS pins/container config/18 artifacts/15s64KiB limited STA limits.
+All existing profiles/arrays/configuration remain fixed; no dependency or service widening.
+
+Existing construction report SHA `5253681cc48e42142a7d214e9229d2d9b68c8f3580152c0ff4a63fb6129d19a2`
+already declares ObjectModel Project020003A5 public ctor06002830 and public Dispose060028BD,
+plus framework IDisposable. Protected Dispose(Boolean) is not a call route. Providers
+report SHA `3433af94b9c47ea2218b1b0b59a72bbe59ea880f8173057e0db5d01691560dd7`
+binds Factory02000023→IFactory02000037. Validate exact public shapes/owners/tokens and
+IDisposable interface map before effects; no fresh metadata inquiry/nonpublic activation.
+
+One genuine trace/default1, external registration and Build(None), then genuine Factory
+inside its existing owner scopes. A scoped callback passes that exact local Factory to
+Project06002830 with fixed diagnostic name, reviewed ThreeLevel and ONLY get_Id fixture.
+One actual ProjectId(UInt32=1)/numeric getter validation remains explicitly OWNED SYNTHETIC,
+not a real or claimed-valid project identity. Other store members remain unsupported;
+no positive IFactory/UndoManager shim, harness Resolve or explicit Factory method call.
+
+Project public IDisposable once if an exact object returned, before container then trace
+Dispose; final provider AND store-denied audit after all managed scopes, including caught
+cleanup denials. No partial object guessed on ctor failure or Factory cleanup API invented.
+Positive fixture calls stay separate/bounded. Resource fallback remains Factory-ctor-only,
+not Project/Dispose. Vendor internals/crypto/retention UNKNOWN and unintercepted; network/
+descendants NOT_CONTAINED, hardkill disposal/final audit NOT_ESTABLISHED. Any return remains
+NOT_QUALIFIED; no SDK Project wrapper/DCA/UI/state/bus/hardware operation by the harness.
+
+Owned tests cover public cleanup mapping/assignability before effects, stable ID fixture,
+lifetime ordering/failures and caught store/provider calls during every cleanup scope.
+Original19 NOT_RUN pending source/owned verification, critical review and source commit.
+Current Task In progress, ACs unchecked/no gate; actual18 PASS0 remains latest runtime.
+
+### Source19 local source freeze
+
+Canonical private `task009-constructor-windows/source-freeze-19.json`,4,258 bytes,
+SHA `dad4f1b6f4939fcda5ebc45ba2106d41b2b167b173bcf2865e737604d60026e2`,
+binds all ten sources, current baseline, unchanged pin/configuration profile and exact
+Project constructor/cleanup/fixture provenance. Four runtime sources changed; six other
+source hashes,13 arrays and pre-existing owned fixture bytes are unchanged. Preservation
+compares66 unchanged method bodies; six method families explicitly extend mode selection,
+scoped callbacks and final audits. Legacy runtime behavior still requires owned Windows tests.
+
+Local C#5/x64 compilation with warnings as errors passed for probe, launcher and fixture
+library against six build-script-pinned net48 references. PowerShell driver/build parsing,
+all ten source guards, scope and diff checks passed. No compile/guard failure. Fresh helper
+`private/evidence/task009-constructor-windows/source19/local-sourcecheck.ps1`,3,923 bytes,
+SHA `2b5027fdd0588153e055b871b15fc454cf0947006625b6e0fe24e28956d49024`;
+that directory preserves exact commands, stdout/stderr and initial/final result JSON.
+
+Two private preservation preparation issues are disclosed. The first exact-scope check
+preceded Task009's draft (five versus six dirty paths); drafting it satisfied the check.
+The fresh helper then retained an old output-directory literal, temporarily replacing
+source18's preservation JSON with the new passing result. The new result was copied into
+source19, and the old1098-byte record restored only after exact prior SHA
+`187f4971a0a399415d714c6dec891fdb5cea73e7d878120dd757f18acb59aa4f` matched.
+All339 historical owned18 manifest entries were rehashed with zero mismatches; the manifest,
+source freeze and Windows records were not changed. Correction observation977B SHA
+`3b2e97ca48f50d1108c2822384643c33bf8642bfa8b30ec920fc623e88aba286`
+and both preparation observations remain in source19. Restoration did not rerun a Windows
+suite or change its recorded verdict; the fresh helper output path is corrected.
+
+Written owned coverage has seven shape/map/assignability negatives, four finite token
+negatives and17 lifecycle/model cases. Six modeled refusal controls share one extra owner
+lifetime to retain the64KiB cap; no production latch resets. Windows19 owned and original
+runtime are NOT_RUN at SOURCE_FREEZE. Independent verification and critical source/owned
+review are pending at this checkpoint; later bound review records may close review only,
+not task acceptance. Actual18 Factory constructor PASS0 remains the latest runtime; current
+Task In progress, all ACs unchecked/no gate or Project/SDK-context/DCA qualification.
+
 ## Source18 genuine trace registration / Factory constructor contract
 
 Baseline `ccd5ce7d07623e6232b3738a6050e9e49ecd3cd5`; actual17 ctor/default1/Dispose

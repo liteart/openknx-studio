@@ -97,6 +97,7 @@ internal static class ProjectConstructorProbe
     const string ValueTupleIdentity = "System.ValueTuple, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
     const string ValueTupleHash = "62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a";
     const string ValueTupleRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\System.ValueTuple\\v4.0_4.0.0.0__cc7b13ffcd2ddd51\\System.ValueTuple.dll";
+    const string ReviewedProjectConstructionReportSha256 = "5253681cc48e42142a7d214e9229d2d9b68c8f3580152c0ff4a63fb6129d19a2";
     const string ReviewedIdMetadataSha256 = "37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4";
     const string ReviewedIdObservationSha256 = "89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a";
     const uint FixtureProjectNumber = 1; // Owned synthetic data, not a real or claimed-valid project identity.
@@ -152,8 +153,11 @@ internal static class ProjectConstructorProbe
     static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly || RegisteredTrace; } }
     static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
     static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
-    static bool RegisteredOriginal { get { return mode == "original-factory-registered-trace"; } }
-    static bool RegisteredOwned { get { return mode == "owned-factory-registered-trace"; } }
+    static bool ProjectScopeOriginal { get { return mode == "original-project-genuine-factory"; } }
+    static bool ProjectScopeOwned { get { return mode == "owned-project-genuine-factory"; } }
+    static bool ProjectScope { get { return ProjectScopeOriginal || ProjectScopeOwned; } }
+    static bool RegisteredOriginal { get { return mode == "original-factory-registered-trace" || ProjectScopeOriginal; } }
+    static bool RegisteredOwned { get { return mode == "owned-factory-registered-trace" || ProjectScopeOwned; } }
     static bool RegisteredTrace { get { return RegisteredOriginal || RegisteredOwned; } }
     static bool TraceOnly { get { return TraceOriginal || TraceOwned || RegisteredOwned; } }
     static bool FactoryBinding { get { return EmptyContainer || mode == "original-factory-bcl9" || mode == "owned-factory-bcl9"; } }
@@ -233,7 +237,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -278,7 +282,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -286,7 +290,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -356,7 +360,7 @@ internal static class ProjectConstructorProbe
     // Finite private policy seam. Production facts come from the held profile/actual Assembly/phase.
     static bool AutofacResourcePolicy(string selectedMode, bool complete, bool active, bool ownerPinned, string requested, bool requesterNull, bool requesterMatches, int count)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-factory-registered-trace") && complete && active && ownerPinned
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory") && complete && active && ownerPinned
             && (requested == AutofacResourceEnGb || requested == AutofacResourceEn) && (requesterNull ? !requesterMatches : requesterMatches)
             && count >= 1 && count <= 8;
     }
@@ -1228,19 +1232,30 @@ internal static class ProjectConstructorProbe
         Record("TRACE_REGISTER_END external-ownership=True exact-interface-default-service=True before-build=True method-owner=PUBLIC_INTERFACE vendor-service-calls=NOT_INTERCEPTED");
     }
     static void WithRegisteredTrace(TraceLifetimeApi trace, EmptyContainerApi container, TraceRegistrationApi registration, ConstructorInfo factory, ProjectDenyProxy provider)
+    { WithRegisteredTrace(trace, container, registration, factory, provider, null, null); }
+    static void WithRegisteredTrace(TraceLifetimeApi trace, EmptyContainerApi container, TraceRegistrationApi registration, ConstructorInfo factory, ProjectDenyProxy provider, Action<object> projectUse, ProjectStoreIdProxy store)
     {
-        bool returned = false;
+        ProbeFiles.Require((projectUse == null && store == null) || (ProjectScope && projectUse != null && store != null), "PROJECT_SCOPED_CALLBACK_MODE");
+        bool returned = false; object scopedFactory = null;
         try {
             WithTraceLifetimeCore(trace, null, delegate(object instance) {
-                WithEmptyContainerCore(container, delegate(object context) { InvokeFactoryWithContainer(factory, context, provider); }, null,
+                WithEmptyContainerCore(container, delegate(object context) {
+                    if (projectUse == null) InvokeFactoryWithContainer(factory, context, provider);
+                    else InvokeFactoryForProject(factory, context, provider, delegate(object actual) { scopedFactory = actual; projectUse(actual); });
+                }, null,
                     delegate(object builder) { RegisterTrace(registration, builder, instance); });
             });
             returned = true;
         } finally {
+            GC.KeepAlive(scopedFactory); // Factory remains live until Project/container/trace cleanup has finished.
             try { TraceDependencyGuard(unexpected, rejected, "REGISTERED_FINAL"); }
             finally {
                 int denied = provider.Requests;
                 Record("REGISTERED_TRACE_FINAL_AUDIT after-container-and-trace-disposal=True scope-returned=" + returned + " provider-denied=" + denied + " qualification=NOT_ESTABLISHED");
+                if (store != null) {
+                    Record("PROJECT_FACTORY_FINAL_AUDIT after-all-managed-disposal=True provider-denied=" + denied + " store-denied=" + store.DeniedRequests + " fixture-calls=" + store.FixtureCalls + " qualification=NOT_ESTABLISHED");
+                    if (denied != 0 || store.DeniedRequests != 0) throw new NotSupportedException("PROJECT_FACTORY_LIFETIME_DENIAL");
+                }
                 if (denied != 0) throw new NotSupportedException("REGISTERED_TRACE_PROVIDER_LIFETIME_DENIAL");
             }
         }
@@ -1438,6 +1453,199 @@ internal static class ProjectConstructorProbe
         }
         Record("OWNED_TRACE_LIFETIME_PASS ctor-dispose-once=true ctor-failure-no-return=true disposal-failure-fails=true phase-guards=6 caught-guards=2 production-latches-never-reset=true other-use=0 original=NOT_RUN");
     }
+    sealed class ProjectScopeApi
+    {
+        internal Type Project, FactoryType, FactoryContract;
+        internal ConstructorInfo Constructor;
+        internal MethodInfo Dispose;
+    }
+    static ProjectScopeApi ScopedProjectApi(Type project, Type factoryType, Type contract, Type style, Type store)
+    {
+        ProbeFiles.Require(project != null && project.IsPublic && project.IsClass && !project.IsAbstract && !project.IsGenericType && !project.ContainsGenericParameters
+            && factoryType != null && factoryType.IsPublic && factoryType.IsClass && !factoryType.IsAbstract && !factoryType.IsGenericType
+            && PublicInterface(contract) && contract.IsAssignableFrom(factoryType) && PublicInterface(store) && style != null && style.IsPublic && style.IsEnum
+            && project.Assembly == factoryType.Assembly && project.Assembly == contract.Assembly && project.Assembly == store.Assembly && !project.Assembly.ReflectionOnly,
+            "PROJECT_SCOPE_PUBLIC_OWNERSHIP");
+        ConstructorInfo ctor = ProjectCtor(project, contract, style, store);
+        ParameterInfo[] parameters = ctor.GetParameters();
+        ProbeFiles.Require(parameters.Length == 4 && parameters[0].ParameterType == contract && parameters[1].ParameterType == typeof(string)
+            && parameters[2].ParameterType == style && parameters[3].ParameterType == store, "PROJECT_SCOPE_EXACT_PARAMETERS");
+        ProbeFiles.Require(ctor.DeclaringType == project && ctor.IsPublic && !ctor.IsStatic && !ctor.ContainsGenericParameters
+            && ctor.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "PROJECT_SCOPE_CONSTRUCTOR");
+        ProbeFiles.Require(typeof(IDisposable).IsAssignableFrom(project), "PROJECT_SCOPE_DISPOSABLE");
+        MethodInfo dispose = project.GetMethod("Dispose", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        ProbeFiles.Require(dispose != null && dispose.DeclaringType == project && dispose.IsPublic && !dispose.IsStatic && !dispose.IsGenericMethod && !dispose.ContainsGenericParameters
+            && dispose.ReturnType == typeof(void) && dispose.GetParameters().Length == 0
+            && dispose.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "PROJECT_SCOPE_PUBLIC_DISPOSE");
+        InterfaceMapping map = project.GetInterfaceMap(typeof(IDisposable));
+        ProbeFiles.Require(map.InterfaceMethods.Length == 1 && map.TargetMethods.Length == 1 && map.InterfaceMethods[0].Equals(typeof(IDisposable).GetMethod("Dispose"))
+            && map.TargetMethods[0].DeclaringType == project && map.TargetMethods[0].Module == dispose.Module && map.TargetMethods[0].MetadataToken == dispose.MetadataToken,
+            "PROJECT_SCOPE_DISPOSE_MAP");
+        return new ProjectScopeApi { Project = project, FactoryType = factoryType, FactoryContract = contract, Constructor = ctor, Dispose = dispose };
+    }
+    static bool ReviewedProjectScopeTokens(int project, int ctor, int dispose, int factoryContract)
+    { return project == 0x020003a5 && ctor == 0x06002830 && dispose == 0x060028bd && factoryContract == 0x02000037; }
+    static void WithProjectScope(ProjectScopeApi api, object factory, object style, ProjectStoreIdProxy store, Action<string> ownedGuard)
+    {
+        ProbeFiles.Require(ProjectScope && (ownedGuard == null || ProjectScopeOwned), "PROJECT_SCOPE_OWNED_GUARD");
+        ProbeFiles.Require(factory != null && factory.GetType() == api.FactoryType && api.FactoryContract.IsInstanceOfType(factory)
+            && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(factory), "PROJECT_SCOPE_GENUINE_FACTORY");
+        Action<string> check = delegate(string phase) { TraceDependencyGuard(unexpected, rejected, "PROJECT_" + phase); if (ownedGuard != null) ownedGuard(phase); };
+        object value = null; bool exact = false;
+        try {
+            check("PRE_CTOR"); bool returned = false;
+            Record("PROJECT_SCOPE_CONSTRUCTOR_BEGIN token=" + api.Constructor.MetadataToken.ToString("X8") + " services=genuine-factory+fixture-id-only identity=OWNED_SYNTHETIC_NOT_REAL_OR_CLAIMED_VALID qualification=NOT_ESTABLISHED");
+            try {
+                value = api.Constructor.Invoke(new object[] { factory, FixtureName, style, store.GetTransparentProxy() }); returned = true;
+                exact = value != null && value.GetType() == api.Project && value is IDisposable && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value);
+                ProbeFiles.Require(exact, "PROJECT_SCOPE_EXACT_RETURN"); check("POST_CTOR");
+                ProbeFiles.Require(store.DeniedRequests == 0, "PROJECT_SCOPE_STORE_DENIAL");
+            } catch (Exception error) { Errors(error); throw; }
+            finally { Record("PROJECT_SCOPE_CONSTRUCTOR_END returned=" + returned + " body-entry=" + (returned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
+        } finally {
+            try {
+                if (exact) {
+                    bool disposed = false;
+                    try { Record("PROJECT_SCOPE_DISPOSE_BEGIN token=" + api.Dispose.MetadataToken.ToString("X8") + " explicit-attempts=1 hard-termination-disposal=NOT_ESTABLISHED"); }
+                    finally {
+                        try { ((IDisposable)value).Dispose(); disposed = true; }
+                        catch (Exception error) { Errors(error); throw; }
+                        finally { Record("PROJECT_SCOPE_DISPOSE_END returned=" + disposed + " explicit-attempts=1"); }
+                    }
+                }
+            } finally {
+                try { check("POST_DISPOSE"); }
+                finally { GC.KeepAlive(value); GC.KeepAlive(factory); GC.KeepAlive(store); }
+            }
+        }
+        Record("PROJECT_SCOPE_RETURNED_NOT_QUALIFIED factory-methods=NOT_INTERCEPTED explicit-project-other-methods=0");
+    }
+    static void InvokeFactoryForProject(ConstructorInfo ctor, object context, ProjectDenyProxy provider, Action<object> use)
+    {
+        object factory = null; bool returned = false;
+        Record("FACTORY_CONSTRUCTOR_BEGIN token=" + ctor.MetadataToken.ToString("X8") + " services=genuine-registered-trace-container+deny-all-provider project=NOT_REACHED qualification=NOT_ESTABLISHED");
+        try {
+            ProbeFiles.Require(ProjectScope && !unexpected && !rejected, "PROJECT_FACTORY_PRECONSTRUCTOR");
+            WithFactoryResourcePhase(delegate { factory = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true; });
+            ProbeFiles.Require(factory != null && factory.GetType() == ctor.DeclaringType && !unexpected && !rejected, "PROJECT_FACTORY_EXACT_RETURN");
+            ProbeFiles.Require(provider.Requests == 0, "PROJECT_FACTORY_PROVIDER_DENIAL");
+        } finally { Record("FACTORY_CONSTRUCTOR_END returned=" + returned + " provider-denied-requests=" + provider.Requests + " project=NOT_REACHED qualification=NOT_ESTABLISHED"); }
+        // Local ownership survives Project cleanup; it never depends on the global diagnostic field.
+        try { use(factory); } finally { GC.KeepAlive(factory); }
+    }
+    static void OriginalProjectScope()
+    {
+        ProbeFiles.Require(ProjectScopeOriginal && containerInputsReady, "PROJECT_SCOPE_COMPLETE_PROFILE");
+        Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll")), common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.dll"));
+        Assembly autofac = Assembly.LoadFrom(Path.Combine(stage, "Autofac.dll")), kim = Assembly.LoadFrom(Path.Combine(stage, "Knx.Kim.DataProvider.dll"));
+        Assembly types = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.Types.dll")), ids = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Ids.dll"));
+        ProbeFiles.Require(common.FullName == Identities[10] && autofac.FullName == FactoryExtraIdentities[0] && !common.ReflectionOnly && !autofac.ReflectionOnly
+            && ProbeFiles.Same(common.Location, Path.Combine(stage, "Knx.Ets.Common.dll")) && ProbeFiles.Same(autofac.Location, Path.Combine(stage, "Autofac.dll")), "PROJECT_SCOPE_PINNED_OWNERS");
+        Type traceType = common.GetType("Knx.Ets.Common.Security.ProjectTraceEncryptor", true), traceContract = common.GetType("Knx.Ets.Common.Security.IProjectTraceEncryptor", true);
+        TraceLifetimeApi trace = TraceApi(traceType, traceContract);
+        ProbeFiles.Require((int)traceType.Attributes == 1048833 && ReviewedTraceTokens(traceType.MetadataToken, trace.Constructor.MetadataToken, trace.Parameter.MetadataToken, traceContract.MetadataToken), "TRACE_ORIGINAL_TOKENS");
+        Type context = autofac.GetType("Autofac.IComponentContext", true), providerType = kim.GetType("Knx.Kim.DataProvider.IKimDataProvider", true), factory = om.GetType("Knx.Ets.ObjectModel.Factory", true);
+        ConstructorInfo factoryCtor = FactoryCtor(factory, context, providerType); OriginalFactoryTokens(factory, factoryCtor, context, providerType);
+        EmptyContainerApi container = EmptyApi(autofac.GetType("Autofac.ContainerBuilder", true), autofac.GetType("Autofac.Builder.ContainerBuildOptions", true), autofac.GetType("Autofac.IContainer", true), context);
+        TraceRegistrationApi registration = RegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), traceContract);
+        Type project = om.GetType("Knx.Ets.ObjectModel.Project.Project", true), factoryContract = om.GetType("Knx.Ets.ObjectModel.IFactory", true), storeType = om.GetType("Knx.Ets.ObjectModel.IProjectStore", true);
+        Type style = types.GetType(EnumName, true), id = ids.GetType("Knx.Ets.Ids.Project.ProjectId", true);
+        ProjectScopeApi scope = ScopedProjectApi(project, factory, factoryContract, style, storeType);
+        ProbeFiles.Require(ReviewedProjectScopeTokens(project.MetadataToken, scope.Constructor.MetadataToken, scope.Dispose.MetadataToken, factoryContract.MetadataToken)
+            && (int)project.Attributes == 1048577 && (int)scope.Constructor.Attributes == 6278 && (int)scope.Dispose.Attributes == 486 && (int)factoryContract.Attributes == 1048737
+            && project.Assembly == om && factoryContract.Assembly == om && storeType.Assembly == om && style.Assembly == types && id.Assembly == ids, "PROJECT_SCOPE_ORIGINAL_CONTRACT");
+        ConstructorInfo idCtor = id.GetConstructor(new Type[] { typeof(uint) }); MethodInfo idGetter = id.GetMethod("get_ProjectNumber"), storeGetter = storeType.GetMethod("get_Id");
+        OriginalIdTokens(id, idCtor, idGetter, storeType, storeGetter);
+        FieldInfo literal = style.GetField(ReviewedLiteral, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(style.MetadataToken == ReviewedEnumTypeToken && Enum.GetUnderlyingType(style).FullName == ReviewedUnderlyingType && literal != null && literal.IsLiteral
+            && literal.FieldType == style && literal.MetadataToken == ReviewedLiteralToken, "PROJECT_REVIEWED_ENUM_LITERAL");
+        object raw = literal.GetRawConstantValue();
+        ProbeFiles.Require(raw != null && raw.GetType().FullName == ReviewedUnderlyingType && Convert.ToString(raw, CultureInfo.InvariantCulture) == ReviewedRawValue, "PROJECT_REVIEWED_ENUM_VALUE");
+        object selectedStyle = Enum.ToObject(style, raw);
+        TraceDependencyGuard(unexpected, rejected, "PROJECT_SCOPE_SHAPES");
+        Record("PROJECT_SCOPE_API_READY public-ctor=06002830 public-dispose=060028BD IFactory=02000037 interface-map=VERIFIED metadata-sha256=" + ReviewedProjectConstructionReportSha256 + " original-runtime=NOT_YET_ATTEMPTED");
+        object value = CreateFixtureId(id, idCtor, idGetter);
+        var store = new ProjectStoreIdProxy(storeType, storeGetter, value, Record); var denied = new ProjectDenyProxy(providerType, Record);
+        resourceOwner = autofac;
+        WithRegisteredTrace(trace, container, registration, factoryCtor, denied,
+            delegate(object actualFactory) { WithProjectScope(scope, actualFactory, selectedStyle, store, null); }, store);
+        GC.KeepAlive(value);
+    }
+    static void OwnedProjectScope()
+    {
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true); };
+        Type scopeControl = type("ProjectScopeControl"), traceControl = type("TraceLifetimeControl"), emptyControl = type("EmptyControlFixture"), registrationControl = type("RegistrationControl");
+        Type factory = type("ScopedGenuineFactoryFixture"), contract = type("IFactoryFixture"), style = type("GroupAddressStyleFixture"), storeType = type("IScopedProjectStoreFixture"), id = type("ScopedIdFixture");
+        Func<Type, string, int> count = delegate(Type owner, string name) { return (int)owner.GetField(name).GetValue(null); };
+        Action<string> reset = delegate(string behavior) {
+            scopeControl.GetMethod("Reset").Invoke(null, new object[] { behavior }); registrationControl.GetMethod("Reset").Invoke(null, new object[] { "return" });
+            emptyControl.GetMethod("Reset").Invoke(null, new object[] { "return" }); traceControl.GetMethod("Reset").Invoke(null, new object[] { behavior == "trace-dispose-throw" ? "dispose-throw" : "return" });
+            traceControl.GetField("ConstructorCallback").SetValue(null, new Action(delegate { registrationControl.GetMethod("Event").Invoke(null, new object[] { "trace-ctor" }); }));
+            traceControl.GetField("DisposeCallback").SetValue(null, new Action(delegate { registrationControl.GetMethod("Event").Invoke(null, new object[] { "trace-dispose" }); scopeControl.GetMethod("Later").Invoke(null, new object[] { "trace" }); }));
+        };
+        reset("return"); int negatives = 0;
+        foreach (string name in new string[] { "ScopedNoDisposeFixture", "ScopedExplicitDisposeFixture", "ScopedWrongMapFixture", "ScopedWrongConstructorFixture", "ScopedGenericProjectFixture`1" }) {
+            bool denied = false; try { ScopedProjectApi(type(name), factory, contract, style, storeType); } catch (IOException) { denied = true; }
+            Record("OWNED_PROJECT_SCOPE_NEGATIVE fixture=" + name + " refused=" + denied + " before-effects=True");
+            ProbeFiles.Require(denied, "OWNED_PROJECT_SCOPE_SHAPE_NEGATIVE:" + name); negatives++;
+        }
+        foreach (Action bad in new Action[] {
+            delegate { ScopedProjectApi(type("ScopedProjectFixture"), type("RegisteredFactoryFixture"), contract, style, storeType); },
+            delegate { ScopedProjectApi(type("ScopedProjectFixture"), factory, typeof(IDisposable), style, storeType); }
+        }) { bool denied = false; try { bad(); } catch (IOException) { denied = true; } ProbeFiles.Require(denied, "OWNED_PROJECT_SCOPE_ASSIGNABILITY_NEGATIVE"); negatives++; }
+        ProbeFiles.Require(count(scopeControl, "Constructors") == 0 && count(scopeControl, "IdConstructors") == 0 && count(emptyControl, "Factories") == 0
+            && ReviewedProjectScopeTokens(0x020003a5, 0x06002830, 0x060028bd, 0x02000037)
+            && !ReviewedProjectScopeTokens(0x020003a6, 0x06002830, 0x060028bd, 0x02000037) && !ReviewedProjectScopeTokens(0x020003a5, 0x06002831, 0x060028bd, 0x02000037)
+            && !ReviewedProjectScopeTokens(0x020003a5, 0x06002830, 0x060028be, 0x02000037) && !ReviewedProjectScopeTokens(0x020003a5, 0x06002830, 0x060028bd, 0x02000038), "OWNED_PROJECT_SCOPE_BEFORE_EFFECTS");
+        ProjectScopeApi scope = ScopedProjectApi(type("ScopedProjectFixture"), factory, contract, style, storeType);
+        EmptyContainerApi container = EmptyApi(type("ScopedBuilderFixture"), type("EmptyOptionsFixture"), type("IRegisteredContainerFixture"), type("IContainerDependencyFixture"));
+        TraceLifetimeApi trace = TraceApi(type("TraceLifetimeFixture"), type("ITraceLifetimeFixture"));
+        TraceRegistrationApi registration = RegistrationApi(container, type("ScopedRegistrationExtensionsFixture"), type("IRegistrationFixture`3"), type("RegistrationDataFixture"), type("RegistrationStyleFixture"), trace.Contract);
+        ConstructorInfo factoryCtor = FactoryCtor(factory, container.Context, type("IDataDependencyFixture")), idCtor = id.GetConstructor(new Type[] { typeof(uint) });
+        MethodInfo idGetter = id.GetMethod("get_ProjectNumber"), storeGetter = storeType.GetMethod("get_Id");
+        IdSignature(id, idCtor, idGetter); StoreIdSignature(storeType, storeGetter, id);
+        object selectedStyle = Enum.Parse(style, "ThreeLevel", false);
+        Func<ProjectStoreIdProxy> makeStore = delegate { object value = CreateFixtureId(id, idCtor, idGetter); return new ProjectStoreIdProxy(storeType, storeGetter, value, Record); };
+        Record("OWNED_PROJECT_SCOPE_API_PASS negatives=" + negatives + " token-negatives=4 before-effects=True public-dispose-map=True factory-assignability=True original=NOT_RUN");
+        for (int i = 0; i < ContainerNames.Length; i++) {
+            string path = Path.Combine(stage, ContainerNames[i] + ".dll");
+            ProbeFiles.Require(ContainerReferencePolicy("original-project-genuine-factory", true, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("owned-project-genuine-factory", true, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("original-project-genuine-factory", false, ContainerIdentities[i], path, false), "OWNED_PROJECT_SCOPE_PROFILE");
+        }
+        ProbeFiles.Require(AutofacResourcePolicy("original-project-genuine-factory", true, true, true, AutofacResourceEnGb, true, false, 1)
+            && !AutofacResourcePolicy("original-project-genuine-factory", true, false, true, AutofacResourceEnGb, true, false, 1)
+            && !AutofacResourcePolicy("owned-project-genuine-factory", true, true, true, AutofacResourceEnGb, true, false, 1), "OWNED_PROJECT_SCOPE_RESOURCE_PHASE");
+        foreach (string behavior in new string[] { "return", "project-throw", "project-dispose-throw", "container-dispose-throw", "trace-dispose-throw", "project-store-caught", "project-provider-caught", "container-store-caught", "container-provider-caught", "trace-store-caught", "trace-provider-caught" }) {
+            reset(behavior); var store = makeStore(); var provider = new ProjectDenyProxy(type("IDataDependencyFixture"), Record); bool failed = false;
+            try { WithRegisteredTrace(trace, container, registration, factoryCtor, provider, delegate(object actual) { WithProjectScope(scope, actual, selectedStyle, store, null); }, store); }
+            catch (Exception error) { ProbeFiles.Require(error is IOException || error is NotSupportedException || error is TargetInvocationException || error is InvalidOperationException, "OWNED_PROJECT_SCOPE_EXPECTED_ERROR"); failed = true; }
+            ProbeFiles.Require(failed == (behavior != "return") && count(scopeControl, "Constructors") == 1 && count(scopeControl, "Disposals") == (behavior == "project-throw" ? 0 : 1)
+                && count(scopeControl, "IdConstructors") == 1 && count(scopeControl, "IdGetters") == 1 && store.FixtureCalls == 2
+                && count(emptyControl, "Factories") == 1 && count(emptyControl, "Disposals") == 1 && count(traceControl, "Disposals") == 1 && count(traceControl, "Uses") == 0,
+                "OWNED_PROJECT_SCOPE_LIFETIME_COUNTS");
+            ProbeFiles.Require(store.DeniedRequests == (behavior.EndsWith("-store-caught", StringComparison.Ordinal) ? 1 : 0)
+                && provider.Requests == (behavior.EndsWith("-provider-caught", StringComparison.Ordinal) ? 1 : 0), "OWNED_PROJECT_SCOPE_FINAL_DENIAL_COUNTS");
+            string order = (string)registrationControl.GetField("Order").GetValue(null);
+            ProbeFiles.Require(order == "trace-ctor>builder>register>external>build>factory>project>" + (behavior == "project-throw" ? "" : "project-dispose>") + "container-dispose>trace-dispose>", "OWNED_PROJECT_SCOPE_DISPOSAL_ORDER");
+            Record("OWNED_PROJECT_SCOPE_CASE behavior=" + behavior + " expected-failure=" + failed + " project-dispose=" + count(scopeControl, "Disposals") + " container-dispose=1 trace-dispose=1 provider-denied=" + provider.Requests + " store-denied=" + store.DeniedRequests);
+        }
+        // Six modeled refusal controls share one extra owner lifetime to keep the existing 64KiB log cap.
+        reset("return"); var guardedStore = makeStore(); var guardedProvider = new ProjectDenyProxy(type("IDataDependencyFixture"), Record);
+        WithRegisteredTrace(trace, container, registration, factoryCtor, guardedProvider, delegate(object actual) {
+            foreach (string flag in new string[] { "unexpected", "rejected" }) foreach (string phase in new string[] { "PRE_CTOR", "POST_CTOR", "POST_DISPOSE" }) {
+                int beforeCtor = count(scopeControl, "Constructors"), beforeDispose = count(scopeControl, "Disposals"); bool failed = false;
+                try { WithProjectScope(scope, actual, selectedStyle, guardedStore, delegate(string point) { if (point == phase) TraceDependencyGuard(flag == "unexpected", flag == "rejected", point); }); }
+                catch (IOException) { failed = true; }
+                ProbeFiles.Require(failed && count(scopeControl, "Constructors") - beforeCtor == (phase == "PRE_CTOR" ? 0 : 1)
+                    && count(scopeControl, "Disposals") - beforeDispose == (phase == "PRE_CTOR" ? 0 : 1), "OWNED_PROJECT_SCOPE_MODELED_PHASE");
+                Record("OWNED_PROJECT_SCOPE_CASE behavior=modeled-" + flag + "-" + phase + " expected-failure=True production-latches-never-reset=True");
+            }
+        }, guardedStore);
+        ProbeFiles.Require(count(scopeControl, "Constructors") == 4 && count(scopeControl, "Disposals") == 4 && guardedStore.FixtureCalls == 8 && guardedStore.DeniedRequests == 0
+            && guardedProvider.Requests == 0 && count(scopeControl, "IdConstructors") == 1 && count(scopeControl, "IdGetters") == 1, "OWNED_PROJECT_SCOPE_GROUPED_GUARDS");
+        Record("OWNED_PROJECT_SCOPE_PASS cases=17 shape-negatives=7 token-negatives=4 modeled-guards=6 stable-id=True actual-factory-reference=True disposal-order=project-container-trace caught-store-provider-all-cleanup-scopes=True original=NOT_RUN qualification=NOT_ESTABLISHED");
+    }
     [STAThread]
     internal static int Main(string[] args)
     {
@@ -1487,7 +1695,8 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
+                        if (ProjectScope) { if (ProjectScopeOriginal) OriginalProjectScope(); else OwnedProjectScope(); }
+                        else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
                         else if (FactoryOnly) { if (FactoryOriginal) OriginalFactory(); else OwnedFactory(); }
