@@ -82,15 +82,51 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; latest original Factory12 empty-container diagnostic FAIL2 at the allowlisted Factory constructor's resource dependency; no qualified Factory/Project/service |
-| Source commit(s) | Original Factory12 diagnostic source `f29d3c2d571a34bcae360c8a028ca2abbc37d180`; prior reviewed source/result history remains recorded below |
-| Tests executed | Actual Windows12 owned suites PASS28/59/33 and full18 artifact preflight. Exactly one original12 diagnostic FAIL2; genuine empty context reached, Factory constructor invocation attempted but did not return after `Autofac.resources` was denied. Independent provenance/result audit PASS. Earlier Windows11 owned PASS27/58/32 and original11 FAIL2 remain historical. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Source commit(s) | Original Factory12 diagnostic source `f29d3c2d571a34bcae360c8a028ca2abbc37d180`; source13 local freeze against reviewed result baseline `a58e675c0cd918eb58f10a0c5dccfc80d7ecc126`, no future source commit asserted |
+| Tests executed | Source13 local checks and Windows13 owned PASS29/60/34/full18 preflight in all runners; pure policy/thread/bounds and prior regressions PASS; original13 NOT RUN. Actual Windows12 owned suites PASS28/59/33 and full18 artifact preflight. Exactly one original12 diagnostic FAIL2; genuine empty context reached, Factory constructor invocation attempted but did not return after `Autofac.resources` was denied. Independent provenance/result audit PASS. Earlier Windows11 owned PASS27/58/32 and original11 FAIL2 remain historical. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/factory12-observation.json`, `factory12.log`, and `verifier12/factory-result-audit.txt`; earlier dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Builder02000015/ctor06000026 and Build0600002E returned; genuine empty context reached. Factory0600012E invocation did not return after `Autofac.resources` resolution was denied. Constructor body entry and lower-level causal root are not established; context/Factory/service qualification absent |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source12 source/owned independent audits and critical source/owned review PASS; original12 provenance/result audit and critical result documentation review PASS (the diagnostic itself FAIL exit 2). Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; its diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
+| Reviewer | Source13 source/owned independent audits and critical source/evidence review PASS for the explicit after-load boundary; original13 remains NOT RUN. Source12 source/owned independent audits and critical source/owned review PASS; original12 provenance/result audit and critical result documentation review PASS (the diagnostic itself FAIL exit 2). Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; its diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Source13 exact resource-probe source freeze
+
+Reviewed baseline `a58e675c0cd918eb58f10a0c5dccfc80d7ecc126` retains original12
+FAIL2. New diagnostic exception returns null/no Assembly only for exact two
+Autofac.resources8.2/en-GB/en identities, original-empty/completed19 profile,
+verified pinned owner and invoking thread's active Factory constructor phase.
+Nonnull requester must equal that actual Assembly; NULL is UNKNOWN, not ownership
+proof. Eight probes maximum, finally-clear before disposal, fatal unknown/overflow
+and all actual-satellite load audits remain. No SDK null service/file/admission/
+culture/config/input/build changes. Underlying Factory cause is a hypothesis.
+Separate real owned CLR fallback proof/audit hashes and primary Microsoft URLs
+are in the contract; every observed requester was NULL, no Autofac proof.
+Local C#5/x64 six-reference compile/PS parse/guards/preservation/scope/diff PASS;
+prepared4positive/26negative/bounds/actual-phase-thread-cleanup tests, helper SHA-256
+`ed322e4436329b6a0cec72b20c9deaf4712c35d2c046cb11cf081f3d41c04bac`.
+Windows13/original13 NOT RUN at this freeze; independent verification/critical
+review pending, no future verdict/commit claimed. Latest actual original12 FAIL2,
+Task Blocked/all ACs unchecked/no qualification/gate advance.
+
+### Subsequent Windows13 owned result
+
+Same pinned build/eight sources/eighteen artifacts/configs; owned **PASS 29/60/34**,
+all three/full18 artifact preflight/frozen driver. Session2 roles/done 0/cleanup 0/removal/
+zero processes/no junction/151/73 files/strict encoding preserved. Pure policy4+/26-,
+bound8/thread lifecycle/non-admission and earlier modeled/disposal regressions PASS;
+no actual Autofac/OS/resource fallback proof. Observation 56,339B SHA-256
+`257db46eafe59bf94cca5e28ebf09189321c45ca8042930e637dc52da96d8b43`
+binds 283 files; independent result audit PASS SHA-256
+`f43d20ed63b2569882397bae2f6484150bff6116f27dd5a71501ba908db6cf90`.
+Handler returns NO Assembly but CLR satellite load/use MAY occur before AFTER-LOAD
+latch; final guard AFTER STA callback/constructor/disposal, no immediate post-ctor
+check. No prevention/sandbox claim. Nine Python helpers ran once/first publication PASS
+(commands in contract). Critical boundary review PASS; private review13/critical-review-source.txt records the bounded verdict. Original13 remains NOT RUN/resource fallback NOT QUALIFIED.
+Latest actual12 FAIL2/root unknown/Factory11 origin unknown remain, Task Blocked/ACs
+unchecked/no gate or qualification. Historical source-NOT_RUN retained.
 
 ## Source12 pre-Build guard and OS reference freeze
 

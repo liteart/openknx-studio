@@ -1,5 +1,118 @@
 # Static Project context qualification
 
+## Source13 exact Autofac resource-probe contract
+
+Reviewed result baseline `a58e675c0cd918eb58f10a0c5dccfc80d7ecc126` retains
+Factory12 FAIL2. Readiness note SHA-256
+`97187c223a35515fd315c459f17cc6fa8fba719d654533a0a9ae0ca3a5cdf6fc`
+proposes a narrow CLR fallback diagnostic, not a positive SDK/null service.
+Only the exact Autofac.resources8.2.0.0/PKT17863af14b0044da culture en-GB/en
+requests may return null/no assembly, only original-factory-empty-container,
+completed nineteen pins, actual pinned Autofac loaded and the invocation thread's
+Factory constructor phase active. Nonnull requesters must be that exact pinned
+Assembly object; NULL is explicitly UNKNOWN, never ownership proof. Eight probes
+per phase maximum; overflow/other requests retain fatal rejection.
+
+Phase state is cleared in finally immediately after ctor.Invoke, before disposal.
+No satellite file load/admission, wildcard, config/private-pin/culture change,
+SDK service or build artifact is added. AssemblyLoad audits still deny an actual
+Autofac.resources load; normal CLR fallback can itself probe/load files and is not
+a sandbox. NULL requester attribution remains unknown even within this narrow
+window. Whether strict resolution masked another exception is a hypothesis;
+underlying Factory root cause/original13 behavior remain UNKNOWN/NOT RUN.
+
+Official Microsoft guidance preserved in primary-sources.json describes
+[AssemblyResolve satellite handling](https://learn.microsoft.com/en-us/dotnet/standard/assembly/resolve-loads)
+and [resource fallback](https://learn.microsoft.com/en-us/dotnet/core/extensions/package-and-deploy-resources).
+Separate real CLR owned ResourceManager proof4,309B SHA-256
+`0a815db00a3f53029ff988312458b5255305c1c085a654074fee04e2000e5b7b`
+and audit3,976B SHA-256 `d2e147b329ba16fcaf76babff2fac00b5b116e8a2e6e0e555b686e874a692a90`
+show strict-throw rejection versus exact owned-resource null fallback to an embedded
+neutral sentinel. Every requester was NULL; this proves owned CLR behavior only,
+not Autofac fallback or original requester identity. No SDK signing/type imitation
+is used. New source/owned verification and critical review precede a source commit
+and any original13 diagnostic. Task009 remains Blocked/all ACs unchecked/no gate.
+
+### Source13 local source freeze
+
+Only ProjectConstructorProbe.cs/Test-ConstructorProbe.ps1 change: no build/config/
+private-input/culture or satellite-admission changes. The verified actual Autofac
+Assembly is retained; nonnull requester comparison is reference identity plus fixed
+owner facts. Raw exact request strings reject near-miss names/versions/tokens/
+cultures/extra identity flags. The thread-local phase wraps only ctor.Invoke and
+is cleared before return checks, constructor-END, error reporting and disposal;
+managed exceptions/nesting and another thread cannot extend that window. Phase
+counter saturates at9 and only1–8 are eligible. Actual rejection latches are never
+reset. Old fixed resolver body/fatal tail and AssemblyLoad audits remain exact.
+
+Prepared owned tests cover4 positives/26 negatives, count bounds/saturation,
+profile/owner/path/reflection/dynamic/requester/mode/phase and identity near misses;
+real private phase return/throw/cross-thread/nested cleanup and refusal to admit
+an exact resource from owned mode. These are policy/lifecycle tests, not Autofac
+identity/signature impersonation or original fallback proof. The separately audited
+owned ResourceManager proof remains the real CLR fallback observation.
+
+Local PowerShell7.6.7 **PASS**: six pinned .NET4.8 references, C#5/x64 warnings-as-errors
+compile (local probe121,344B/launcher43,008B/fixtures17,920B), Build/Test PS parse/
+source guards; eight unchanged sources/pins/configs/proxies/operations/audits/
+original-latch assignments and resolver-body preservation, scope/diff. Fresh helper
+`knx-task009-autofac-resource-sourcecheck.ps1` SHA-256
+`ed322e4436329b6a0cec72b20c9deaf4712c35d2c046cb11cf081f3d41c04bac` ran as
+`pwsh -NoLogo -NoProfile -NonInteractive -File <private-helper>/knx-task009-autofac-resource-sourcecheck.ps1 -Worktree <task009-worktree> -FrameworkReferences <private>/evidence/task148-clean-host/references`.
+Source-freeze-13.json SHA-256
+`773075f31fd525c7530fed35f93205c37592baefa4cbc95f37fea1d0fbc29686`
+binds the two changed/eight unchanged sources and primary/readiness/owned proof.
+Windows13 owned/policy/phase tests and original13 remain **NOT RUN** at this
+chronological freeze; independent verification/critical review pending. Latest
+actual original is Factory12 FAIL2. NULL attribution/underlying cause remain UNKNOWN;
+no Factory/service/Project/DCA/UI/state/hardware qualification or gate advance,
+Task009 Blocked/all ACs unchecked. Network/descendants NOT_CONTAINED, managed-only
+phase cleanup/no hard-kill guarantee; asynchronous outside-phase work unsupported.
+
+### Subsequent Windows13 owned verification and boundary
+
+Windows build **PASS**, same pinned compiler/eight compiled sources/eighteen
+artifacts/unchanged configs; report SHA-256
+`bd17e6f542434d23812107134cb5ce3917ce4e9c34e4c2f6969fa0389991512b`.
+Owned suites **PASS 29 Session0 /60 limited /34 admin-negative**, all three runners
+preflight all eighteen artifact sizes/hashes and frozen driver. Session2 roles,
+done 0/cleanup 0/removal/zero processes/no junction, 151/73 case files, strict raw
+UTF-16/UTF-8 bindings and Session0 CLIXML stderr are preserved.
+
+Pure 4-positive/26-negative/count8/thread return/throw/cross-thread/nested cleanup
+and owned-mode non-admission tests PASS. Existing modeled builder/disposal-denial
+regressions PASS/nine disposal markers. No original Autofac or actual OS/resource
+fallback behavior is proved by these suites. The handler supplies NO Assembly,
+but null permits normal CLR probing: an actual satellite MAY load and be used
+before the unchanged AFTER-LOAD audit latches unexpected. Fatal flags are checked
+AFTER the STA callback/constructor/disposal, with no immediate post-constructor
+check. This is neither pre-load/use prevention nor a sandbox/immediate abort.
+
+Private owned13-observation.json, 56,339B, SHA-256
+`257db46eafe59bf94cca5e28ebf09189321c45ca8042930e637dc52da96d8b43`,
+binds 283 files; source audit 4,402B PASS SHA-256
+`87ac09e90d0775523053aed87e2903a1fe608f76596eb393d6670101d9429459`;
+owned-result audit 5,196B PASS, verifier13/owned-result-audit.txt SHA-256
+`f43d20ed63b2569882397bae2f6484150bff6116f27dd5a71501ba908db6cf90`.
+Coordinator ran once each from repository root; first observation publication PASS:
+
+```text
+python3 private/evidence/task009-constructor-windows/build_owned13.py
+python3 private/evidence/task009-constructor-windows/run_session0_13.py
+python3 private/evidence/task009-constructor-windows/run_owned13.py
+python3 private/evidence/task009-constructor-windows/collect_owned13.py
+python3 private/evidence/task009-constructor-windows/cleanup_owned13.py
+python3 private/evidence/task009-constructor-windows/run_owned_admin13.py
+python3 private/evidence/task009-constructor-windows/collect_owned_admin13.py
+python3 private/evidence/task009-constructor-windows/cleanup_owned_admin13.py
+python3 private/evidence/task009-constructor-windows/record_owned13.py
+```
+
+Critical source/evidence review PASS for this exact after-load boundary; private review13/critical-review-source.txt records the bounded verdict. Resource fallback remains NOT QUALIFIED/original13 NOT RUN, helpers unexecuted source only. Source/evidence/runtime claims are unchanged. Latest actual original12 FAIL2/unknown root
+cause and historical Factory11 unknown origin remain. Task009 Blocked/ACs unchecked,
+no gate or Factory/Project/service/DCA/UI/state/hardware qualification. Network/
+descendants NOT_CONTAINED/hard-kill cleanup NOT_ESTABLISHED; source-NOT_RUN retained.
+
 ## Source12 pre-Build guard and exact OS ValueTuple reference contract
 
 Baseline `8434aec9c4e78eb4aeec64d5638c4d6ee0f98ca7` contains the reviewed

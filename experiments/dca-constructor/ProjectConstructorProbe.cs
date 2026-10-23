@@ -103,6 +103,11 @@ internal static class ProjectConstructorProbe
     const string ReviewedFactoryConstructorReportSha256 = "df361cb84fc232b6f7da6943114096cd3e14b638495dcc8b68e10dbd42524ea9";
     const string ReviewedFactoryCandidatesAuditSha256 = "8f18be8da62da7d06f11634467b3c869e2ac260f20956cb5ab31f552ff324432";
     const string Async8Identity = "Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+    const string AutofacResourceEnGb = "Autofac.resources, Version=8.2.0.0, Culture=en-GB, PublicKeyToken=17863af14b0044da";
+    const string AutofacResourceEn = "Autofac.resources, Version=8.2.0.0, Culture=en, PublicKeyToken=17863af14b0044da";
+    [ThreadStatic] static bool resourcePhaseActive;
+    [ThreadStatic] static int resourceProbeCount;
+    static Assembly resourceOwner;
     static readonly string[] FactoryExtraNames = { "Autofac", "Knx.Kim.DataProvider" };
     static readonly string[] FactoryExtraHashes = { "747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12", "1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a" };
     static readonly string[] FactoryExtraIdentities = { "Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da", "Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159" };
@@ -342,9 +347,52 @@ internal static class ProjectConstructorProbe
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         if (!allowed) { unexpected = true; Record("UNEXPECTED_ASSEMBLY_BLOCKER detection=after-load prevention=NOT_ESTABLISHED"); }
     }
+    // Finite private policy seam. Production facts come from the held profile/actual Assembly/phase.
+    static bool AutofacResourcePolicy(string selectedMode, bool complete, bool active, bool ownerPinned, string requested, bool requesterNull, bool requesterMatches, int count)
+    {
+        return selectedMode == "original-factory-empty-container" && complete && active && ownerPinned
+            && (requested == AutofacResourceEnGb || requested == AutofacResourceEn) && (requesterNull ? !requesterMatches : requesterMatches)
+            && count >= 1 && count <= 8;
+    }
+    static int NextResourceProbe(int count)
+    { ProbeFiles.Require(count >= 0 && count <= 9, "AUTOFAC_RESOURCE_COUNTER"); return count < 9 ? count + 1 : 9; }
+    static bool AutofacResourceOwnerPolicy(string identity, string location, bool reflectionOnly, bool dynamicAssembly)
+    {
+        return !dynamicAssembly && !reflectionOnly && identity == FactoryExtraIdentities[0]
+            && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[0] + ".dll"));
+    }
+    static bool AllowAutofacResourceNull(ResolveEventArgs args)
+    {
+        if (args.Name != AutofacResourceEnGb && args.Name != AutofacResourceEn) return false;
+        Assembly owner = resourceOwner, requester = args.RequestingAssembly;
+        bool pinned = owner != null && !owner.IsDynamic && AutofacResourceOwnerPolicy(owner.FullName, owner.Location, owner.ReflectionOnly, owner.IsDynamic);
+        bool requesterNull = requester == null, matches = pinned && Object.ReferenceEquals(owner, requester);
+        if (mode == "original-factory-empty-container" && containerInputsReady && resourcePhaseActive && pinned)
+            resourceProbeCount = NextResourceProbe(resourceProbeCount);
+        bool allowed = AutofacResourcePolicy(mode, containerInputsReady, resourcePhaseActive, pinned, args.Name, requesterNull, matches, resourceProbeCount);
+        Record("AUTOFAC_RESOURCE_PROBE allowed=" + allowed + " requested=" + Text(args.Name)
+            + " requester=" + (requesterNull ? "NULL_UNKNOWN" : Text(requester.FullName))
+            + " requester-is-pinned-owner=" + matches + " owner-proof=" + (requesterNull ? "NOT_ESTABLISHED" : matches ? "PINNED_AUTOFAC" : "FOREIGN")
+            + " profile-complete=" + containerInputsReady + " invocation-thread-phase=" + resourcePhaseActive + " probe=" + resourceProbeCount
+            + " action=" + (allowed ? "RETURN_NULL_NO_ASSEMBLY" : "CONTINUE_FATAL_DENY"));
+        return allowed;
+    }
+    static void WithFactoryResourcePhase(Action invoke)
+    {
+        ProbeFiles.Require(mode == "original-factory-empty-container" || mode == "owned-factory-empty-container", "AUTOFAC_RESOURCE_PHASE_MODE");
+        ProbeFiles.Require(!resourcePhaseActive, "AUTOFAC_RESOURCE_NESTED_PHASE");
+        resourceProbeCount = 0; resourcePhaseActive = true;
+        try { invoke(); }
+        finally {
+            int count = resourceProbeCount;
+            resourcePhaseActive = false; resourceProbeCount = 0;
+            Record("AUTOFAC_RESOURCE_PHASE_END active=False probes=" + count + " resource-policy=NULL_ONLY");
+        }
+    }
     static Assembly Resolve(object sender, ResolveEventArgs args)
     {
         Record("PROJECT_RESOLVE requested=" + Text(args.Name));
+        if (AllowAutofacResourceNull(args)) return null;
         if (Original) {
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
@@ -857,7 +905,8 @@ internal static class ProjectConstructorProbe
             + " services=genuine-empty-container+deny-all-provider constructor-only=true context-requests=NOT_INTERCEPTED qualification=NOT_ESTABLISHED");
         try {
             ProbeFiles.Require(!unexpected && !rejected, "FACTORY_PRECONSTRUCTOR_DEPENDENCY");
-            constructed = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true;
+            object[] arguments = new object[] { context, provider.GetTransparentProxy() };
+            WithFactoryResourcePhase(delegate { constructed = ctor.Invoke(arguments); returned = true; });
             ProbeFiles.Require(constructed != null && constructed.GetType() == ctor.DeclaringType, "FACTORY_EXACT_RETURN_TYPE");
             if (provider.Requests != 0) throw new NotSupportedException("FACTORY_PROVIDER_DENIAL_RECORDED");
         } finally {
@@ -900,10 +949,63 @@ internal static class ProjectConstructorProbe
             + " build-token=" + api.Build.MetadataToken.ToString("X8") + " token-source=OBSERVED identity=" + Text(autofac.FullName)
             + " api-source-commit=07cac9047f4059de2d72834042c9649cbd228085");
         var denied = new ProjectDenyProxy(provider, Record);
+        resourceOwner = autofac; // Previously verified fixed identity/path/non-reflection from the held nineteen-pin profile.
         WithFactoryContainer(api, ctor, denied);
+    }
+    static void OwnedAutofacResourcePolicy()
+    {
+        int positives = 0, negatives = 0;
+        foreach (string request in new string[] { AutofacResourceEnGb, AutofacResourceEn }) {
+            foreach (bool requesterNull in new bool[] { true, false }) {
+                ProbeFiles.Require(AutofacResourcePolicy("original-factory-empty-container", true, true, true, request, requesterNull, !requesterNull, 1), "OWNED_RESOURCE_POSITIVE"); positives++;
+            }
+            foreach (string wrong in new string[] { request.Replace("Autofac.resources", "Owned.Wrong.resources"), request.Replace("8.2.0.0", "8.2.0.1"),
+                request.Replace("17863af14b0044da", "17863af14b0044db"), request.Replace("Culture=en-GB", "Culture=en-US").Replace("Culture=en,", "Culture=neutral,"),
+                request + ", Retargetable=Yes", request.Replace("Culture=en-GB", "Culture=en-gb").Replace("Culture=en,", "Culture=EN,") }) {
+                ProbeFiles.Require(!AutofacResourcePolicy("original-factory-empty-container", true, true, true, wrong, true, false, 1), "OWNED_RESOURCE_IDENTITY_NEGATIVE"); negatives++;
+            }
+        }
+        foreach (string other in new string[] { "original-project", "original-project-store-id", "original-factory", "original-factory-bcl9", "owned-factory-empty-container" }) {
+            ProbeFiles.Require(!AutofacResourcePolicy(other, true, true, true, AutofacResourceEnGb, true, false, 1), "OWNED_RESOURCE_MODE_NEGATIVE"); negatives++;
+        }
+        foreach (bool[] facts in new bool[][] { new bool[] { false, true, true, true, false }, new bool[] { true, false, true, true, false },
+            new bool[] { true, true, false, true, false }, new bool[] { true, true, true, false, false }, new bool[] { true, true, true, true, true } }) {
+            ProbeFiles.Require(!AutofacResourcePolicy("original-factory-empty-container", facts[0], facts[1], facts[2], AutofacResourceEnGb, facts[3], facts[4], 1), "OWNED_RESOURCE_FACT_NEGATIVE"); negatives++;
+        }
+        string ownerPath = Path.Combine(stage, FactoryExtraNames[0] + ".dll");
+        ProbeFiles.Require(AutofacResourceOwnerPolicy(FactoryExtraIdentities[0], ownerPath, false, false), "OWNED_RESOURCE_OWNER_POSITIVE");
+        foreach (bool denied in new bool[] { !AutofacResourceOwnerPolicy("Owned.WrongIdentity", ownerPath, false, false),
+            !AutofacResourceOwnerPolicy(FactoryExtraIdentities[0], fixture, false, false), !AutofacResourceOwnerPolicy(FactoryExtraIdentities[0], ownerPath, true, false),
+            !AutofacResourceOwnerPolicy(FactoryExtraIdentities[0], ownerPath, false, true) }) {
+            ProbeFiles.Require(denied, "OWNED_RESOURCE_OWNER_NEGATIVE"); negatives++;
+        }
+        int count = 0;
+        for (int i = 1; i <= 8; i++) { count = NextResourceProbe(count); ProbeFiles.Require(AutofacResourcePolicy("original-factory-empty-container", true, true, true, AutofacResourceEn, true, false, count), "OWNED_RESOURCE_BOUND_POSITIVE"); }
+        for (int i = 0; i < 3; i++) { count = NextResourceProbe(count); ProbeFiles.Require(count == 9 && !AutofacResourcePolicy("original-factory-empty-container", true, true, true, AutofacResourceEn, true, false, count), "OWNED_RESOURCE_BOUND_NEGATIVE"); }
+        ProbeFiles.Require(!AutofacResourcePolicy("original-factory-empty-container", true, true, true, AutofacResourceEn, true, false, 0)
+            && !AutofacResourcePolicy("original-factory-empty-container", true, true, true, AutofacResourceEn, true, false, -1), "OWNED_RESOURCE_ZERO_NEGATIVE");
+        ProbeFiles.Require(!resourcePhaseActive && resourceProbeCount == 0, "OWNED_RESOURCE_INITIAL_PHASE");
+        WithFactoryResourcePhase(delegate {
+            ProbeFiles.Require(resourcePhaseActive && resourceProbeCount == 0 && !AllowAutofacResourceNull(new ResolveEventArgs(AutofacResourceEnGb)), "OWNED_RESOURCE_SCOPE_CANNOT_ADMIT");
+            bool nestedDenied = false;
+            try { WithFactoryResourcePhase(delegate { throw new InvalidOperationException("OWNED_NESTED_ACTION_EXECUTED"); }); }
+            catch (IOException error) { nestedDenied = error.Message == "AUTOFAC_RESOURCE_NESTED_PHASE"; if (!nestedDenied) throw; }
+            ProbeFiles.Require(nestedDenied && resourcePhaseActive, "OWNED_RESOURCE_NESTED_PHASE");
+            bool otherActive = true; int otherCount = -1;
+            var thread = new Thread(delegate() { otherActive = resourcePhaseActive; otherCount = resourceProbeCount; }); thread.IsBackground = true; thread.Start();
+            ProbeFiles.Require(thread.Join(1000) && !otherActive && otherCount == 0, "OWNED_RESOURCE_THREAD_SCOPE");
+        });
+        ProbeFiles.Require(!resourcePhaseActive && resourceProbeCount == 0, "OWNED_RESOURCE_RETURN_CLEAR");
+        bool threw = false;
+        try { WithFactoryResourcePhase(delegate { throw new NotSupportedException("OWNED_RESOURCE_PHASE_THROW"); }); }
+        catch (NotSupportedException error) { threw = error.Message == "OWNED_RESOURCE_PHASE_THROW"; if (!threw) throw; }
+        ProbeFiles.Require(threw && !resourcePhaseActive && resourceProbeCount == 0 && !AllowAutofacResourceNull(new ResolveEventArgs(AutofacResourceEn)), "OWNED_RESOURCE_EXCEPTION_CLEAR");
+        Record("OWNED_AUTOFAC_RESOURCE_POLICY_PASS positives=" + positives + " negatives=" + negatives + " bounded8=true null-requester=UNKNOWN policy-only=true original=NOT_RUN");
+        Record("OWNED_AUTOFAC_RESOURCE_PHASE_PASS return-throw-cross-thread-clear=true owned-mode-cannot-admit=true no-target-load=true original=NOT_RUN");
     }
     static void OwnedEmptyContainer()
     {
+        OwnedAutofacResourcePolicy();
         Assembly assembly = Assembly.LoadFrom(fixture);
         Func<string, Type> type = delegate(string name) { return assembly.GetType("Owned.Task009." + name, true, false); };
         Type builder = type("EmptyBuilderFixture"), options = type("EmptyOptionsFixture"), container = type("IEmptyContainerFixture"), context = type("IContainerDependencyFixture"), control = type("EmptyControlFixture");
