@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; actual17 genuine trace ctor/default1/Dispose PASS0 and verified public Autofac registration API make source18 implementable. Factory/Project/service qualification and all ACs remain unmet; no gate advances |
+| Implementation / report status | In progress; Actual18 registered-trace/Factory-constructor diagnostic PASS exit 0, qualification NOT ESTABLISHED. Project/service/DCA behavior and all ACs remain unmet; no gate advances |
 | Source commit(s) | Source18 registered-trace increment based on `ccd5ce7d07623e6232b3738a6050e9e49ecd3cd5`, private ten-source freeze below; Source17 trace-lifetime revision `24593019a2455b95101c3c776a303571c9208171` based on `17111eee478a9b1d4addd1f5bb4cb4004a06ecec`, private ten-source freeze below; Source16 parameter-only source `1d89b9ff2ad7f2aa2b90b67e4452e6298383db18` based on `d39f789617a5b419c98af1367aaebe09c98874dc`, six-source private freeze below; Actual15 reviewed metadata source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`; Actual14 metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`; original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
-| Tests executed | Source18 local C#5/x64/Werror six-pinned-net48-reference compile, PS parse/all9 source guards, preservation/scope/diff PASS; Windows18 owned PASS37 Session0/74 limited/42 admin-negative, all18-artifact preflight; independent source and owned-result provenance audits PASS. Original18 NOT RUN. Historical Windows18 owned/original NOT RUN at SOURCE_FREEZE retained below. Source17 local C#5/x64/Werror/six-net48-reference compile, PS parse/guards/scope/diff and independent source audit PASS; later Windows17 owned PASS33 Session0/67 limited/38 admin-negative with all18-artifact preflight; independent provenance audit PASS. Original17 one fixed Windows diagnostic PASS exit 0; constructor/disposal only, qualification NOT ESTABLISHED. Historical Windows17 owned/original NOT RUN at SOURCE_FREEZE retained below. Source16 owned-only PASS327 PowerShell/23 Python; compile/parse/preservation/scope/diff PASS. Actual16 fixed parameter metadata extraction PASS exit 0 with both deny probes true; independent result audit PASS. Runtime NOT RUN. Source15 owned declaration-only PASS276 PowerShell/22 Python; compile/parse/preservation/scope/diff PASS; actual15 fixed guarded extraction PASS0/denial probes true, target runtime NOT RUN. Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. The distinct earlier original13 diagnostic remains FAIL exit 10; it is superseded as the latest runtime attempt only, not erased or qualified by Actual17. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/source-freeze-18.json`, `owned18-observation.json`, `build18-report.json`, and `verifier18/{source-audit,owned-result-audit}.txt`;  private `task009-constructor-windows/trace17-observation.json`, `trace17-plan.json`, `trace17.log`, `source-commit17.json`, runner/command helpers, and `verifier17/original-result-audit.txt`; prior dated records below |
+| Tests executed | Source18 local C#5/x64/Werror six-pinned-net48-reference compile, PS parse/all9 source guards, preservation/scope/diff PASS; Windows18 owned PASS37 Session0/74 limited/42 admin-negative, all18-artifact preflight; independent source/owned audits and critical source/owned review PASS. Actual18 registered-trace/Factory-constructor diagnostic PASS exit 0; independent original-result audit PASS for provenance/outcome (6,046 bytes, SHA-256 `6a97ad71f0f827ae4b30a81437eb574cad2c98ec7ac2c0ffbb2ba247c5f9822f`). Historical source-freeze NOT RUN statements retained as dated checkpoints. Source17 local C#5/x64/Werror/six-net48-reference compile, PS parse/guards/scope/diff and independent source audit PASS; later Windows17 owned PASS33 Session0/67 limited/38 admin-negative with all18-artifact preflight; independent provenance audit PASS. Original17 one fixed Windows diagnostic PASS exit 0; constructor/disposal only, qualification NOT ESTABLISHED. Historical Windows17 owned/original NOT RUN at SOURCE_FREEZE retained below. Source16 owned-only PASS327 PowerShell/23 Python; compile/parse/preservation/scope/diff PASS. Actual16 fixed parameter metadata extraction PASS exit 0 with both deny probes true; independent result audit PASS. Runtime NOT RUN. Source15 owned declaration-only PASS276 PowerShell/22 Python; compile/parse/preservation/scope/diff PASS; actual15 fixed guarded extraction PASS0/denial probes true, target runtime NOT RUN. Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. The distinct earlier original13 diagnostic remains FAIL exit 10; it remains historical evidence; Actual18 supersedes its recency, not its result. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/registered18-observation.json`, `registered18-plan.json`, `registered18.log`, `source-commit18.json`, and `verifier18/original-result-audit.txt`; source/owned records remain distinct; prior private `task009-constructor-windows/trace17-observation.json`, `trace17-plan.json`, `trace17.log`, `source-commit17.json`, runner/command helpers, and `verifier17/original-result-audit.txt`; prior dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Actual17 made one public ctor06000364 call with metadata-backed declared Int32 default 1; it returned, then one managed Dispose returned and final lifetime audit passed. Body entry NOT_INSTRUMENTED; vendor internals UNKNOWN; qualification NOT_ESTABLISHED. No explicit crypto, registration, Factory, Project or other service call; no DCA/UI/state/hardware qualification. |
+| Technical outcome | Actual18: one ctor06000364 call with metadata-declared default 1 returned; public Autofac exact-interface IProjectTraceEncryptor registration (ExternallyOwned, before Build) and genuine container Build returned; original Factory ctor0600012E returned with provider denials 0. Container then trace disposed once; final dependency/provider audits passed with 0 denials. Diagnostic scope only; vendor crypto/retention/disposal internals UNKNOWN and NOT_INTERCEPTED. No Project/Id/UndoManager/DCA/UI/state/hardware qualification. |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Independent critical source/owned-evidence review PASS (private review18/critical-review-source.txt), for the frozen source18 diff and OWNED18 provenance only; Original18 NOT_RUN, qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate. Historical source-freeze checkpoints retained.; prior actual17 source/result reviews PASS remain distinct. Source17 independent source and owned Windows provenance verification and critical source/owned review PASS (private review17/critical-review-source.txt); Actual17 result audit PASS for provenance and bounded outcome (private `task009-constructor-windows/verifier17/original-result-audit.txt`, 4,483 bytes, SHA-256 `1202487be9a76477cc0e90cba443276a54b7fd29ad0cadadb0496e2b2c92a4b1`); critical result documentation review PASS (private review17/critical-review-result.txt); constructor/disposal scope only, qualification NOT_ESTABLISHED. Historical source-freeze status retained below. Source16 independent source/owned verification and critical source review PASS (private verifier16/source-audit.txt and review16/critical-review-source.txt). Actual16 independent result audit PASS for provenance/consistency (private `task009-project-trace-encryptor-parameter-metadata/verifier16/original-result-audit.txt`, 3,906 bytes, SHA-256 `078e08b446127b70800d5953d61647039264f341da47392794208b5d0a34cd6a`); critical result documentation review PASS (private review16/critical-review-result.txt); creation remains INCONCLUSIVE. Audit did not read SDK DLLs or rerun extraction. Prior reviews preserved; no task/service acceptance |
+| Reviewer | Independent critical source/owned-evidence review PASS (private review18/critical-review-source.txt), for the frozen source18 diff and OWNED18 provenance only. Actual18 independent original-result audit PASS (private `verifier18/original-result-audit.txt`, 6,046 bytes, SHA-256 `6a97ad71f0f827ae4b30a81437eb574cad2c98ec7ac2c0ffbb2ba247c5f9822f`); Critical Actual18 result-documentation review PASS (private review18/critical-review-result.txt), for provenance and bounded diagnostic-result consistency only; qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate. Qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate. Historical source-freeze checkpoints retained; prior actual17 source/result reviews PASS remain distinct. Source17 independent source and owned Windows provenance verification and critical source/owned review PASS (private review17/critical-review-source.txt); Actual17 result audit PASS for provenance and bounded outcome (private `task009-constructor-windows/verifier17/original-result-audit.txt`, 4,483 bytes, SHA-256 `1202487be9a76477cc0e90cba443276a54b7fd29ad0cadadb0496e2b2c92a4b1`); critical result documentation review PASS (private review17/critical-review-result.txt); constructor/disposal scope only, qualification NOT_ESTABLISHED. Historical source-freeze status retained below. Source16 independent source/owned verification and critical source review PASS (private verifier16/source-audit.txt and review16/critical-review-source.txt). Actual16 independent result audit PASS for provenance/consistency (private `task009-project-trace-encryptor-parameter-metadata/verifier16/original-result-audit.txt`, 3,906 bytes, SHA-256 `078e08b446127b70800d5953d61647039264f341da47392794208b5d0a34cd6a`); critical result documentation review PASS (private review16/critical-review-result.txt); creation remains INCONCLUSIVE. Audit did not read SDK DLLs or rerun extraction. Prior reviews preserved; no task/service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1954,3 +1954,66 @@ device result. The distinct original13 FAIL exit 10 remains recorded. Task-009
 stays **Blocked**, all acceptance criteria unchecked and no gate advances. The
 source17 checkpoint's historical NOT RUN statement predates this attempt and
 remains intact. Critical result documentation review PASS (private review17/critical-review-result.txt); constructor/disposal scope only, qualification NOT_ESTABLISHED.
+
+## Actual18 registered-trace and Factory-constructor diagnostic
+
+At source `d5ede185e22f33e33eae183da5fedb9347ffb72c`, the one fixed registered-
+trace/Factory-constructor Windows diagnostic **PASS**, exit 0. Before execution,
+all 19 ordered private input pins (24,278,056 bytes), two fixed OS pins, and all
+18 artifacts were preflighted. The genuine trace instance was constructed once
+with the metadata-declared Int32 default 1 and returned. Public Autofac
+`RegisterInstance` (`0600008C`) registered the exact
+`IProjectTraceEncryptor` interface with external ownership (`06000719`) before
+`Build(None)`; the genuine container returned. The original Factory constructor
+(`0600012E`) returned with zero provider denials. The container was disposed
+before the trace instance; each disposal returned once, and the final dependency
+and provider audits passed with zero denials. Resource probes were zero.
+
+Private `registered18-observation.json` (5,715 bytes, SHA-256
+`16201c69747a0a8aef91b0aebfb1a84fc94dcb3d7d1782841e353d23105964fd`) binds 26
+files and source revision. It binds `registered18-plan.json` (7,404 bytes,
+SHA-256 `5f2ebac37670d6cef4df1bf197e196894edf7bf99ca5546033dfb358f2e8f82e`),
+`registered18.log` (13,994 bytes, SHA-256
+`1cfb93dcb94df36e9f911dff19d66d3039654e95bdf79401032d70a0fba95e27`), and
+`source-commit18.json` (2,096 bytes, SHA-256
+`781d31c2a8d6ec63fe41ab2943aadaa561a04958199c1bcd4d4ec43a290bb8ba`). Driver
+stdout is 238 bytes (SHA-256
+`1ec257e2c0e76a63562b14fab01c5016f1ce49c785fb617d1c76e853b102ab3d`); stderr
+is empty (SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`). Independent original-result audit **PASS** for provenance and consistency: `verifier18/original-result-audit.txt` (6,046 bytes, SHA-256
+`6a97ad71f0f827ae4b30a81437eb574cad2c98ec7ac2c0ffbb2ba247c5f9822f`). It
+validated all 26 manifest files, 10 committed source hashes, 19 input pins, 18
+artifacts, and observed event/outcome order. It did not rerun Windows or read SDK
+binaries. One supplemental lookup guessed a nonexistent cleanup JSON filename;
+cleanup is recorded in the cleanup stdout file and the successful outcome was
+verified. This audit lookup error did not alter or invalidate runtime evidence.
+Critical Actual18 result-documentation review PASS (private review18/critical-review-result.txt), for provenance and bounded diagnostic-result consistency only; qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate.
+
+The coordinator recorded each of these commands once, without arguments, from
+the repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/prepare_registered18.py
+python3 -B private/evidence/task009-constructor-windows/run_registered18.py
+python3 -B private/evidence/task009-constructor-windows/collect_registered18.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_registered18.py
+python3 -B private/evidence/task009-constructor-windows/record_registered18.py
+```
+
+Context was limited interactive Session 2, non-administrator; child deadline
+15 seconds and capture bound 65,536 bytes. Child exit 0 was confirmed. Cleanup
+recorded expected/last exit 0, task removed, zero owned processes and scratch
+files. The netstandard facade, ValueTuple and DiagnosticSource audits were
+allowed; no necessity is inferred from these observations. Network and
+descendants were **NOT_CONTAINED** under the existing waiver. Vendor internals,
+including crypto use, retention and disposal behavior, remain **UNKNOWN** and
+unintercepted.
+
+No explicit Encrypt/Decrypt/IsEncrypted, Resolve, Factory method, Project, Id,
+UndoManager, DCA initialization, UI/state or hardware operation was observed.
+The diagnostic does not establish encryption semantics, usable service behavior,
+full DCA initialization, or device behavior. The earlier Factory13 FAIL exit 10
+remains a distinct historical result; Actual18 is the latest Factory-constructor
+diagnostic. Task-009 remains **In progress**, acceptance criteria unchecked,
+qualification **NOT_ESTABLISHED**, and no gate advances. The source-freeze
+NOT RUN statement is a historical pre-execution checkpoint. Critical Actual18 result-documentation review PASS (private review18/critical-review-result.txt), for provenance and bounded diagnostic-result consistency only; qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate.

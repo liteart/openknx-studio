@@ -3509,3 +3509,64 @@ compatibility or device behavior. The distinct original13 FAIL exit 10 remains
 preserved. Task-009 remains **Blocked**, acceptance criteria unchecked; no gate
 advances. Source17's earlier NOT RUN statement is a historical checkpoint
 before this attempt. Critical result documentation review PASS (private review17/critical-review-result.txt); constructor/disposal scope only, qualification NOT_ESTABLISHED.
+
+## Actual18 registered trace and Factory-constructor diagnostic
+
+At source `d5ede185e22f33e33eae183da5fedb9347ffb72c`, the one fixed
+registered-trace/Factory-constructor Windows diagnostic **PASS**, exit 0. All
+19 ordered private input pins (24,278,056 bytes), two fixed OS pins, and all 18
+artifacts were preflighted before execution. One public trace constructor call
+`06000364` used the metadata-declared Int32 default 1 and returned. Public
+Autofac `RegisterInstance` (`0600008C`) registered the exact
+`IProjectTraceEncryptor` interface as externally owned (`06000719`) before
+`Build(None)`; the genuine container returned. Original Factory constructor
+`0600012E` returned with zero provider denials. Container disposal preceded the
+one trace disposal; both returned, and final dependency/provider audits passed
+with zero denials. Resource probes were zero.
+
+Private `registered18-observation.json` (5,715 bytes, SHA-256
+`16201c69747a0a8aef91b0aebfb1a84fc94dcb3d7d1782841e353d23105964fd`) binds 26
+files, including `registered18-plan.json` (7,404 bytes, SHA-256
+`5f2ebac37670d6cef4df1bf197e196894edf7bf99ca5546033dfb358f2e8f82e`),
+`registered18.log` (13,994 bytes, SHA-256
+`1cfb93dcb94df36e9f911dff19d66d3039654e95bdf79401032d70a0fba95e27`), and
+`source-commit18.json` (2,096 bytes, SHA-256
+`781d31c2a8d6ec63fe41ab2943aadaa561a04958199c1bcd4d4ec43a290bb8ba`). Driver
+stdout (238 bytes) SHA-256
+`1ec257e2c0e76a63562b14fab01c5016f1ce49c785fb617d1c76e853b102ab3d`; driver
+stderr empty SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. Independent original-result audit **PASS** for provenance and consistency: `verifier18/original-result-audit.txt` (6,046 bytes, SHA-256
+`6a97ad71f0f827ae4b30a81437eb574cad2c98ec7ac2c0ffbb2ba247c5f9822f`). It
+validated all 26 manifest files, 10 committed source hashes, 19 input pins, 18
+artifacts, and observed event/outcome order. It did not rerun Windows or read SDK
+binaries. One supplemental lookup guessed a nonexistent cleanup JSON filename;
+cleanup is recorded in the cleanup stdout file and the successful outcome was
+verified. This audit lookup error did not alter or invalidate runtime evidence.
+Critical Actual18 result-documentation review PASS (private review18/critical-review-result.txt), for provenance and bounded diagnostic-result consistency only; qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate.
+
+Each coordinator command was run once, without arguments, from repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/prepare_registered18.py
+python3 -B private/evidence/task009-constructor-windows/run_registered18.py
+python3 -B private/evidence/task009-constructor-windows/collect_registered18.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_registered18.py
+python3 -B private/evidence/task009-constructor-windows/record_registered18.py
+```
+
+The context was limited interactive Session 2, non-administrator; child deadline
+15 seconds and capture limit 65,536 bytes. Child exit 0 was confirmed. Cleanup
+recorded expected/last exit 0, task removed, zero owned processes and scratch
+files. netstandard facade, ValueTuple and DiagnosticSource audits were allowed;
+no necessity is inferred. Network and descendants were **NOT_CONTAINED** under
+the existing waiver. Vendor internals, including crypto use, retention and
+disposal behavior, remain **UNKNOWN** and unintercepted.
+
+No explicit Encrypt/Decrypt/IsEncrypted, Resolve, Factory method, Project, Id,
+UndoManager, DCA initialization, UI/state or hardware operation was observed.
+This diagnostic does not establish encryption semantics, usable service
+behavior, full DCA initialization or device behavior. Factory13 FAIL exit 10
+remains a separate historical result; Actual18 is the latest Factory-constructor
+diagnostic. Task-009 remains **In progress**, acceptance criteria unchecked,
+qualification **NOT_ESTABLISHED**, and no gate advances. Source-freeze NOT RUN
+is a historical pre-execution checkpoint. Critical Actual18 result-documentation review PASS (private review18/critical-review-result.txt), for provenance and bounded diagnostic-result consistency only; qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate.
