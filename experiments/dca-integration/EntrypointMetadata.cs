@@ -262,6 +262,61 @@ public static class EntrypointMetadata {
    if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ const string ProjectUndoManagerHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
+ const string ProjectUndoManagerIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string OwnedProjectUndoManagerIdentity="Task009.OwnedUndoManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string ProjectUndoManagerRoot="Knx.Ets.ObjectModel.UndoRedo.UndoManager";
+ const string OwnedProjectUndoManagerRoot="Owned.Task009.UndoManagerFixture";
+ const int UndoManagerMethodLimit=65536;
+ public static string ReadProjectUndoManager(string path,string hash){
+  if(hash!=ProjectUndoManagerHash)throw Fail("INPUT_PIN");
+  return ReadProjectUndoManagerInternal(path,hash,false);
+ }
+ // Explicit synthetic route: rejects original identities and cannot be selected by the worker.
+ public static string ReadOwnedProjectUndoManager(string path,string hash){return ReadProjectUndoManagerInternal(path,hash,true);}
+ static string ReadProjectUndoManagerInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);
+  if(!owned&&bytes.Length!=14204880)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);if(count>(table==TableIndex.MethodDef?UndoManagerMethodLimit:RowLimit))throw new RowLimitObservationException(table,count);}
+   string identity=AssemblyIdentity(r);
+   if(identity!=(owned?OwnedProjectUndoManagerIdentity:ProjectUndoManagerIdentity))throw Fail("INPUT_IDENTITY");
+   string rootName=owned?OwnedProjectUndoManagerRoot:ProjectUndoManagerRoot;
+   TypeDefinitionHandle root=default;
+   foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)==rootName){if(!root.IsNil)throw Fail("DUPLICATE_ROOT");root=h;}
+   if(root.IsNil)throw Fail("ROOT_NOT_FOUND");
+   var selected=new HashSet<TypeDefinitionHandle>();var current=root;string disposition;
+   while(true){
+    if(!selected.Add(current))throw Fail("BASE_CYCLE");if(selected.Count>16)throw Fail("BASE_LIMIT");
+    var b=r.GetTypeDefinition(current).BaseType;if(b.IsNil){disposition="NO_BASE";break;}
+    if(b.Kind==HandleKind.TypeDefinition){current=(TypeDefinitionHandle)b;continue;}
+    if(b.Kind==HandleKind.TypeReference){disposition="EXTERNAL_BASE_NOT_RESOLVED";break;}
+    if(b.Kind==HandleKind.TypeSpecification){disposition="TYPESPEC_BASE_NOT_FOLLOWED";break;}
+    throw Fail("BASE_SHAPE");
+   }
+   var types=new List<object>();int methods=0,fields=0;
+   foreach(var h in r.TypeDefinitions){
+    if(!selected.Contains(h))continue;if(types.Count>=1024)throw Fail("TYPE_LIMIT");var t=r.GetTypeDefinition(h);
+    var interfaces=new List<string>();foreach(var ih in t.GetInterfaceImplementations()){if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");interfaces.Add(new Names(r,true).Named(r.GetInterfaceImplementation(ih).Interface));}
+    var declared=new List<object>();foreach(var mh in t.GetMethods()){
+     var m=r.GetMethodDefinition(mh);string name=Str(r,m.Name);var access=m.Attributes&MethodAttributes.MemberAccessMask;
+     if(access!=MethodAttributes.Public&&access!=MethodAttributes.Family&&access!=MethodAttributes.FamORAssem&&access!=MethodAttributes.FamANDAssem)continue;
+     if(++methods>2048||declared.Count>=256)throw Fail("METHOD_LIMIT");string signature;
+     try{signature=new Names(r,true).Method(m.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     declared.Add(Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",name,"attributes",(int)m.Attributes,"accessibility",access.ToString(),"signature",signature));
+    }
+    var fieldDeclarations=new List<object>();foreach(var fh in t.GetFields()){
+     if(++fields>2048||fieldDeclarations.Count>=256)throw Fail("FIELD_LIMIT");var f=r.GetFieldDefinition(fh);string signature;
+     try{signature=new Names(r,true).Field(f.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     fieldDeclarations.Add(Obj("token",MetadataTokens.GetToken(fh).ToString("X8"),"name",Str(r,f.Name),"attributes",(int)f.Attributes,"signature",signature));
+    }
+    types.Add(Obj("token",MetadataTokens.GetToken(h).ToString("X8"),"name",new Names(r,true).Named(h),"attributes",(int)t.Attributes,"base_type",new Names(r,true).Named(t.BaseType),"interfaces",interfaces,"methods",declared,"fields",fieldDeclarations));
+   }
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_undo_manager","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_root",rootName,"base_chain_disposition",disposition,"types",types,"limitations",new[]{"Fixed UndoManager and bounded same-assembly bases only; TypeSpec ancestry is not followed, external declarations remain unresolved.","Public/protected constructor/method and declared field metadata only; no field values, custom attributes, bodies, dependency resolution or target execution. No UndoManager value or working service is supplied."}));
+   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project,bool construction=false,bool services=false,bool constructors=false){
   if(refs==null||hashes==null||refs.Length!=hashes.Length||(construction?refs.Length!=3:refs.Length<1||refs.Length>2))throw Fail("INPUT_COUNT");
   var paths=new List<string>{dca};paths.AddRange(refs);var pins=new List<string>{hash};pins.AddRange(hashes);var bytes=new List<byte[]>();long total=0;

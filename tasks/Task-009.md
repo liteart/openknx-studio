@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; Project07 original Id-only diagnostic FAIL exit 10 at unsupported IFactory.UndoManager after one positive synthetic get_Id; no qualified Project/fixture/service |
-| Source commit(s) | Prior increments recorded below; reviewed ProjectId metadata result `91121b184043e32db930fd596e751a53ee69751a`; Id-only fixture source and actual project07 run `3161dd889fe4a8f995cf122542a06503c94b9172`; result documentation recorded in this increment |
-| Tests executed | Earlier results retained. Generation07 pinned build/owned suites PASS 15 Session0/25 limited/20 admin negative. Exactly one original project07 diagnostic FAIL exit 10: original Id constructor/getter returned exact synthetic UInt32 1; get_Id fixture once, UndoManager denied, Project not returned. DCA initialization/UI/state/hardware NOT RUN |
+| Source commit(s) | Prior increments recorded below; Id-only source/actual project07 run `3161dd889fe4a8f995cf122542a06503c94b9172`, reviewed result `0e3ca948aaa1816c847200825cdc61d4e7727f23`; fixed UndoManager declaration source recorded in this increment |
+| Tests executed | Earlier results retained: owned Windows07 PASS 15/25/20, original project07 FAIL exit10 at UndoManager. New fixed UndoManager synthetic metadata PASS 192 PowerShell/20 Python, scope/diff PASS. Original UndoManager extraction/construction NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Original public Id constructor/getter returned and validated synthetic 1; one fixture get_Id return, then unsupported UndoManager. Project invocation ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. Valid identity/Project/fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior source/results and Id-only source/owned Windows verification/critical review PASS; actual project07 integrity/result audit and documentation critical review PASS; no runtime service acceptance |
+| Reviewer | Prior source/results including actual project07 integrity/result documentation independent review PASS; fixed UndoManager metadata independent verification and critical review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1247,3 +1247,32 @@ Owned15/25/20 PASS remains separate; historical NOT_RUN records are preserved.
 Task-009 Blocked/ACs unchecked, no Project/fixture/DCA/UI/state/hardware/gate
 qualification. Next work is metadata readiness only, no UndoManager fixture.
 Scope/diff checks PASS; independent documentation critical review PASS, source unchanged. This record does not qualify a fixture or authorize an UndoManager response.
+
+## Fixed UndoManager declaration implementation freeze
+
+After reviewed project07 result `0e3ca948aaa1816c847200825cdc61d4e7727f23`,
+add only explicit `project-undo-manager` guarded metadata mode: one exact
+ObjectModel 14,204,880-byte/SHA73ffaaa... pin and identity, fixed
+Knx.Ets.ObjectModel.UndoRedo.UndoManager root. The verified services report
+SHA19194b... establishes the return type name; original class token/members
+remain UNKNOWN until a later reviewed extraction. Exact hash/size precede
+PEReader and metadata identity precedes root selection. A separate unsigned
+owned root/identity tests declarations without original impersonation.
+
+Coordinator policy explicitly permits only this new profile's MethodDef ceiling
+65,536 after rechecking retained guarded count 38,472; every other table stays
+32,768. Old CheckRows/four-input policies and ProjectId bounds are unchanged.
+All file/chain/member/signature/report/capture/time bounds remain. Public/protected
+constructors/methods and declared field flags/signatures only: no values, bodies,
+custom attributes, dependencies or target execution. Constructor tools stay frozen.
+
+Provisioned PowerShell 7.6.7 runs
+`-NoLogo -NoProfile -NonInteractive -File experiments/dca-integration/Test-EntrypointMetadata.ps1`
+(**PASS 192 / FAIL 0**); `python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py`
+(**PASS 20**); `python3 -B scripts/check_project_scope.py` and
+`git diff --check` (**PASS**). Prior 151 PowerShell/19 Python cases pass, including old report
+byte equality; new tests cover fixed selection/identity/denials and row/bound
+policies. [Contract, primary count evidence and six frozen hashes](../docs/DCA-PROJECT-CONTEXT.md)
+record the exact scope. Independent verification and critical source review PASS; original metadata extraction remains NOT RUN. No UndoManager
+fixture/activation/runtime is implemented or run. Task-009 remains Blocked/ACs
+unchecked; no Project/DCA/UI/state/hardware or gate qualification follows.

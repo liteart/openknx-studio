@@ -227,5 +227,34 @@ try{
  $idWorker=Join-Path $PSScriptRoot 'Read-ProjectIdMetadata.ps1'
  Reject {& $idWorker -InputPath $id -InputSha256 (Hash $id)} 'DCAENTRY_INPUT_PIN'
  Assert ((Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All earlier reader reports unchanged after ProjectId metadata';$passed++
+ $undo=Join-Path $root 'OwnedUndoManager.dll';[Task144OwnedFixtures]::CreateProjectUndoManager($undo)
+ function UndoManager([string] $p=$undo){[Task144.EntrypointMetadata]::ReadOwnedProjectUndoManager($p,(Hash $p))}
+ $undoRaw=UndoManager;$u=$undoRaw|ConvertFrom-Json;$ut=$u.types[0]
+ Assert ($u.operation -eq 'static_dca_project_undo_manager' -and $u.runtime_execution -eq 'NOT_RUN' -and $u.inputs.Count -eq 1 -and $u.inputs[0].identity -eq 'Task009.OwnedUndoManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $u.selected_root -eq 'Owned.Task009.UndoManagerFixture') 'New fixed owned UndoManager root/identity, not vendor impersonation';$passed++
+ $undoCtors=@($ut.methods|Where-Object name -eq '.ctor')
+ Assert ($ut.attributes -eq 257 -and $ut.methods.Count -eq 4 -and $undoCtors.Count -eq 2 -and $undoCtors[0].accessibility -eq 'Public' -and $undoCtors[1].accessibility -eq 'Family' -and $ut.methods[2].accessibility -eq 'Family' -and -not $undoRaw.Contains('PrivateIgnored')) 'Public/protected ctor/method declarations only, private malformed constructor ignored';$passed++
+ Assert ($ut.fields.Count -eq 2 -and $ut.fields[0].attributes -eq 33 -and $ut.fields[0].signature -eq '[mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null]System.Guid' -and -not $undoRaw.Contains('OWNED_CONSTANT_VALUE') -and -not $undoRaw.Contains($root)) 'Field flags/signatures retained, values and paths omitted';$passed++
+ foreach($profile in @(1,2,3,4,5,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,30,31,34)){
+  $bad=Join-Path $root ('UndoManagerBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectUndoManager($bad,$profile)
+  $code=@{1='ROOT_NOT_FOUND';2='DUPLICATE_ROOT';3='MALFORMED_SIGNATURE';4='MALFORMED_SIGNATURE';5='INPUT_IDENTITY';8='FIELD_LIMIT';9='METHOD_LIMIT';10='ROW_LIMIT';11='STRING_LIMIT';12='SIGNATURE_LIMIT';13='SIGNATURE_SHAPE';14='SIGNATURE_SHAPE';15='SIGNATURE_LIMIT';16='REPORT_LIMIT';17='BASE_CYCLE';18='BASE_LIMIT';20='SIGNATURE_SHAPE';21='INTERFACE_LIMIT';22='FIELD_LIMIT';23='METHOD_LIMIT';24='SIGNATURE_SHAPE';30='SIGNATURE_LIMIT';31='MALFORMED_SIGNATURE';34='ROW_LIMIT'}[$profile]
+  Reject {UndoManager $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(25,26,27,32,33,35)){
+  $boundary=Join-Path $root ('UndoManagerBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectUndoManager($boundary,$profile)
+  $boundaryReport=UndoManager $boundary|ConvertFrom-Json
+  Assert ($boundaryReport.types.Count -eq 1 -and ($profile -ne 25 -or $boundaryReport.types[0].fields.Count -eq 256) -and ($profile -ne 26 -or $boundaryReport.types[0].methods.Count -eq 256)) ('UndoManager field/method/table boundary '+$profile);$passed++
+ }
+ foreach($profile in @(6,19)){
+  $positive=Join-Path $root ('UndoManagerChain'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectUndoManager($positive,$profile)
+  $chain=UndoManager $positive|ConvertFrom-Json
+  Assert (($profile -eq 6 -and $chain.types.Count -eq 1 -and $chain.base_chain_disposition -eq 'TYPESPEC_BASE_NOT_FOLLOWED') -or ($profile -eq 19 -and $chain.types.Count -eq 2 -and $chain.base_chain_disposition -eq 'EXTERNAL_BASE_NOT_RESOLVED')) 'UndoManager local/TypeSpec ancestry bound';$passed++
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectUndoManager($broken,('0'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectUndoManager($id,(Hash $id))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectUndoManager($undo,(Hash $undo))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectUndoManager($broken,'73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a')} 'DCAENTRY_INPUT_HASH'
+ $undoWorker=Join-Path $PSScriptRoot 'Read-ProjectUndoManagerMetadata.ps1'
+ Reject {& $undoWorker -InputPath $undo -InputSha256 (Hash $undo)} 'DCAENTRY_INPUT_PIN'
+ Assert ((ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All old report bytes and policies preserved after UndoManager mode';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

@@ -1,5 +1,85 @@
 # Static Project context qualification
 
+## Fixed UndoManager declaration experiment contract
+
+Baseline `0e3ca948aaa1816c847200825cdc61d4e7727f23` contains the reviewed
+project07 FAIL result. The observed IFactory.UndoManager request and prior
+guarded service signature select only
+`Knx.Ets.ObjectModel.UndoRedo.UndoManager` for new explicit
+`project-undo-manager` metadata research; its original token/members remain
+UNKNOWN. The sole original input is ObjectModel 14,204,880 bytes, SHA-256
+`73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a`,
+identity 6.4.8718.0/neutral/PKT61439873ec5e1159. Its exact hash and size precede
+PEReader; metadata identity precedes fixed-root selection. No caller-selected
+type, identity, dependency, directory search or runtime load is permitted.
+
+Only type flags/base/interfaces, public/protected declared constructors and
+methods, and declared field flags/signatures are observed, with at most sixteen
+same-assembly bases. Private constructors/methods are excluded. A TypeSpec base
+is reported without following its ancestry; external bases remain unresolved.
+No values, IL bodies, custom attributes, dependency resolution, constructor,
+service implementation or target code execute. Owned tests use a separate
+unsigned identity `Task009.OwnedUndoManager` and root
+`Owned.Task009.UndoManagerFixture`, without vendor identity/token impersonation.
+
+The coordinator explicitly approved MethodDef 65,536 only for this fixed new
+profile after rechecking retained `DCAENTRY_ROW_LIMIT_METHODDEF_38472` evidence:
+private task009-construction/row-observation-child-2-stderr.txt SHA-256
+`35a925ac4895c29dde6a5a140baef6fd036e01a4fe14a260c9f723e880ecac29`.
+Every other table remains 32,768; ProjectId and existing CheckRows/four-input
+policies are unchanged. All existing file/aggregate, type/base, member, field,
+signature, 512 KiB escaped report and outer 30-second/2 MiB capture bounds remain.
+No automatic bound increase/retry is allowed. Original extraction is **NOT RUN**
+until source verification/review/commit; Task-009 remains Blocked, ACs unchecked,
+without an UndoManager fixture or Project/DCA/UI/state/hardware/gate proof.
+
+The fixed root is grounded in the previously guarded services report,
+54,190 bytes, SHA-256
+`19194b3a2c0b4faf91ef412045291f2c3ea7dc155a72842079566ed174899cdd`:
+IFactory `060001FD` declares an UndoManager return and ProjectId/IObjectContext
+arguments. This establishes the selected type name, not class members or behavior.
+
+Owned macOS checks using provisioned PowerShell 7.6.7 **PASS 192 / FAIL 0**;
+Python **PASS 20**. Commands from the worktree:
+
+```text
+pwsh -NoLogo -NoProfile -NonInteractive -File experiments/dca-integration/Test-EntrypointMetadata.ps1
+python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+Add-Type compiles the owned reader/fixtures; it never loads target assemblies.
+The retained 151 PowerShell cases/19 Python tests pass alongside new fixed-root,
+missing/duplicate root, distinct identity/pin/hash, public/protected/private
+selection, omitted values, local/TypeSpec ancestry, malformed signatures and
+field/method/interface/string/report bounds. New MethodDef 32,769/38,472/65,536
+fixtures pass; 65,537 fails. TypeDef 32,768 passes/32,769 fails; old ProjectId
+MethodDef 32,769 still fails. These are owned metadata tables, not vendor APIs.
+Per-type 256 field/method positive boundaries and 2,048-total overflow denials
+remain bounded; no distinct exact-2,048-positive claim is made. Earlier report
+bytes compare equal, including ProjectId. Scope/diff checks **PASS**.
+
+| Frozen source | SHA-256 |
+|---|---|
+| EntrypointMetadata.cs | `59631ffe0a52ee68297b8b8428e9ab7cc11626c4604a9c41622247aaaaa0217d` |
+| OwnedEntrypointFixtures.cs | `562c1c6e54004263c4871d8721353c6b1e380a970c86fd765f06ba787a69a3e5` |
+| Test-EntrypointMetadata.ps1 | `774f257e100c691e6d9235865246a44ff47ae714562f89cc58692b3657717c26` |
+| Read-ProjectUndoManagerMetadata.ps1 | `1f4189db226cd58861d72c0794660d02419c8ee656c4ab3cb39098a63391c024` |
+| run_probe.py | `bcc9ca3c4c956ee01e1afdc6f7dd49da64ebe3d1f3601cb8be44d236104e7005` |
+| test_run_probe.py | `5f9528a8f9ffcda7bec76929830064a3f03ec30240faf503385a077bcf3ce49e` |
+
+Removing only the additive reader/fixture/test blocks reproduces the baseline
+sources exactly. Prior Method, Field, SelectChain, CheckRows, ReadInternal and
+ProjectId paths, old pin/command constants, bounded capture/negative probes,
+existing workers and all constructor sources/config/pins remain unchanged.
+The new original worker invokes only its fixed reader; it has no owned/root
+override and reports bounded table/count diagnostics on a row-limit failure.
+Independent verification and critical source review PASS for this fixed declaration mode. The coordinator's fixed guarded original extraction remains NOT RUN. No original
+UndoManager report exists at this freeze; token, member declarations,
+construction and service semantics remain UNKNOWN / NOT RUN. Task-009 stays
+Blocked with no acceptance or gate advancement.
+
 ## Project07 original Id-only fixture diagnostic result
 
 After reviewed source commit `3161dd889fe4a8f995cf122542a06503c94b9172`,
