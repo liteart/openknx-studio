@@ -1,5 +1,124 @@
 # Static Project context qualification
 
+## Project-store Id fixture experiment contract, source freeze after metadata
+
+Baseline `91121b184043e32db930fd596e751a53ee69751a` contains the reviewed
+ProjectId metadata result. New explicit `original-project-store-id` and
+`owned-project-store-id` modes retain the existing input, platform facade,
+nonadmin interactive STA, loader, 15-second supervised/64 KiB capture and
+96-assembly bounds. The original deny-all project mode remains available.
+Only the already pinned twelve inputs are allowed; no new dependency or resolver
+is added. Original execution waits for independent source review and commit.
+
+The fixed original Id contract is ProjectId type `0200002C`, flags `1056769`,
+public `.ctor(UInt32)` `060001EF` and public `get_ProjectNumber():UInt32`
+`060001F2`, Ids 6.4.8718.0/neutral/PKT61439873ec5e1159. Source pins metadata
+report SHA-256 `37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4`
+and observation `89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a`.
+The sole synthetic input is source-fixed UInt32 `1`, explicitly owned fixture
+data, not a real/manufacturer project identity or a claimed valid value. Exactly
+one constructor and one numeric getter attempt are logged BEGIN/END; only an
+exact-type return and exact UInt32 `1` validation make the object available.
+Any failure stops; no alternate value, string parser, generator or private API.
+
+A separate proxy permits only exact ObjectModel IProjectStore owner `02000057`,
+public instance get_Id `060002F5`, zero arguments and the exact reviewed Id
+return type. It returns the same labeled fixture object, at most sixteen calls;
+saturation and every other method/interface/malformed request fail explicitly
+unsupported. Positive fixture calls and denied requests have separate bounded
+counters and logs. The original Project constructor is always unqualified even
+if it returns or catches a denial. No SDK Root/Factory activation, DCA
+initialization, UI/state, device operation, gate or Task-009 acceptance follows.
+Owned shapes test this narrow behavior without impersonating vendor tokens or
+signatures. New original Id/fixture runtime execution is **NOT RUN** at freeze.
+
+Local source verification **PASS** using the provisioned PowerShell 7.6.7 and
+private `knx-task009-store-id-sourcecheck.ps1` helper, SHA-256
+`098ed5c55bae0fd7917b89bc90818731e7b51c39a95700fdb0c62d6c3a2e40d8`:
+
+```text
+pwsh -NoLogo -NoProfile -NonInteractive -File PRIVATE_TMP/knx-task009-store-id-sourcecheck.ps1 -Worktree WORKTREE -FrameworkReferences PRIVATE_EVIDENCE/task148-clean-host/references
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+The helper verifies the six existing .NET 4.8 reference hashes, compiles C#5/x64
+with warnings as errors in memory, parses the PowerShell driver and executes its
+old/new source guards. Local emitted sizes: ProjectConstructorProbe 66,560 bytes,
+ProbeLauncher 37,888 bytes, owned fixtures 13,824 bytes. This is local Roslyn
+compilation against Windows reference assemblies, **not Windows runtime tests**.
+The four changed tool hashes are frozen below; source commit/review are pending.
+
+| Frozen source | SHA-256 |
+|---|---|
+| ProjectConstructorProbe.cs | `485abb9c6d9b8c324e7e781c02127cd69c77ce9ae0c4984e91ba1bb8e8d94549` |
+| ProbeLauncher.cs | `3b34d54f629d505c3992b781137aad483da80699dc841f85adb59e275db3d94d` |
+| OwnedProjectConstructorFixtures.cs | `f84737d465d6c149fa303f958406bed86e53d4d2ce085ab70bf8379e640a6889` |
+| Test-ConstructorProbe.ps1 | `0e4d1a7bdee06f3303671ab3cb5502aa496778021c83621f8ebee1690af7de37` |
+
+Owned Windows regressions retain the earlier cases and add Session0/admin
+refusal, over-15-second fixture mode refusal, missing twelve inputs and exact
+twelve wrong-hash rejection before platform pin/load/Id attempt (the hash
+negative fails the first pin, not an isolated twelfth pin). The new owned fixture
+case checks eleven wrong-shape/visibility/owner/return/original-contract denials
+before construction, five pure token-policy mutations without forged metadata,
+one positive Id constructor/getter validation, stable typed repeated get_Id,
+foreign/malformed/unknown/generic/ref-out/void/property/download denial, sixteen
+allowed getter calls then saturation denial, and explicit failed constructor /
+wrong numeric getter outcomes without retries. Positive fixture calls and denied
+requests remain distinct. A synthetic Project returning after two fixture calls
+is explicitly unqualified; it supplies no evidence about original execution.
+
+Source comparison to the baseline **PASS**: ProjectDenyProxy, OriginalProject,
+Owned, original InvokeProject, public Project selection/token checks, enum path,
+Framework check, resolvers and all twelve pins remain byte-identical. Platform
+preflight/alias logic is unchanged apart from admitting the two new fixed modes.
+Config/build, the other constructor sources and metadata tools are unchanged.
+Generation07 Windows build/owned suites, original Id constructor/getter, positive
+store fixture, DCA initialization/UI/state and hardware are **NOT RUN** at this
+source freeze. Task-009 stays Blocked; prior actual diagnostic FAIL is retained.
+
+## Generation07 Windows owned verification
+
+The coordinator subsequently built the unchanged frozen sources on Windows
+with pinned compiler 4.8.9221.0, SHA-256
+`46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00`:
+**PASS**, eight source entries/twelve artifacts. Private source-freeze-07.json
+SHA-256 `0ed5171bf2522d78356f44fcafbf5da6be64d285f651546528375dbae3649c92`
+matches the source hashes above; build07-report.json SHA-256
+`3373e982172c60806d8a1f26fa24cb5d8986c0408e47ac8eedde2751f916f15a`
+records ProjectConstructorProbe.exe, 68,608 bytes, SHA-256
+`d54678cb37b76cb9de79536df9e049742106ad3f40aa06219f5d2e9c51fe753e`.
+The earlier NOT_RUN entries describe the historical source freeze, superseded
+for owned build/tests by these actual results, not for original execution.
+
+The unchanged Windows test command
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File Test-ConstructorProbe.ps1 -BuildDirectory BUILD07 -OutputDirectory NEW_OUTPUT -ExpectedSession PROFILE`
+reports **PASS 15 Session0 / 25 interactive limited / 20 administrator negative**
+owned cases. Interactive profiles were Session2 with the expected nonadmin/admin
+roles, each exit 0. Both tasks were removed, zero owned processes and no junction
+remained; 64 limited and 49 admin case files were collected. Original runtime is
+**NOT RUN in every owned profile**; old modes also passed their owned cases.
+
+Private owned07-observation.json, 33,508 bytes, SHA-256
+`36bf34ce75f5539dca24e0e23eb26a28e5ae0a46b4a0d5ebbe3fe978ef2927a4`,
+binds build/profile/log provenance. The limited project-store-id-proxy.log is
+17,143 bytes, SHA-256
+`4b34d688961600acdcd76c9b2b97d2f0ca402cb03a8b8ddff68e15be01ffc439`:
+eleven preconstruction negatives, five token-policy mutations, one owned Id
+constructor/getter validation, stable positive getter calls, sixteen-call
+saturation, and unknown/malformed requests denied. Its synthetic Project returned
+with fixture-calls=2/denied-requests=0 and qualification=NOT_ESTABLISHED.
+
+Raw UTF-16 driver logs remain alongside strict UTF-8 derivatives/encoding
+manifests. Session0 stderr contains retained CLIXML progress; it is not empty.
+The limited status03 collector ran before the done record existed and retained
+that missing-done failure; status05 retrieved the same single successful run,
+without a test rerun. Cleanup/provenance are retained. Independent source/result
+verification/review and commit precede any original fixture attempt, still
+**NOT RUN**. Task-009 remains Blocked; no fixture acceptance, DCA/UI/state,
+hardware, gate qualification or descendant containment is asserted.
+
 ## ProjectId guarded metadata result
 
 At source `a2976171e6bd571243c8f1a0f3ab88bbf9674911`, the coordinator's
@@ -1764,3 +1883,16 @@ Only PRIVATE_STAGE is the observed first rejection; later setup corrections
 satisfy unchanged guards. Public constructor/getter declarations do not qualify
 behavior or approve a future runtime fixture. Task-009 stays Blocked; the
 project06 FAIL and absence of DCA/hardware/gate qualification remain preserved.
+
+Independent critical review PASS for generation07 at baseline
+`91121b184043e32db930fd596e751a53ee69751a`. The reviewer inspected the actual
+six-path diff and complete 15/25/20 Windows evidence appendix, checked the frozen
+source/report and 182-file provenance, old-mode preservation, scope and whitespace,
+and did not rerun Windows or read SDK binaries. The exact synthetic getter boundary
+and unqualified-return limits are preserved. Original store-ID fixture execution
+remains NOT RUN; no original positive service, Project fixture, DCA/UI/state,
+hardware or gate is accepted. After the explicit source commit, only the fixed
+single 15-second diagnostic may follow under existing authorization; failures stop
+without automatic expansion or retry. The private review record binds the
+pre-append document hashes; it does not claim those hashes identify this later
+review note.

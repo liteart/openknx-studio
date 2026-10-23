@@ -1,4 +1,4 @@
-// Fixed Task-009 diagnostic. No positive SDK service or fixture qualification.
+// Fixed Task-009 diagnostic. Labeled fixture data never qualifies a Project or DCA.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +35,48 @@ internal sealed class ProjectDenyProxy : RealProxy
     }
 }
 
+// One explicitly labeled fixture getter; no other SDK operation is supplied.
+internal sealed class ProjectStoreIdProxy : RealProxy
+{
+    readonly Type owner, idType;
+    readonly MethodInfo getter;
+    readonly object value, sync = new object();
+    readonly Action<string> record;
+    int requests, fixtureCalls, denied;
+    internal ProjectStoreIdProxy(Type type, MethodInfo method, object id, Action<string> recorder) : base(type)
+    {
+        ProjectConstructorProbe.StoreIdSignature(type, method, id == null ? null : id.GetType());
+        owner = type; getter = method; idType = id.GetType(); value = id; record = recorder;
+    }
+    internal int FixtureCalls { get { lock (sync) { return fixtureCalls; } } }
+    internal int DeniedRequests { get { lock (sync) { return denied; } } }
+    public override IMessage Invoke(IMessage message)
+    {
+        lock (sync) {
+            if (requests < 17) requests++;
+            IMethodCallMessage call = message as IMethodCallMessage;
+            MethodInfo method = call == null ? null : call.MethodBase as MethodInfo;
+            bool allowed = requests <= 16 && method != null && method.DeclaringType == owner && method.Module == getter.Module
+                && method.MetadataToken == getter.MetadataToken && method.Name == "get_Id" && method.IsPublic && !method.IsStatic
+                && method.IsSpecialName && !method.IsGenericMethod && !method.ContainsGenericParameters
+                && method.ReturnType == idType && method.GetParameters().Length == 0 && call.MethodName == method.Name
+                && call.ArgCount == 0 && call.Args != null && call.Args.Length == 0;
+            if (allowed) {
+                fixtureCalls++;
+                record("PROJECT_SERVICE_FIXTURE number=" + fixtureCalls + " member=" + owner.FullName + ".get_Id token=" + getter.MetadataToken.ToString("X8")
+                    + " arguments=0 fixture=OWNED_SYNTHETIC_ID same-object=true qualification=NOT_ESTABLISHED");
+                return new ReturnMessage(value, null, 0, call.LogicalCallContext, call);
+            }
+            if (denied < 17) denied++;
+            string name = method == null ? "INVALID_MESSAGE" : ProjectConstructorProbe.Text((method.DeclaringType == null ? "UNKNOWN_OWNER" : method.DeclaringType.FullName) + "." + method.Name);
+            if (requests <= 16) record("PROJECT_SERVICE_DENIED number=" + denied + " member=" + name + " fixture-id-only=true");
+            var error = new NotSupportedException("PROJECT_FIXTURE_UNSUPPORTED:" + (requests <= 16 ? name : "REQUEST_LIMIT"));
+            if (call == null || method == null) throw error;
+            return new ReturnMessage(error, call);
+        }
+    }
+}
+
 internal static class ProjectConstructorProbe
 {
     // Observed enum02 metadata, independently verified/reviewed before this freeze.
@@ -52,6 +94,9 @@ internal static class ProjectConstructorProbe
     const string CommonIdentity = "Knx.Ets.Common.Types, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
     const string CommonHash = "5c4e08541a123825b0ed501aec1f5fbbbc3d1f756b3be41ff2728925f906c9f0";
     const string PlatformFacadeRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\netstandard\\v4.0_2.0.0.0__cc7b13ffcd2ddd51\\netstandard.dll";
+    const string ReviewedIdMetadataSha256 = "37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4";
+    const string ReviewedIdObservationSha256 = "89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a";
+    const uint FixtureProjectNumber = 1; // Owned synthetic data, not a real or claimed-valid project identity.
     static readonly string[] Names = { "MDT-DaliDcaPlus", "Knx.Ets.Sdk", "Knx.Ets.Sdk.AddIns.AddInViews", "Knx.Ets.Common.Types", "Knx.Ets.Common.Resources", "Microsoft.Bcl.AsyncInterfaces", "netstandard", "System.Threading.Tasks.Extensions", "Knx.Ets.ObjectModel", "FluentResults", "Knx.Ets.Common", "Knx.Ets.Ids" };
     static readonly string[] Hashes = { "4507e7b0e1eb10fea9556f19dd8d34c5f9fcf3cd8efa79e891b13f2585d7cf8d", "7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989", "5a59b733cbbecb8afe67f54e3b354045a61e092470a13129971f4f99e0b6d87d", CommonHash, "6e07df9e247b1d5e6a11c9e8131ec8cc8ab8aabeca9af02b1911608d1eefe661", "1c95b1a776931ca1c4f2911b2ae1cc99eb78f547cd5feeaf5cdbdf10cedad0db", "bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb", "692c324c02a922f890aaf5948c54ec9758f5ab7019b8e8ab169c106ddd3231f4", "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a", "99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159", "4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd", "43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877" };
     static readonly string[] Identities = {
@@ -76,7 +121,9 @@ internal static class ProjectConstructorProbe
     static int logBytes, assemblyCount;
     static object constructed;
     static bool EnumOnly { get { return mode == "project-enum-metadata"; } }
-    static bool Original { get { return mode == "original-project"; } }
+    static bool Original { get { return mode == "original-project" || mode == "original-project-store-id"; } }
+    static bool OwnedProject { get { return mode == "owned-project" || mode == "owned-project-store-id"; } }
+    static bool StoreIdFixture { get { return mode == "original-project-store-id" || mode == "owned-project-store-id"; } }
     internal static string Text(string value)
     {
         value = value.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\0", "\\0");
@@ -116,9 +163,9 @@ internal static class ProjectConstructorProbe
     }
     static void PinPlatformFacade()
     {
-        ProbeFiles.Require(Original || mode == "owned-project", "PLATFORM_FACADE_MODE");
+        ProbeFiles.Require(Original || OwnedProject, "PLATFORM_FACADE_MODE");
         platformFacadePath = ProbeFiles.Local(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), PlatformFacadeRelativePath), true, false);
-        if (mode == "owned-project") {
+        if (OwnedProject) {
             ProbeFiles.Require(!platformFacadePinned && !PlatformFacadeAllowed(Identities[6], platformFacadePath, true, false), "OWNED_PLATFORM_FACADE_INCOMPLETE_PIN");
             Record("OWNED_PLATFORM_FACADE_INCOMPLETE_PIN_PASS matching-facts=true pin-complete=false");
         }
@@ -134,7 +181,7 @@ internal static class ProjectConstructorProbe
     // completed held-file pin, never caller-supplied identity/proof parameters.
     static bool PlatformFacadeAllowed(string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (Original || mode == "owned-project") && platformFacadePinned && identity == Identities[6]
+        return (Original || OwnedProject) && platformFacadePinned && identity == Identities[6]
             && ProbeFiles.Same(location, platformFacadePath) && cache && !reflectionOnly;
     }
     static bool Framework(Assembly assembly)
@@ -158,7 +205,7 @@ internal static class ProjectConstructorProbe
             if (Framework(assembly)) allowed = true;
             bool platform = PlatformFacadeAllowed(assembly.FullName, assembly.Location, assembly.GlobalAssemblyCache, assembly.ReflectionOnly);
             if (platform) allowed = true;
-            if ((Original || mode == "owned-project") && assembly.GetName().Name == "netstandard")
+            if ((Original || OwnedProject) && assembly.GetName().Name == "netstandard")
                 Record("PLATFORM_FACADE_AUDIT alias-allowed=" + platform + " identity=" + Text(assembly.FullName) + " origin=" + (platform ? "FIXED_OS_GAC_PATH" : "UNQUALIFIED_FOR_ALIAS")
                     + " location=" + Text(assembly.Location) + " gac=" + assembly.GlobalAssemblyCache
                     + " reflection-only=" + assembly.ReflectionOnly
@@ -232,6 +279,91 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(project.IsPublic && project.Assembly.FullName == OmIdentity && project.MetadataToken == 0x020003a5
             && ctor.MetadataToken == 0x06002830, "PROJECT_ORIGINAL_TOKENS");
     }
+    static void IdSignature(Type type, ConstructorInfo ctor, MethodInfo getter)
+    {
+        ProbeFiles.Require(type != null && type.IsPublic && type.IsClass && !type.IsAbstract && !type.IsGenericType && !type.ContainsGenericParameters,
+            "PROJECT_ID_TYPE");
+        ProbeFiles.Require(ctor != null && ctor.DeclaringType == type && ctor.IsPublic && !ctor.IsStatic
+            && ctor.GetParameters().Length == 1 && ctor.GetParameters()[0].ParameterType == typeof(uint), "PROJECT_ID_CONSTRUCTOR_SIGNATURE");
+        ProbeFiles.Require(getter != null && getter.DeclaringType == type && getter.Name == "get_ProjectNumber" && getter.IsPublic && getter.IsSpecialName
+            && !getter.IsStatic && !getter.IsGenericMethod && !getter.ContainsGenericParameters && getter.GetParameters().Length == 0
+            && getter.ReturnType == typeof(uint), "PROJECT_ID_GETTER_SIGNATURE");
+    }
+    internal static void StoreIdSignature(Type owner, MethodInfo getter, Type id)
+    {
+        ProbeFiles.Require(owner != null && owner.IsPublic && owner.IsInterface && !owner.IsGenericType && id != null
+            && getter != null && getter.DeclaringType == owner && getter.Name == "get_Id" && getter.IsPublic && getter.IsSpecialName
+            && !getter.IsStatic && !getter.IsGenericMethod && !getter.ContainsGenericParameters
+            && getter.GetParameters().Length == 0 && getter.ReturnType == id, "PROJECT_STORE_ID_SIGNATURE");
+    }
+    static void OriginalIdTokens(Type id, ConstructorInfo ctor, MethodInfo getter, Type store, MethodInfo storeGetter)
+    {
+        IdSignature(id, ctor, getter); StoreIdSignature(store, storeGetter, id);
+        ProbeFiles.Require(id.FullName == "Knx.Ets.Ids.Project.ProjectId" && id.Assembly.FullName == Identities[11]
+            && (int)id.Attributes == 1056769 && store.FullName == "Knx.Ets.ObjectModel.IProjectStore" && store.Assembly.FullName == OmIdentity
+            && ReviewedIdTokens(id.MetadataToken, ctor.MetadataToken, getter.MetadataToken, store.MetadataToken, storeGetter.MetadataToken), "PROJECT_ID_ORIGINAL_TOKENS");
+    }
+    // Production inputs are reflected members from the fixed pinned assemblies.
+    // The owned tests exercise this finite token policy without forging CLR metadata.
+    static bool ReviewedIdTokens(int type, int ctor, int getter, int owner, int storeGetter)
+    { return type == 0x0200002c && ctor == 0x060001ef && getter == 0x060001f2 && owner == 0x02000057 && storeGetter == 0x060002f5; }
+    static object CreateFixtureId(Type id, ConstructorInfo ctor, MethodInfo getter)
+    {
+        IdSignature(id, ctor, getter);
+        object value; bool returned = false;
+        Record("PROJECT_ID_CONSTRUCTOR_BEGIN type=" + id.FullName + " token=" + ctor.MetadataToken.ToString("X8")
+            + " fixture-uint32=1 identity=OWNED_SYNTHETIC_NOT_REAL_OR_CLAIMED_VALID metadata-sha256=" + ReviewedIdMetadataSha256
+            + " observation-sha256=" + ReviewedIdObservationSha256);
+        try { value = ctor.Invoke(new object[] { FixtureProjectNumber }); returned = true; }
+        finally { Record("PROJECT_ID_CONSTRUCTOR_END returned=" + returned + " body-entry=NOT_ESTABLISHED_BY_STACK_TRACE qualification=NOT_ESTABLISHED"); }
+        ProbeFiles.Require(value != null && value.GetType() == id, "PROJECT_ID_EXACT_RETURN_TYPE");
+        ProbeFiles.Require(!unexpected && !rejected, "PROJECT_ID_CONSTRUCTOR_DEPENDENCY");
+        bool getterReturned = false, validated = false;
+        Record("PROJECT_ID_GETTER_BEGIN type=" + id.FullName + " token=" + getter.MetadataToken.ToString("X8"));
+        try {
+            object number = getter.Invoke(value, new object[0]); getterReturned = true;
+            ProbeFiles.Require(number != null && number.GetType() == typeof(uint) && (uint)number == FixtureProjectNumber, "PROJECT_ID_FIXTURE_NUMBER");
+            ProbeFiles.Require(!unexpected && !rejected, "PROJECT_ID_GETTER_DEPENDENCY");
+            validated = true;
+        } finally { Record("PROJECT_ID_GETTER_END returned=" + getterReturned + " fixture-number-validated=" + validated + " qualification=NOT_ESTABLISHED"); }
+        return value;
+    }
+    static void InvokeProjectWithId(ConstructorInfo ctor, object factory, object style, ProjectStoreIdProxy store, Func<int> factoryDenied)
+    {
+        bool returned = false;
+        Record("PROJECT_CONSTRUCTOR_BEGIN type=" + ctor.DeclaringType.FullName + " token=" + ctor.MetadataToken.ToString("X8") + " services=fixture-id-only");
+        try { constructed = ctor.Invoke(new object[] { factory, FixtureName, style, store.GetTransparentProxy() }); returned = true; }
+        finally { Record("PROJECT_CONSTRUCTOR_END returned=" + returned + " fixture-calls=" + store.FixtureCalls + " denied-requests=" + (factoryDenied() + store.DeniedRequests)
+            + " qualification=NOT_ESTABLISHED ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN"); }
+    }
+    static void OriginalProjectStoreId()
+    {
+        Record("PROJECT_PHASE original-fixture-type-materialization");
+        Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll"));
+        Assembly common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.Types.dll"));
+        Assembly ids = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Ids.dll"));
+        Type project = om.GetType("Knx.Ets.ObjectModel.Project.Project", true, false);
+        Type factory = om.GetType("Knx.Ets.ObjectModel.IFactory", true, false), store = om.GetType("Knx.Ets.ObjectModel.IProjectStore", true, false);
+        Type style = common.GetType(EnumName, true, false), id = ids.GetType("Knx.Ets.Ids.Project.ProjectId", true, false);
+        ProbeFiles.Require(project.Assembly == om && factory.Assembly == om && store.Assembly == om && style.Assembly == common && id.Assembly == ids, "PROJECT_TYPE_OWNERSHIP");
+        ConstructorInfo ctor = ProjectCtor(project, factory, style, store); OriginalTokens(project, ctor);
+        ConstructorInfo idCtor = id.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, new Type[] { typeof(uint) }, null);
+        MethodInfo idGetter = id.GetMethod("get_ProjectNumber", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        MethodInfo storeGetter = store.GetMethod("get_Id", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        OriginalIdTokens(id, idCtor, idGetter, store, storeGetter);
+        FieldInfo literal = style.GetField(ReviewedLiteral, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(style.IsEnum && style.MetadataToken == ReviewedEnumTypeToken && Enum.GetUnderlyingType(style).FullName == ReviewedUnderlyingType
+            && literal != null && literal.IsLiteral && literal.FieldType == style && literal.MetadataToken == ReviewedLiteralToken, "PROJECT_REVIEWED_ENUM_LITERAL");
+        object raw = literal.GetRawConstantValue();
+        ProbeFiles.Require(raw != null && raw.GetType().FullName == ReviewedUnderlyingType && Convert.ToString(raw, CultureInfo.InvariantCulture) == ReviewedRawValue, "PROJECT_REVIEWED_ENUM_VALUE");
+        object selectedStyle = Enum.ToObject(style, raw);
+        ProbeFiles.Require(!unexpected && !rejected, "PROJECT_PREFIXTURE_DEPENDENCY");
+        object value = CreateFixtureId(id, idCtor, idGetter);
+        var f = new ProjectDenyProxy(factory, Record); var s = new ProjectStoreIdProxy(store, storeGetter, value, Record);
+        ProbeFiles.Require(!unexpected && !rejected, "PROJECT_PRECONSTRUCTOR_DEPENDENCY");
+        InvokeProjectWithId(ctor, f.GetTransparentProxy(), selectedStyle, s, delegate { return f.Requests; });
+        GC.KeepAlive(f); GC.KeepAlive(s); GC.KeepAlive(value);
+    }
     static void OriginalProject()
     {
         ProbeFiles.Require(OriginalConstructorReady && ReviewedEnumReportSha256.Length == 64 && ReviewedLiteral.Length > 0 && ReviewedRawValue.Length > 0 && ReviewedLiteralToken != 0
@@ -300,13 +432,65 @@ internal static class ProjectConstructorProbe
         }
         Record("OWNED_PROJECT_CONSTRUCTOR_PASS denied=true caught-denial-unqualified=true no-request-unqualified=true original=NOT_RUN");
     }
+    static void OwnedProjectStoreId()
+    {
+        Owned(); // Retain the existing owned-only enum, platform and deny-all regressions.
+        Assembly assembly = Assembly.LoadFrom(fixture);
+        Type id = assembly.GetType("Owned.Task009.ProjectIdFixture", true), store = assembly.GetType("Owned.Task009.IProjectIdStoreFixture", true);
+        Type foreign = assembly.GetType("Owned.Task009.IForeignIdStoreFixture", true);
+        ConstructorInfo ctor = id.GetConstructor(new Type[] { typeof(uint) });
+        MethodInfo getter = id.GetMethod("get_ProjectNumber"), storeGetter = store.GetMethod("get_Id");
+        Type wrong = assembly.GetType("Owned.Task009.WrongIdShapeFixture", true);
+        Type privateCtor = assembly.GetType("Owned.Task009.PrivateIdCtorFixture", true), privateGetter = assembly.GetType("Owned.Task009.PrivateIdGetterFixture", true);
+        int rejections = 0;
+        foreach (Action action in new Action[] {
+            delegate { IdSignature(typeof(string), ctor, getter); },
+            delegate { IdSignature(id, id.GetConstructor(new Type[] { typeof(string) }), getter); },
+            delegate { IdSignature(id, ctor, wrong.GetMethod("get_ProjectNumber")); },
+            delegate { IdSignature(wrong, wrong.GetConstructor(new Type[] { typeof(uint) }), wrong.GetMethod("get_ProjectNumber")); },
+            delegate { IdSignature(privateCtor, privateCtor.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(uint) }, null), privateCtor.GetMethod("get_ProjectNumber")); },
+            delegate { IdSignature(privateGetter, privateGetter.GetConstructor(new Type[] { typeof(uint) }), privateGetter.GetMethod("get_ProjectNumber", BindingFlags.NonPublic | BindingFlags.Instance)); },
+            delegate { StoreIdSignature(store, foreign.GetMethod("get_Id"), id); },
+            delegate { StoreIdSignature(store, store.GetMethod("get_Name"), id); },
+            delegate { StoreIdSignature(store, storeGetter, typeof(string)); },
+            delegate { new ProjectStoreIdProxy(store, storeGetter, new object(), Record); },
+            delegate { OriginalIdTokens(id, ctor, getter, store, storeGetter); }
+        }) { bool denied = false; try { action(); } catch (IOException) { denied = true; } ProbeFiles.Require(denied, "OWNED_ID_CONTRACT_REJECTION"); rejections++; }
+        int[] tokens = { 0x0200002c, 0x060001ef, 0x060001f2, 0x02000057, 0x060002f5 };
+        ProbeFiles.Require(ReviewedIdTokens(tokens[0], tokens[1], tokens[2], tokens[3], tokens[4]), "OWNED_ID_TOKEN_POLICY");
+        for (int i = 0; i < tokens.Length; i++) { tokens[i]++; ProbeFiles.Require(!ReviewedIdTokens(tokens[0], tokens[1], tokens[2], tokens[3], tokens[4]), "OWNED_ID_TOKEN_NEGATIVE"); tokens[i]--; }
+        ProbeFiles.Require(Object.Equals(id.GetMethod("Untouched").Invoke(null, new object[0]), true), "OWNED_ID_NO_EARLY_SIDE_EFFECT");
+        Record("OWNED_ID_CONTRACT_PASS rejected=" + rejections + " before-construction=true token-policy-negatives=5 no-original-token-impersonation=true");
+        object value = CreateFixtureId(id, ctor, getter);
+        var proxy = new ProjectStoreIdProxy(store, storeGetter, value, Record);
+        assembly.GetType("Owned.Task009.ProjectIdAssertions", true).GetMethod("AssertAll").Invoke(null, new object[] { value, proxy.GetTransparentProxy() });
+        ProbeFiles.Require(proxy.FixtureCalls == 2 && proxy.DeniedRequests == 17, "OWNED_ID_PROXY_COUNTS");
+        var saturated = new ProjectStoreIdProxy(store, storeGetter, value, Record);
+        assembly.GetType("Owned.Task009.ProjectIdAssertions", true).GetMethod("AssertSaturation").Invoke(null, new object[] { value, saturated.GetTransparentProxy() });
+        ProbeFiles.Require(saturated.FixtureCalls == 16 && saturated.DeniedRequests == 17, "OWNED_ID_PROXY_SATURATION");
+        ProbeFiles.Require(Object.Equals(id.GetMethod("CreatedAndValidatedOnce").Invoke(null, new object[0]), true), "OWNED_ID_ONCE");
+        foreach (string name in new string[] { "ThrowingIdFixture", "WrongNumberIdFixture" }) {
+            Type bad = assembly.GetType("Owned.Task009." + name, true); bool denied = false;
+            try { CreateFixtureId(bad, bad.GetConstructor(new Type[] { typeof(uint) }), bad.GetMethod("get_ProjectNumber")); }
+            catch (TargetInvocationException) { denied = name == "ThrowingIdFixture"; }
+            catch (IOException) { denied = name == "WrongNumberIdFixture"; }
+            ProbeFiles.Require(denied, "OWNED_ID_CREATION_FAILURE");
+            ProbeFiles.Require(Object.Equals(bad.GetMethod("AttemptedOnce").Invoke(null, new object[0]), true), "OWNED_ID_FAILURE_ONCE");
+        }
+        Type factory = assembly.GetType("Owned.Task009.IFactoryFixture", true), style = assembly.GetType("Owned.Task009.GroupAddressStyleFixture", true);
+        var f = new ProjectDenyProxy(factory, Record); var s = new ProjectStoreIdProxy(store, storeGetter, value, Record);
+        Type project = assembly.GetType("Owned.Task009.ProjectReadsIdFixture", true);
+        InvokeProjectWithId(ProjectCtor(project, factory, style, store), f.GetTransparentProxy(), Enum.ToObject(style, (short)7), s, delegate { return f.Requests; });
+        ProbeFiles.Require(s.FixtureCalls == 2 && s.DeniedRequests == 0 && f.Requests == 0, "OWNED_ID_PROJECT_CALLS");
+        Record("OWNED_PROJECT_STORE_ID_PASS created=1 validated=1 stable-object=true unknown-generic-ref-out-void-property-malformed=denied bounded=true original=NOT_RUN qualification=NOT_ESTABLISHED");
+    }
     [STAThread]
     internal static int Main(string[] args)
     {
         int result = 2;
         try {
             ProbeFiles.Require(args.Length == 6 && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
-            mode = args[1]; ProbeFiles.Require(EnumOnly || Original || mode == "owned-project", "PROJECT_MODE");
+            mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject, "PROJECT_MODE");
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -344,7 +528,11 @@ internal static class ProjectConstructorProbe
                 int thread = Thread.CurrentThread.ManagedThreadId;
                 var app = new Application(); app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
-                    try { ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED"); if (Original) OriginalProject(); else Owned(); result = 0; }
+                    try {
+                        ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
+                        if (StoreIdFixture) { if (Original) OriginalProjectStoreId(); else OwnedProjectStoreId(); }
+                        else if (Original) OriginalProject(); else Owned(); result = 0;
+                    }
                     catch (Exception error) { Errors(error); result = 10; }
                     finally { app.Shutdown(result); }
                 }));

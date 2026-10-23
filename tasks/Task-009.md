@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; fixed ProjectId guarded metadata PASS declarations only; project06 remains FAIL exit 10 on unsupported get_Id, no qualified fixture/service |
-| Source commit(s) | Prior increments recorded below; profile12 source/project06 run `de5d65056510b240deb93971313bca9f164b7b40`; reviewed project06 result `28398f0de002c6bef613325dc3431fe48e7cb656`; ProjectId source/actual metadata `a2976171e6bd571243c8f1a0f3ab88bbf9674911`; result documentation commit pending |
-| Tests executed | Earlier results retained. Generation06 pinned build/owned suites PASS 11 Session0/20 limited/16 elevated. Project06 original diagnostic FAIL exit 10, one unsupported get_Id request; invocation ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. ProjectId synthetic checks PASS 151 PowerShell/19 Python; one actual guarded metadata extraction PASS after rejected setup NOT RUN. No ProjectId method/value construction; DCA initialization/UI/state/hardware NOT RUN |
+| Implementation / report status | Blocked; fixed ProjectId metadata PASS declarations only; Id-only fixture owned Windows suites PASS, original runtime NOT RUN. Project06 remains FAIL exit 10, no qualified fixture/service |
+| Source commit(s) | Prior increments recorded below; profile12/project06 source `de5d65056510b240deb93971313bca9f164b7b40`; reviewed project06 result `28398f0de002c6bef613325dc3431fe48e7cb656`; ProjectId source/metadata `a2976171e6bd571243c8f1a0f3ab88bbf9674911`, reviewed result `91121b184043e32db930fd596e751a53ee69751a`; Id-only fixture source commit pending |
+| Tests executed | Earlier results retained: project06 original FAIL exit 10/unsupported get_Id, ProjectId metadata PASS. New Id-only fixture local C#5/source checks PASS; generation07 pinned Windows build and owned suites PASS 15 Session0/25 limited/20 admin negative, including owned Id construction/getter/proxy. Original Id/fixture execution NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | ProjectId public UInt32/StringSection constructor and UInt32 getter declarations observed; no method/value semantics or getter response supplied. Prior get_Id remains explicitly unsupported, no Project constructor return/body-entry proof. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Profile12/project06 and ProjectId source/synthetic independent verification/critical review PASS; actual ProjectId metadata result audit/review pending; no runtime service acceptance |
+| Reviewer | Profile12/project06 and ProjectId source/result independent verification/critical review PASS; Id-only fixture source/Windows verification/review pending; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1166,3 +1166,63 @@ Only PRIVATE_STAGE is the observed first rejection; later setup corrections
 satisfy unchanged guards. Public constructor/getter declarations do not qualify
 behavior or approve a future runtime fixture. Task-009 stays Blocked; the
 project06 FAIL and absence of DCA/hardware/gate qualification remain preserved.
+
+## Id-only offline fixture source increment
+
+After reviewed metadata result `91121b184043e32db930fd596e751a53ee69751a`,
+add only explicit `original-project-store-id` / `owned-project-store-id` modes.
+The unchanged twelve-pin original route validates reviewed ProjectId public
+UInt32 constructor/numeric getter and exact IProjectStore.get_Id owner/signature/
+tokens before attempting one constructor and getter. Fixed UInt32 `1` is owned
+synthetic fixture data, not a real/manufacturer identity or claimed-valid value.
+Only exact type plus exact numeric getter validation enables a bounded proxy
+returning that same object for get_Id. All other requests and saturation are
+unsupported; positive/denied counters are separate. Old deny-all behavior remains.
+
+The [contract/source hashes](../docs/DCA-PROJECT-CONTEXT.md) record limits and
+owned regressions. Private `knx-task009-store-id-sourcecheck.ps1` with provisioned
+PowerShell 7.6.7, `-Worktree WORKTREE -FrameworkReferences PRIVATE_EVIDENCE/task148-clean-host/references`,
+**PASS**: six pinned net48 references, C#5/x64/warnings-as-errors in-memory
+compiles (Project 66,560 / Launcher 37,888 / fixtures 13,824 bytes), PS parse,
+and old/new source guards. Legacy method/pin/other-source comparison **PASS**;
+`python3 -B scripts/check_project_scope.py` and `git diff --check` **PASS**.
+This is local source verification, not runtime evidence. Generation07 Windows
+build/owned suites and original Id/fixture execution are **NOT RUN** at freeze;
+independent verification/review/commit precede any original run. No dependency,
+config, metadata tooling or device path changed. Task-009 remains Blocked; even
+a returned Project would not qualify services, DCA initialization/UI/state or
+hardware. The earlier project06 unsupported-service FAIL remains actual history.
+
+## Generation07 actual Windows owned verification
+
+After the historical source-only freeze above, unchanged sources built **PASS**
+with pinned Windows compiler 4.8.9221.0: eight sources/twelve artifacts.
+Private source-freeze-07.json SHA-256
+`0ed5171bf2522d78356f44fcafbf5da6be64d285f651546528375dbae3649c92`
+and owned07-observation.json, 33,508 bytes, SHA-256
+`36bf34ce75f5539dca24e0e23eb26a28e5ae0a46b4a0d5ebbe3fe978ef2927a4`
+bind actual **PASS 15 Session0 / 25 limited / 20 admin negative** cases.
+Both interactive runs used Session2 with correct roles, exit 0, removed tasks,
+zero owned processes/no junction; 64 limited/49 admin case files retained.
+The limited new fixture case validates one owned Id constructor/getter, stable
+Id-only returns, contract negatives/saturation/unsupported requests; its Project
+return remains unqualified. Original runtime **NOT RUN** in all owned profiles.
+Raw UTF-16/strict UTF-8 provenance and nonempty Session0 CLIXML progress stderr
+are preserved. An early limited status03 collection failed missing done;
+status05 retrieved the same single run, with no test rerun. See [build/log hashes
+and commands](../docs/DCA-PROJECT-CONTEXT.md). Independent review/commit and original
+fixture run remain pending; Task-009 Blocked, ACs unchecked, no DCA/UI/state/
+hardware or gate qualification. Source hashes remain unchanged.
+
+Independent critical review PASS for generation07 at baseline
+`91121b184043e32db930fd596e751a53ee69751a`. The reviewer inspected the actual
+six-path diff and complete 15/25/20 Windows evidence appendix, checked the frozen
+source/report and 182-file provenance, old-mode preservation, scope and whitespace,
+and did not rerun Windows or read SDK binaries. The exact synthetic getter boundary
+and unqualified-return limits are preserved. Original store-ID fixture execution
+remains NOT RUN; no original positive service, Project fixture, DCA/UI/state,
+hardware or gate is accepted. After the explicit source commit, only the fixed
+single 15-second diagnostic may follow under existing authorization; failures stop
+without automatic expansion or retry. The private review record binds the
+pre-append document hashes; it does not claim those hashes identify this later
+review note.
