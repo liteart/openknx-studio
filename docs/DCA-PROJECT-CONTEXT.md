@@ -1,5 +1,116 @@
 # Static Project context qualification
 
+## Source12 pre-Build guard and exact OS ValueTuple reference contract
+
+Baseline `8434aec9c4e78eb4aeec64d5638c4d6ee0f98ca7` contains the reviewed
+Factory11 FAIL2. The next bounded source increment checks latched dependency
+violations immediately after builder return/exact-type validation, before Build
+BEGIN/invocation. The after-Build guard, managed disposal and post-lifetime
+provider audit remain. Owned controlled-builder tests exercise both unexpected/
+rejected flags with no Build/use/Factory effects, without resetting production
+latches or exposing a caller override. A private owned-only control uses the same
+bool guard at the same lifecycle boundary; production flags are always checked.
+The actual Factory11 ordering is the failing observation; any owned unguarded
+baseline is explicitly a modeled test, not a repeated vendor execution.
+
+Separate Microsoft-only observation12 (manifest1,190B SHA-256
+`faed68b4479f7ea3c2c6e02677d78b8eee65d24ed4301fe9b75100d5cd5e50c6`;
+independent audit3,306B SHA-256 `34ac3b120721f296c0571533f64fa317a0f535f15a7fa184c210fa0e320da1a7`)
+records System.ValueTuple4.0.0.0/neutral/PKTcc7b13ffcd2ddd51 at Windows-relative
+`Microsoft.Net\assembly\GAC_MSIL\System.ValueTuple\v4.0_4.0.0.0__cc7b13ffcd2ddd51\System.ValueTuple.dll`,
+25,544B SHA-256 `62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a`,
+GAC true/reflection-only false. This is an OS reference observation, not facade
+classification or historical Factory11 path/hash/origin proof.
+
+Only original-factory-empty-container gets this held read-only OS reference pin:
+after all nineteen private hashes, exact size/hash precede its metadata identity
+and any other OS/private identity inspection. Runtime admission requires complete
+pin, current exact mode, exact identity/path, actual GAC and non-reflection-only
+state. Every ValueTuple candidate logs its actual path/decision; a denied candidate
+is never assigned the held hash. No framework/token/name wildcard, fallback,
+private input, config or redirect is added. The seven other sources/build/configs/
+nineteen private pins remain unchanged. New original execution NOT RUN at this
+contract freeze; Task009 Blocked, ACs unchecked/no qualification/gate advance.
+
+### Source12 local freeze and owned regression design
+
+The new pre-Build check is unconditional for the actual production latches. A
+private extra callback is permitted only in owned-factory-empty-container and
+calls the same bool guard at the same post-builder boundary. Controlled owned
+builder callbacks latch local unexpected/rejected facts, without writing/resetting
+the real flags. The prepared test first models the missing owned-latch check
+(Build1/use1/Factory0), then each guarded flag requires builder1/Build0/use0/Factory0.
+This modeled baseline is not a vendor rerun; runtime test results remain NOT RUN
+at this source freeze. Existing post-disposal caught-denial coverage remains.
+
+Owned ValueTuple predicate negatives cover incomplete pin, wrong identity/path,
+cache/reflection state and other modes, with no original OS reference load.
+The runtime audit overrides all general admission for any case-variant ValueTuple
+candidate name; only exact pinned identity/path/current mode can be allowed.
+Dynamic/denied paths are recorded as unavailable/unqualified when appropriate,
+never assigned the held hash. Original private input count/total remains nineteen/
+24,278,056B, with the new exact OS pin separate; no twentieth private input.
+
+Local macOS PowerShell7.6.7 checks **PASS**: six pinned .NET4.8 references,
+C#5/x64 warnings-as-errors compilation (local probe113,152B/launcher43,008B/
+fixtures17,920B), Build/Test PS parse and source guards; old methods/proxies/all
+fixed arrays/config/build/original-latch assignment preservation, scope/diff.
+Fresh helper `knx-task009-container-valuetuple-sourcecheck.ps1` SHA-256
+`c168266e38f1038f378411603799ad335f924ffd18ecb0daf2b8bf94174dd226` ran with normalized
+command `pwsh -NoLogo -NoProfile -NonInteractive -File <private-helper>/knx-task009-container-valuetuple-sourcecheck.ps1 -Worktree <task009-worktree> -FrameworkReferences <private>/evidence/task148-clean-host/references`.
+Seven other frozen source files and eighteen-artifact build remain unchanged.
+Source-freeze-12.json SHA-256
+`0eebf6b262a23de072dffdc232718aaff3aa94657f5e8026e9b4a53103575425`
+binds ten sources and the separate OS observation/audits.
+New Windows12 policy/API/guard/owned tests and original12 execution are **NOT RUN**;
+independent verification and critical review pending. Latest actual original remains
+Factory11 FAIL2, with its historical ValueTuple origin UNKNOWN. Managed cleanup/
+post-lifetime provider audit are preserved; hard-kill guarantees remain
+NOT_ESTABLISHED and asynchronous-outside-lifetime work UNKNOWN. No service/Factory/
+Project/DCA/UI/state/hardware/gate qualification; Task009 Blocked/all ACs unchecked.
+
+### Subsequent Windows12 owned verification
+
+Windows build **PASS**, same pinned compiler/eight compiled sources/eighteen
+artifacts and unchanged configs; build-report SHA-256
+`e73304fdc72d4e0ded6866adc00d799183f8bf2a62767703c969fa2d34d18c3f`.
+Owned suites **PASS 28 Session0 /59 limited /33 admin-negative** (one added source
+guard each), all three runners preflight eighteen artifact sizes/hashes and the
+frozen driver. Limited/admin Session2 roles correct, done 0/cleanup 0, task removed,
+zero owned processes/no junction, 151/73 case files. Strict raw UTF-16/UTF-8
+bindings and Session0's 616B CLIXML stderr are preserved.
+
+Both MODELED local-latch baselines Build1/use1 and fixed unexpected/rejected
+Build0/use0/Factory0 cases **PASS**, without production-latch reset. Existing
+post-disposal denial regression PASS/nine disposal markers. ValueTuple pure
+predicate positives/negatives PASS, owned-only; the actual original OS pin and
+Factory12 remain NOT RUN. Separate Microsoft observation does not identify
+Factory11's historical origin or classify ValueTuple as a facade.
+
+Private owned12-observation.json, 55,872B, SHA-256
+`15cd3120fd81e4ece4a72c1c3032f260e89668e200835b6d8bae377702d7389e`,
+binds 284 files. Independent source audit PASS SHA-256
+`aa3b034a3c2689fd3fb0c052fe0ee4297a1089d9efa038fd5a826e6f64d14b4f`;
+owned-result audit PASS, verifier12/owned-result-audit.txt, 4,618B SHA-256
+`ee3a0fd789df708fdf9e85894fc16084d4a7c522120d33be94ab531fa46179e3`.
+Coordinator ran once each from repository root; observation first publication PASS:
+
+```text
+python3 private/evidence/task009-constructor-windows/build_owned12.py
+python3 private/evidence/task009-constructor-windows/run_session0_12.py
+python3 private/evidence/task009-constructor-windows/run_owned12.py
+python3 private/evidence/task009-constructor-windows/collect_owned12.py
+python3 private/evidence/task009-constructor-windows/cleanup_owned12.py
+python3 private/evidence/task009-constructor-windows/run_owned_admin12.py
+python3 private/evidence/task009-constructor-windows/collect_owned_admin12.py
+python3 private/evidence/task009-constructor-windows/cleanup_owned_admin12.py
+python3 private/evidence/task009-constructor-windows/record_owned12.py
+```
+
+Critical source/owned review PASS; private review12/critical-review-source.txt records the bounded verdict. Original12 remains NOT RUN; source/evidence and runtime claims are unchanged. Historical source-NOT_RUN remains chronological; latest actual
+original remains Factory11 FAIL2/no Factory BEGIN. Task009 Blocked/all ACs unchecked,
+no qualification/gate advance; original12 helpers unexecuted source only.
+
 ## Factory11 original empty-container diagnostic result
 
 At reviewed source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`, exactly one

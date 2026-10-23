@@ -82,15 +82,51 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; latest original Factory11 empty-container diagnostic FAIL2 after ValueTuple audit rejection/post-Build dependency guard; no qualified context/Factory/Project/service |
-| Source commit(s) | Latest original Factory11 reviewed source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`; prior increments preserved |
-| Tests executed | Windows11 owned PASS27/58/32 with full18 artifact preflight/regression remains separate. Exactly one original11 FAIL2, builder/Build returned then guard rejected, Factory constructor NOT ATTEMPTED. Historical source10 owned PASS27/58/32 and critical source review FAIL retained; prior originalFactory09 FAIL10/Factory08 FAIL2 and UndoManager declaration PASS preserved. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Source commit(s) | Latest original Factory11 reviewed source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`; source12 freeze against reviewed result baseline `8434aec9c4e78eb4aeec64d5638c4d6ee0f98ca7`; no future source commit asserted |
+| Tests executed | Windows12 owned PASS28/59/33 with full18 artifact preflight; modeled builder guards/disposal regression/pure ValueTuple predicates PASS, original12 NOT RUN. Windows11 owned PASS27/58/32 remains historical. Exactly one original11 FAIL2, builder/Build returned then guard rejected, Factory constructor NOT ATTEMPTED. Historical source10 owned PASS27/58/32 and critical source review FAIL retained; prior originalFactory09 FAIL10/Factory08 FAIL2 and UndoManager declaration PASS preserved. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Builder02000015/ctor06000026 returned; disallowed ValueTuple4 loaded with location/hash/origin UNKNOWN. Build0600002E then returned nonnull before EMPTY_CONTAINER_BUILD_DEPENDENCY; disposal once/audit scopeFalse requests0; no READY/Factory BEGIN. After-load detection not prevention/CLR or ABI proof; no qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; the diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
+| Reviewer | Source12 source/owned independent audits and critical source/owned review PASS; original12 remains NOT RUN. Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; the diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Source12 pre-Build guard and OS reference freeze
+
+Against reviewed baseline `8434aec9c4e78eb4aeec64d5638c4d6ee0f98ca7`, production
+latches are checked immediately after builder/exact-type and before Build;
+after-Build/disposal/provider checks remain. Private owned controls use the same
+guard and never reset production flags. Prepared modeled baseline Build1/use1
+then both controlled flags require builder1/Build0/use0/Factory0, no vendor rerun.
+Only original-empty gains exact held OS ValueTuple reference pin25544B SHA-256
+`62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a`,
+after19private hashes/before file identities; completed pin/exact identity/path/
+GAC/nonreflection required, with denied-path logs and owned predicate negatives.
+Independent Microsoft-only observation/audit provenance is in the contract;
+not facade classification or historical Factory11 origin proof. No input/config/
+redirect/Framework expansion; nineteen private pins/seven other sources unchanged.
+Local six-reference C#5/x64 compile/PS parse/guards/preservation/scope/diff **PASS**;
+fresh helper SHA-256 `c168266e38f1038f378411603799ad335f924ffd18ecb0daf2b8bf94174dd226`.
+Windows12/original12 **NOT RUN** at source freeze; verification/critical review
+pending. Task Blocked/ACs unchecked/no gate or qualification; Factory11 FAIL2 latest.
+
+### Subsequent Windows12 owned verification
+
+Build PASS/eight compiled sources/eighteen artifacts/same compiler/configs;
+owned **PASS 28 Session0 /59 limited /33 admin-negative**, full 18 artifact size/hash
+preflight/frozen driver in all runners. Session2 roles/done 0/cleanup 0/removal/
+zero processes/no junction/151/73 files/strict encoding preserved. Modeled local
+baseline Build1/use1 and both fixed flags Build0/use0/Factory0 PASS, no actual latch
+reset; existing post-disposal regression/nine disposal markers and pure ValueTuple
+predicate cases PASS. Actual original OS pin/Factory12 NOT RUN; separate Microsoft
+observation proves neither historical Factory11 origin nor facade classification.
+Observation 55,872B SHA-256 `15cd3120fd81e4ece4a72c1c3032f260e89668e200835b6d8bae377702d7389e`
+binds 284 files; independent result audit PASS SHA-256
+`ee3a0fd789df708fdf9e85894fc16084d4a7c522120d33be94ab531fa46179e3`.
+Exact nine Python commands in contract executed once, first observation publication
+PASS. Critical review PASS; private review12/critical-review-source.txt records the bounded verdict. Latest actual Factory11 FAIL2/no Factory BEGIN preserved; Task Blocked/
+ACs unchecked/no qualification/gate; original12 remains NOT RUN.
 
 ## Factory11 actual original result
 

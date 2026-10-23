@@ -220,11 +220,17 @@ namespace Owned.Task009
         public static int Constructors, Builds, Disposals, Factories;
         public static string Behavior;
         public static IDataDependencyFixture DisposalProvider;
-        public static void Reset(string behavior) { Constructors = Builds = Disposals = Factories = 0; Behavior = behavior; DisposalProvider = null; }
+        public static Action BuilderCallback;
+        public static void Reset(string behavior) { Constructors = Builds = Disposals = Factories = 0; Behavior = behavior; DisposalProvider = null; BuilderCallback = null; }
     }
     public sealed class EmptyBuilderFixture
     {
-        public EmptyBuilderFixture() { EmptyControlFixture.Constructors++; if (EmptyControlFixture.Behavior == "ctor-throw") throw new NotSupportedException("OWNED_BUILDER_THROW"); }
+        public EmptyBuilderFixture()
+        {
+            EmptyControlFixture.Constructors++;
+            if (EmptyControlFixture.Behavior == "ctor-throw") throw new NotSupportedException("OWNED_BUILDER_THROW");
+            if (EmptyControlFixture.BuilderCallback != null) EmptyControlFixture.BuilderCallback();
+        }
         public IEmptyContainerFixture Build(EmptyOptionsFixture options)
         {
             EmptyControlFixture.Builds++;

@@ -94,6 +94,9 @@ internal static class ProjectConstructorProbe
     const string CommonIdentity = "Knx.Ets.Common.Types, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
     const string CommonHash = "5c4e08541a123825b0ed501aec1f5fbbbc3d1f756b3be41ff2728925f906c9f0";
     const string PlatformFacadeRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\netstandard\\v4.0_2.0.0.0__cc7b13ffcd2ddd51\\netstandard.dll";
+    const string ValueTupleIdentity = "System.ValueTuple, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+    const string ValueTupleHash = "62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a";
+    const string ValueTupleRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\System.ValueTuple\\v4.0_4.0.0.0__cc7b13ffcd2ddd51\\System.ValueTuple.dll";
     const string ReviewedIdMetadataSha256 = "37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4";
     const string ReviewedIdObservationSha256 = "89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a";
     const uint FixtureProjectNumber = 1; // Owned synthetic data, not a real or claimed-valid project identity.
@@ -129,9 +132,9 @@ internal static class ProjectConstructorProbe
     static string stage, mode, fixture;
     static volatile bool unexpected, rejected;
     static volatile bool enumInputsPinned;
-    static volatile bool platformFacadePinned;
+    static volatile bool platformFacadePinned, valueTuplePinned;
     static volatile bool factoryInputsReady, containerInputsReady;
-    static string platformFacadePath;
+    static string platformFacadePath, valueTuplePath;
     static int logBytes, assemblyCount;
     static object constructed;
     static bool EnumOnly { get { return mode == "project-enum-metadata"; } }
@@ -204,6 +207,24 @@ internal static class ProjectConstructorProbe
         return (Original || OwnedProject || FactoryOnly) && platformFacadePinned && identity == Identities[6]
             && ProbeFiles.Same(location, platformFacadePath) && cache && !reflectionOnly;
     }
+    static void PinValueTupleReference()
+    {
+        ProbeFiles.Require(mode == "original-factory-empty-container", "VALUETUPLE_REFERENCE_MODE");
+        valueTuplePath = ProbeFiles.Local(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath), true, false);
+        var stream = new FileStream(valueTuplePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        Inputs.Add(stream);
+        ProbeFiles.Require(stream.Length == 25544, "VALUETUPLE_REFERENCE_SIZE");
+        ProbeFiles.Require(ProbeFiles.Hash(stream) == ValueTupleHash, "VALUETUPLE_REFERENCE_HASH");
+        ProbeFiles.Require(AssemblyName.GetAssemblyName(valueTuplePath).FullName == ValueTupleIdentity, "VALUETUPLE_REFERENCE_IDENTITY");
+        valueTuplePinned = true;
+        Record("VALUETUPLE_REFERENCE_PIN origin=FIXED_OS_REFERENCE location=" + Text(valueTuplePath) + " bytes=" + stream.Length + " sha256=" + ValueTupleHash);
+    }
+    // Private finite predicate only. Real admission uses the completed held-file pin.
+    static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
+    {
+        return selectedMode == "original-factory-empty-container" && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+            && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
+    }
     static void PinFactoryInputs()
     {
         CountInputs(14);
@@ -236,6 +257,7 @@ internal static class ProjectConstructorProbe
             Pin(Path.Combine(stage, ContainerNames[i] + ".dll"), ContainerHashes[i]);
             ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == ContainerSizes[i], "CONTAINER_INPUT_SIZE");
         }
+        PinValueTupleReference();
         PinPlatformFacade();
         for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "CONTAINER_INPUT_IDENTITY");
         for (int i = 0; i < FactoryExtraNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, FactoryExtraNames[i] + ".dll")).FullName == FactoryExtraIdentities[i], "CONTAINER_INPUT_IDENTITY");
@@ -305,6 +327,17 @@ internal static class ProjectConstructorProbe
                 Record("CONTAINER_REFERENCE_AUDIT allowed=" + allowed + " identity=" + Text(assembly.FullName) + " location=" + Text(assembly.Location)
                     + " held-pin-sha256=" + (allowed ? ContainerHashes[i] : "NOT_ESTABLISHED") + " framework-fallback=false");
             }
+        }
+        // Always override general admission for this exact candidate name, even denied/dynamic loads.
+        if (String.Equals(assembly.GetName().Name, "System.ValueTuple", StringComparison.OrdinalIgnoreCase)) {
+            string location = assembly.IsDynamic ? "UNAVAILABLE_DYNAMIC" : assembly.Location;
+            bool cache = !assembly.IsDynamic && assembly.GlobalAssemblyCache;
+            bool selected = !assembly.IsDynamic && ValueTupleReferencePolicy(mode, valueTuplePinned, assembly.FullName, location, cache, assembly.ReflectionOnly)
+                && ProbeFiles.Same(location, valueTuplePath);
+            allowed = selected;
+            Record("VALUETUPLE_REFERENCE_AUDIT allowed=" + selected + " identity=" + Text(assembly.FullName) + " location=" + Text(location)
+                + " gac=" + cache + " reflection-only=" + assembly.ReflectionOnly + " pin-complete=" + valueTuplePinned
+                + " origin=" + (selected ? "FIXED_OS_REFERENCE" : "UNQUALIFIED") + " held-pin-sha256=" + (selected ? ValueTupleHash : "NOT_ESTABLISHED"));
         }
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         if (!allowed) { unexpected = true; Record("UNEXPECTED_ASSEMBLY_BLOCKER detection=after-load prevention=NOT_ESTABLISHED"); }
@@ -778,8 +811,14 @@ internal static class ProjectConstructorProbe
             && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value) && value.GetType().Assembly == api.Builder.Assembly,
             "EMPTY_CONTAINER_GENUINE_RETURN");
     }
+    static void CheckBuilderDependencies(bool hasUnexpected, bool hasRejected)
+    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "EMPTY_CONTAINER_BUILDER_DEPENDENCY"); }
     static void WithEmptyContainer(EmptyContainerApi api, Action<object> use)
+    { WithEmptyContainerCore(api, use, null); }
+    // Additional guard control exists only for finite owned fixtures. Actual latches are never bypassed/reset.
+    static void WithEmptyContainerCore(EmptyContainerApi api, Action<object> use, Action ownedBuilderGuard)
     {
+        ProbeFiles.Require(ownedBuilderGuard == null || mode == "owned-factory-empty-container", "OWNED_BUILDER_GUARD_MODE");
         object container = null, builder = null;
         try {
             bool created = false;
@@ -787,6 +826,8 @@ internal static class ProjectConstructorProbe
             try { builder = api.Constructor.Invoke(new object[0]); created = true; }
             finally { Record("EMPTY_CONTAINER_BUILDER_END returned=" + created); }
             ProbeFiles.Require(builder != null && builder.GetType() == api.Builder, "EMPTY_CONTAINER_EXACT_BUILDER");
+            CheckBuilderDependencies(unexpected, rejected);
+            if (ownedBuilderGuard != null) ownedBuilderGuard();
             bool built = false;
             Record("EMPTY_CONTAINER_BUILD_BEGIN token=" + api.Build.MetadataToken.ToString("X8") + " options=None raw=0 application-registrations=0 defaults=RETAINED");
             try { container = api.Build.Invoke(builder, new object[] { Enum.ToObject(api.Options, 0) }); built = true; }
@@ -869,6 +910,34 @@ internal static class ProjectConstructorProbe
         Action<string> reset = delegate(string behavior) { control.GetMethod("Reset").Invoke(null, new object[] { behavior }); };
         Func<string, int> count = delegate(string name) { return (int)control.GetField(name).GetValue(null); };
         EmptyContainerApi api = EmptyApi(builder, options, container, context);
+        string observedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath);
+        ProbeFiles.Require(!valueTuplePinned && !ValueTupleReferencePolicy("original-factory-empty-container", false, ValueTupleIdentity, observedPath, true, false)
+            && ValueTupleReferencePolicy("original-factory-empty-container", true, ValueTupleIdentity, observedPath, true, false), "OWNED_VALUETUPLE_PIN_POLICY");
+        foreach (string other in new string[] { "original-project", "original-project-store-id", "original-factory", "original-factory-bcl9", "owned-factory-empty-container" })
+            ProbeFiles.Require(!ValueTupleReferencePolicy(other, true, ValueTupleIdentity, observedPath, true, false), "OWNED_VALUETUPLE_OTHER_MODE");
+        ProbeFiles.Require(!ValueTupleReferencePolicy("original-factory-empty-container", true, "Owned.WrongIdentity", observedPath, true, false)
+            && !ValueTupleReferencePolicy("original-factory-empty-container", true, ValueTupleIdentity, fixture, true, false)
+            && !ValueTupleReferencePolicy("original-factory-empty-container", true, ValueTupleIdentity, observedPath, false, false)
+            && !ValueTupleReferencePolicy("original-factory-empty-container", true, ValueTupleIdentity, observedPath, true, true), "OWNED_VALUETUPLE_FACT_POLICY");
+        Record("OWNED_VALUETUPLE_REFERENCE_POLICY_PASS incomplete-pin-identity-path-cache-reflection-other-modes=denied original-os-reference-load=NOT_RUN historical-origin=UNKNOWN");
+        foreach (string flag in new string[] { "unexpected", "rejected" }) {
+            bool latchedUnexpected = false, latchedRejected = false; int used = 0;
+            Action latch = delegate { if (flag == "unexpected") latchedUnexpected = true; else latchedRejected = true; };
+            reset("normal"); control.GetField("BuilderCallback").SetValue(null, latch);
+            // Model the old missing check with local owned latches, never actual production flags.
+            WithEmptyContainer(api, delegate(object value) { used++; });
+            ProbeFiles.Require((latchedUnexpected || latchedRejected) && count("Constructors") == 1 && count("Builds") == 1 && used == 1 && count("Factories") == 0 && count("Disposals") == 1,
+                "OWNED_BUILDER_GUARD_BASELINE");
+            Record("OWNED_BUILDER_GUARD_BASELINE modeled=true flag=" + flag + " build=1 use=1 factory=0 original=NOT_RUN");
+            latchedUnexpected = latchedRejected = false; used = 0; reset("normal"); control.GetField("BuilderCallback").SetValue(null, latch);
+            bool stopped = false;
+            try { WithEmptyContainerCore(api, delegate(object value) { used++; }, delegate { CheckBuilderDependencies(latchedUnexpected, latchedRejected); }); }
+            catch (IOException error) { stopped = error.Message == "EMPTY_CONTAINER_BUILDER_DEPENDENCY"; if (!stopped) throw; }
+            ProbeFiles.Require(stopped && (latchedUnexpected || latchedRejected) && count("Constructors") == 1 && count("Builds") == 0 && used == 0 && count("Factories") == 0 && count("Disposals") == 0,
+                "OWNED_BUILDER_GUARD_STOP");
+            Record("OWNED_BUILDER_GUARD_PASS flag=" + flag + " builder=1 build=0 use=0 factory=0 production-flags-never-reset=true original=NOT_RUN");
+        }
+
         foreach (string oldMode in new string[] { "original-project", "original-project-store-id", "original-factory", "original-factory-bcl9", "owned-factory-empty-container" })
             for (int i = 0; i < ContainerNames.Length; i++) ProbeFiles.Require(!ContainerReferencePolicy(oldMode, true, ContainerIdentities[i], Path.Combine(stage, ContainerNames[i] + ".dll"), false), "OWNED_CONTAINER_OLD_MODE_REFERENCE");
         for (int i = 0; i < ContainerNames.Length; i++) {
