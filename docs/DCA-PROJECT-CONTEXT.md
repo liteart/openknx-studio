@@ -3204,3 +3204,46 @@ zero owned processes and scratch files. Network and descendants were not
 contained. Factory body entry, Project/Id/UndoManager calls, DCA initialization,
 UI/state and hardware operations remain **NOT ESTABLISHED/NOT RUN**. Task-009
 remains **Blocked**, acceptance criteria unchecked; no gate advances. Critical documentation review PASS for this appended result; the diagnostic remains FAIL exit 2.
+
+## Actual16 fixed ProjectTraceEncryptor parameter metadata result
+
+At source `1d89b9ff2ad7f2aa2b90b67e4452e6298383db18`, exactly one guarded,
+offline Common metadata extraction completed **PASS**, exit 0. The fixed input
+was `Knx.Ets.Common.dll`, 503,248 bytes, SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`, identity
+`Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral,
+PublicKeyToken=61439873ec5e1159`. Root `Knx.Ets.Common.Security.ProjectTraceEncryptor`
+is TypeDef `0200007E`; constructor MethodDef `06000364` declares
+`instance Void(Int32) generic=0`. Its only Param row is sequence 1, token
+`080001E4`, name `iterations`, attributes 4112 (Optional+HasDefault). Associated
+Constant `0B0000BF` is Int32, four bytes, raw `01000000`, declared value 1. No
+sequence-0 row was reported.
+
+Recorded command: `python3 -B
+private/evidence/task009-project-trace-encryptor-parameter-metadata/read_common16.py`.
+Both bounded child calls exited 0 with empty stderr under 30 seconds/2 MiB per
+child. PowerShell 7.6.7 reported write/network denial probes true. Private
+`original16-report.json` (1,539 bytes, SHA-256
+`07accca76a4ab722a7d6943578ab955659261cada7b7cc72feee00f730462bc2`) is bound
+by `original16-observation.json` (1,705 bytes, SHA-256
+`7ca2942c5e0d08d5b462d5ec2da08090441d6409f9ce4653193ec5b411d57cc5`), including
+source commit/freeze and helper `read_common16.py` SHA-256
+`b40c7094589f55f9d0080582573bfff967e5cc50cb13db35f49c5a81111f11b5`. Raw
+child stdout hashes: `e9c5c00d6da57dcd7c6b108ab0502b297940908b1ce6240bfbd12c98d9ab07fc`
+(73 bytes) and `8bdc58338e7e73c07c3f8ca52af45f574269be9dd859418a471b6649bb946ce9`
+(1,432 bytes); both stderr files are empty, SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+Independent result audit **PASS** for provenance/consistency:
+`verifier16/original-result-audit.txt`, 3,906 bytes, SHA-256
+`078e08b446127b70800d5953d61647039264f341da47392794208b5d0a34cd6a`. The audit
+checked saved text artifacts only; it did not read SDK DLL bytes or repeat the
+extraction.
+
+This is declarations-only metadata. Name, flags and declared constant do not
+establish meaning, a valid runtime value, Optional default behavior, callability,
+construction, registration, cryptographic behavior or service availability.
+Creation remains **INCONCLUSIVE**, runtime **NOT RUN**, rights **UNRESOLVED**;
+latest actual runtime13 **FAIL** exit 10 is unchanged. Task-009 remains
+**Blocked**, acceptance criteria unchecked, with no gate, fixture, service,
+DCA/UI/state or hardware qualification. The earlier source-freeze statement
+that extraction was NOT RUN is historical and predates this result. Critical result documentation review PASS (private review16/critical-review-result.txt); creation remains INCONCLUSIVE.

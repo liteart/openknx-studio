@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; actual15 static constructor declaration PASS/semantics and creation INCONCLUSIVE; latest runtime original13 FAIL10 at unregistered service. No qualified Factory/Project/service |
-| Source commit(s) | Source16 parameter-only increment based on `d39f789617a5b419c98af1367aaebe09c98874dc`, six-source private freeze below; Actual15 reviewed metadata source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`; Actual14 metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`; original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
-| Tests executed | Source16 owned-only PASS327 PowerShell/23 Python; compile/parse/preservation/scope/diff PASS, actual parameter extraction/new runtime NOT RUN. Source15 owned declaration-only PASS276 PowerShell/22 Python; compile/parse/preservation/scope/diff PASS; actual15 fixed guarded extraction PASS0/denial probes true, target runtime NOT RUN. Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-project-trace-encryptor-construction-metadata/original15-report.json`, observation/raw/helper/verifier15/original-result-audit.txt; private `task009-project-trace-encryptor-metadata/original14-report.json`, observation/raw/helper and verifier14/original-result-audit.txt; private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
+| Implementation / report status | Blocked; actual15/16 static declarations PASS; creation INCONCLUSIVE; latest runtime original13 FAIL10 at unregistered service. No qualified Factory/Project/service |
+| Source commit(s) | Source16 parameter-only source `1d89b9ff2ad7f2aa2b90b67e4452e6298383db18` based on `d39f789617a5b419c98af1367aaebe09c98874dc`, six-source private freeze below; Actual15 reviewed metadata source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`; Actual14 metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`; original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
+| Tests executed | Source16 owned-only PASS327 PowerShell/23 Python; compile/parse/preservation/scope/diff PASS. Actual16 fixed parameter metadata extraction PASS exit 0 with both deny probes true; independent result audit PASS. Runtime NOT RUN. Source15 owned declaration-only PASS276 PowerShell/22 Python; compile/parse/preservation/scope/diff PASS; actual15 fixed guarded extraction PASS0/denial probes true, target runtime NOT RUN. Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. Latest actual runtime13 FAIL10 remains unchanged. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-project-trace-encryptor-parameter-metadata/original16-report.json`, `original16-observation.json`, `read_common16.py`, `source-commit16.json`, child streams, and `verifier16/original-result-audit.txt`; prior dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; actual14 now identifies Common public interface02000077 and direct public sealed candidate0200007E. Actual15 reports public ctor06000364 instanceVoid(Int32), without parameter name/flags/default/meaning/value or callability evidence. Behavior/registration/semantics/licensing/KNX Secure relationship remain unqualified. No service implementation/qualification |
+| Technical outcome | Actual16 declares ctor06000364 `instance Void(Int32)` with Param080001E4 name `iterations`, flags4112 Optional+HasDefault, and associated Constant0B0000BF Int32 raw `01000000` (declared 1); one argument row, no sequence-0 row. Static declarations only; meaning, valid value, optional-default behavior, callability, construction, registration and crypto behavior unproved. Creation INCONCLUSIVE; runtime NOT RUN. Latest actual runtime13 FAIL10 unchanged. No service implementation/qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source16 independent source/owned verification and critical source review PASS (private verifier16/source-audit.txt and review16/critical-review-source.txt). Actual15 independent provenance/result consistency audit and critical result documentation review PASS (private review15/critical-review-result.txt); creation remains INCONCLUSIVE. Source15 independent source/owned verification and critical source review PASS (private verifier15/audit.txt and review15/critical-review-source.txt). Actual14 independent provenance/declaration audit and critical result documentation review PASS (private review14/critical-review-result.txt); creation remains INCONCLUSIVE. New Common source/owned independent verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
+| Reviewer | Source16 independent source/owned verification and critical source review PASS (private verifier16/source-audit.txt and review16/critical-review-source.txt). Actual16 independent result audit PASS for provenance/consistency (private `task009-project-trace-encryptor-parameter-metadata/verifier16/original-result-audit.txt`, 3,906 bytes, SHA-256 `078e08b446127b70800d5953d61647039264f341da47392794208b5d0a34cd6a`); critical result documentation review PASS (private review16/critical-review-result.txt); creation remains INCONCLUSIVE. Audit did not read SDK DLLs or rerun extraction. Prior reviews preserved; no task/service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1782,3 +1782,46 @@ processes were not contained. Factory body entry, Project/Id/UndoManager calls,
 DCA initialization/UI/state and hardware operations are **NOT RUN** or
 **NOT ESTABLISHED** as applicable. Task-009 remains **Blocked**, acceptance
 criteria unchecked, and no phase gate advances. Critical documentation review PASS for this appended result; the diagnostic remains FAIL exit 2.
+
+## Actual16 fixed parameter metadata result
+
+At source `1d89b9ff2ad7f2aa2b90b67e4452e6298383db18`, exactly one guarded,
+offline Common metadata extraction completed **PASS**, exit 0. The fixed input
+was `Knx.Ets.Common.dll`, 503,248 bytes, SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`, identity
+`Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral,
+PublicKeyToken=61439873ec5e1159`. The selected root is
+`Knx.Ets.Common.Security.ProjectTraceEncryptor`, TypeDef `0200007E`; constructor
+MethodDef `06000364` declares `instance Void(Int32) generic=0`. Its sole Param
+row is sequence 1, token `080001E4`, name `iterations`, attributes 4112
+(Optional+HasDefault). Associated Constant `0B0000BF` is Int32, four bytes,
+raw `01000000`, declared value 1. No sequence-0 row was reported.
+
+The recorded command was
+`python3 -B private/evidence/task009-project-trace-encryptor-parameter-metadata/read_common16.py`.
+Two bounded child calls each exited 0 with empty stderr, under 30 seconds and
+2 MiB per child; PowerShell 7.6.7 reported write/network denial probes true.
+Private `original16-report.json` (1,539 bytes, SHA-256
+`07accca76a4ab722a7d6943578ab955659261cada7b7cc72feee00f730462bc2`) is bound
+by `original16-observation.json` (1,705 bytes, SHA-256
+`7ca2942c5e0d08d5b462d5ec2da08090441d6409f9ce4653193ec5b411d57cc5`), which
+also binds source commit/freeze and helper `read_common16.py` SHA-256
+`b40c7094589f55f9d0080582573bfff967e5cc50cb13db35f49c5a81111f11b5`.
+Raw child stdout hashes are `e9c5c00d6da57dcd7c6b108ab0502b297940908b1ce6240bfbd12c98d9ab07fc`
+(73 bytes) and `8bdc58338e7e73c07c3f8ca52af45f574269be9dd859418a471b6649bb946ce9`
+(1,432 bytes); both stderr files are empty (SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`).
+Independent result audit is **PASS** for provenance and report consistency
+(`verifier16/original-result-audit.txt`, 3,906 bytes, SHA-256
+`078e08b446127b70800d5953d61647039264f341da47392794208b5d0a34cd6a`). It
+checked saved text artifacts; it did not read SDK DLL bytes or repeat extraction.
+
+This is declaration metadata only. The name, flags and declared constant do not
+establish parameter meaning, a valid runtime value, Optional default behavior,
+callability, construction, registration, cryptographic behavior or service
+availability. Creation remains **INCONCLUSIVE**, runtime **NOT RUN**, rights
+**UNRESOLVED**; latest actual runtime13 **FAIL** exit 10 remains unchanged.
+Task-009 stays **Blocked**, all acceptance criteria unchecked; no gate, fixture,
+service, DCA/UI/state or hardware qualification follows. The historical
+source-freeze statement that extraction was NOT RUN refers to its dated
+pre-extraction freeze and is preserved as such. Critical result documentation review PASS (private review16/critical-review-result.txt); creation remains INCONCLUSIVE.
