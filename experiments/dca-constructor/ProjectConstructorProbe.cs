@@ -99,6 +99,7 @@ internal static class ProjectConstructorProbe
     const uint FixtureProjectNumber = 1; // Owned synthetic data, not a real or claimed-valid project identity.
     const string ReviewedFactoryConstructorReportSha256 = "df361cb84fc232b6f7da6943114096cd3e14b638495dcc8b68e10dbd42524ea9";
     const string ReviewedFactoryCandidatesAuditSha256 = "8f18be8da62da7d06f11634467b3c869e2ac260f20956cb5ab31f552ff324432";
+    const string Async8Identity = "Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
     static readonly string[] FactoryExtraNames = { "Autofac", "Knx.Kim.DataProvider" };
     static readonly string[] FactoryExtraHashes = { "747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12", "1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a" };
     static readonly string[] FactoryExtraIdentities = { "Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da", "Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159" };
@@ -132,9 +133,10 @@ internal static class ProjectConstructorProbe
     static bool Original { get { return mode == "original-project" || mode == "original-project-store-id"; } }
     static bool OwnedProject { get { return mode == "owned-project" || mode == "owned-project-store-id"; } }
     static bool StoreIdFixture { get { return mode == "original-project-store-id" || mode == "owned-project-store-id"; } }
-    static bool FactoryOriginal { get { return mode == "original-factory"; } }
-    static bool FactoryOwned { get { return mode == "owned-factory"; } }
+    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9"; } }
+    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9"; } }
     static bool FactoryOnly { get { return FactoryOriginal || FactoryOwned; } }
+    static bool FactoryBinding { get { return mode == "original-factory-bcl9" || mode == "owned-factory-bcl9"; } }
     internal static string Text(string value)
     {
         value = value.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\0", "\\0");
@@ -215,7 +217,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if (selectedMode != "original-factory" || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -254,6 +256,12 @@ internal static class ProjectConstructorProbe
             if (FactoryOriginal && factoryInputsReady && !assembly.ReflectionOnly) for (int i = 0; i < Names.Length; i++)
                 if (assembly.FullName == Identities[i] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
             if (FactoryReferencePolicy(mode, factoryInputsReady, assembly.FullName, assembly.Location, assembly.ReflectionOnly)) allowed = true;
+            if (FactoryBinding && FactoryOriginal && assembly.GetName().Name == "Microsoft.Bcl.AsyncInterfaces") {
+                bool pinned = factoryInputsReady && assembly.FullName == Identities[5] && !assembly.ReflectionOnly
+                    && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[5] + ".dll"));
+                Record("FACTORY_BINDING_ASSEMBLY identity=" + Text(assembly.FullName) + " location=" + Text(assembly.Location)
+                    + " pinned=" + pinned + " held-pin-sha256=" + (pinned ? Hashes[5] : "NOT_ESTABLISHED") + " trace=ACTUAL_ASSEMBLY_LOAD");
+            }
             if (!Original && !FactoryOriginal && !EnumOnly && assembly.FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" && ProbeFiles.Same(assembly.Location, fixture)) allowed = true;
         }
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
@@ -266,13 +274,56 @@ internal static class ProjectConstructorProbe
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
         }
-        if (FactoryOriginal && factoryInputsReady) {
+        if (FactoryBinding && FactoryOriginal && factoryInputsReady) {
+            string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
+            Record("FACTORY_BINDING_RESOLVE requested=" + Text(args.Name) + " post-policy=" + Text(policy));
+            for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return ResolvePinnedFactoryReference(args.Name, policy, Names[i], Hashes[i]);
+            for (int i = 0; i < FactoryExtraNames.Length; i++) if (args.Name == FactoryExtraIdentities[i]) return ResolvePinnedFactoryReference(args.Name, policy, FactoryExtraNames[i], FactoryExtraHashes[i]);
+        } else if (FactoryOriginal && factoryInputsReady) {
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
             for (int i = 0; i < FactoryExtraNames.Length; i++) if (args.Name == FactoryExtraIdentities[i]) return Assembly.LoadFrom(Path.Combine(stage, FactoryExtraNames[i] + ".dll"));
         }
         rejected = true;
         throw new FileNotFoundException("PROJECT_DEPENDENCY_NOT_ALLOWLISTED", args.Name);
+    }
+    static Assembly ResolvePinnedFactoryReference(string requested, string policy, string name, string hash)
+    {
+        ProbeFiles.Require(FactoryBinding && FactoryOriginal && factoryInputsReady, "FACTORY_BINDING_PIN_REQUIRED");
+        string path = Path.Combine(stage, name + ".dll");
+        Assembly assembly = Assembly.LoadFrom(path);
+        bool facade = PlatformFacadeAllowed(assembly.FullName, assembly.Location, assembly.GlobalAssemblyCache, assembly.ReflectionOnly);
+        ProbeFiles.Require(assembly.FullName == policy && (ProbeFiles.Same(assembly.Location, path) || facade) && !assembly.ReflectionOnly, "FACTORY_BINDING_RESOLVED_IDENTITY_PATH");
+        Record("FACTORY_BINDING_RESOLVED requested=" + Text(requested) + " post-policy=" + Text(policy) + " location=" + Text(assembly.Location)
+            + " origin=" + (facade ? "EXISTING_FIXED_OS_FACADE" : "FIXED_PRIVATE_STAGE") + " held-pin-sha256=" + hash);
+        return assembly;
+    }
+    static void VerifyBindingConfiguration()
+    {
+        string config = ProbeFiles.Local(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, true, false);
+        string expected = FactoryBinding ? ProbeFiles.FactoryBindingConfigText : ProbeFiles.ConfigText;
+        ProbeFiles.Require(new FileInfo(config).Length <= 4096 && File.ReadAllText(config) == expected, "EXACT_CONFIG_REQUIRED");
+        if (FactoryBinding) ProbeFiles.Require(Encoding.UTF8.GetString(File.ReadAllBytes(config)) == expected, "EXACT_CONFIG_BYTES_REQUIRED");
+        bool bindingExe = Path.GetFileName(typeof(ProjectConstructorProbe).Assembly.Location) == "ProjectFactoryBindingProbe.exe";
+        ProbeFiles.Require(bindingExe == FactoryBinding, "FACTORY_BINDING_MODE_EXECUTABLE");
+        if (!FactoryBinding) {
+            if (FactoryOwned) {
+                ProbeFiles.Require(AppDomain.CurrentDomain.ApplyPolicy(Async8Identity) == Async8Identity, "OWNED_FACTORY_LEGACY_POLICY");
+                Record("OWNED_FACTORY_LEGACY_POLICY_PASS version8=UNCHANGED no-target-load=true");
+            }
+            return;
+        }
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) ProbeFiles.Require(assembly.GetName().Name != "Microsoft.Bcl.AsyncInterfaces", "FACTORY_POLICY_TARGET_ALREADY_LOADED");
+        string mapped = AppDomain.CurrentDomain.ApplyPolicy(Async8Identity);
+        Record("FACTORY_BINDING_POLICY requested=" + Async8Identity + " post-policy=" + Text(mapped) + " trace=EXPLICIT_CLR_POLICY_PREFLIGHT target-load=NOT_RUN");
+        ProbeFiles.Require(mapped == Identities[5], "FACTORY_BINDING_POLICY_EXACT_8_TO_9");
+        foreach (string identity in new string[] {
+            Async8Identity.Replace("8.0.0.0", "7.0.0.0"), Async8Identity.Replace("8.0.0.0", "8.0.0.1"),
+            Async8Identity.Replace("cc7b13ffcd2ddd51", "cc7b13ffcd2ddd50"), Async8Identity.Replace("Culture=neutral", "Culture=fr"),
+            Async8Identity.Replace("Microsoft.Bcl.AsyncInterfaces,", "Owned.WrongName,")
+        }) ProbeFiles.Require(AppDomain.CurrentDomain.ApplyPolicy(identity) == identity, "FACTORY_BINDING_POLICY_NEGATIVE");
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) ProbeFiles.Require(assembly.GetName().Name != "Microsoft.Bcl.AsyncInterfaces", "FACTORY_POLICY_TARGET_LOADED");
+        Record("FACTORY_BINDING_POLICY_PASS exact8-to9=true version7-patch-token-culture-name=UNCHANGED target-load=NOT_RUN");
     }
     static Assembly ReflectionResolve(object sender, ResolveEventArgs args)
     {
@@ -635,9 +686,8 @@ internal static class ProjectConstructorProbe
             if (Environment.OSVersion.Platform != PlatformID.Win32NT || !Environment.Is64BitProcess) { Record("WINDOWS_X64_REQUIRED"); return 3; }
             using (Process process = Process.GetCurrentProcess()) if (!Environment.UserInteractive || process.SessionId == 0) { Record("INTERACTIVE_SESSION_REQUIRED"); return 4; }
             using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) if (new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator)) { Record("PROJECT_NONADMIN_REQUIRED"); return 5; }
+            VerifyBindingConfiguration();
             stage = ProbeFiles.Local(args[3], true, true);
-            string config = ProbeFiles.Local(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, true, false);
-            ProbeFiles.Require(new FileInfo(config).Length <= 4096 && File.ReadAllText(config) == ProbeFiles.ConfigText, "EXACT_CONFIG_REQUIRED");
             if (EnumOnly) {
                 Record("PROJECT_PHASE enum-reflection-only-metadata");
                 PinEnumInputs();

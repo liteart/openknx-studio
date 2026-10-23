@@ -1,5 +1,102 @@
 # Static Project context qualification
 
+## Isolated exact AsyncInterfaces binding experiment contract
+
+Baseline `93575a2ea27bb04cc20c660de0d612fe6cbe42c4` contains the reviewed
+Factory08 FAIL exit 2. Installed ETS configuration metadata observation SHA-256
+`90be6ee9043337af24311e3c743adba35f3742102a7c5c64d4d955a5fa6d1da9`
+and independent audit `c2574d71fb16687ef914c957f08660fa5aa9e6db63a531c094d2cc438fc1ea5f`
+record two identical 0.0.0.0–9.0.0.0-to-9.0.0.0 declarations. This is neither
+effective CLR policy nor compatibility evidence; the broad range is not copied.
+
+New fixed `original-factory-bcl9` / `owned-factory-bcl9` modes select only
+ProjectFactoryBindingProbe.exe, compiled from the same owned probe source. Its
+separate owned config preserves the four old redirects and adds only exact
+Microsoft.Bcl.AsyncInterfaces 8.0.0.0 -> 9.0.0.0, neutral/PKTcc7b13ffcd2ddd51.
+Old config bytes, output names/build commands and mode behavior remain; rebuilt
+shared-source executables necessarily get new hashes. No new SDK DLL/reference,
+pin, service, framework whitelist or fallback is introduced.
+
+Mode/executable/exact-config checks and real CLR ApplyPolicy validation precede
+input inspection/loading. Only exact version 8 may map to the existing pinned 9;
+version 7, 8.0.0.1 and wrong name/token/culture must remain unchanged. Owned checks
+use identity strings without loading Bcl or vendor targets. Cross-mode, wrong
+config and tampered-config cases fail closed. Resolution requires completed
+fourteen pins and exact post-policy identity/staged path, with requested/post-policy
+and held pin/path/hash diagnostics. The original Factory constructor selection,
+deny-all proxies, final dependency/audit check, STA/nonadmin/session restrictions,
+15-second/64 KiB limits and unqualified result remain unchanged.
+
+At this source freeze, Windows policy/owned tests and original bcl9 execution
+are NOT RUN; independent verification/critical review/commit precede any original
+attempt. A declared redirect or owned policy pass does not prove ABI, Factory,
+Project/Id/UndoManager/DCA/UI/state/hardware compatibility. Task-009 stays Blocked.
+
+### Local source-freeze checks
+
+The five source files are frozen against baseline `93575a2ea27bb04cc20c660de0d612fe6cbe42c4`;
+OwnedProjectConstructorFixtures.cs is unchanged. Local macOS PowerShell 7.6.7
+checks **PASS**: six pinned .NET Framework 4.8 reference hashes, C#5/x64
+warnings-as-errors compilation of the Project probe/launcher/owned fixtures,
+Build/Test PowerShell parsing and source guards. The fresh helper is
+`private/evidence/task009-constructor-windows/owned09-sourcecheck.ps1`, SHA-256
+`d198b388b71158517e25f91ad12e22edd7895bb36152856764fceb609fa74a45`, run with
+`-Worktree <task009-worktree> -FrameworkReferences <private>/evidence/task148-clean-host/references`.
+This verifies source selection, not Windows CLR execution: real ApplyPolicy and
+Windows owned suites remain **NOT RUN** at this chronological source freeze.
+
+Preservation checks **PASS** for the old ConfigText (1,044 bytes, SHA-256
+`b72d33cb400c6a9de0565ece3698308c569836dc41f9003d70d9d78a31b4315a`),
+original compile commands, fixed input arrays, constructor/fixture selection,
+existing pin/enum/framework helpers and ProjectDenyProxy. The new config is
+1,251 bytes, SHA-256 `e1309cb227dcf7962a8443c06fe979b11d97db078fa0507456a2b627f5d8a3ba`;
+only the alias exe/config/config-hash add three artifacts (fifteen total).
+Owned Windows cases are prepared for policy positive/negative identities,
+mode/config/executable confusion, exact-config tamper, missing/wrong fourteen
+inputs, session/admin/deadline rejection and inherited constructor denials.
+Actual resolver traces require a real AssemblyResolve event; preflight records
+8-to-9 policy even if no event occurs. A returned runtime assembly is separately
+audited for actual identity/location and a matching held pin, without attributing
+a held hash to another path. Independent source/owned verification and critical
+review are pending at this freeze; the latest actual runtime is still Factory08
+**FAIL exit 2**, with no new original attempt or qualification.
+
+### Subsequent Windows09 owned verification
+
+The frozen sources were subsequently built and tested on Windows: **PASS 23
+Session0 / 42 limited / 28 admin-negative**. Interactive contexts are Session2,
+respectively nonadmin/admin; both done/cleanup results are 0, tasks removed,
+zero owned processes and no junction, with 107/65 collected case files. Raw
+UTF-16 streams, strict UTF-8 derivatives and encoding manifests are retained;
+cleanup JSON is UTF-8 and Session0 stderr is preserved, not asserted empty.
+
+Private task009-constructor-windows/owned09-observation.json, 43,681 bytes,
+SHA-256 `e02782b11b55d1cebfea56bb7976fe278b5c33652a37dc5ec17193ecfa20e7c5`,
+binds 229 files. Freeze09 SHA-256
+`7231879c2d167252def04f35364ee98ccf486082ce07fd6c5b85754d2a6dc112`
+binds ten source files; pinned Windows build **PASS**, eight build sources,
+fifteen artifacts, report SHA-256
+`54326f8a1508559a4cc48dcbc1c624428ecf8d159fa8776589745cb93fc9b2b9`.
+The alias executable is 84,480 bytes, recorded build SHA-256
+`4d295b35abc870cce7d7f19f27310a532c03dc07aa3110db994eafb56851b3f0`;
+old/new config bytes and hashes match the local freeze above.
+
+Real CLR ApplyPolicy **PASS** maps exact8 to9 before the owned fixture pin,
+without loading the Bcl target. Near-miss identities and the old-profile8 remain
+unchanged; five executable/config/tamper negatives stop before pins or
+materialization. All fourteen original inputs remain unchanged and were not
+loaded by owned tests. Prepared original09 helpers are source-only, unexecuted.
+Initial local newline/encoding assumptions in observation/audit checks were
+corrected using byte comparison/raw UTF-8; no Windows test failed or reran.
+Independent source audit **PASS** SHA-256
+`6b71034eb58fba9c41497c43d065ad1639a3e0ac9738dd7c79cfb21a778471fc`;
+owned-result audit **PASS**, verifier09/owned-result-audit.txt SHA-256
+`9413878d59aa1b11389f458529c77f47dc9c7500c7c827683a2d0792ff92de86`.
+Critical source/owned review PASS. Original bcl9 execution remains **NOT RUN**;
+Factory08 remains the latest actual original **FAIL exit 2**. Network/descendants
+are NOT_CONTAINED; no Factory/service/Project/Id/UndoManager/DCA/UI/state/hardware
+qualification or gate advance follows. Task-009 remains Blocked, all ACs unchecked.
+
 ## Factory08 original constructor diagnostic result
 
 At reviewed source `edf408eb08fd60b4954fc61c349efbf14a6748dc`, exactly one

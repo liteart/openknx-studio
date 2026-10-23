@@ -82,15 +82,57 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; latest original Factory08 diagnostic FAIL exit 2 at denied AsyncInterfaces8 dependency after fourteen pins/profile validation; no qualified Factory/Project/fixture/service |
-| Source commit(s) | Prior increments retained; public Factory source/actual Factory08 run `edf408eb08fd60b4954fc61c349efbf14a6748dc`; bounded runtime result documented by this append |
-| Tests executed | Earlier results retained: Windows08 pinned build/owned suites PASS 19 Session0/32 limited/24 admin negative; UndoManager metadata PASS declarations only. Exactly one original Factory08 FAIL exit2, constructor not returned/zero proxy requests. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; constructor internals UNKNOWN |
+| Source commit(s) | Prior increments retained; latest actual Factory08 source `edf408eb08fd60b4954fc61c349efbf14a6748dc`, reviewed result baseline `93575a2ea27bb04cc20c660de0d612fe6cbe42c4`; isolated exact-binding source freeze described below |
+| Tests executed | Latest Windows09 owned PASS 23 Session0/42 limited/28 admin negative; real CLR exact8-to9 policy preflight PASS without target load; original bcl9 NOT RUN. Earlier results retained: Windows08 pinned build/owned suites PASS 19 Session0/32 limited/24 admin negative; UndoManager metadata PASS declarations only. Exactly one original Factory08 FAIL exit2, constructor not returned/zero proxy requests. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; constructor internals UNKNOWN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Actual interface tokens Autofac02000017/Kim02000005 checked, Factory0600012E ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED. Requested AsyncInterfaces8 denied against pinned/validated9 profile, no alias/retry/widening. Factory/Project/fixture NOT_QUALIFIED; prior project07 FAIL10 and project04 origin unknown retained |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior source/results and Factory source/build/owned Windows independent audit/critical review PASS; actual Factory08 result audit and critical result documentation review PASS; no runtime service acceptance |
+| Reviewer | Windows09 independent source and owned-result audits PASS; critical source/owned review PASS. Prior source/results and Factory source/build/owned Windows independent audit/critical review PASS; actual Factory08 result audit and critical result documentation review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Isolated exact Factory binding source freeze
+
+From reviewed baseline `93575a2ea27bb04cc20c660de0d612fe6cbe42c4`, new fixed
+`original-factory-bcl9` / `owned-factory-bcl9` modes select only a separate
+ProjectFactoryBindingProbe.exe/config. The four legacy redirects remain exact;
+only AsyncInterfaces8.0.0.0 -> existing pinned9.0.0.0 is added for this alias.
+Installed policy observation `90be6ee9043337af24311e3c743adba35f3742102a7c5c64d4d955a5fa6d1da9`
+is declaration evidence; its broad range is not copied or treated as compatibility.
+Exact config/executable/mode and real CLR policy checks precede input inspection;
+all fourteen existing pins, deny-all dependencies and limits remain unchanged.
+
+Local **PASS**: pinned-six-reference C#5/x64 compilation, Build/Test PS parse,
+source guards and old config/arrays/method preservation. Fresh helper SHA-256
+`d198b388b71158517e25f91ad12e22edd7895bb36152856764fceb609fa74a45` and normalized
+command are recorded in the linked contract. Old config SHA-256 `b72d33cb400c6a9de0565ece3698308c569836dc41f9003d70d9d78a31b4315a`;
+alias config `e1309cb227dcf7962a8443c06fe979b11d97db078fa0507456a2b627f5d8a3ba`.
+At this chronological source freeze Windows owned/real-policy checks and new
+original execution are **NOT RUN**, independent verification/critical review pending.
+Factory08 remains the latest actual runtime **FAIL exit 2**; owned policy results
+cannot establish ABI, Factory/Project/Id/UndoManager/DCA/UI/state/hardware support.
+Task stays Blocked, all acceptance criteria unchecked and no gate advanced.
+
+### Subsequent Windows09 owned result
+
+Pinned Windows build **PASS**, eight sources/fifteen artifacts; owned suites
+**PASS 23 Session0 / 42 limited Session2 nonadmin / 28 admin-negative Session2 admin**.
+Both done/cleanup exits are 0, tasks removed, zero owned processes/no junction;
+107/65 case files plus raw UTF-16/strict UTF-8 derivatives are preserved.
+Observation `owned09-observation.json` (43,681 bytes), SHA-256
+`e02782b11b55d1cebfea56bb7976fe278b5c33652a37dc5ec17193ecfa20e7c5`,
+binds 229 files and source freeze `7231879c2d167252def04f35364ee98ccf486082ce07fd6c5b85754d2a6dc112`.
+Real CLR exact8-to9 preflight precedes owned fixture pin without Bcl target load;
+near misses, old policy and five config negatives pass. Original fourteen pins
+are unchanged and not loaded. Initial local observation/audit newline/encoding
+assumptions were corrected without a Windows failure or rerun. Independent
+source/owned-result audits **PASS**; latter SHA-256
+`9413878d59aa1b11389f458529c77f47dc9c7500c7c827683a2d0792ff92de86`.
+Critical source/owned review PASS; original09 helpers are unexecuted
+source only and original bcl9 is **NOT RUN**. Latest actual original Factory08
+remains **FAIL exit 2**, no qualification/gate advance; Task Blocked and ACs unchecked.
+The helper is preserved as `private/evidence/task009-constructor-windows/owned09-sourcecheck.ps1`.
 
 ## Readiness and blocker record, 2026-10-22
 

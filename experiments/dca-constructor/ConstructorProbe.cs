@@ -20,6 +20,9 @@ internal static class ProbeFiles
         + "<dependentAssembly><assemblyIdentity name=\"System.Threading.Tasks.Extensions\" publicKeyToken=\"cc7b13ffcd2ddd51\" culture=\"neutral\"/><bindingRedirect oldVersion=\"4.2.0.1\" newVersion=\"4.2.1.0\"/></dependentAssembly>"
         + "</assemblyBinding></runtime></configuration>";
 
+    internal const string FactoryBindingRedirectText = "<dependentAssembly><assemblyIdentity name=\"Microsoft.Bcl.AsyncInterfaces\" publicKeyToken=\"cc7b13ffcd2ddd51\" culture=\"neutral\"/><bindingRedirect oldVersion=\"8.0.0.0\" newVersion=\"9.0.0.0\"/></dependentAssembly>";
+    internal static string FactoryBindingConfigText { get { return ConfigText.Replace("</assemblyBinding>", FactoryBindingRedirectText + "</assemblyBinding>"); } }
+
     internal static void Require(bool value, string code) { if (!value) throw new IOException(code); }
     internal static bool Same(string left, string right) { return String.Equals(left, right, StringComparison.OrdinalIgnoreCase); }
     internal static string Local(string path, bool exists, bool directory)

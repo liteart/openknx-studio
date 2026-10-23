@@ -66,6 +66,7 @@ Compile ($common+@('/target:library',('/out:'+(Join-Path $fixtures 'Owned.Task14
 Compile ($common+@('/target:exe','/main:ConstructorProbe',('/out:'+(Join-Path $bin 'ConstructorProbe.exe')),$sources[0],$sources[3]))
 Compile ($common+@('/target:exe','/main:ProbeLauncher',('/out:'+(Join-Path $bin 'ProbeLauncher.exe')),$sources[0],$sources[1],$sources[3]))
 Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectConstructorProbe.exe')),$sources[0],$sources[3],$sources[5]))
+Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectFactoryBindingProbe.exe')),$sources[0],$sources[3],$sources[5]))
 Compile ($common+@('/target:exe',('/out:'+(Join-Path $bin 'NeutralStaHost.exe')),$neutral))
 $utf8=[Text.UTF8Encoding]::new($false)
 $config='<configuration><startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.8"/></startup><runtime><assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">'+
@@ -76,6 +77,9 @@ $config='<configuration><startup><supportedRuntime version="v4.0" sku=".NETFrame
  '</assemblyBinding></runtime></configuration>'
 [IO.File]::WriteAllText((Join-Path $bin 'ConstructorProbe.exe.config'),$config,$utf8)
 [IO.File]::WriteAllText((Join-Path $bin 'ProjectConstructorProbe.exe.config'),$config,$utf8)
+$factoryConfig=$config.Replace('</assemblyBinding>','<dependentAssembly><assemblyIdentity name="Microsoft.Bcl.AsyncInterfaces" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral"/><bindingRedirect oldVersion="8.0.0.0" newVersion="9.0.0.0"/></dependentAssembly></assemblyBinding>')
+[IO.File]::WriteAllText((Join-Path $bin 'ProjectFactoryBindingProbe.exe.config'),$factoryConfig,$utf8)
+[IO.File]::WriteAllText((Join-Path $bin 'ProjectFactoryBindingProbe.exe.sha256'),(Hash (Join-Path $bin 'ProjectFactoryBindingProbe.exe')),$utf8)
 foreach($path in @((Join-Path $bin 'ConstructorProbe.exe'),(Join-Path $bin 'ProjectConstructorProbe.exe'),(Join-Path $bin 'ProbeLauncher.exe'),(Join-Path $bin 'NeutralStaHost.exe'),(Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll'))){[IO.File]::WriteAllText(($path+'.sha256'),(Hash $path),$utf8)}
 $report=[ordered]@{compilerVersion=[Diagnostics.FileVersionInfo]::GetVersionInfo($compilerPath).FileVersion;compilerSha256=(Hash $compilerPath);vendor='NOT_RUN';sources=@();artifacts=@()}
 foreach($path in @($sources)+@($neutral)){$report.sources+=@{name=[IO.Path]::GetFileName($path);sha256=(Hash $path)}}

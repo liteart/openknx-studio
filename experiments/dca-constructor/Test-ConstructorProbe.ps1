@@ -107,15 +107,22 @@ $factoryPlatform=$factoryBody.IndexOf('PinPlatformFacade();',[StringComparison]:
 $factoryIdentity=$factoryBody.IndexOf('AssemblyName.GetAssemblyName(',[StringComparison]::Ordinal)
 $factoryReady=$factoryBody.IndexOf('factoryInputsReady = true;',[StringComparison]::Ordinal)
 if($factoryCount -lt 0 -or $factoryPrefix -le $factoryCount -or $factoryExtra -le $factoryPrefix -or $factoryPlatform -le $factoryExtra -or $factoryIdentity -le $factoryPlatform -or $factoryReady -le $factoryIdentity -or $factoryBody.Contains('LoadFrom(')){Fail 'FACTORY_PIN_ORDER'}
-foreach($guard in @('FactoryExtraSizes = { 374784, 282064 }','747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12','1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a','Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da','Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159','selectedMode != "original-factory" || !complete || reflectionOnly','if (FactoryOriginal && factoryInputsReady)','type == 0x02000023 && ctor == 0x0600012e','(int)type.Attributes == 1048577','parameter.IsPublic && parameter.IsInterface && !parameter.IsGenericType')){if(-not $projectSource.Contains($guard)){Fail 'FACTORY_FIXED_PROFILE_SOURCE'}}
+foreach($guard in @('FactoryExtraSizes = { 374784, 282064 }','747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12','1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a','Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da','Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159','(selectedMode != "original-factory" && selectedMode != "original-factory-bcl9") || !complete || reflectionOnly','if (FactoryOriginal && factoryInputsReady)','type == 0x02000023 && ctor == 0x0600012e','(int)type.Attributes == 1048577','parameter.IsPublic && parameter.IsInterface && !parameter.IsGenericType')){if(-not $projectSource.Contains($guard)){Fail 'FACTORY_FIXED_PROFILE_SOURCE'}}
 if([regex]::Matches($projectSource,'factoryInputsReady\s*=').Count -ne 1){Fail 'FACTORY_PIN_BOUNDARY'}
 Write-Output 'OWNED_CASE PASS factory-source-guards fixed14=true hashes-before-platform-and-identities=true extra-reference-admission=new-mode-only constructor-only=true'
+$mainStart=$projectSource.IndexOf('internal static int Main(',[StringComparison]::Ordinal)
+$configGuard=$projectSource.IndexOf('VerifyBindingConfiguration();',$mainStart,[StringComparison]::Ordinal)
+$inputInspection=$projectSource.IndexOf('stage = ProbeFiles.Local(args[3]',$mainStart,[StringComparison]::Ordinal)
+if($configGuard -lt 0 -or $inputInspection -le $configGuard){Fail 'BINDING_CONFIG_BEFORE_INPUT'}
+foreach($guard in @('FactoryBinding ? ProbeFiles.FactoryBindingConfigText : ProbeFiles.ConfigText','bindingExe == FactoryBinding','AppDomain.CurrentDomain.ApplyPolicy(Async8Identity)','FACTORY_BINDING_POLICY_NEGATIVE','FACTORY_POLICY_TARGET_LOADED','FACTORY_BINDING_RESOLVED','FACTORY_BINDING_ASSEMBLY')){if(-not $projectSource.Contains($guard)){Fail 'BINDING_FIXED_SOURCE'}}
+Write-Output 'OWNED_CASE PASS binding-source-guards separate-exe-config=true config-before-input=true real-CLR-policy=true pins14=unchanged'
 $invalidLog='\\owned-invalid\share\never.log'
 Run 'unc-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$invalidLog) 127 'LOCAL_PATH_REQUIRED'
 Run 'drive-relative-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log','C:owned-never.log') 127 'LOCAL_PATH_REQUIRED'
 Run 'excessive-deadline' $launcher @('--seconds','31','--mode','owned-Success','--input',$fixtures,'--log',(Join-Path $output 'never.log')) 127 'LAUNCH_ARGUMENTS'
 Run 'fixture-excessive-deadline' $launcher @('--seconds','16','--mode','owned-project-store-id','--input',$fixtures,'--log',(Join-Path $output 'fixture-never.log')) 127 'PROJECT_FIXTURE_DEADLINE'
 Run 'factory-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory','--input',$fixtures,'--log',(Join-Path $output 'factory-never.log')) 127 'FACTORY_DIAGNOSTIC_DEADLINE'
+Run 'binding-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory-bcl9','--input',$fixtures,'--log',(Join-Path $output 'binding-never.log')) 127 'FACTORY_BINDING_DEADLINE'
 $existing=Join-Path $output 'existing.log';[IO.File]::WriteAllText($existing,'owned-preserved',$utf8)
 Run 'existing-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$existing) 127 'NEW_PATH_REQUIRED'
 if([IO.File]::ReadAllText($existing) -cne 'owned-preserved'){Fail 'EXISTING_LOG_CHANGED'}
@@ -130,6 +137,8 @@ if(-not $interactive){
  Case 'session0-original-project-store-id' 'original-project-store-id' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-factory' 'owned-factory' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-original-factory' 'original-factory' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-factory-binding' 'owned-factory-bcl9' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-original-factory-binding' 'original-factory-bcl9' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
 }else{
  Case 'neutral' 'neutral' 0 'child-exit-confirmed=true' 'NEUTRAL_RESULT PASS' $build
  Case 'success' 'owned-Success' 0 'OWNED_FIXTURE_SUCCESS' 'OWNED_CONSTRUCTOR_RETURN'
@@ -141,6 +150,8 @@ if(-not $interactive){
   Case 'original-project-store-id-admin' 'original-project-store-id' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'factory-admin' 'owned-factory' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'original-factory-admin' 'original-factory' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'factory-binding-admin' 'owned-factory-bcl9' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'original-factory-binding-admin' 'original-factory-bcl9' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
  }else{
   Case 'initialize-proxy' 'owned-initialize' 0 'child-exit-confirmed=true' 'OWNED_INITIALIZE_PROXY_PASS getters=6 direct-denial=true wrapped-denial=true requests=8'
   $initializeLog=[IO.File]::ReadAllText((Join-Path $output 'initialize-proxy.log'))
@@ -158,6 +169,26 @@ if(-not $interactive){
   $factoryLog=[IO.File]::ReadAllText((Join-Path $output 'factory-proxy.log'))
   foreach($marker in @('OWNED_FACTORY_REFERENCE_POLICY_PASS old-modes=denied','OWNED_FACTORY_CONTRACT_PASS negatives=5 token-policy-negatives=2 before-construction=true','FACTORY_CONSTRUCTOR_END returned=True denied-requests=0 qualification=NOT_ESTABLISHED','FACTORY_CONSTRUCTOR_END returned=False denied-requests=1 qualification=NOT_ESTABLISHED','FACTORY_CONSTRUCTOR_END returned=True denied-requests=2 qualification=NOT_ESTABLISHED')){if(-not $factoryLog.Contains($marker)){Fail 'OWNED_FACTORY_QUALIFICATION'}}
   if($factoryLog.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $factoryLog.Contains('PROJECT_ID_CONSTRUCTOR_BEGIN') -or $factoryLog.Contains('PROJECT_SERVICE_FIXTURE')){Fail 'FACTORY_NOT_CONSTRUCTOR_ONLY'}
+  if(-not $factoryLog.Contains('OWNED_FACTORY_LEGACY_POLICY_PASS version8=UNCHANGED')){Fail 'LEGACY_CONFIG_POLICY'}
+  Case 'factory-binding-policy' 'owned-factory-bcl9' 0 'child-exit-confirmed=true' 'FACTORY_BINDING_POLICY_PASS exact8-to9=true'
+  $bindingLog=[IO.File]::ReadAllText((Join-Path $output 'factory-binding-policy.log'))
+  if(-not $bindingLog.Contains('OWNED_FACTORY_CONSTRUCTOR_PASS') -or $bindingLog.Contains('FACTORY_BINDING_ASSEMBLY') -or $bindingLog.Contains('FACTORY_BINDING_RESOLVE ') -or $bindingLog.Contains('PROJECT_SERVICE_FIXTURE')){Fail 'BINDING_OWNED_TARGET_LOAD_OR_RESULT'}
+  $legacyConfig=Join-Path $build 'bin\ProjectConstructorProbe.exe.config';$aliasConfig=Join-Path $build 'bin\ProjectFactoryBindingProbe.exe.config'
+  if((Get-FileHash $legacyConfig -Algorithm SHA256).Hash.ToLowerInvariant() -cne 'b72d33cb400c6a9de0565ece3698308c569836dc41f9003d70d9d78a31b4315a'){Fail 'LEGACY_CONFIG_BYTES'}
+  $oldText=[IO.File]::ReadAllText($legacyConfig)
+  $redirect='<dependentAssembly><assemblyIdentity name="Microsoft.Bcl.AsyncInterfaces" publicKeyToken="cc7b13ffcd2ddd51" culture="neutral"/><bindingRedirect oldVersion="8.0.0.0" newVersion="9.0.0.0"/></dependentAssembly>'
+  if([IO.File]::ReadAllText($aliasConfig) -cne $oldText.Replace('</assemblyBinding>',$redirect+'</assemblyBinding>')){Fail 'ALIAS_EXACT_CONFIG'}
+  $oldProbe=Local (Join-Path $build 'bin\ProjectConstructorProbe.exe');$aliasProbe=Local (Join-Path $build 'bin\ProjectFactoryBindingProbe.exe')
+  Run 'binding-newmode-old-exe' $oldProbe @('--mode','owned-factory-bcl9','--input',$fixtures,'--log',(Join-Path $output 'binding-newmode-old-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  Run 'binding-oldmode-alias-exe' $aliasProbe @('--mode','owned-factory','--input',$fixtures,'--log',(Join-Path $output 'binding-oldmode-alias-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  $wrongBinding=Join-Path $output 'binding-wrong-config';$null=New-Item -ItemType Directory $wrongBinding
+  $wrongProbe=Join-Path $wrongBinding 'ProjectFactoryBindingProbe.exe';Copy-Item -LiteralPath $aliasProbe -Destination $wrongProbe
+  [IO.File]::WriteAllText(($wrongProbe+'.config'),$oldText,$utf8)
+  Run 'binding-newmode-oldconfig' $wrongProbe @('--mode','owned-factory-bcl9','--input',$fixtures,'--log',(Join-Path $output 'binding-newmode-oldconfig.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  Run 'binding-oldmode-renamed-exe' $wrongProbe @('--mode','owned-factory','--input',$fixtures,'--log',(Join-Path $output 'binding-oldmode-renamed-exe.log')) 2 'FACTORY_BINDING_MODE_EXECUTABLE' 'FACTORY_BINDING_MODE_EXECUTABLE'
+  [IO.File]::WriteAllText(($wrongProbe+'.config'),([IO.File]::ReadAllText($aliasConfig)+' '),$utf8)
+  Run 'binding-tampered-config' $wrongProbe @('--mode','owned-factory-bcl9','--input',$fixtures,'--log',(Join-Path $output 'binding-tampered-config.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  foreach($name in @('binding-newmode-old-exe','binding-oldmode-alias-exe','binding-newmode-oldconfig','binding-oldmode-renamed-exe','binding-tampered-config')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('FACTORY_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ')){Fail 'BINDING_CONFIG_NEGATIVE_LOADED'}}
   # Only OWNED bytes are used: missing input count and exact-twelve wrong-hash
   # dispatch must stop before any original identity inspection or assembly load.
   $projectBad=Join-Path $output 'project-twelve-bad-hash';$null=New-Item -ItemType Directory -Path $projectBad
@@ -173,11 +204,14 @@ if(-not $interactive){
   $factoryBad=Join-Path $output 'factory-fourteen-bad-hash';$null=New-Item -ItemType Directory -Path $factoryBad
   foreach($name in $projectNames+@('Autofac.dll')){Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $factoryBad $name)}
   Case 'factory-missing-fourteen' 'original-factory' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
+  Case 'binding-missing-fourteen' 'original-factory-bcl9' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $factoryBad 'Knx.Kim.DataProvider.dll')
   Case 'factory-fourteen-wrong-hash' 'original-factory' 2 'INPUT_HASH' 'INPUT_HASH' $factoryBad
+  Case 'binding-fourteen-wrong-hash' 'original-factory-bcl9' 2 'INPUT_HASH' 'INPUT_HASH' $factoryBad
   Case 'project-extra-factory-references' 'original-project' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
   Case 'project-id-extra-factory-references' 'original-project-store-id' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
   foreach($name in @('factory-missing-fourteen','factory-fourteen-wrong-hash','project-extra-factory-references','project-id-extra-factory-references')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('FACTORY_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('FACTORY_PHASE original-type-materialization')){Fail 'FACTORY_NEGATIVE_LOADED'}}
+  foreach($name in @('binding-missing-fourteen','binding-fourteen-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('FACTORY_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ')){Fail 'BINDING_INPUT_NEGATIVE_LOADED'}}
   $enumBad=Join-Path $output 'enum-bad-hash';$null=New-Item -ItemType Directory -Path $enumBad
   # Deliberately renamed OWNED bytes test rejection; no SDK identity is supplied.
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $enumBad 'Knx.Ets.Common.Types.dll')
@@ -203,6 +237,6 @@ if(-not $interactive){
   if([IO.File]::ReadAllText((Join-Path $target 'sentinel.txt')) -cne 'owned-preserved' -or (Test-Path -LiteralPath (Join-Path $target 'never.log'))){Fail 'JUNCTION_TARGET_CHANGED'}
  }finally{if(Test-Path -LiteralPath $link){[IO.Directory]::Delete($link)}}
 }
-$active=@(Get-CimInstance Win32_Process -Filter "Name='ConstructorProbe.exe' OR Name='ProjectConstructorProbe.exe' OR Name='NeutralStaHost.exe'" | Where-Object {$_.ExecutablePath -and ($_.ExecutablePath -ieq (Join-Path $build 'bin\ConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\NeutralStaHost.exe'))})
+$active=@(Get-CimInstance Win32_Process -Filter "Name='ConstructorProbe.exe' OR Name='ProjectConstructorProbe.exe' OR Name='ProjectFactoryBindingProbe.exe' OR Name='NeutralStaHost.exe'" | Where-Object {$_.ExecutablePath -and ($_.ExecutablePath -ieq (Join-Path $build 'bin\ConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryBindingProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\NeutralStaHost.exe'))})
 if($active.Count -ne 0){Fail 'OWNED_CHILD_REMAINS'}
 Write-Output ('OWNED_SUITE PASS session='+$ExpectedSession+' original=NOT_RUN hardware=NOT_RUN descendants=NOT_CONTAINED')
