@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; Project07 original Id-only diagnostic FAIL exit 10 at unsupported IFactory.UndoManager after one positive synthetic get_Id; no qualified Project/fixture/service |
-| Source commit(s) | Prior increments recorded below; Id-only source/actual project07 run `3161dd889fe4a8f995cf122542a06503c94b9172`, reviewed result `0e3ca948aaa1816c847200825cdc61d4e7727f23`; fixed UndoManager declaration source recorded in this increment |
-| Tests executed | Earlier results retained: owned Windows07 PASS 15/25/20, original project07 FAIL exit10 at UndoManager. New fixed UndoManager synthetic metadata PASS 192 PowerShell/20 Python, scope/diff PASS. Original UndoManager extraction/construction NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
+| Source commit(s) | Prior increments recorded below; Id-only source/actual project07 run `3161dd889fe4a8f995cf122542a06503c94b9172`, reviewed result `0e3ca948aaa1816c847200825cdc61d4e7727f23`; fixed UndoManager source/actual metadata `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`; bounded metadata result documented by this append |
+| Tests executed | Earlier results retained: owned Windows07 PASS 15/25/20; latest runtime project07 FAIL exit10. UndoManager synthetic checks PASS 192 PowerShell/20 Python; one original guarded metadata extraction PASS declarations only, target runtime NOT RUN. UndoManager construction/service and DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Original public Id constructor/getter returned and validated synthetic 1; one fixture get_Id return, then unsupported UndoManager. Project invocation ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. Valid identity/Project/fixture NOT_QUALIFIED; project04 origin still unknown |
+| Technical outcome | UndoManager declaration root02000131/protected ctor06000B9C observed, external base unresolved; no invocation/service supplied. Latest project07 runtime remains FAIL after synthetic get_Id/denied UndoManager; Project ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. Project/fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior source/results including actual project07 integrity/result documentation independent review PASS; fixed UndoManager metadata independent verification and critical review PASS; no runtime service acceptance |
+| Reviewer | Prior source/results and fixed UndoManager source/synthetic independent verification/critical review PASS; actual UndoManager bounded result audit and documentation critical review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1276,3 +1276,23 @@ policies. [Contract, primary count evidence and six frozen hashes](../docs/DCA-P
 record the exact scope. Independent verification and critical source review PASS; original metadata extraction remains NOT RUN. No UndoManager
 fixture/activation/runtime is implemented or run. Task-009 remains Blocked/ACs
 unchecked; no Project/DCA/UI/state/hardware or gate qualification follows.
+
+## Actual fixed UndoManager metadata result
+
+At source `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`, one fixed guarded
+metadata extraction **PASS**, exit 0; write/network denial probes true, all
+target runtime **NOT RUN for this extraction**. Report, 7,574 bytes, SHA-256
+`0e51ea640ce8d2c38433f2b3c0c03366e3bc1821899397d2a59ad37da14dedf6`
+and observation, 1,909 bytes, SHA-256
+`14821ce663e6afde30083de6ce42b66b381749cf7487b7e7f87aff1d1a4bef40`
+bind source/provenance; independent result audit PASS. Root `02000131`, flags
+`1048577`, has 24 filtered method declarations/eight fields and no reported
+public constructor; protected ctor `06000B9C` is parameterless and NOT INVOKED. External
+DisposableBase remains unresolved, no interfaces reported on the selected type.
+The filter omits private/internal methods; no other-constructor/public-factory
+absence or impossibility claim follows. [Full result/audit hashes and limits](../docs/DCA-PROJECT-CONTEXT.md).
+Historical source-freeze NOT_RUN and owned 192 PowerShell/20 Python PASS remain separate.
+Latest actual runtime remains project07 FAIL exit 10. No UndoManager instance/positive
+service or Project/DCA/UI/state/hardware/gate qualification; Task-009 Blocked/ACs
+unchecked. Next scope is read-only public-factory readiness inquiry only.
+Scope/diff PASS; source/pins unchanged, no new runtime authorized by this record.

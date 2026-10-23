@@ -1,5 +1,39 @@
 # Static Project context qualification
 
+## Actual fixed UndoManager metadata result
+
+At reviewed source `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`, exactly one
+fixed guarded `project-undo-manager` extraction **PASS**, exit 0. PowerShell
+7.6.7 reports write/network denial true and target runtime **NOT RUN**. The
+single original ObjectModel pin/identity and frozen source are unchanged.
+Private task009-undo-manager-metadata/undo-manager-report.json, 7,574 bytes,
+SHA-256 `0e51ea640ce8d2c38433f2b3c0c03366e3bc1821899397d2a59ad37da14dedf6`,
+reports UndoManager `02000131`, flags `1048577`, 24 filtered public/protected
+method declarations and eight declared fields. No public constructor declaration
+is reported; the sole reported constructor is protected/Family `06000B9C`,
+`instance Void()`, and was **NOT INVOKED**. Private/internal methods are excluded
+by this report's filter; this does not establish every constructor, absence of
+a public factory elsewhere, impossibility of construction or method behavior.
+
+The direct base is external Knx.Ets.Common 6.4.8718.0/neutral/PKT61439873ec5e1159
+`Knx.Ets.Common.DisposableBase`, disposition `EXTERNAL_BASE_NOT_RESOLVED`;
+no interfaces are reported on the selected type. No inherited contract was
+resolved and no value, method body, custom attribute or target execution observed.
+Private undo-manager-observation.json, 1,909 bytes, SHA-256
+`14821ce663e6afde30083de6ce42b66b381749cf7487b7e7f87aff1d1a4bef40`,
+binds five provenance files. Independent result audit **PASS** is recorded in
+verifier/result-audit.txt, SHA-256
+`a4bc47002de54694410028f731826971052781169d21f8b6385e99d20cdeb668`.
+Source/synthetic checks remain separately **PASS 192 PowerShell / 20 Python**;
+the historical implementation-freeze NOT_RUN record below is preserved.
+
+Project07 remains the latest actual runtime diagnostic: **FAIL exit 10**.
+This metadata PASS constructs no UndoManager and supplies no positive service
+or qualified Project/fixture/DCA initialization/UI/state/hardware/gate result.
+Task-009 remains Blocked, ACs unchecked. Next work is read-only public-factory
+readiness investigation only; no further runtime is approved by this record.
+Scope/diff checks **PASS**. This append changes no source, pin or guard policy.
+
 ## Fixed UndoManager declaration experiment contract
 
 Baseline `0e3ca948aaa1816c847200825cdc61d4e7727f23` contains the reviewed
