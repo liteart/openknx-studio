@@ -1,5 +1,42 @@
 # Static Project context qualification
 
+## Factory09 original exact-binding diagnostic result
+
+At source `28f53d27a24b4f11d5507df0a8178063f23bc872`, exactly one
+`original-factory-bcl9` attempt **FAIL exit 10**, without automatic retry or
+widening. Real CLR exact8-to9 policy preflight preceded all fourteen input pins;
+all pins/identities reached FACTORY_PROFILE_READY. After constructor BEGIN,
+actual pinned AsyncInterfaces9 identity/private path/held hash were observed
+by AssemblyLoad. No Bcl AssemblyResolve event was observed or fabricated.
+The prior8 dependency blocker was **NOT_REPRODUCED_THIS_ATTEMPT**, not ABI proof.
+
+Factory public constructor `0600012E` has one BEGIN/END pair, returned=False,
+one denied request: `Autofac.IComponentContext.get_ComponentRegistry`, token
+`06000035`, zero arguments. TargetInvocationException wraps NotSupportedException
+`PROJECT_FIXTURE_UNSUPPORTED:Autofac.IComponentContext.get_ComponentRegistry`;
+PROJECT_RESULT is10. Invocation is **ATTEMPTED_NOT_RETURNED**, body entry
+**NOT_ESTABLISHED**; no Factory instance or positive service contract is established.
+
+Private task009-constructor-windows/factory09-observation.json, 4,632 bytes,
+SHA-256 `e62347b3872e81a2ed5d6db96d271fba35810704509e3e458f8cba35178ed675`,
+binds nineteen files. Raw factory09.log, 8,654 bytes, SHA-256
+`7c681006c4d431deb82cf209a1146450624bf56ce7bf37f5942b325028e49279`.
+Context/done/driver/cleanup agree: limited interactive Session2, 15 seconds/
+65,536-byte capture, confirmed child10, expected/last cleanup10, task removed,
+zero owned processes/scratch files. Independent result audit **PASS**,
+verifier09/factory-result-audit.txt SHA-256
+`13fb7419b2e95ed23ad0e43bd63ac8d7a1f9e4fcfb28bd9ae6a80d7f308c527a`;
+Critical actual-result documentation review PASS; the diagnostic remains FAIL exit 10.
+
+Historical source-NOT_RUN and owned Windows09 **PASS23/42/28** remain separate,
+as does Factory08 FAIL2. This is now the latest actual runtime diagnostic.
+Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations are
+NOT RUN; constructor internals remain UNKNOWN, network/descendants NOT_CONTAINED.
+Task-009 stays Blocked, all ACs unchecked/all gates closed; no Factory/service/
+Project or other qualification. No source/pin/config change or retry is included.
+A genuine empty Autofac candidate requires separate readiness/review; this
+result authorizes no implementation or positive service response.
+
 ## Isolated exact AsyncInterfaces binding experiment contract
 
 Baseline `93575a2ea27bb04cc20c660de0d612fe6cbe42c4` contains the reviewed

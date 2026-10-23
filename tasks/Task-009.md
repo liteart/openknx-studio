@@ -81,16 +81,35 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; latest original Factory08 diagnostic FAIL exit 2 at denied AsyncInterfaces8 dependency after fourteen pins/profile validation; no qualified Factory/Project/fixture/service |
-| Source commit(s) | Prior increments retained; latest actual Factory08 source `edf408eb08fd60b4954fc61c349efbf14a6748dc`, reviewed result baseline `93575a2ea27bb04cc20c660de0d612fe6cbe42c4`; isolated exact-binding source freeze described below |
-| Tests executed | Latest Windows09 owned PASS 23 Session0/42 limited/28 admin negative; real CLR exact8-to9 policy preflight PASS without target load; original bcl9 NOT RUN. Earlier results retained: Windows08 pinned build/owned suites PASS 19 Session0/32 limited/24 admin negative; UndoManager metadata PASS declarations only. Exactly one original Factory08 FAIL exit2, constructor not returned/zero proxy requests. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; constructor internals UNKNOWN |
+| Implementation / report status | Blocked; latest original Factory09 exact-binding diagnostic FAIL exit10 at denied Autofac.get_ComponentRegistry; no qualified Factory/Project/fixture/service |
+| Source commit(s) | Prior increments retained; latest actual Factory09 source `28f53d27a24b4f11d5507df0a8178063f23bc872`; bounded result documentation follows |
+| Tests executed | Windows09 owned PASS23 Session0/42 limited/28 admin-negative remains separate. Exactly one original Factory09 FAIL10 after policy/pins/pinned9 load; constructor not returned/one denied proxy request. Prior Factory08 FAIL2 and UndoManager declaration PASS retained. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; internals UNKNOWN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Actual interface tokens Autofac02000017/Kim02000005 checked, Factory0600012E ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED. Requested AsyncInterfaces8 denied against pinned/validated9 profile, no alias/retry/widening. Factory/Project/fixture NOT_QUALIFIED; prior project07 FAIL10 and project04 origin unknown retained |
+| Technical outcome | Exact8-to9 CLR preflight and actual pinned9 AssemblyLoad observed, no Bcl Resolve event. Prior dependency blocker NOT_REPRODUCED_THIS_ATTEMPT, not ABI proof. Factory0600012E ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED; denied get_ComponentRegistry06000035 zeroargs. No qualification or retry |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Windows09 independent source and owned-result audits PASS; critical source/owned review PASS. Prior source/results and Factory source/build/owned Windows independent audit/critical review PASS; actual Factory08 result audit and critical result documentation review PASS; no runtime service acceptance |
+| Reviewer | Windows09 source/owned critical review PASS; Factory09 actual result independent audit and critical actual-result documentation review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Factory09 actual exact-binding result
+
+Source `28f53d27a24b4f11d5507df0a8178063f23bc872`: one original-factory-bcl9
+attempt **FAIL10**, no retry/widening. CLR exact8-to9 preflight precedes fourteen
+pins/identities READY; pinned9 identity/private path/hash observed after ctor BEGIN,
+with no Bcl Resolve event. Previous dependency blocker not reproduced this attempt,
+not ABI proof. Factory0600012E returnedFalse with one denied zero-argument
+Autofac.get_ComponentRegistry06000035; TargetInvocationException wraps
+NotSupportedException. ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED.
+Observation4,632B SHA-256 `e62347b3872e81a2ed5d6db96d271fba35810704509e3e458f8cba35178ed675`
+binds nineteen files; raw8,654B SHA-256 `7c681006c4d431deb82cf209a1146450624bf56ce7bf37f5942b325028e49279`.
+Session2 limited interactive, child10 confirmed15s/64KiB, cleanup expected/last10,
+task removed/zero owned processes/scratch. Independent result audit **PASS** SHA-256
+`13fb7419b2e95ed23ad0e43bd63ac8d7a1f9e4fcfb28bd9ae6a80d7f308c527a`;
+Critical result documentation review PASS; the diagnostic remains FAIL exit 10. Historical source-NOTRUN/owned23/42/28/Factory08FAIL2
+retained separately. Harness Project/Id/UndoManager/DCA/UI/state/hardware NOTRUN,
+internals UNKNOWN/network and descendants NOT_CONTAINED. No qualification or gate
+advance; Task Blocked, ACs unchecked. Any empty Autofac candidate is separate readiness.
 
 ## Isolated exact Factory binding source freeze
 
