@@ -1,5 +1,51 @@
 # Static Project context qualification
 
+## Factory13 original resource-probe diagnostic result
+
+At reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`, one original13
+attempt **FAIL exit 10**, no retry/widening. Exact policy/full 18 artifact/nineteen
+private-input and OS pins passed. Actual ValueTuple exact GAC/path/hash audit was
+allowed in THIS13; it does not identify Factory11's historical origin/classification.
+Builder/Build returned and context READY was reached, NOT QUALIFIED. Factory `0600012E`
+was ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED.
+
+Four exact null resource probes were allowed: 2 en-GB/2 en, all NULL_UNKNOWN,
+no requester ownership proof/handler-supplied Assembly. Phase ended inactive, count4,
+before disposal. No satellite load was observed in the captured audit, not prevented
+or guaranteed. TargetInvocationException then ComponentNotRegisteredException
+explicitly reports `Knx.Ets.Common.Security.IProjectTraceEncryptor` unregistered.
+Its owner assembly/interface/methods/semantics/licensing/KNX Secure relationship are
+NOT metadata-qualified; do not infer them or provide a crypto/no-op success fixture.
+Provider requests0/context calls NOT_INTERCEPTED; disposal returned once/final audit scopeFalse0.
+PROJECT_RESULT exit 10 is present, unlike12; no final dependency blocker/unexpected
+marker, with launcher/done/cleanup confirming 10. This is not successful Factory/service
+or Project construction.
+
+Private factory13-observation.json, 7,412B, SHA-256
+`96f4ce76f3e729fcf86d2066a05ee77d9fa03074de308e187189a8a2356e2867`,
+binds 25 files; raw factory13.log, 15,548B, SHA-256
+`2f7156c23a91b55dcfbf0fa1fed240e68602bb62fb4255e6fb1dc7f06acd2c1f`.
+Independent provenance audit PASS, verifier13/factory-result-audit.txt, 4,581B SHA-256
+`3abe83b4dd622f8b209d229e459804fd4c0210520cad0339cd0814fd10cf1487`;
+Critical result documentation review PASS; private review13/critical-review-result.txt records the bounded verdict. Session2 limited interactive, 15s/
+65,536B confirmed child10, cleanup expected/last10/task removed/zero processes/scratch.
+Coordinator ran once each from repository root, without arguments:
+
+```text
+python3 private/evidence/task009-constructor-windows/prepare_factory13.py
+python3 private/evidence/task009-constructor-windows/run_factory13.py
+python3 private/evidence/task009-constructor-windows/collect_factory13.py
+python3 private/evidence/task009-constructor-windows/cleanup_factory13.py
+```
+
+Source/owned 29/60/34 review PASS and earlier NOT_RUN chronology remain separate.
+Normal CLR probing can load/use a satellite before AFTER-LOAD audit/final flag check
+after callback/ctor/disposal; no containment/preventive/immediate-abort guarantee.
+Vendor internals UNKNOWN, explicit Project/Id/UndoManager/DCA/UI/state/hardware
+operations NOT RUN. Task009 Blocked/all ACs unchecked/no gate or qualification.
+Later mechanical closure may append only actual review/reference/source commit;
+new interface investigation or implementation requires separate bounded evidence.
+
 ## Source13 exact Autofac resource-probe contract
 
 Reviewed result baseline `a58e675c0cd918eb58f10a0c5dccfc80d7ecc126` retains

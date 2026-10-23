@@ -81,16 +81,37 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; latest original Factory12 empty-container diagnostic FAIL2 at the allowlisted Factory constructor's resource dependency; no qualified Factory/Project/service |
-| Source commit(s) | Original Factory12 diagnostic source `f29d3c2d571a34bcae360c8a028ca2abbc37d180`; source13 local freeze against reviewed result baseline `a58e675c0cd918eb58f10a0c5dccfc80d7ecc126`, no future source commit asserted |
-| Tests executed | Source13 local checks and Windows13 owned PASS29/60/34/full18 preflight in all runners; pure policy/thread/bounds and prior regressions PASS; original13 NOT RUN. Actual Windows12 owned suites PASS28/59/33 and full18 artifact preflight. Exactly one original12 diagnostic FAIL2; genuine empty context reached, Factory constructor invocation attempted but did not return after `Autofac.resources` was denied. Independent provenance/result audit PASS. Earlier Windows11 owned PASS27/58/32 and original11 FAIL2 remain historical. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/factory12-observation.json`, `factory12.log`, and `verifier12/factory-result-audit.txt`; earlier dated records below |
+| Implementation / report status | Blocked; latest original Factory13 diagnostic FAIL10 at unregistered IProjectTraceEncryptor, contract/semantics UNKNOWN; no qualified Factory/Project/service |
+| Source commit(s) | Original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
+| Tests executed | Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Builder02000015/ctor06000026 and Build0600002E returned; genuine empty context reached. Factory0600012E invocation did not return after `Autofac.resources` resolution was denied. Constructor body entry and lower-level causal root are not established; context/Factory/service qualification absent |
+| Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; owner/interface/semantics/licensing/KNX Secure relationship NOT metadata-qualified. No service implementation/qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source13 source/owned independent audits and critical source/evidence review PASS for the explicit after-load boundary; original13 remains NOT RUN. Source12 source/owned independent audits and critical source/owned review PASS; original12 provenance/result audit and critical result documentation review PASS (the diagnostic itself FAIL exit 2). Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; its diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
+| Reviewer | Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Factory13 actual result
+
+Reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`: one **FAIL10**,
+no retry/widening; full 18 artifacts/nineteen private+OS pins passed. THIS13 ValueTuple
+exact GAC/path/hash allowed; builder/Build/context READY, not qualified. Factory `0600012E`
+not returned/body entry unestablished. Four allowed null probes 2 en-GB/2 en, all requester
+NULL_UNKNOWN/no ownership proof; phase inactive count4 before disposal. No satellite
+load observed, not prevented/guaranteed. TargetInvocation→ComponentNotRegistered names
+IProjectTraceEncryptor unregistered; assembly/interface/methods/semantics/licensing/
+KNX Secure relation NOT metadata-qualified, no crypto/no-op fixture. Provider requests0/context
+NOT_INTERCEPTED/disposal1/auditFalse0; PROJECT_RESULT10 present/no dependency blocker,
+launcher/done/cleanup10 confirm. Session2 limited 15s/64KiB cleanup expected/last10,
+removed/0process/0scratch. Observation 7,412B SHA-256
+`96f4ce76f3e729fcf86d2066a05ee77d9fa03074de308e187189a8a2356e2867`
+raw 15,548B `2f7156c23a91b55dcfbf0fa1fed240e68602bb62fb4255e6fb1dc7f06acd2c1f`;
+independent provenance audit PASS `3abe83b4dd622f8b209d229e459804fd4c0210520cad0339cd0814fd10cf1487`.
+Four exact Python commands/limits in contract; critical result documentation review PASS (private review13/critical-review-result.txt); diagnostic remains FAIL10.
+Owned 29/60/34 history separate; after-load/final-guard/no-containment caveat preserved,
+explicit Project/Id/UndoManager/DCA/UI/state/hardware NOTRUN/internals UNKNOWN.
+Task Blocked/ACs unchecked/no qualification/gate; Factory11 origin still UNKNOWN.
 
 ## Source13 exact resource-probe source freeze
 
