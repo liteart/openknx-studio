@@ -1,6 +1,50 @@
 # Static Project context qualification
 
-## Fixed trace-encryptor declaration inquiry: source contract
+## Actual14 Common declaration result: static PASS, creation INCONCLUSIVE
+
+At reviewed metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`, coordinator
+ran once, from repository root without arguments:
+`python3 private/evidence/task009-project-trace-encryptor-metadata/read_common14.py`.
+Two unchanged bounded child calls exited0: negative probes then ONE Common metadata
+extraction. PowerShell7.6.7/write_denied=true/network_denied=true; no original13 retry.
+Exact Common pin503,248B/SHA4d4fcd.../6.4.8718.0 neutral61439873ec5e1159 passed.
+All tables32768, prior signature/member/report512KiB and outer30s/2MiB guards unchanged;
+this static guarded process is not Windows runtime or system-wide containment proof.
+
+Actual owner is the pinned Knx.Ets.Common assembly: root `02000077`, attributes1048737,
+public abstract interface `Knx.Ets.Common.Security.IProjectTraceEncryptor`, NO_BASE.
+External netstandard2.0 `System.IDisposable` declaration; no fields. Public declarations:
+Encrypt `0600033A` and Decrypt `0600033B`, each `instance String(String) generic=0`;
+IsEncrypted `0600033C`, `instance Boolean(String) generic=0`. One exact same-owner direct
+implements edge names public sealed/nonabstract `Knx.Ets.Common.Security.ProjectTraceEncryptor`
+`0200007E`, attributes1048833, target02000077. Candidate constructors/other members were
+NOT inspected. Eighteen TypeSpec relationships remain uninspected; forwarders unexamined.
+Creation INCONCLUSIVE; no instance, registration, encryption behavior/licensing/KNX Secure
+relationship or compatible Factory/service is established. Target runtime NOT_RUN.
+
+Private evidence below is under `task009-project-trace-encryptor-metadata`:
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| original14-report.json | 2409 | `de0463c4f41bab986d0d01aec2b8f594be7f34957f557c8c755bafbc5d6fdabd` |
+| original14-observation.json | 1695 | `3639acb2d8e722b9402ccd35c242684c97b40a4a06a60d6c21bc595f0fe67efe` |
+| original14-child1-stdout.txt | 73 | `e9c5c00d6da57dcd7c6b108ab0502b297940908b1ce6240bfbd12c98d9ab07fc` |
+| original14-child2-stdout.txt | 2302 | `31c4d53f8a3dafa46e5555af8d9b96d056366e83e82e90fcae6a184b7262e6ca` |
+| read_common14.py | 3514 | `5a5d3823248ed3da2eadf57ce9759eacaf3829c2855b522bfa1b408d54cb65b9` |
+| verifier14/original-result-audit.txt | 3489 | `0c0306746df73bb0d5c3e61d6a799300aa4d17d3e6c814fb4ce2b48c1fef26db` |
+
+Both raw stderr files are0B/SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+The observation binds source/helper/freeze and raw/report hashes; audit **PASS** for
+provenance/bounded declarations, critical result documentation review **PASS** (private review14/critical-review-result.txt); static extraction PASS and creation INCONCLUSIVE remain distinct.
+Source14 owned242PS/21Python PASS remains separate. Historical pre-extraction NOT_RUN
+below is superseded only for this static lookup. Latest actual runtime remains original13
+FAIL10, not qualified; Task Blocked/ACs unchecked/no gate. A separate fixed candidate
+construction declaration inquiry is readiness only, not implemented/executed here.
+No crypto/no-op fixture or runtime expansion. The critical review record binds these facts; no additional implementation, extraction
+or runtime is approved by this result record.
+
+## Source14 fixed trace-encryptor inquiry: historical pre-extraction freeze
 
 Baseline `80ff78eda135179ad499c19b7fc231eea4a9d975`; Task-008 accepted analysis,
 Task-009 Blocked/all acceptance criteria unchecked. Latest original13 remains FAIL10.

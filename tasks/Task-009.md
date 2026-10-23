@@ -81,18 +81,39 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; latest original Factory13 diagnostic FAIL10 at unregistered IProjectTraceEncryptor, contract/semantics UNKNOWN; no qualified Factory/Project/service |
-| Source commit(s) | New fixed Common metadata increment based on `80ff78eda135179ad499c19b7fc231eea4a9d975`, six-source private freeze recorded below; Original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
-| Tests executed | New declaration-only owned metadata PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS, original Common extraction NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
+| Implementation / report status | Blocked; actual14 static Common declaration PASS/creation INCONCLUSIVE; latest runtime original13 FAIL10 at unregistered service. No qualified Factory/Project/service |
+| Source commit(s) | Actual14 metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`; original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
+| Tests executed | Source14 declaration-only owned PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS. Actual14 guarded static extraction PASS0/denial probes true, target runtime NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-project-trace-encryptor-metadata/original14-report.json`, observation/raw/helper and verifier14/original-result-audit.txt; private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; owner/interface/semantics/licensing/KNX Secure relationship NOT metadata-qualified. No service implementation/qualification |
+| Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; actual14 now identifies Common public interface02000077 and direct public sealed candidate0200007E. Candidate constructor/API, behavior/registration/semantics/licensing/KNX Secure relationship remain unqualified. No service implementation/qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | New Common source/owned independent verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
+| Reviewer | Actual14 independent provenance/declaration audit and critical result documentation review PASS (private review14/critical-review-result.txt); creation remains INCONCLUSIVE. New Common source/owned independent verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
-## Fixed Common declaration source freeze
+## Actual14 guarded Common metadata result
+
+Source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`: one static extraction **PASS0**,
+with unchanged pwsh7.6.7 write/network denial probes true, exact Common pin503,248B/
+SHA4d4fcd.../6.4 identity; runtime NOT_RUN. Actual root02000077 is Common public abstract
+IProjectTraceEncryptor, external IDisposable; Encrypt0600033A/Decrypt0600033B String(String),
+IsEncrypted0600033C Boolean(String), public instance declarations only. Direct same-owner
+candidate0200007E ProjectTraceEncryptor is public sealed/nonabstract; constructors/API
+NOT inspected. Eighteen TypeSpec edges unexamined/forwarders unexamined/creation INCONCLUSIVE.
+No crypto behavior, registration, semantics, licensing or KNX Secure inference/fixture.
+
+Private report2409B SHA `de0463c4f41bab986d0d01aec2b8f594be7f34957f557c8c755bafbc5d6fdabd`;
+observation1695B SHA `3639acb2d8e722b9402ccd35c242684c97b40a4a06a60d6c21bc595f0fe67efe`.
+Audit PASS SHA `0c0306746df73bb0d5c3e61d6a799300aa4d17d3e6c814fb4ce2b48c1fef26db`;
+exact raw/helper hashes/command/limits in contract. Coordinator ran read_common14.py
+once; negative-probe then metadata child, exit0/empty stderr each, no original13 retry.
+Source14 owned242PS/21Python separate; critical result documentation review PASS (private review14/critical-review-result.txt), creation INCONCLUSIVE.
+Latest runtime original13 remains FAIL10; Task Blocked/ACs unchecked/no qualification/gate.
+Historical source14 NOT_RUN below applies before extraction; candidate-construction
+metadata readiness only, no new code/extraction/runtime authorized by this record.
+
+## Source14 fixed Common declaration: historical pre-extraction freeze
 
 Baseline `80ff78eda135179ad499c19b7fc231eea4a9d975`; separate fixed
 `project-trace-encryptor` metadata-only mode, sole Common pin503,248B SHA-256
