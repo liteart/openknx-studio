@@ -1,5 +1,67 @@
 # Static Project context qualification
 
+## Source15 fixed candidate-construction metadata contract
+
+Baseline `d3ea5daa985d29a918cec788c0112d38c97b1b0e`; actual14 declaration result
+reviewed/accepted as static evidence only. Latest runtime original13 remains FAIL10.
+New separate `project-trace-encryptor-construction` mode uses the SAME Common503,248B
+SHA-256 `4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd` and
+6.4.8718.0/neutral/61439873ec5e1159 identity. Fixed observed candidate name
+`Knx.Ets.Common.Security.ProjectTraceEncryptor`/token0200007E only; hash/size before
+PEReader, identity before exact name/token lookup. Separate unsigned-owned root and
+identity cannot be selected by original worker; no arbitrary root/input override.
+
+Report candidate flags/direct base/interfaces without ancestry resolution, all declared
+.ctor signatures/accessibility, and declared public static methods returning the exact
+same-owner candidate/interface as FACTORY_CANDIDATE_DECLARATION_ONLY. Constructor
+visibility and generic signatures do not establish callable/safe construction. Parameter
+types/owners stay signature declarations, with no recursive dependency catalog, IL,
+custom attributes, member values, assembly resolution, registration or target execution.
+No constructor/factory invocation, crypto/no-op implementation or KNX Secure inference.
+Missing root/empty local factory list is not SDK-wide absence or impossibility.
+
+All tables32768, file16MiB/aggregate32MiB, root methods256/total2048, interfaces32,
+signatures128bytes/128nodes/depth16, source string1024/decoded4096/report512KiB
+ASCII-escaped, outer30s/2MiB and denial probes remain unchanged. Stop on limits rather
+than widening. Old modes/reports/pins/constructor tools remain unchanged. Source and
+owned verification/critical review precede coordinator's single private extraction;
+actual candidate constructor/factory declarations and runtime NOT_RUN at this source freeze. Task Blocked/ACs
+unchecked/no qualification/gate. The original14 candidate edge alone is not construction,
+registration, semantic behavior, licensing or compatible-service proof.
+
+Source15 owned freeze: **PASS276 PowerShell /22 Python**, including compilation of
+both owned metadata C# sources; PS parse/source preservation/scope/diff PASS. Tests
+cover six constructor accessibilities, parameter assembly owners, exact public-static
+local/same-owner-TypeRef returns, wrong-owner/instance/private/void exclusions, generic
+signatures without usability claims, root/token/hash/identity refusal, malformed and
+bounded signatures/interfaces/methods/tables/report, empty route INCONCLUSIVE. No
+owned target assembly was runtime loaded. All prior report bytes/old C#/fixture/PS
+blocks and Python guards/helpers/constants/tests remain unchanged; constructor tools
+unchanged. Initial/intermediate private AST normalizers failed their comparison,
+then were corrected without source changes; preserved as helper observations, not
+owned-suite failures or original metadata retries.
+
+Private `task009-project-trace-encryptor-construction-metadata/owned-source-freeze.json`,
+1,412B SHA-256 `11e3377e94f02435ac26909114b68a2a0201fcacca2c69c1c3c56dd0b9956a94`,
+binds six source hashes. owned-checks.json SHA-256
+`eb9e1190924dafa5cdc6427bf825e71e6ebfe5b68bd437c7c43465dc24ee54f3`
+retains exact commands/results plus stdout/stderr. Reproduce from task worktree using
+pinned PowerShell7.6.7:
+
+```text
+pwsh -NoProfile -File experiments/dca-integration/Test-EntrypointMetadata.ps1
+python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py
+python3 -B <repository-root>/private/evidence/task009-project-trace-encryptor-construction-metadata/check_owned_source.py
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+Independent source/owned verification PASS: private verifier15/audit.txt, 4745B,
+SHA-256 `a853ad1c47b2cc8c72e036c02f4927ef05c3e8f265f435c96d1fa5b61e3b1400`. Critical source review PASS (private review15/critical-review-source.txt); actual candidate member extraction NOT_RUN. Source-only evidence does not qualify construction,
+registration or behavior. Latest static14 PASS/runtime13 FAIL10 remain separate.
+The critical source review record binds these frozen source/evidence facts; no additional
+runtime, registration, crypto behavior or qualification follows.
+
 ## Actual14 Common declaration result: static PASS, creation INCONCLUSIVE
 
 At reviewed metadata source `2b7a8f8e3ea9b4379be3aacc4751584efba8ab55`, coordinator

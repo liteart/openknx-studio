@@ -291,5 +291,31 @@ try{
  $traceWorker=Join-Path $PSScriptRoot 'Read-ProjectTraceEncryptorMetadata.ps1'
  Reject {& $traceWorker -InputPath $trace -InputSha256 (Hash $trace)} 'DCAENTRY_INPUT_PIN'
  Assert ((UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reader bytes unchanged after Common inquiry';$passed++
+ $traceConstruction=Join-Path $root 'OwnedTraceConstruction.dll';[Task144OwnedFixtures]::CreateTraceConstruction($traceConstruction)
+ function TraceConstruction([string] $p=$traceConstruction){[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptorConstruction($p,(Hash $p))}
+ $tcRaw=TraceConstruction;$tc=$tcRaw|ConvertFrom-Json;$ct=$tc.types[0]
+ Assert ($tc.operation -eq 'static_dca_project_trace_encryptor_construction' -and $tc.runtime_execution -eq 'NOT_RUN' -and $tc.inputs.Count -eq 1 -and $tc.inputs[0].identity -eq 'Task009.OwnedTraceConstruction, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $tc.selected_root -eq 'Owned.Task009.TraceCandidate' -and $ct.token -eq '02000002' -and $tc.creation_route -eq 'INCONCLUSIVE' -and $tc.forwarded_declarations -eq 'UNEXAMINED') 'New fixed independent construction declaration route';$passed++
+ $ctors=@($ct.methods|Where-Object declaration_kind -eq 'CONSTRUCTOR_DECLARATION_ONLY');$factories=@($ct.methods|Where-Object declaration_kind -eq 'FACTORY_CANDIDATE_DECLARATION_ONLY')
+ Assert ($ctors.Count -eq 6 -and (($ctors.accessibility -join ',') -eq 'Public,Family,Assembly,Private,FamORAssem,FamANDAssem') -and $ctors[0].signature -eq 'instance Void([Owned.Foreign, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.Dependencies.Dependency) generic=0' -and $ctors[0].signature_header -eq 32) 'All constructor access declarations and exact dependency owner retained, not callable proof';$passed++
+ Assert ($factories.Count -eq 4 -and ($factories.name -join ',') -eq 'CreateCandidate,CreateInterface,CreateSameOwnerRef,GenericCreate' -and $factories[3].signature -eq 'static Owned.Task009.TraceCandidate() generic=1' -and $factories[0].signature_header -eq 0 -and $factories[3].signature_header -eq 16) 'Only public static exact same-owner return declarations, generic remains explicit';$passed++
+ Assert (@($ct.methods|Where-Object {$_.owner_assembly -ne $tc.inputs[0].identity -or $_.owner_type -ne $ct.name -or $_.owner_token -ne $ct.token}).Count -eq 0 -and -not $tcRaw.Contains('ForeignIgnored') -and -not $tcRaw.Contains('InstanceIgnored') -and -not $tcRaw.Contains('PrivateIgnored') -and -not $tcRaw.Contains('VoidIgnored') -and -not $tcRaw.Contains($root) -and $ct.interfaces[0] -eq 'Owned.Task009.ITraceContract' -and $ct.base_type -like '*System.Object') 'Exact declaration ownership/filtering/direct base and interface only';$passed++
+ Assert (@([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedTraceConstruction'}).Count -eq 0) 'Owned metadata fixture was not runtime loaded';$passed++
+ foreach($profile in @(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20,23)){
+  $bad=Join-Path $root ('TraceConstructionBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateTraceConstruction($bad,$profile)
+  $code=@{1='ROOT_NOT_FOUND_FORWARDERS_UNEXAMINED';2='DUPLICATE_ROOT';3='MALFORMED_SIGNATURE';4='SIGNATURE_LIMIT';5='INPUT_IDENTITY';6='ROOT_TOKEN';7='SIGNATURE_SHAPE';8='METHOD_LIMIT';9='INTERFACE_LIMIT';10='ROW_LIMIT';11='STRING_LIMIT';12='SIGNATURE_LIMIT';13='SIGNATURE_SHAPE';14='SIGNATURE_SHAPE';15='SIGNATURE_SHAPE';16='REPORT_LIMIT';20='ROW_LIMIT';23='TYPE_IDENTIFIER'}[$profile]
+  Reject {TraceConstruction $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(17,18,19,21,24)){
+  $positive=Join-Path $root ('TraceConstructionBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateTraceConstruction($positive,$profile)
+  $t=TraceConstruction $positive|ConvertFrom-Json
+  Assert ($t.types.Count -eq 1 -and ($profile -ne 17 -or $t.types[0].interfaces.Count -eq 32) -and ($profile -ne 18 -or $t.types[0].methods.Count -eq 256) -and ($profile -ne 24 -or ($t.types[0].methods.Count -eq 0 -and $t.creation_route -eq 'INCONCLUSIVE'))) ('Construction declaration bound/empty route '+$profile);$passed++
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptorConstruction($broken,('0'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptorConstruction($trace,(Hash $trace))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectTraceEncryptorConstruction($traceConstruction,(Hash $traceConstruction))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectTraceEncryptorConstruction($broken,'4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd')} 'DCAENTRY_INPUT_HASH'
+ $tcWorker=Join-Path $PSScriptRoot 'Read-ProjectTraceEncryptorConstructionMetadata.ps1'
+ Reject {& $tcWorker -InputPath $traceConstruction -InputSha256 (Hash $traceConstruction)} 'DCAENTRY_INPUT_PIN'
+ Assert ((Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reader bytes unchanged after fixed candidate construction declaration mode';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}
