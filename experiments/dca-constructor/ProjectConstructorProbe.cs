@@ -97,6 +97,13 @@ internal static class ProjectConstructorProbe
     const string ReviewedIdMetadataSha256 = "37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4";
     const string ReviewedIdObservationSha256 = "89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a";
     const uint FixtureProjectNumber = 1; // Owned synthetic data, not a real or claimed-valid project identity.
+    const string ReviewedFactoryConstructorReportSha256 = "df361cb84fc232b6f7da6943114096cd3e14b638495dcc8b68e10dbd42524ea9";
+    const string ReviewedFactoryCandidatesAuditSha256 = "8f18be8da62da7d06f11634467b3c869e2ac260f20956cb5ab31f552ff324432";
+    static readonly string[] FactoryExtraNames = { "Autofac", "Knx.Kim.DataProvider" };
+    static readonly string[] FactoryExtraHashes = { "747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12", "1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a" };
+    static readonly string[] FactoryExtraIdentities = { "Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da", "Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159" };
+    static readonly int[] FactoryPrefixSizes = { 452608, 6979024, 72704, 215504, 78800, 26376, 102856, 27944, 14204880, 139776, 503248, 318928 };
+    static readonly int[] FactoryExtraSizes = { 374784, 282064 };
     static readonly string[] Names = { "MDT-DaliDcaPlus", "Knx.Ets.Sdk", "Knx.Ets.Sdk.AddIns.AddInViews", "Knx.Ets.Common.Types", "Knx.Ets.Common.Resources", "Microsoft.Bcl.AsyncInterfaces", "netstandard", "System.Threading.Tasks.Extensions", "Knx.Ets.ObjectModel", "FluentResults", "Knx.Ets.Common", "Knx.Ets.Ids" };
     static readonly string[] Hashes = { "4507e7b0e1eb10fea9556f19dd8d34c5f9fcf3cd8efa79e891b13f2585d7cf8d", "7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989", "5a59b733cbbecb8afe67f54e3b354045a61e092470a13129971f4f99e0b6d87d", CommonHash, "6e07df9e247b1d5e6a11c9e8131ec8cc8ab8aabeca9af02b1911608d1eefe661", "1c95b1a776931ca1c4f2911b2ae1cc99eb78f547cd5feeaf5cdbdf10cedad0db", "bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb", "692c324c02a922f890aaf5948c54ec9758f5ab7019b8e8ab169c106ddd3231f4", "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a", "99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159", "4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd", "43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877" };
     static readonly string[] Identities = {
@@ -117,6 +124,7 @@ internal static class ProjectConstructorProbe
     static volatile bool unexpected, rejected;
     static volatile bool enumInputsPinned;
     static volatile bool platformFacadePinned;
+    static volatile bool factoryInputsReady;
     static string platformFacadePath;
     static int logBytes, assemblyCount;
     static object constructed;
@@ -124,6 +132,9 @@ internal static class ProjectConstructorProbe
     static bool Original { get { return mode == "original-project" || mode == "original-project-store-id"; } }
     static bool OwnedProject { get { return mode == "owned-project" || mode == "owned-project-store-id"; } }
     static bool StoreIdFixture { get { return mode == "original-project-store-id" || mode == "owned-project-store-id"; } }
+    static bool FactoryOriginal { get { return mode == "original-factory"; } }
+    static bool FactoryOwned { get { return mode == "owned-factory"; } }
+    static bool FactoryOnly { get { return FactoryOriginal || FactoryOwned; } }
     internal static string Text(string value)
     {
         value = value.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\0", "\\0");
@@ -163,9 +174,9 @@ internal static class ProjectConstructorProbe
     }
     static void PinPlatformFacade()
     {
-        ProbeFiles.Require(Original || OwnedProject, "PLATFORM_FACADE_MODE");
+        ProbeFiles.Require(Original || OwnedProject || FactoryOnly, "PLATFORM_FACADE_MODE");
         platformFacadePath = ProbeFiles.Local(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), PlatformFacadeRelativePath), true, false);
-        if (OwnedProject) {
+        if (OwnedProject || FactoryOwned) {
             ProbeFiles.Require(!platformFacadePinned && !PlatformFacadeAllowed(Identities[6], platformFacadePath, true, false), "OWNED_PLATFORM_FACADE_INCOMPLETE_PIN");
             Record("OWNED_PLATFORM_FACADE_INCOMPLETE_PIN_PASS matching-facts=true pin-complete=false");
         }
@@ -181,8 +192,33 @@ internal static class ProjectConstructorProbe
     // completed held-file pin, never caller-supplied identity/proof parameters.
     static bool PlatformFacadeAllowed(string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (Original || OwnedProject) && platformFacadePinned && identity == Identities[6]
+        return (Original || OwnedProject || FactoryOnly) && platformFacadePinned && identity == Identities[6]
             && ProbeFiles.Same(location, platformFacadePath) && cache && !reflectionOnly;
+    }
+    static void PinFactoryInputs()
+    {
+        CountInputs(14);
+        for (int i = 0; i < Names.Length; i++) {
+            Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryPrefixSizes[i], "FACTORY_INPUT_SIZE");
+        }
+        for (int i = 0; i < FactoryExtraNames.Length; i++) {
+            Pin(Path.Combine(stage, FactoryExtraNames[i] + ".dll"), FactoryExtraHashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryExtraSizes[i], "FACTORY_INPUT_SIZE");
+        }
+        PinPlatformFacade();
+        for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "INPUT_IDENTITY");
+        for (int i = 0; i < FactoryExtraNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, FactoryExtraNames[i] + ".dll")).FullName == FactoryExtraIdentities[i], "FACTORY_INPUT_IDENTITY");
+        factoryInputsReady = true;
+        Record("FACTORY_PROFILE_READY private-pins=14 extra-reference-admission=THIS_MODE_ONLY");
+    }
+    // Private finite policy seam; real facts come from the completed pin and Assembly.
+    static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
+    {
+        if (selectedMode != "original-factory" || !complete || reflectionOnly) return false;
+        for (int i = 0; i < FactoryExtraNames.Length; i++)
+            if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
+        return false;
     }
     static bool Framework(Assembly assembly)
     {
@@ -205,7 +241,7 @@ internal static class ProjectConstructorProbe
             if (Framework(assembly)) allowed = true;
             bool platform = PlatformFacadeAllowed(assembly.FullName, assembly.Location, assembly.GlobalAssemblyCache, assembly.ReflectionOnly);
             if (platform) allowed = true;
-            if ((Original || OwnedProject) && assembly.GetName().Name == "netstandard")
+            if ((Original || OwnedProject || FactoryOnly) && assembly.GetName().Name == "netstandard")
                 Record("PLATFORM_FACADE_AUDIT alias-allowed=" + platform + " identity=" + Text(assembly.FullName) + " origin=" + (platform ? "FIXED_OS_GAC_PATH" : "UNQUALIFIED_FOR_ALIAS")
                     + " location=" + Text(assembly.Location) + " gac=" + assembly.GlobalAssemblyCache
                     + " reflection-only=" + assembly.ReflectionOnly
@@ -215,7 +251,10 @@ internal static class ProjectConstructorProbe
                     || (assembly.FullName == Identities[6] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, "netstandard.dll"))))) allowed = true;
             if (Original) for (int i = 0; i < Names.Length; i++)
                 if (assembly.FullName == Identities[i] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
-            if (!Original && !EnumOnly && assembly.FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" && ProbeFiles.Same(assembly.Location, fixture)) allowed = true;
+            if (FactoryOriginal && factoryInputsReady && !assembly.ReflectionOnly) for (int i = 0; i < Names.Length; i++)
+                if (assembly.FullName == Identities[i] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
+            if (FactoryReferencePolicy(mode, factoryInputsReady, assembly.FullName, assembly.Location, assembly.ReflectionOnly)) allowed = true;
+            if (!Original && !FactoryOriginal && !EnumOnly && assembly.FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" && ProbeFiles.Same(assembly.Location, fixture)) allowed = true;
         }
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         if (!allowed) { unexpected = true; Record("UNEXPECTED_ASSEMBLY_BLOCKER detection=after-load prevention=NOT_ESTABLISHED"); }
@@ -226,6 +265,11 @@ internal static class ProjectConstructorProbe
         if (Original) {
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
+        }
+        if (FactoryOriginal && factoryInputsReady) {
+            string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
+            for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
+            for (int i = 0; i < FactoryExtraNames.Length; i++) if (args.Name == FactoryExtraIdentities[i]) return Assembly.LoadFrom(Path.Combine(stage, FactoryExtraNames[i] + ".dll"));
         }
         rejected = true;
         throw new FileNotFoundException("PROJECT_DEPENDENCY_NOT_ALLOWLISTED", args.Name);
@@ -484,13 +528,106 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(s.FixtureCalls == 2 && s.DeniedRequests == 0 && f.Requests == 0, "OWNED_ID_PROJECT_CALLS");
         Record("OWNED_PROJECT_STORE_ID_PASS created=1 validated=1 stable-object=true unknown-generic-ref-out-void-property-malformed=denied bounded=true original=NOT_RUN qualification=NOT_ESTABLISHED");
     }
+    static ConstructorInfo FactoryCtor(Type type, Type first, Type second)
+    {
+        ProbeFiles.Require(type != null && type.IsPublic && type.IsClass && !type.IsAbstract && !type.IsGenericType && !type.ContainsGenericParameters,
+            "FACTORY_PUBLIC_TYPE_REQUIRED");
+        foreach (Type parameter in new Type[] { first, second })
+            ProbeFiles.Require(parameter != null && parameter.IsPublic && parameter.IsInterface && !parameter.IsGenericType && !parameter.ContainsGenericParameters,
+                "FACTORY_PUBLIC_INTERFACE_REQUIRED");
+        ConstructorInfo ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, new Type[] { first, second }, null);
+        ProbeFiles.Require(ctor != null && ctor.DeclaringType == type && ctor.IsPublic && !ctor.IsStatic
+            && ctor.GetParameters().Length == 2 && ctor.GetParameters()[0].ParameterType == first && ctor.GetParameters()[1].ParameterType == second,
+            "FACTORY_PUBLIC_CONSTRUCTOR_SIGNATURE");
+        return ctor;
+    }
+    static bool ReviewedFactoryTokens(int type, int ctor) { return type == 0x02000023 && ctor == 0x0600012e; }
+    static void OriginalFactoryTokens(Type type, ConstructorInfo ctor, Type first, Type second)
+    {
+        ProbeFiles.Require(type.FullName == "Knx.Ets.ObjectModel.Factory" && type.Assembly.FullName == OmIdentity && (int)type.Attributes == 1048577
+            && ctor.DeclaringType == type && (int)ctor.Attributes == 6278 && ReviewedFactoryTokens(type.MetadataToken, ctor.MetadataToken)
+            && first.FullName == "Autofac.IComponentContext" && first.Assembly.FullName == FactoryExtraIdentities[0]
+            && second.FullName == "Knx.Kim.DataProvider.IKimDataProvider" && second.Assembly.FullName == FactoryExtraIdentities[1], "FACTORY_ORIGINAL_CONTRACT");
+    }
+    static void InvokeFactory(ConstructorInfo ctor, ProjectDenyProxy first, ProjectDenyProxy second)
+    {
+        bool returned = false;
+        Record("FACTORY_CONSTRUCTOR_BEGIN type=" + ctor.DeclaringType.FullName + " token=" + ctor.MetadataToken.ToString("X8")
+            + " services=deny-all constructor-only=true report-sha256=" + ReviewedFactoryConstructorReportSha256 + " candidate-audit-sha256=" + ReviewedFactoryCandidatesAuditSha256);
+        try {
+            constructed = ctor.Invoke(new object[] { first.GetTransparentProxy(), second.GetTransparentProxy() }); returned = true;
+            ProbeFiles.Require(constructed != null && constructed.GetType() == ctor.DeclaringType, "FACTORY_EXACT_RETURN_TYPE");
+        } finally {
+            Record("FACTORY_CONSTRUCTOR_END returned=" + returned + " denied-requests=" + (first.Requests + second.Requests)
+                + " qualification=NOT_ESTABLISHED project=NOT_RUN Id=NOT_RUN UndoManager=NOT_RUN DCA=NOT_RUN ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
+        }
+    }
+    static void OriginalFactory()
+    {
+        Record("FACTORY_PHASE original-type-materialization");
+        Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll"));
+        Assembly autofac = Assembly.LoadFrom(Path.Combine(stage, FactoryExtraNames[0] + ".dll"));
+        Assembly kim = Assembly.LoadFrom(Path.Combine(stage, FactoryExtraNames[1] + ".dll"));
+        Type factory = om.GetType("Knx.Ets.ObjectModel.Factory", true, false);
+        Type first = autofac.GetType("Autofac.IComponentContext", true, false), second = kim.GetType("Knx.Kim.DataProvider.IKimDataProvider", true, false);
+        ProbeFiles.Require(factory.Assembly == om && first.Assembly == autofac && second.Assembly == kim, "FACTORY_TYPE_OWNERSHIP");
+        ConstructorInfo ctor = FactoryCtor(factory, first, second); OriginalFactoryTokens(factory, ctor, first, second);
+        Record("FACTORY_INTERFACE type=" + first.FullName + " token=" + first.MetadataToken.ToString("X8") + " identity=" + Text(first.Assembly.FullName));
+        Record("FACTORY_INTERFACE type=" + second.FullName + " token=" + second.MetadataToken.ToString("X8") + " identity=" + Text(second.Assembly.FullName));
+        var a = new ProjectDenyProxy(first, Record); var b = new ProjectDenyProxy(second, Record);
+        ProbeFiles.Require(!unexpected && !rejected, "FACTORY_PRECONSTRUCTOR_DEPENDENCY");
+        InvokeFactory(ctor, a, b); GC.KeepAlive(a); GC.KeepAlive(b);
+    }
+    static void OwnedFactory()
+    {
+        Assembly platform = Assembly.Load(Identities[6]);
+        ProbeFiles.Require(PlatformFacadeAllowed(platform.FullName, platform.Location, platform.GlobalAssemblyCache, platform.ReflectionOnly), "OWNED_FACTORY_PLATFORM_FACADE");
+        for (int i = 0; i < FactoryExtraNames.Length; i++) {
+            string path = Path.Combine(stage, FactoryExtraNames[i] + ".dll");
+            ProbeFiles.Require(FactoryReferencePolicy("original-factory", true, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("original-factory", false, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("original-factory", true, FactoryExtraIdentities[i], path, true)
+                && !FactoryReferencePolicy("original-factory", true, "Owned.WrongIdentity", path, false)
+                && !FactoryReferencePolicy("original-factory", true, FactoryExtraIdentities[i], fixture, false), "OWNED_FACTORY_REFERENCE_POLICY");
+            foreach (string oldMode in new string[] { "original-project", "original-project-store-id", "owned-project", "owned-project-store-id", "owned-factory" })
+                ProbeFiles.Require(!FactoryReferencePolicy(oldMode, true, FactoryExtraIdentities[i], path, false), "OWNED_FACTORY_LEGACY_REFERENCE_DENIAL");
+        }
+        Record("OWNED_FACTORY_REFERENCE_POLICY_PASS old-modes=denied incomplete-pin-wrong-identity-path-reflection=denied policy-only=true extra-runtime-load=NOT_RUN");
+        Assembly assembly = Assembly.LoadFrom(fixture);
+        Type first = assembly.GetType("Owned.Task009.IContainerDependencyFixture", true), second = assembly.GetType("Owned.Task009.IDataDependencyFixture", true);
+        Type normal = assembly.GetType("Owned.Task009.FactoryReturnsFixture", true), hidden = assembly.GetType("Owned.Task009.FactoryPrivateConstructorFixture", true);
+        int negatives = 0;
+        foreach (Action action in new Action[] {
+            delegate { FactoryCtor(typeof(string), first, second); },
+            delegate { FactoryCtor(normal, typeof(string), second); },
+            delegate { FactoryCtor(normal, first, first); },
+            delegate { FactoryCtor(hidden, first, second); },
+            delegate { OriginalFactoryTokens(normal, FactoryCtor(normal, first, second), first, second); }
+        }) { bool denied = false; try { action(); } catch (IOException) { denied = true; } ProbeFiles.Require(denied, "OWNED_FACTORY_CONTRACT_NEGATIVE"); negatives++; }
+        ProbeFiles.Require(!ReviewedFactoryTokens(0x02000024, 0x0600012e) && !ReviewedFactoryTokens(0x02000023, 0x0600012f), "OWNED_FACTORY_TOKEN_NEGATIVE");
+        ProbeFiles.Require(Object.Equals(normal.GetMethod("Untouched").Invoke(null, new object[0]), true), "OWNED_FACTORY_NO_EARLY_EFFECTS");
+        Record("OWNED_FACTORY_CONTRACT_PASS negatives=" + negatives + " token-policy-negatives=2 before-construction=true no-sdk-impersonation=true");
+        var a = new ProjectDenyProxy(first, Record); var b = new ProjectDenyProxy(second, Record);
+        assembly.GetType("Owned.Task009.FactoryAssertions", true).GetMethod("AssertAll").Invoke(null, new object[] { a.GetTransparentProxy(), b.GetTransparentProxy() });
+        ProbeFiles.Require(a.Requests == 17 && b.Requests == 17, "OWNED_FACTORY_DENIAL_COUNTS");
+        foreach (string name in new string[] { "FactoryReturnsFixture", "FactoryThrowsFixture", "FactoryCatchesFixture" }) {
+            Type type = assembly.GetType("Owned.Task009." + name, true); var x = new ProjectDenyProxy(first, Record); var y = new ProjectDenyProxy(second, Record);
+            bool failed = false;
+            try { InvokeFactory(FactoryCtor(type, first, second), x, y); }
+            catch (TargetInvocationException error) { failed = error.InnerException is NotSupportedException; }
+            ProbeFiles.Require(failed == (name == "FactoryThrowsFixture"), "OWNED_FACTORY_RESULT");
+            ProbeFiles.Require(Object.Equals(type.GetMethod("CalledOnce").Invoke(null, new object[0]), true), "OWNED_FACTORY_ONCE");
+            ProbeFiles.Require(x.Requests + y.Requests == (name == "FactoryReturnsFixture" ? 0 : name == "FactoryThrowsFixture" ? 1 : 2), "OWNED_FACTORY_CONSTRUCTOR_DENIAL_COUNTS");
+        }
+        Record("OWNED_FACTORY_CONSTRUCTOR_PASS return=true denial=true caught-denial=true all-unqualified=true dependency-proxies-bounded=true original=NOT_RUN");
+    }
     [STAThread]
     internal static int Main(string[] args)
     {
         int result = 2;
         try {
             ProbeFiles.Require(args.Length == 6 && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
-            mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject, "PROJECT_MODE");
+            mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -509,6 +646,8 @@ internal static class ProjectConstructorProbe
                 for (int i = 0; i < Names.Length; i++) Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
                 PinPlatformFacade();
                 for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "INPUT_IDENTITY");
+            } else if (FactoryOriginal) {
+                PinFactoryInputs();
             } else {
                 fixture = Path.Combine(stage, "Owned.Task148.ConstructorFixtures.dll"); Pin(fixture, ProbeFiles.OwnedHash(fixture));
                 PinPlatformFacade();
@@ -530,7 +669,8 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (StoreIdFixture) { if (Original) OriginalProjectStoreId(); else OwnedProjectStoreId(); }
+                        if (FactoryOnly) { if (FactoryOriginal) OriginalFactory(); else OwnedFactory(); }
+                        else if (StoreIdFixture) { if (Original) OriginalProjectStoreId(); else OwnedProjectStoreId(); }
                         else if (Original) OriginalProject(); else Owned(); result = 0;
                     }
                     catch (Exception error) { Errors(error); result = 10; }

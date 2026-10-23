@@ -31,8 +31,9 @@ internal static class ProbeLauncher
             ProbeFiles.Require(args.Length == 8 && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= 30 && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
             // Definite assignment is explicit for the C#5 compiler after compound validation.
             seconds = Int32.Parse(args[1]); string mode = args[3];
-            bool project = mode == "project-enum-metadata" || mode == "original-project" || mode == "owned-project" || mode == "original-project-store-id" || mode == "owned-project-store-id";
+            bool project = mode == "project-enum-metadata" || mode == "original-project" || mode == "owned-project" || mode == "original-project-store-id" || mode == "owned-project-store-id" || mode == "original-factory" || mode == "owned-factory";
             ProbeFiles.Require((mode != "original-project-store-id" && mode != "owned-project-store-id") || seconds <= 15, "PROJECT_FIXTURE_DEADLINE");
+            ProbeFiles.Require((mode != "original-factory" && mode != "owned-factory") || seconds <= 15, "FACTORY_DIAGNOSTIC_DEADLINE");
             ProbeFiles.Require(project || mode == "neutral" || mode == "original" || mode == "original-initialize" || mode == "owned-initialize" || mode == "owned-Success" || mode == "owned-Throw" || mode == "owned-Missing" || mode == "owned-Hang" || mode == "owned-Flood", "LAUNCH_MODE");
             string input = ProbeFiles.Local(args[5], true, true), log = ProbeFiles.Local(args[7], false, false);
             string root = Path.GetDirectoryName(typeof(ProbeLauncher).Assembly.Location);

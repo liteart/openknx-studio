@@ -84,7 +84,7 @@ $platformHash=$platformBody.IndexOf('ProbeFiles.Hash(stream) == Hashes[6]',[Stri
 $platformIdentity=$platformBody.IndexOf('AssemblyName.GetAssemblyName(platformFacadePath).FullName == Identities[6]',[StringComparison]::Ordinal)
 $platformComplete=$platformBody.IndexOf('platformFacadePinned = true;',[StringComparison]::Ordinal)
 if($platformHash -lt 0 -or $platformIdentity -le $platformHash -or $platformComplete -le $platformIdentity -or -not $platformBody.Contains('FileShare.Read') -or -not $platformBody.Contains('stream.Length == 102856') -or -not $platformBody.Contains('OWNED_PLATFORM_FACADE_INCOMPLETE_PIN') -or $platformBody.Contains('Record("PIN ')){Fail 'PLATFORM_PIN_ORDER'}
-foreach($guard in @('const string PlatformFacadeRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\netstandard\\v4.0_2.0.0.0__cc7b13ffcd2ddd51\\netstandard.dll";','return (Original || OwnedProject) && platformFacadePinned && identity == Identities[6]','ProbeFiles.Same(location, platformFacadePath) && cache && !reflectionOnly;','assembly.GetName().Name == "netstandard"','" reflection-only=" + assembly.ReflectionOnly','" pinned-file-sha256=" + (platform ? Hashes[6] : "NOT_ESTABLISHED")')){if(-not $projectSource.Contains($guard)){Fail 'PLATFORM_ALIAS_SOURCE'}}
+foreach($guard in @('const string PlatformFacadeRelativePath = "Microsoft.Net\\assembly\\GAC_MSIL\\netstandard\\v4.0_2.0.0.0__cc7b13ffcd2ddd51\\netstandard.dll";','return (Original || OwnedProject || FactoryOnly) && platformFacadePinned && identity == Identities[6]','ProbeFiles.Same(location, platformFacadePath) && cache && !reflectionOnly;','assembly.GetName().Name == "netstandard"','" reflection-only=" + assembly.ReflectionOnly','" pinned-file-sha256=" + (platform ? Hashes[6] : "NOT_ESTABLISHED")')){if(-not $projectSource.Contains($guard)){Fail 'PLATFORM_ALIAS_SOURCE'}}
 if([regex]::Matches($projectSource,'platformFacadePinned\s*=').Count -ne 1 -or $pinBody.Contains('PinPlatformFacade')){Fail 'PLATFORM_PIN_BOUNDARY'}
 Write-Output 'OWNED_CASE PASS enum-source-guards two-hashes-before-identities=true resolver=fixed-reflection-only reviewed-literal=ThreeLevel-byte-1 twelve-hashes-before-platform-and-identities=true platform=exact-held-pin private-common-ids=exact-pins'
 foreach($guard in @('const uint FixtureProjectNumber = 1;','const string ReviewedIdMetadataSha256 = "37fc63aa00825de9d694ae96721bd4395eaca039bc3e6bc92435f29e7e6311c4";','const string ReviewedIdObservationSha256 = "89cad1fa998c5b5d6a85604055a698b402b6120fe247ef32b95b78198097560a";','(int)id.Attributes == 1056769','type == 0x0200002c && ctor == 0x060001ef && getter == 0x060001f2 && owner == 0x02000057 && storeGetter == 0x060002f5','ReviewedIdTokens(id.MetadataToken, ctor.MetadataToken, getter.MetadataToken, store.MetadataToken, storeGetter.MetadataToken)','method.MetadataToken == getter.MetadataToken','method.ReturnType == idType','requests <= 16','services=fixture-id-only','return mode == "original-project" || mode == "original-project-store-id";')){if(-not $projectSource.Contains($guard)){Fail 'FIXED_ID_CONTRACT_SOURCE'}}
@@ -97,11 +97,25 @@ $proxyIndex=$fixtureBody.IndexOf('new ProjectStoreIdProxy(store, storeGetter, va
 $invokeIndex=$fixtureBody.IndexOf('InvokeProjectWithId(',[StringComparison]::Ordinal)
 if($tokensIndex -lt 0 -or $createIndex -le $tokensIndex -or $proxyIndex -le $createIndex -or $invokeIndex -le $proxyIndex){Fail 'ID_FIXTURE_ORDER'}
 Write-Output 'OWNED_CASE PASS project-id-source-guards exact-reviewed-contract=true synthetic-uint32=1 no-override=true fixture-before-project=true'
+$factoryMatch=[regex]::Match($projectSource,'(?s)static void PinFactoryInputs\(\)\s*\{(.*?)\n    \}')
+if(-not $factoryMatch.Success){Fail 'FACTORY_PIN_SOURCE'}
+$factoryBody=$factoryMatch.Groups[1].Value
+$factoryCount=$factoryBody.IndexOf('CountInputs(14);',[StringComparison]::Ordinal)
+$factoryPrefix=$factoryBody.IndexOf('Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);',[StringComparison]::Ordinal)
+$factoryExtra=$factoryBody.IndexOf('Pin(Path.Combine(stage, FactoryExtraNames[i] + ".dll"), FactoryExtraHashes[i]);',[StringComparison]::Ordinal)
+$factoryPlatform=$factoryBody.IndexOf('PinPlatformFacade();',[StringComparison]::Ordinal)
+$factoryIdentity=$factoryBody.IndexOf('AssemblyName.GetAssemblyName(',[StringComparison]::Ordinal)
+$factoryReady=$factoryBody.IndexOf('factoryInputsReady = true;',[StringComparison]::Ordinal)
+if($factoryCount -lt 0 -or $factoryPrefix -le $factoryCount -or $factoryExtra -le $factoryPrefix -or $factoryPlatform -le $factoryExtra -or $factoryIdentity -le $factoryPlatform -or $factoryReady -le $factoryIdentity -or $factoryBody.Contains('LoadFrom(')){Fail 'FACTORY_PIN_ORDER'}
+foreach($guard in @('FactoryExtraSizes = { 374784, 282064 }','747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12','1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a','Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da','Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159','selectedMode != "original-factory" || !complete || reflectionOnly','if (FactoryOriginal && factoryInputsReady)','type == 0x02000023 && ctor == 0x0600012e','(int)type.Attributes == 1048577','parameter.IsPublic && parameter.IsInterface && !parameter.IsGenericType')){if(-not $projectSource.Contains($guard)){Fail 'FACTORY_FIXED_PROFILE_SOURCE'}}
+if([regex]::Matches($projectSource,'factoryInputsReady\s*=').Count -ne 1){Fail 'FACTORY_PIN_BOUNDARY'}
+Write-Output 'OWNED_CASE PASS factory-source-guards fixed14=true hashes-before-platform-and-identities=true extra-reference-admission=new-mode-only constructor-only=true'
 $invalidLog='\\owned-invalid\share\never.log'
 Run 'unc-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$invalidLog) 127 'LOCAL_PATH_REQUIRED'
 Run 'drive-relative-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log','C:owned-never.log') 127 'LOCAL_PATH_REQUIRED'
 Run 'excessive-deadline' $launcher @('--seconds','31','--mode','owned-Success','--input',$fixtures,'--log',(Join-Path $output 'never.log')) 127 'LAUNCH_ARGUMENTS'
 Run 'fixture-excessive-deadline' $launcher @('--seconds','16','--mode','owned-project-store-id','--input',$fixtures,'--log',(Join-Path $output 'fixture-never.log')) 127 'PROJECT_FIXTURE_DEADLINE'
+Run 'factory-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory','--input',$fixtures,'--log',(Join-Path $output 'factory-never.log')) 127 'FACTORY_DIAGNOSTIC_DEADLINE'
 $existing=Join-Path $output 'existing.log';[IO.File]::WriteAllText($existing,'owned-preserved',$utf8)
 Run 'existing-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$existing) 127 'NEW_PATH_REQUIRED'
 if([IO.File]::ReadAllText($existing) -cne 'owned-preserved'){Fail 'EXISTING_LOG_CHANGED'}
@@ -114,6 +128,8 @@ if(-not $interactive){
  Case 'session0-original-project' 'original-project' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-project-store-id' 'owned-project-store-id' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-original-project-store-id' 'original-project-store-id' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-factory' 'owned-factory' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-original-factory' 'original-factory' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
 }else{
  Case 'neutral' 'neutral' 0 'child-exit-confirmed=true' 'NEUTRAL_RESULT PASS' $build
  Case 'success' 'owned-Success' 0 'OWNED_FIXTURE_SUCCESS' 'OWNED_CONSTRUCTOR_RETURN'
@@ -123,6 +139,8 @@ if(-not $interactive){
   Case 'original-project-admin' 'original-project' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'project-store-id-admin' 'owned-project-store-id' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'original-project-store-id-admin' 'original-project-store-id' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'factory-admin' 'owned-factory' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'original-factory-admin' 'original-factory' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
  }else{
   Case 'initialize-proxy' 'owned-initialize' 0 'child-exit-confirmed=true' 'OWNED_INITIALIZE_PROXY_PASS getters=6 direct-denial=true wrapped-denial=true requests=8'
   $initializeLog=[IO.File]::ReadAllText((Join-Path $output 'initialize-proxy.log'))
@@ -136,6 +154,10 @@ if(-not $interactive){
   $idLog=[IO.File]::ReadAllText((Join-Path $output 'project-store-id-proxy.log'))
   foreach($marker in @('OWNED_ID_CONTRACT_PASS rejected=11 before-construction=true token-policy-negatives=5','PROJECT_SERVICE_FIXTURE number=16','services=fixture-id-only','PROJECT_CONSTRUCTOR_END returned=True fixture-calls=2 denied-requests=0 qualification=NOT_ESTABLISHED','OWNED_PROJECT_STORE_ID_PASS created=1 validated=1 stable-object=true')){if(-not $idLog.Contains($marker)){Fail 'PROJECT_ID_OWNED_QUALIFICATION'}}
   if([regex]::Matches($idLog,'PROJECT_ID_CONSTRUCTOR_BEGIN type=Owned.Task009.ProjectIdFixture ').Count -ne 1 -or [regex]::Matches($idLog,'PROJECT_ID_GETTER_BEGIN type=Owned.Task009.ProjectIdFixture ').Count -ne 1 -or $idLog.Contains('PROJECT_SERVICE_DENIED number=0')){Fail 'PROJECT_ID_ONCE_OR_COUNTERS'}
+  Case 'factory-proxy' 'owned-factory' 0 'child-exit-confirmed=true' 'OWNED_FACTORY_CONSTRUCTOR_PASS'
+  $factoryLog=[IO.File]::ReadAllText((Join-Path $output 'factory-proxy.log'))
+  foreach($marker in @('OWNED_FACTORY_REFERENCE_POLICY_PASS old-modes=denied','OWNED_FACTORY_CONTRACT_PASS negatives=5 token-policy-negatives=2 before-construction=true','FACTORY_CONSTRUCTOR_END returned=True denied-requests=0 qualification=NOT_ESTABLISHED','FACTORY_CONSTRUCTOR_END returned=False denied-requests=1 qualification=NOT_ESTABLISHED','FACTORY_CONSTRUCTOR_END returned=True denied-requests=2 qualification=NOT_ESTABLISHED')){if(-not $factoryLog.Contains($marker)){Fail 'OWNED_FACTORY_QUALIFICATION'}}
+  if($factoryLog.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $factoryLog.Contains('PROJECT_ID_CONSTRUCTOR_BEGIN') -or $factoryLog.Contains('PROJECT_SERVICE_FIXTURE')){Fail 'FACTORY_NOT_CONSTRUCTOR_ONLY'}
   # Only OWNED bytes are used: missing input count and exact-twelve wrong-hash
   # dispatch must stop before any original identity inspection or assembly load.
   $projectBad=Join-Path $output 'project-twelve-bad-hash';$null=New-Item -ItemType Directory -Path $projectBad
@@ -148,6 +170,14 @@ if(-not $interactive){
   Case 'fixture-twelve-wrong-hash' 'original-project-store-id' 2 'INPUT_HASH' 'INPUT_HASH' $projectBad
   foreach($name in @('project-missing-twelve','project-twelve-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('PROJECT_PHASE original-type-materialization')){Fail 'PROJECT_NEGATIVE_LOADED'}}
   foreach($name in @('fixture-missing-twelve','fixture-twelve-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('PROJECT_ID_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('PROJECT_PHASE original-fixture-type-materialization')){Fail 'PROJECT_FIXTURE_NEGATIVE_LOADED'}}
+  $factoryBad=Join-Path $output 'factory-fourteen-bad-hash';$null=New-Item -ItemType Directory -Path $factoryBad
+  foreach($name in $projectNames+@('Autofac.dll')){Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $factoryBad $name)}
+  Case 'factory-missing-fourteen' 'original-factory' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
+  Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $factoryBad 'Knx.Kim.DataProvider.dll')
+  Case 'factory-fourteen-wrong-hash' 'original-factory' 2 'INPUT_HASH' 'INPUT_HASH' $factoryBad
+  Case 'project-extra-factory-references' 'original-project' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
+  Case 'project-id-extra-factory-references' 'original-project-store-id' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $factoryBad
+  foreach($name in @('factory-missing-fourteen','factory-fourteen-wrong-hash','project-extra-factory-references','project-id-extra-factory-references')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked.Contains('PIN ') -or $blocked.Contains('PLATFORM_FACADE_PIN') -or $blocked.Contains('FACTORY_CONSTRUCTOR_BEGIN') -or $blocked.Contains('PROJECT_ASSEMBLY ') -or $blocked.Contains('FACTORY_PHASE original-type-materialization')){Fail 'FACTORY_NEGATIVE_LOADED'}}
   $enumBad=Join-Path $output 'enum-bad-hash';$null=New-Item -ItemType Directory -Path $enumBad
   # Deliberately renamed OWNED bytes test rejection; no SDK identity is supplied.
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $enumBad 'Knx.Ets.Common.Types.dll')

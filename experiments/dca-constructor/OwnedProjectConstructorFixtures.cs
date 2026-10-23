@@ -146,6 +146,70 @@ namespace Owned.Task009
         public object GetInArg(int index) { return args[index]; }
         public string GetInArgName(int index) { return GetArgName(index); }
     }
+    public interface IDenyDependencyFixture
+    {
+        string Name { get; }
+        void Touch();
+        bool TryRead(out int value);
+        T Read<T>();
+        void Change(ref int value);
+        void Download();
+    }
+    public interface IContainerDependencyFixture : IDenyDependencyFixture { }
+    public interface IDataDependencyFixture : IDenyDependencyFixture { }
+    public sealed class FactoryReturnsFixture
+    {
+        static int calls;
+        public FactoryReturnsFixture(IContainerDependencyFixture first, IDataDependencyFixture second)
+        { calls++; if (first == null || second == null) throw new InvalidOperationException("OWNED_FACTORY_ARGUMENTS"); }
+        public static bool Untouched() { return calls == 0; }
+        public static bool CalledOnce() { return calls == 1; }
+    }
+    public sealed class FactoryThrowsFixture
+    {
+        static int calls;
+        public FactoryThrowsFixture(IContainerDependencyFixture first, IDataDependencyFixture second) { calls++; first.Touch(); }
+        public static bool CalledOnce() { return calls == 1; }
+    }
+    public sealed class FactoryCatchesFixture
+    {
+        static int calls;
+        public FactoryCatchesFixture(IContainerDependencyFixture first, IDataDependencyFixture second)
+        {
+            calls++;
+            try { first.Touch(); } catch (NotSupportedException) { }
+            try { second.Touch(); } catch (NotSupportedException) { }
+        }
+        public static bool CalledOnce() { return calls == 1; }
+    }
+    public sealed class FactoryPrivateConstructorFixture
+    {
+        private FactoryPrivateConstructorFixture(IContainerDependencyFixture first, IDataDependencyFixture second)
+        { throw new InvalidOperationException("OWNED_PRIVATE_FACTORY_CONSTRUCTOR_EXECUTED"); }
+    }
+    public static class FactoryAssertions
+    {
+        static void Denied(Action action)
+        {
+            try { action(); } catch (NotSupportedException error) {
+                if (error.Message.StartsWith("PROJECT_FIXTURE_UNSUPPORTED:", StringComparison.Ordinal)) return;
+                throw;
+            }
+            throw new InvalidOperationException("OWNED_FACTORY_DENIAL_REQUIRED");
+        }
+        public static void AssertAll(object first, object second)
+        {
+            foreach (IDenyDependencyFixture proxy in new IDenyDependencyFixture[] { (IContainerDependencyFixture)first, (IDataDependencyFixture)second }) {
+                Denied(delegate { GC.KeepAlive(proxy.Name); });
+                Denied(delegate { proxy.Touch(); });
+                Denied(delegate { int value; proxy.TryRead(out value); });
+                Denied(delegate { GC.KeepAlive(proxy.Read<string>()); });
+                Denied(delegate { int value = 9; proxy.Change(ref value); });
+                Denied(delegate { proxy.Download(); });
+                for (int i = 0; i < 20; i++) Denied(delegate { proxy.Touch(); });
+            }
+        }
+    }
     public static class ProjectIdAssertions
     {
         static void Denied(Action action)

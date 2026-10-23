@@ -1,5 +1,134 @@
 # Static Project context qualification
 
+## Public Factory constructor-only diagnostic contract
+
+Baseline `f6c441611c4c7aafc61b75904eecaa1c4b2c4bb7` contains the reviewed
+UndoManager declaration result; project07 remains the latest runtime FAIL.
+New fixed modes `original-factory` / `owned-factory` attempt only a constructor,
+with both dependencies using the unchanged deny-all ProjectDenyProxy. No Factory
+method, Project/Id operation, UndoManager value, DCA initialization or device
+operation is supplied. Constructor return or caught denial remains unqualified.
+The NOT_RUN operation labels describe calls made explicitly by the harness; they do not establish what uninspected vendor constructor internals may execute.
+
+The original-only fourteen-input profile preserves the existing twelve pins
+and appends only Autofac.dll, 374,784 bytes, SHA-256
+`747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12`,
+identity Autofac 8.2.0.0/neutral/PKT17863af14b0044da, and
+Knx.Kim.DataProvider.dll, 282,064 bytes, SHA-256
+`1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a`,
+identity Knx.Kim.DataProvider 1.0.0.0/neutral/PKT61439873ec5e1159. Private
+candidate audit SHA-256
+`8f18be8da62da7d06f11634467b3c869e2ac260f20956cb5ab31f552ff324432`
+establishes inventory/identity consistency only, not interface/runtime behavior.
+All fourteen hashes and sizes precede OS facade preflight, identity inspection
+and SDK load. Extra-reference admission requires this mode's completed pins,
+exact identity and staged path; earlier twelve-pin modes reject the additions.
+No redirect, framework whitelist, file discovery or compiler SDK reference is added.
+
+The guarded constructor report SHA-256
+`df361cb84fc232b6f7da6943114096cd3e14b638495dcc8b68e10dbd42524ea9`
+selects public Factory `02000023`, flags `1048577`, public constructor
+`0600012E` with exact Autofac.IComponentContext and
+Knx.Kim.DataProvider.IKimDataProvider parameters. Before invocation, original
+type/constructor ownership, tokens, flags, signature and dependency identities
+are checked; parameter types must actually be public nongeneric interfaces.
+Their tokens are unknown until checked and are only logged, never guessed.
+The fixed nonadmin interactive WPF/STA path, maximum 15 seconds/64 KiB capture,
+96-assembly bound and all old profiles/config/enum/Id behavior remain.
+Original execution waits for owned Windows tests, independent source review
+and commit. Task-009 remains Blocked/ACs unchecked, without a service or gate proof.
+
+Local source checks **PASS** with provisioned PowerShell 7.6.7 and the private
+`knx-task009-factory-sourcecheck.ps1` helper, SHA-256
+`3975d88d81393ca93d682d498c821c4210edf077d599fcf75c5f30905cc7b1ce`:
+
+```text
+pwsh -NoLogo -NoProfile -NonInteractive -File PRIVATE_TMP/knx-task009-factory-sourcecheck.ps1 -Worktree WORKTREE -FrameworkReferences PRIVATE_EVIDENCE/task148-clean-host/references
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+The helper checks six pinned net48 framework references, emits C#5/x64 in memory
+with warnings as errors (Project 76,800 / Launcher 37,888 / owned fixtures 15,360
+bytes), parses the PowerShell driver and executes old enum/Id and new Factory
+source guards. This is local Roslyn compilation, not Windows execution.
+
+| Frozen source | SHA-256 |
+|---|---|
+| ProjectConstructorProbe.cs | `5a84798bc03648865bf6d5ad084061e0aba30ac6a5c8d56917bb2cd2b5871fbd` |
+| ProbeLauncher.cs | `921baf283dd17f730014a34fbc97765b72f540eeabb06cf88dda0da70a2b7d22` |
+| OwnedProjectConstructorFixtures.cs | `b75368a1550abc698c4d658841e997d9d4c128f75455b626e0fd047b54fe01bb` |
+| Test-ConstructorProbe.ps1 | `1a89f8db8487bc5bbd00ef27d19d06aecae9b96fadb977bfb7257b0bc0e3a09c` |
+
+Owned Windows cases retain the earlier tests and add fixed-mode deadline,
+Session0/admin and fourteen-input count/hash denials before platform pin,
+identity inspection or load. The wrong-hash case fails the first pin; it does
+not isolate the fourteenth hash. Old twelve-input modes reject an owned
+fourteen-file stage. A private finite reference-policy seam tests incomplete
+pins, wrong identity/path/reflection context and old-mode rejection, without
+loading either original candidate. Constructor selection/ownership/token-policy
+negatives precede owned effects. Both dependency proxies deny property, generic,
+void/ref-out/bus-like requests and saturate at seventeen; owned constructors
+returning without requests, failing on denial or catching denials remain
+explicitly unqualified. No original interface tokens or runtime semantics are
+inferred from these unsigned owned shapes.
+
+Baseline comparison **PASS**: twelve Names/Hashes/Identities, config/build,
+ProjectDenyProxy, Project/Id/enum methods, Framework policy, metadata tools and
+other constructor sources are unchanged. New reference/alias admission branches
+are confined to the explicit Factory profile; no old resolver input expands.
+Scope/diff checks **PASS**. At this source freeze, generation08 Windows
+build/owned suites, original Factory constructor, interface compatibility and
+all new target runtime behavior are **NOT RUN**; independent verification,
+critical review and source commit precede any original attempt. No Factory
+method/UndoManager/Project/Id/DCA initialization/UI/state/hardware is attempted
+by the new original path. Task-009 remains Blocked; earlier actual results stay
+separate from this source-only increment.
+
+## Generation08 actual Windows owned verification
+
+The coordinator subsequently built the unchanged frozen sources on Windows
+with pinned compiler 4.8.9221.0/SHA-256
+`46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00`:
+**PASS**, eight sources/twelve artifacts. Source-freeze-08.json SHA-256
+`6ac894f80644bf434d6a8712772511af17b32fca4e9e9c6adfcceec97197f415`
+is preserved: inherited original_inputs=12 describes legacy Project profiles;
+new_factory_original_inputs=14 describes only Factory. The separate clarifier
+source-freeze-08-note.txt does not overwrite that frozen JSON. All ten frozen
+source hashes remain unchanged. Build08-report.json SHA-256
+`177e6694a0b7eb60c3ba9d49d7ef08d70321d926347cc46f768ebd71dd986c22`
+records ProjectConstructorProbe.exe, 78,848 bytes, SHA-256
+`baff070715ac25580f2c005ca26d933487178bb411b68ab215b3d579441a225c`.
+
+The Windows owned command
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File Test-ConstructorProbe.ps1 -BuildDirectory BUILD08 -OutputDirectory NEW_OUTPUT -ExpectedSession PROFILE`
+with PROFILE Session0/Interactive reports **PASS 19 Session0 / 32 limited /
+24 administrator negative**. Both interactive runs were Session2 with correct
+nonadmin/admin roles and exit 0. Both cleanups report last result 0, task removed,
+zero owned processes/no junction; 81 limited/57 admin case files are retained.
+All three collections succeeded first time, without an early-done failure.
+Raw UTF-16 logs, strict UTF-8 derivatives/encoding manifests and nonempty
+Session0 CLIXML progress stderr remain preserved.
+
+Private owned08-observation.json, 38,748 bytes, SHA-256
+`220690e58f01f59cbf4500ebe92a9841ab2edad6edfa00d6ce8c5438c924acaa`,
+binds 206 evidence files. Independent source/owned-result audit **PASS**:
+verifier08/independent-audit.txt SHA-256
+`2e28327aaa97b7ba5acdf6b1839e345d986737fee27e61302832ca0f04de2c44`.
+The synthetic Factory return/denial/caught-denial cases remain unqualified;
+no original candidate ran. Fourteen prepared private inputs total 23,779,496
+bytes, copied/hashed only. An initial inline Windows command exceeded CLI length
+before PowerShell; factory08-core-copy artifacts retain that setup failure.
+Hash-pinned transferred copy02/verify02 scripts subsequently passed with the
+same copy logic and no SDK execution or bound change.
+
+This actual owned PASS supersedes only the historical build/test NOT_RUN entries
+at source freeze. Critical source/owned-evidence review PASS. Original Factory runtime/interface compatibility remains **NOT RUN / UNKNOWN** until the explicit source commit and separately authorized fixed attempt. Latest original
+runtime remains project07 FAIL exit 10; latest UndoManager metadata is declarations
+only. No Factory method, service, Project/Id/UndoManager, DCA/UI/state/hardware or
+gate qualification follows; Task-009 remains Blocked/ACs unchecked. Descendants
+remain NOT_CONTAINED. Scope/diff checks **PASS**; four source hashes are unchanged.
+
 ## Actual fixed UndoManager metadata result
 
 At reviewed source `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`, exactly one

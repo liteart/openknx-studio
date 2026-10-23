@@ -82,13 +82,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; Project07 original Id-only diagnostic FAIL exit 10 at unsupported IFactory.UndoManager after one positive synthetic get_Id; no qualified Project/fixture/service |
-| Source commit(s) | Prior increments recorded below; Id-only source/actual project07 run `3161dd889fe4a8f995cf122542a06503c94b9172`, reviewed result `0e3ca948aaa1816c847200825cdc61d4e7727f23`; fixed UndoManager source/actual metadata `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`; bounded metadata result documented by this append |
-| Tests executed | Earlier results retained: owned Windows07 PASS 15/25/20; latest runtime project07 FAIL exit10. UndoManager synthetic checks PASS 192 PowerShell/20 Python; one original guarded metadata extraction PASS declarations only, target runtime NOT RUN. UndoManager construction/service and DCA initialization/UI/state/hardware NOT RUN |
+| Source commit(s) | Prior increments recorded below; project07 runtime source `3161dd889fe4a8f995cf122542a06503c94b9172`; UndoManager metadata source `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`, reviewed result `f6c441611c4c7aafc61b75904eecaa1c4b2c4bb7`; public Factory constructor-only source recorded in this increment |
+| Tests executed | Earlier results retained: latest original runtime project07 FAIL exit10, UndoManager metadata PASS declarations only. Factory local C#5/PS/source guards PASS; actual Windows08 pinned build and owned suites PASS 19 Session0/32 limited/24 admin negative. Original Factory runtime NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | UndoManager declaration root02000131/protected ctor06000B9C observed, external base unresolved; no invocation/service supplied. Latest project07 runtime remains FAIL after synthetic get_Id/denied UndoManager; Project ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. Project/fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior source/results and fixed UndoManager source/synthetic independent verification/critical review PASS; actual UndoManager bounded result audit and documentation critical review PASS; no runtime service acceptance |
+| Reviewer | Prior source/results independent review PASS; public Factory source/build/owned Windows independent audit and critical review PASS; original Factory attempt NOT RUN; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1296,3 +1296,53 @@ Latest actual runtime remains project07 FAIL exit 10. No UndoManager instance/po
 service or Project/DCA/UI/state/hardware/gate qualification; Task-009 Blocked/ACs
 unchecked. Next scope is read-only public-factory readiness inquiry only.
 Scope/diff PASS; source/pins unchanged, no new runtime authorized by this record.
+
+## Public Factory constructor-only implementation freeze
+
+After reviewed UndoManager result `f6c441611c4c7aafc61b75904eecaa1c4b2c4bb7`,
+add isolated `original-factory` / `owned-factory` modes. The original-only profile
+preserves the twelve-input prefix, appending only exact Autofac 8.2.0.0 and
+Knx.Kim.DataProvider 1.0.0.0 candidates from the audited private inventory.
+All fourteen hashes/sizes precede platform pin/identity/load. The additions are
+admitted only for this completed profile at exact identities/paths; no new
+redirect/framework/compiler reference or generic resolver is added. Earlier
+Project/Id/enum modes and twelve-pin arrays/config remain unchanged.
+
+Factory type `02000023`/flags `1048577` and public constructor `0600012E`/flags `6278` must
+match the guarded declaration and exact public nongeneric interface parameters.
+Actual dependency tokens/compatibility remain UNKNOWN until checked. Both
+arguments use unchanged deny-all proxies; only one public constructor attempt
+is allowed. No original Factory method, Project/Id/UndoManager operation or
+positive service is supplied; a returned/caught-denial object stays unqualified.
+
+Local private `knx-task009-factory-sourcecheck.ps1` with provisioned PowerShell
+7.6.7, `-Worktree WORKTREE -FrameworkReferences PRIVATE_EVIDENCE/task148-clean-host/references`,
+**PASS**: six pinned framework references, C#5/x64/warnings-as-errors emits
+76,800/37,888/15,360 bytes for Project/Launcher/owned fixtures, PS parse and
+old/new source guards. Legacy source comparisons, scope script and diff check
+**PASS**. [Contract, exact candidate pins and four frozen source hashes](../docs/DCA-PROJECT-CONTEXT.md)
+record the bounded experiment. At this freeze, Windows08 build/owned tests and
+original Factory runtime are **NOT RUN**; independent review/commit precede any
+original attempt. Task-009 Blocked/ACs unchecked; latest actual runtime remains
+project07 FAIL exit 10, with no Factory/service/Project/DCA/UI/state/hardware/gate proof.
+
+## Generation08 actual Windows owned result
+
+The unchanged frozen sources subsequently built **PASS** on pinned Windows
+compiler 4.8.9221.0: eight sources/twelve artifacts. Actual owned suites **PASS
+19 Session0 / 32 limited / 24 admin negative**, Session2 roles correct, exit 0;
+both cleanups removed tasks, zero owned processes/no junction, 81/57 case files.
+Private owned08-observation.json, 38,748 bytes, SHA-256
+`220690e58f01f59cbf4500ebe92a9841ab2edad6edfa00d6ce8c5438c924acaa`
+binds 206 evidence files; independent verifier08 audit PASS. First collection
+succeeded for all three runs. Raw UTF-16/strict UTF-8 and Session0 nonempty
+CLIXML progress stderr are retained. Fourteen-input preparation was copy/hash only;
+initial Windows CLI length failure occurred before PowerShell and remains
+preserved, corrected copy02/verify02 passed without SDK execution/bound change.
+The freeze's legacy original_inputs=12 and explicit new_factory_original_inputs=14
+are clarified by a separate note, with frozen JSON unchanged. [Build, freeze,
+audit hashes and commands](../docs/DCA-PROJECT-CONTEXT.md) bind the results.
+Historical source-freeze NOT_RUN is preserved; owned PASS establishes no original
+Factory/service semantics. Critical source/owned-evidence review PASS; original Factory remains NOT RUN until the explicit source commit and separately authorized fixed attempt; Task-009 Blocked/ACs unchecked, latest runtime project07 FAIL exit 10,
+metadata declarations-only PASS separate, no Project/Id/UndoManager/DCA/UI/state/
+hardware/gate qualification. Four source hashes unchanged; scope/diff PASS.
