@@ -192,6 +192,42 @@ public static class Task144OwnedFixtures {
   if(profile==19||profile==20){m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(count+1));for(int j=count;j<(profile==20?32769:32768);j++)Method(m,"Padding",MethodAttributes.Public,new byte[]{0x20,1});}
   var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
  }
+ // Unsigned owned Param/Constant metadata; never original SDK identities, tokens or execution.
+ public static void CreateTraceParameter(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedTraceParameter.dll"),m.GetOrAddGuid(new Guid("009d0000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(profile==30?"Owned.ForeignTraceParameter":"Task009.OwnedTraceParameter"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);var obj=m.AddTypeReference(runtime,m.GetOrAddString("System"),m.GetOrAddString("Object"));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  if(profile==29)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Before"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  m.AddTypeDefinition(profile==31?TypeAttributes.NotPublic|TypeAttributes.Sealed:TypeAttributes.Public|TypeAttributes.Sealed,m.GetOrAddString("Owned.Task009"),m.GetOrAddString(profile==27?"Other":"ParameterCandidate"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(profile==25?2:1));
+  byte[] sig=profile==22?new byte[]{0x20,1,1,9}:profile==35?Array.Empty<byte>():profile==36?new byte[129]:profile==41?new byte[]{0x30,1,1,1,8}:profile==42?new byte[]{0,1,1,8}:new byte[]{0x20,1,1,8};
+  if(profile==25)m.AddMethodDefinition((MethodAttributes)6278,MethodImplAttributes.IL,m.GetOrAddString(".ctor"),m.GetOrAddBlob(new byte[]{0x20,1,1,8}),0,MetadataTokens.ParameterHandle(1));
+  if(profile!=26)m.AddMethodDefinition((MethodAttributes)(profile==23?6273:6278),MethodImplAttributes.IL,m.GetOrAddString(profile==24?"NotCtor":".ctor"),m.GetOrAddBlob(sig),0,MetadataTokens.ParameterHandle(1));
+  if(profile==28)m.AddTypeDefinition(TypeAttributes.Public|TypeAttributes.Sealed,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("ParameterCandidate"),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(2));
+  int count=profile==5?0:profile==1||profile==7||profile==37||profile==38?2:profile==9||profile==22||profile==23?3:profile==33?32769:profile==34?32768:1;
+  for(int j=0;j<count;j++){
+   int sequence=profile==8?2:profile==6?0:profile==7?1:profile==38?1-j:count>1?(j==0?0:1):1;
+   string name=sequence==0?"OwnedReturn":profile==4?"":profile==21?new string('N',1025):"OwnedParameter";
+   bool defaultFlag=sequence==1&&(profile==2||profile==10||profile>=12&&profile<=20||profile==37||profile==44);
+   var flags=defaultFlag?ParameterAttributes.HasDefault:ParameterAttributes.None;
+   if(profile==2||profile==3)flags|=ParameterAttributes.Optional;
+   if(profile==39)flags=ParameterAttributes.In|ParameterAttributes.Out|ParameterAttributes.Optional|ParameterAttributes.HasFieldMarshal;
+   if(sequence==0&&(profile==1||profile==37))flags=ParameterAttributes.HasDefault;
+   var ph=m.AddParameter(flags,m.GetOrAddString(name),sequence);
+   if(sequence==0&&(profile==1||profile==37))m.AddConstant(ph,"RETURN_CONSTANT_MUST_NOT_BE_READ"+new string('R',1024));
+   if(sequence==1&&(defaultFlag&&profile!=10||profile==11)){
+    object value=profile==12||profile==15?(object)(short)-123:profile==13||profile==16?(object)(long)-123:profile==14?(object)"OWNED_NOT_INT32":profile==17?(object)"":profile==18?(object)int.MinValue:profile==19?(object)int.MaxValue:profile==20?(object)0:profile==44?null:(object)(-123);
+    m.AddConstant(ph,value);
+   }
+  }
+  if(profile==32)for(int j=2;j<32769;j++)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"+j),obj,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(2));
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);byte[] data=image.ToArray();
+  if(profile==15||profile==16||profile==17){
+   // Corrupt only owned Constant type metadata to test invalid Int32 blob lengths.
+   using(var pe=new PEReader(System.Collections.Immutable.ImmutableArray.Create(data))){var r=pe.GetMetadataReader();int offset=pe.PEHeaders.MetadataStartOffset+r.GetTableMetadataOffset(TableIndex.Constant);data[offset]=(byte)ConstantTypeCode.Int32;}
+  }
+  File.WriteAllBytes(path,data);
+ }
  public static void CreateConstructorCandidates(string path,bool objectModel=false,int profile=0,int methodRows=0){
   int minimum=(objectModel?9:11)+(profile==4?257:0);if(methodRows==0)methodRows=minimum;if(methodRows<minimum||methodRows>65537)throw new ArgumentOutOfRangeException();
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedConstructors.dll"),m.GetOrAddGuid(new Guid("00970000-1111-1111-1111-111111111111")),default,default);

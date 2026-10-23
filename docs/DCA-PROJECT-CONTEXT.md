@@ -1,5 +1,64 @@
 # Static Project context qualification
 
+## Source16 fixed constructor-parameter metadata contract
+
+Baseline `d39f789617a5b419c98af1367aaebe09c98874dc`; accepted actual15 static evidence
+only, Task Blocked/ACs unchecked/latest runtime13 FAIL10. New fixed
+`project-trace-encryptor-parameter` mode uses unchanged Common503,248B/SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`, exact
+6.4.8718.0/neutral/61439873ec5e1159 identity. Verify type0200007E/name/flags and
+.ctor06000364 owner/public attrs6278/header32/instanceVoid(Int32)generic0 before Param
+lookup. Independently owned unsigned identity/root/tokens2/1 cannot select original.
+
+Max2 parameter rows, sequences0(return)/1(argument) distinct. Report raw name/flags,
+missing/empty names and absent defaults without inventing data. Missing argument-row
+metadata stays INCONCLUSIVE. Optional does not imply a default. Only sequence1's
+associated Constant may be read: require HasDefault/handle consistency, owner, Int32
+and exactly4 bytes before signed little-endian decode. Inconsistencies/malformed or
+unsupported constants fail with named codes. Sequence0 defaults remain NOT_INSPECTED.
+This narrow parameter-default metadata exception does not permit field values, custom
+attributes, IL, SDK loads, dependency recursion, numeric invocation, registration or
+crypto/no-op replacement. A name/default declaration cannot establish valid values,
+semantics, callability or a working service.
+
+Existing row32768/file16MiB/aggregate32MiB/signature128bytes-128nodes-depth16/string1024/
+report512KiB ASCII-escaped/outer30s-2MiB and denial probes unchanged; no arbitrary root,
+method or parameter override. Old modes/reports/pins/constructor tools remain unchanged.
+Owned verification/critical review/source commit precede coordinator's private read;
+actual parameter extraction and new runtime NOT_RUN at this freeze. No qualification/gate.
+
+Source16 owned checks **PASS327 PowerShell /23 Python**; both metadata C# sources
+compiled, PS parse/preservation/scope/diff PASS. Tests distinguish absent/Optional/
+empty or missing names, sequence0/1 and max2 rows, signed Int32 min/max/actual zero
+constants versus absence, malformed constants/flags, and contract refusal before Param
+lookup. Owned literals are metadata tests, not proposed SDK arguments; return defaults
+are never decoded. All prior report bytes/C#/fixture/PS blocks and normalized Python
+guards/helpers/constants/tests preserved; constructor tools unchanged.
+
+Private `task009-project-trace-encryptor-parameter-metadata/owned-source-freeze.json`,
+1,406B SHA `d99bf33ec07dd4e867cb26a0f9721e6dc6b0cb541e1f772e42f61aebe1a7fbce`,
+binds six source hashes. owned-checks.json2,214B SHA
+`643f7ac6ce0c5aacd1839be76bfb9182ac20e27cdeec3fbfd068211824275b3c`
+and per-check stdout/stderr retain exact commands/results. One initial private helper
+kept the old no-Constant assertion; corrected helper only, preserved as failed helper
+observation rather than a suite failure. Reproduce from task worktree/pinned pwsh7.6.7:
+
+```text
+pwsh -NoProfile -File experiments/dca-integration/Test-EntrypointMetadata.ps1
+python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py
+python3 -B <repository-root>/private/evidence/task009-project-trace-encryptor-parameter-metadata/check_owned_source.py
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+Independent source/owned verification PASS: private verifier16/source-audit.txt5,335B
+SHA `0527b5992a2b0a85485d31c94cde98e946226ef398280c116e6ee0f44b0655ab`. Its initial parser-command
+shell-quoting error preceded parsing; corrected parse PASS, preserved separately from
+suite results. Critical source review PASS (private review16/critical-review-source.txt); actual parameter extraction/new runtime
+NOT_RUN. Latest actual15 static PASS/runtime13 FAIL10 retained.
+The critical source review record binds these frozen source/evidence facts; no parameter
+meaning, runtime argument, invocation or service qualification follows.
+
 ## Actual15 constructor declaration: static PASS, creation INCONCLUSIVE
 
 Reviewed source `f24449d4fafca8ecd25ec936fc5169f1df7eea4b`; coordinator ran once,

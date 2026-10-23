@@ -317,5 +317,39 @@ try{
  $tcWorker=Join-Path $PSScriptRoot 'Read-ProjectTraceEncryptorConstructionMetadata.ps1'
  Reject {& $tcWorker -InputPath $traceConstruction -InputSha256 (Hash $traceConstruction)} 'DCAENTRY_INPUT_PIN'
  Assert ((Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reader bytes unchanged after fixed candidate construction declaration mode';$passed++
+ $traceParameter=Join-Path $root 'OwnedTraceParameter.dll';[Task144OwnedFixtures]::CreateTraceParameter($traceParameter)
+ function TraceParameter([string] $p=$traceParameter){[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptorParameter($p,(Hash $p))}
+ $tpRaw=TraceParameter;$tp=$tpRaw|ConvertFrom-Json;$arg=$tp.constructor.parameters[0]
+ Assert ($tp.operation -eq 'static_dca_project_trace_encryptor_parameter' -and $tp.runtime_execution -eq 'NOT_RUN' -and $tp.inputs[0].identity -eq 'Task009.OwnedTraceParameter, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $tp.selected_root -eq 'Owned.Task009.ParameterCandidate' -and $tp.type_token -eq '02000002' -and $tp.constructor.token -eq '06000001' -and $tp.constructor.attributes -eq 6278 -and $tp.constructor.signature -eq 'instance Void(Int32) generic=0' -and $tp.constructor.signature_header -eq 32 -and $tp.creation_route -eq 'INCONCLUSIVE') 'Fixed unsigned owned parameter contract, not original token impersonation';$passed++
+ Assert ($tp.parameter_metadata -eq 'DECLARATIONS_ONLY' -and $arg.sequence -eq 1 -and $arg.token -eq '08000001' -and $arg.name -ceq 'OwnedParameter' -and $arg.attributes -eq 0 -and $arg.default_disposition -eq 'ABSENT' -and $null -eq $arg.default) 'Raw argument declaration and genuine absence, no generated name/default';$passed++
+ Assert (-not $tpRaw.Contains($root) -and @([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedTraceParameter'}).Count -eq 0) 'No private paths or target runtime load';$passed++
+ foreach($profile in @(7,8,9,10,11,12,13,14,15,16,17,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,41,42,44)){
+  $bad=Join-Path $root ('TraceParameterBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateTraceParameter($bad,$profile)
+  $code=@{7='PARAMETER_DUPLICATE';8='PARAMETER_SEQUENCE';9='PARAMETER_LIMIT';10='DEFAULT_INCONSISTENT';11='DEFAULT_INCONSISTENT';12='CONSTANT_TYPE';13='CONSTANT_TYPE';14='CONSTANT_TYPE';15='CONSTANT_SIZE';16='CONSTANT_SIZE';17='CONSTANT_SIZE';21='STRING_LIMIT';22='CTOR_CONTRACT';23='CTOR_CONTRACT';24='CTOR_CONTRACT';25='CTOR_CONTRACT';26='CTOR_NOT_FOUND';27='ROOT_NOT_FOUND_FORWARDERS_UNEXAMINED';28='DUPLICATE_ROOT';29='ROOT_TOKEN';30='INPUT_IDENTITY';31='TYPE_CONTRACT';32='ROW_LIMIT';33='ROW_LIMIT';34='PARAMETER_LIMIT';35='MALFORMED_SIGNATURE';36='SIGNATURE_LIMIT';41='CTOR_CONTRACT';42='CTOR_CONTRACT';44='CONSTANT_TYPE'}[$profile]
+  Reject {TraceParameter $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(1,2,3,4,5,6,18,19,20,37,38,39)){
+  $positive=Join-Path $root ('TraceParameterPositive'+$profile+'.dll');[Task144OwnedFixtures]::CreateTraceParameter($positive,$profile)
+  $tRaw=TraceParameter $positive;$t=$tRaw|ConvertFrom-Json;$argumentRows=@($t.constructor.parameters|Where-Object sequence -eq 1);$returns=@($t.constructor.parameters|Where-Object sequence -eq 0)
+  if($profile -eq 1){Assert ($returns.Count -eq 1 -and $returns[0].default_disposition -eq 'RETURN_NOT_INSPECTED' -and $null -eq $returns[0].default -and $argumentRows[0].default_disposition -eq 'ABSENT' -and -not $tRaw.Contains('RETURN_CONSTANT_MUST_NOT_BE_READ')) 'Return default never inspected or confused with argument'}
+  elseif($profile -eq 2){Assert ($argumentRows[0].attributes -eq 4112 -and $argumentRows[0].default.type -eq 'Int32' -and $argumentRows[0].default.bytes -eq 4 -and $argumentRows[0].default.raw_hex -eq '85FFFFFF' -and $argumentRows[0].default.declared_value -eq -123) 'Associated signed little-endian constant only'}
+  elseif($profile -eq 3){Assert ($argumentRows[0].attributes -eq 16 -and $argumentRows[0].default_disposition -eq 'ABSENT' -and $null -eq $argumentRows[0].default) 'Optional alone is not a default'}
+  elseif($profile -eq 4){Assert ($argumentRows[0].name -ceq '' -and $argumentRows[0].name_handle_is_nil) 'Empty/nil name retained without replacement'}
+  elseif($profile -eq 5 -or $profile -eq 6){Assert ($argumentRows.Count -eq 0 -and $t.parameter_metadata -eq 'MISSING_PARAMETER_METADATA' -and $t.creation_route -eq 'INCONCLUSIVE') 'Missing argument row is explicit, return-only row is distinct'}
+  elseif($profile -eq 18){Assert ($argumentRows[0].default.declared_value -eq [int]::MinValue -and $argumentRows[0].default.raw_hex -eq '00000080') 'Int32 minimum declared constant'}
+  elseif($profile -eq 19){Assert ($argumentRows[0].default.declared_value -eq [int]::MaxValue -and $argumentRows[0].default.raw_hex -eq 'FFFFFF7F') 'Int32 maximum declared constant'}
+  elseif($profile -eq 20){Assert ($argumentRows[0].default.declared_value -eq 0 -and $argumentRows[0].default_disposition -eq 'DECLARED_INT32_ONLY') 'Actual owned zero constant distinct from absent default, not a runtime argument'}
+  elseif($profile -eq 37){Assert ($returns[0].default_disposition -eq 'RETURN_NOT_INSPECTED' -and $argumentRows[0].default.declared_value -eq -123 -and -not $tRaw.Contains('RETURN_CONSTANT_MUST_NOT_BE_READ')) 'Only sequence1 associated value decoded'}
+  elseif($profile -eq 38){Assert ($t.constructor.parameters[0].sequence -eq 1 -and $t.constructor.parameters[1].sequence -eq 0 -and $t.parameter_metadata -eq 'DECLARATIONS_ONLY') 'Sequence numbers, not row position, distinguish argument/return'}
+  else{Assert ($argumentRows[0].attributes -eq 8211 -and $argumentRows[0].default_disposition -eq 'ABSENT') 'Raw In/Out/Optional/HasFieldMarshal flags, no custom attribute or marshal interpretation'}
+  $passed++
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptorParameter($broken,('0'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptorParameter($traceConstruction,(Hash $traceConstruction))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectTraceEncryptorParameter($traceParameter,(Hash $traceParameter))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectTraceEncryptorParameter($broken,'4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd')} 'DCAENTRY_INPUT_HASH'
+ $tpWorker=Join-Path $PSScriptRoot 'Read-ProjectTraceEncryptorParameterMetadata.ps1'
+ Reject {& $tpWorker -InputPath $traceParameter -InputSha256 (Hash $traceParameter)} 'DCAENTRY_INPUT_PIN'
+ Assert ((TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All previous report bytes unchanged after parameter-only profile';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}
