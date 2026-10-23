@@ -1,5 +1,104 @@
 # Static Project context qualification
 
+## Source17 genuine trace-constructor lifetime diagnostic contract
+
+Baseline `17111eee478a9b1d4addd1f5bb4cb4004a06ecec`; actual16 reviewed static metadata
+is prerequisite evidence, not runtime proof. New explicit `original-trace-encryptor`/
+`owned-trace-encryptor` modes reuse existing container alias/config/19 pins/18 artifacts,
+15s/64KiB supervisor, limited interactive STA and strict audits. Trace dispatch precedes
+Factory/container dispatch: no builder, registration, Factory/Project/Id/UndoManager,
+Encrypt/Decrypt/IsEncrypted, DCA/UI/state/bus/hardware operation by the harness.
+
+Bind actual16 report SHA `07accca76a4ab722a7d6943578ab955659261cada7b7cc72feee00f730462bc2`:
+Common pin unchanged, type0200007E/interface02000077, public ctor06000364/attrs6278,
+param080001E4/nameiterations/attrs4112/Int32 genuine default1. All19 hashes precede OS
+pin identities/assembly inspection; completed held identities precede target load.
+Public reflection rechecks exact type/owner/ctor/parameter/default (RawDefaultValue
+boxed Int32=1), no attribute instantiation/nonpublic activation/implicit optional-default substitution. Public
+CallingConventions Standard+HasThis is checked on owned fixtures; static header32 is
+provenance, not equated to that enum. Default1 is observed metadata, not a guessed value.
+
+Invoke once and require exact original returned type; real IDisposable.Dispose once in
+managed finally. Same guard decides actual pre/post-ctor and post-dispose audit refusal;
+owned controls can only add refusals, never reset latches or bypass original policy.
+Propagated exceptions and disposal failures fail; latched dependency/audit denials fail even if vendor code catches the related exception. Managed
+cleanup/log failures remain bounded; hard kill cannot establish disposal/final audit.
+Successful ctor+Dispose stays NOT_QUALIFIED. Internals/side effects UNKNOWN; network/
+descendants NOT_CONTAINED under existing Windows diagnostic authorization, no sandbox
+claim. Existing modes/config bytes/pins/framework/proxies unchanged except explicit
+new-mode profile selection/admission. Owned checks/Windows verification/critical review/
+source commit precede ONE original attempt; original17 NOT_RUN at source freeze.
+Task Blocked/ACs unchecked/no gate; original13 FAIL10 remains latest runtime.
+
+Source17 SOURCE-FREEZE evidence: canonical private
+`task009-constructor-windows/source-freeze-17.json`2,838B SHA
+`ffd5204972c8cd135b6af57d49774ab34e7381458507fccf82862a7025ba1b5b`,
+all10 source hashes/19pins/18artifacts/config hashes and actual16 default binding.
+Local C#5/x64 warnings-as-errors compile PASS (project probe, launcher, owned fixtures)
+against six Build-script-pinned net48 references; PS parse/all8 source guards/scope/diff
+PASS. No source compilation failure. Four sources changed, six other sources/arrays/
+config/build bytes unchanged. Public Standard+HasThis check is API metadata, header32
+retained as static provenance. Owned regression cases are written, not SDK evidence.
+
+Preserved helper `private/evidence/task009-constructor-windows/source17/local-sourcecheck.ps1`,
+SHA `2b5027fdd0588153e055b871b15fc454cf0947006625b6e0fe24e28956d49024`,
+with exact local command/output/result JSON in that source17 directory. Local command
+uses pinned pwsh7.6.7, task worktree and the six pinned task148 reference files; it runs
+only compilation/parse/source guards, no Windows/SDK runtime. Independent source audit
+PASS, private verifier17/source-audit.txt4,887B SHA
+`2b89a30307c926b8f2346d31335130b2b6b9493b2b546fb4d2ad84353e0cf462`.
+At SOURCE_FREEZE Windows17 owned and original17 were NOT_RUN; later owned results must
+be recorded separately. Critical source review was pending at SOURCE_FREEZE; subsequent review is recorded below.
+
+
+### Source17 actual Windows owned results
+
+Windows build17 **PASS**, pinned compiler4.8.9221.0/eight compiled sources/18 artifacts;
+all three runners size/hash-preflighted all18 artifacts and frozen test driver.
+Owned suites **PASS33 Session0 /67 limited Session2 /38 admin-negative Session2**;
+interactive roles false/true, done0. Both cleanups Last0/task removed/zero owned
+processes/no junction;168/81 case files. Strict UTF16-to-UTF8 driver derivatives and
+raw streams retained; Session0 stderr contains CLIXML progress, not empty stderr.
+
+Private `task009-constructor-windows/owned17-observation.json`59,790B SHA
+`c13212ad25d0562b63a36e6c1fd9c07db5e6a9de278f92c195d267c1a451427e`
+binds314 files. Canonical build17-report.json6,814B SHA
+`09ff492482a8dc8c0e15be6bbac2ef1bc65378f9bdfc21086e23809c26b541f8`;
+separate derived JSON has equal parsed content, different bytes. Independent provenance
+audit PASS, verifier17/owned-result-audit.txt4,207B SHA
+`5a04331319eed6e492a3351e4bc2eb39253fa1b1525e60347a12b5fbe2f2be2c`.
+Audit checks saved evidence/runner bindings, not an independent Windows run/binary rehash.
+
+Trace-lifetime owned log proves10 shape/contract+4 token negatives, trap attributes0,
+9 constructor/8 Dispose attempts, six modeled guard phases and two caught-denial cases;
+no original-latch reset. These fixtures do not establish original constructor/default
+semantics. Initial Session0 helper refused an existing local report BEFORE Windows
+tests; preserved preparation observation/derived report, then canonical fetch and ONE
+passing suite. No source/build/test-suite retry. Source freeze above remains unchanged.
+
+Coordinator commands from repository root, no arguments (all `python3 -B`):
+
+```text
+python3 -B private/evidence/task009-constructor-windows/build_owned17.py
+python3 -B private/evidence/task009-constructor-windows/run_session0_17.py
+python3 -B private/evidence/task009-constructor-windows/run_owned17.py
+python3 -B private/evidence/task009-constructor-windows/collect_owned17.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_owned17.py
+python3 -B private/evidence/task009-constructor-windows/run_owned_admin17.py
+python3 -B private/evidence/task009-constructor-windows/collect_owned_admin17.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_owned_admin17.py
+python3 -B private/evidence/task009-constructor-windows/record_owned17.py
+```
+
+Session0 helper invoked twice (first preparation refusal, second first actual suite);
+other eight helpers once. Manifest includes prepared original helpers, not their execution.
+
+Critical source/owned review PASS (private review17/critical-review-source.txt) for the frozen source and bounded evidence. Original17 NOT_RUN at this reviewed checkpoint; no SDK,
+crypto, service, DCA/UI/state/hardware qualification. Latest original13 FAIL10 unchanged;
+Task Blocked/ACs unchecked. Network/descendants NOT_CONTAINED; hard-kill disposal/final
+audit NOT_ESTABLISHED. Historical SOURCE_FREEZE NOT_RUN above predates these owned runs.
+
+
 ## Source16 fixed constructor-parameter metadata contract
 
 Baseline `d39f789617a5b419c98af1367aaebe09c98874dc`; accepted actual15 static evidence

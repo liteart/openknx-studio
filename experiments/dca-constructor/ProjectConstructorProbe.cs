@@ -146,10 +146,13 @@ internal static class ProjectConstructorProbe
     static bool Original { get { return mode == "original-project" || mode == "original-project-store-id"; } }
     static bool OwnedProject { get { return mode == "owned-project" || mode == "owned-project-store-id"; } }
     static bool StoreIdFixture { get { return mode == "original-project-store-id" || mode == "owned-project-store-id"; } }
-    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9" || mode == "original-factory-empty-container"; } }
-    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9" || mode == "owned-factory-empty-container"; } }
+    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9" || mode == "original-factory-empty-container" || TraceOriginal; } }
+    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9" || mode == "owned-factory-empty-container" || TraceOwned; } }
     static bool FactoryOnly { get { return FactoryOriginal || FactoryOwned; } }
-    static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container"; } }
+    static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly; } }
+    static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
+    static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
+    static bool TraceOnly { get { return TraceOriginal || TraceOwned; } }
     static bool FactoryBinding { get { return EmptyContainer || mode == "original-factory-bcl9" || mode == "owned-factory-bcl9"; } }
     static bool FactoryProfileReady { get { return factoryInputsReady || (EmptyContainer && containerInputsReady); } }
     internal static string Text(string value)
@@ -214,7 +217,7 @@ internal static class ProjectConstructorProbe
     }
     static void PinValueTupleReference()
     {
-        ProbeFiles.Require(mode == "original-factory-empty-container", "VALUETUPLE_REFERENCE_MODE");
+        ProbeFiles.Require(mode == "original-factory-empty-container" || TraceOriginal, "VALUETUPLE_REFERENCE_MODE");
         valueTuplePath = ProbeFiles.Local(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath), true, false);
         var stream = new FileStream(valueTuplePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         Inputs.Add(stream);
@@ -227,7 +230,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return selectedMode == "original-factory-empty-container" && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -272,7 +275,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if (selectedMode != "original-factory-empty-container" || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -280,7 +283,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -1102,6 +1105,154 @@ internal static class ProjectConstructorProbe
         Record("OWNED_DISPOSAL_DENIAL_FIX_PASS failed=true provider-denied-requests=1 disposals=1 shared-original-wrapper=true original=NOT_RUN");
         Record("OWNED_EMPTY_CONTAINER_PASS builder-build-once=true null-wrong-return-denied=true disposal-once=true disposal-failure-fails=true provider-denial-caught-still-fails=true all-unqualified=true original=NOT_RUN");
     }
+    const string ReviewedTraceParameterReportSha256 = "07accca76a4ab722a7d6943578ab955659261cada7b7cc72feee00f730462bc2";
+    const int TraceDeclaredDefault = 1; // Actual associated Int32 metadata default; not a guessed fixture value.
+    sealed class TraceLifetimeApi
+    {
+        internal Type Type, Contract;
+        internal ConstructorInfo Constructor;
+        internal ParameterInfo Parameter;
+        internal object Default;
+    }
+    static TraceLifetimeApi TraceApi(Type type, Type contract)
+    {
+        ProbeFiles.Require(type != null && type.IsPublic && type.IsClass && type.IsSealed && !type.IsAbstract && !type.IsGenericType && !type.ContainsGenericParameters, "TRACE_TYPE_SHAPE");
+        ProbeFiles.Require(PublicInterface(contract) && typeof(IDisposable).IsAssignableFrom(contract) && contract.IsAssignableFrom(type)
+            && type.Assembly == contract.Assembly && !type.Assembly.ReflectionOnly, "TRACE_CONTRACT_OWNERSHIP");
+        ConstructorInfo ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, new Type[] { typeof(int) }, null);
+        ProbeFiles.Require(ctor != null && ctor.DeclaringType == type && (int)ctor.Attributes == 6278 && !ctor.IsStatic && !ctor.ContainsGenericParameters
+            && ctor.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "TRACE_PUBLIC_CONSTRUCTOR");
+        ParameterInfo[] parameters = ctor.GetParameters();
+        ProbeFiles.Require(parameters.Length == 1 && parameters[0].ParameterType == typeof(int) && parameters[0].Position == 0
+            && parameters[0].Name == "iterations" && (int)parameters[0].Attributes == 4112 && parameters[0].IsOptional && parameters[0].HasDefaultValue, "TRACE_PARAMETER_CONTRACT");
+        object value = parameters[0].RawDefaultValue;
+        ProbeFiles.Require(value != null && value.GetType() == typeof(int) && (int)value == TraceDeclaredDefault, "TRACE_DECLARED_DEFAULT");
+        return new TraceLifetimeApi { Type = type, Contract = contract, Constructor = ctor, Parameter = parameters[0], Default = value };
+    }
+    static bool ReviewedTraceTokens(int type, int ctor, int parameter, int contract)
+    { return type == 0x0200007e && ctor == 0x06000364 && parameter == 0x080001e4 && contract == 0x02000077; }
+    static void TraceDependencyGuard(bool hasUnexpected, bool hasRejected, string phase)
+    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "TRACE_DEPENDENCY_" + phase); }
+    static void WithTraceLifetime(TraceLifetimeApi api) { WithTraceLifetimeCore(api, null); }
+    // Finite owned refusal controls cannot reset latches or activate the original route.
+    static void WithTraceLifetimeCore(TraceLifetimeApi api, Action<string> ownedGuard)
+    {
+        ProbeFiles.Require(ownedGuard == null || TraceOwned, "TRACE_OWNED_GUARD_MODE");
+        Action<string> check = delegate(string phase) { TraceDependencyGuard(unexpected, rejected, phase); if (ownedGuard != null) ownedGuard(phase); };
+        object instance = null; bool exact = false;
+        try {
+            check("PRE_CTOR"); bool returned = false;
+            Record("TRACE_CONSTRUCTOR_BEGIN token=" + api.Constructor.MetadataToken.ToString("X8") + " default-origin=REVIEWED_METADATA raw-int32=1 header32=STATIC_PROVENANCE_ONLY qualification=NOT_ESTABLISHED");
+            try {
+                instance = api.Constructor.Invoke(new object[] { api.Default }); returned = true;
+                exact = instance != null && instance.GetType() == api.Type && api.Contract.IsInstanceOfType(instance) && instance is IDisposable
+                    && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(instance);
+                ProbeFiles.Require(exact, "TRACE_EXACT_RETURN"); check("POST_CTOR");
+            } catch (Exception error) { Errors(error); throw; }
+            finally { Record("TRACE_CONSTRUCTOR_END returned=" + returned + " body-entry=" + (returned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
+        } finally {
+            try {
+                if (exact) {
+                    bool disposed = false;
+                    try { Record("TRACE_DISPOSE_BEGIN attempts=1 hard-termination-disposal=NOT_ESTABLISHED"); }
+                    finally {
+                        try { ((IDisposable)instance).Dispose(); disposed = true; }
+                        catch (Exception error) { Errors(error); throw; }
+                        finally { Record("TRACE_DISPOSE_END returned=" + disposed + " attempts=1"); }
+                    }
+                }
+            } finally {
+                bool auditPassed = false;
+                try { check("POST_DISPOSE"); auditPassed = true; }
+                finally { Record("TRACE_LIFETIME_AUDIT passed=" + auditPassed + " after-managed-disposal=true explicit-dispose-attempted=" + exact); GC.KeepAlive(instance); }
+            }
+        }
+        Record("TRACE_CONSTRUCTOR_DISPOSE_RETURNED_NOT_QUALIFIED explicit-other-sdk-calls=0 network-descendants=NOT_CONTAINED");
+    }
+    static void OriginalTraceEncryptor()
+    {
+        ProbeFiles.Require(TraceOriginal && containerInputsReady, "TRACE_COMPLETE_PROFILE_REQUIRED");
+        Record("TRACE_PHASE original-type-materialization metadata-sha256=" + ReviewedTraceParameterReportSha256);
+        string path = Path.Combine(stage, "Knx.Ets.Common.dll"); Assembly common = Assembly.LoadFrom(path);
+        ProbeFiles.Require(common.FullName == Identities[10] && !common.ReflectionOnly && ProbeFiles.Same(common.Location, path), "TRACE_PINNED_ASSEMBLY");
+        Type type = common.GetType("Knx.Ets.Common.Security.ProjectTraceEncryptor", true, false), contract = common.GetType("Knx.Ets.Common.Security.IProjectTraceEncryptor", true, false);
+        TraceLifetimeApi api = TraceApi(type, contract);
+        ProbeFiles.Require(type.Assembly == common && contract.Assembly == common && (int)type.Attributes == 1048833
+            && ReviewedTraceTokens(type.MetadataToken, api.Constructor.MetadataToken, api.Parameter.MetadataToken, contract.MetadataToken), "TRACE_ORIGINAL_TOKENS");
+        Record("TRACE_CONTRACT_READY original-default=true parameter-token=" + api.Parameter.MetadataToken.ToString("X8") + " default-constant-token=0B0000BF raw=01000000 source=STATIC_METADATA public-calling-convention=" + api.Constructor.CallingConvention);
+        WithTraceLifetime(api);
+    }
+    static void OwnedTraceEncryptor()
+    {
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true, false); };
+        Type control = type("TraceLifetimeControl"), contract = type("ITraceLifetimeFixture");
+        Action<string> reset = delegate(string behavior) { control.GetMethod("Reset").Invoke(null, new object[] { behavior }); };
+        Func<string, int> count = delegate(string name) { return (int)control.GetField(name).GetValue(null); };
+        for (int i = 0; i < FactoryExtraNames.Length; i++) {
+            string path = Path.Combine(stage, FactoryExtraNames[i] + ".dll");
+            ProbeFiles.Require(FactoryReferencePolicy("original-trace-encryptor", true, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("original-trace-encryptor", false, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("original-trace-encryptor", true, "Owned.WrongIdentity", path, false)
+                && !FactoryReferencePolicy("original-trace-encryptor", true, FactoryExtraIdentities[i], fixture, false)
+                && !FactoryReferencePolicy("original-trace-encryptor", true, FactoryExtraIdentities[i], path, true)
+                && !FactoryReferencePolicy("owned-trace-encryptor", true, FactoryExtraIdentities[i], path, false), "OWNED_TRACE_EXTRA_REFERENCE_POLICY");
+        }
+        for (int i = 0; i < ContainerNames.Length; i++) {
+            string path = Path.Combine(stage, ContainerNames[i] + ".dll");
+            ProbeFiles.Require(ContainerReferencePolicy("original-trace-encryptor", true, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("original-trace-encryptor", false, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("original-trace-encryptor", true, ContainerIdentities[i], fixture, false)
+                && !ContainerReferencePolicy("original-trace-encryptor", true, "Owned.WrongIdentity", path, false)
+                && !ContainerReferencePolicy("original-trace-encryptor", true, ContainerIdentities[i], path, true)
+                && !ContainerReferencePolicy("owned-trace-encryptor", true, ContainerIdentities[i], path, false), "OWNED_TRACE_CONTAINER_REFERENCE_POLICY");
+        }
+        string reference = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath);
+        ProbeFiles.Require(ValueTupleReferencePolicy("original-trace-encryptor", true, ValueTupleIdentity, reference, true, false)
+            && !ValueTupleReferencePolicy("original-trace-encryptor", false, ValueTupleIdentity, reference, true, false)
+            && !ValueTupleReferencePolicy("original-trace-encryptor", true, "Owned.WrongIdentity", reference, true, false)
+            && !ValueTupleReferencePolicy("original-trace-encryptor", true, ValueTupleIdentity, fixture, true, false)
+            && !ValueTupleReferencePolicy("original-trace-encryptor", true, ValueTupleIdentity, reference, false, false)
+            && !ValueTupleReferencePolicy("original-trace-encryptor", true, ValueTupleIdentity, reference, true, true)
+            && !ValueTupleReferencePolicy("owned-trace-encryptor", true, ValueTupleIdentity, reference, true, false)
+            && !AutofacResourcePolicy("original-trace-encryptor", true, true, true, AutofacResourceEnGb, true, false, 1), "OWNED_TRACE_OS_RESOURCE_POLICY");
+        Record("OWNED_TRACE_REFERENCE_POLICY_PASS complete-exact-stage-only=true owned-mode=DENIED resources=DENIED policy-only=true");
+        reset("return"); int negatives = 0;
+        foreach (string name in new string[] { "TraceUnsealedFixture", "TraceAbstractFixture", "TraceGenericFixture`1", "TracePrivateConstructorFixture", "TraceWrongTypeFixture", "TraceWrongNameFixture", "TraceRequiredFixture", "TraceWrongDefaultFixture" }) {
+            bool denied = false; try { TraceApi(type(name), contract); } catch (IOException) { denied = true; }
+            ProbeFiles.Require(denied && count("Constructors") == 0 && count("Disposals") == 0 && count("Attributes") == 0, "OWNED_TRACE_SHAPE_BEFORE_EFFECT"); negatives++;
+        }
+        foreach (Type wrong in new Type[] { typeof(IDisposable), type("ITraceWrongContractFixture") }) {
+            bool denied = false; try { TraceApi(type("TraceLifetimeFixture"), wrong); } catch (IOException) { denied = true; }
+            ProbeFiles.Require(denied && count("Constructors") == 0, "OWNED_TRACE_CONTRACT_BEFORE_EFFECT"); negatives++;
+        }
+        ProbeFiles.Require(ReviewedTraceTokens(0x0200007e, 0x06000364, 0x080001e4, 0x02000077)
+            && !ReviewedTraceTokens(0x0200007f, 0x06000364, 0x080001e4, 0x02000077) && !ReviewedTraceTokens(0x0200007e, 0x06000365, 0x080001e4, 0x02000077)
+            && !ReviewedTraceTokens(0x0200007e, 0x06000364, 0x080001e5, 0x02000077) && !ReviewedTraceTokens(0x0200007e, 0x06000364, 0x080001e4, 0x02000078), "OWNED_TRACE_TOKEN_POLICY");
+        TraceLifetimeApi api = TraceApi(type("TraceLifetimeFixture"), contract);
+        ProbeFiles.Require(count("Attributes") == 0 && count("Constructors") == 0, "OWNED_TRACE_METADATA_NO_ATTRIBUTES");
+        Record("OWNED_TRACE_CONTRACT_PASS negatives=" + negatives + " token-negatives=4 trap-attributes=0 default=OWNED_DECLARATION_ONLY before-effects=true");
+        WithTraceLifetime(api); ProbeFiles.Require(count("Constructors") == 1 && count("Disposals") == 1 && count("Uses") == 0 && count("Attributes") == 0, "OWNED_TRACE_ONCE");
+        foreach (string behavior in new string[] { "ctor-throw", "dispose-throw" }) {
+            reset(behavior); bool denied = false;
+            try { WithTraceLifetime(api); } catch (TargetInvocationException) { denied = behavior == "ctor-throw"; } catch (InvalidOperationException) { denied = behavior == "dispose-throw"; }
+            ProbeFiles.Require(denied && count("Constructors") == 1 && count("Disposals") == (behavior == "ctor-throw" ? 0 : 1), "OWNED_TRACE_FAILURE_LIFETIME");
+        }
+        foreach (string flag in new string[] { "unexpected", "rejected" }) foreach (string phase in new string[] { "PRE_CTOR", "POST_CTOR", "POST_DISPOSE" }) {
+            reset("return"); bool denied = false;
+            try { WithTraceLifetimeCore(api, delegate(string point) { if (point == phase) TraceDependencyGuard(flag == "unexpected", flag == "rejected", point); }); }
+            catch (IOException) { denied = true; }
+            ProbeFiles.Require(denied && count("Constructors") == (phase == "PRE_CTOR" ? 0 : 1) && count("Disposals") == (phase == "PRE_CTOR" ? 0 : 1), "OWNED_TRACE_PHASE_GUARD");
+        }
+        foreach (string phase in new string[] { "ctor", "dispose" }) {
+            reset(phase + "-catch"); bool latched = false, denied = false;
+            Action callback = delegate { latched = true; throw new NotSupportedException("OWNED_TRACE_CAUGHT_AUDIT"); };
+            control.GetField(phase == "ctor" ? "ConstructorCallback" : "DisposeCallback").SetValue(null, callback);
+            try { WithTraceLifetimeCore(api, delegate(string point) { TraceDependencyGuard(false, latched, point); }); }
+            catch (IOException) { denied = true; }
+            ProbeFiles.Require(denied && count("Constructors") == 1 && count("Disposals") == 1 && count("Uses") == 0, "OWNED_TRACE_CAUGHT_DENIAL");
+        }
+        Record("OWNED_TRACE_LIFETIME_PASS ctor-dispose-once=true ctor-failure-no-return=true disposal-failure-fails=true phase-guards=6 caught-guards=2 production-latches-never-reset=true other-use=0 original=NOT_RUN");
+    }
     [STAThread]
     internal static int Main(string[] args)
     {
@@ -1151,7 +1302,8 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
+                        if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
+                        else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
                         else if (FactoryOnly) { if (FactoryOriginal) OriginalFactory(); else OwnedFactory(); }
                         else if (StoreIdFixture) { if (Original) OriginalProjectStoreId(); else OwnedProjectStoreId(); }
                         else if (Original) OriginalProject(); else Owned(); result = 0;

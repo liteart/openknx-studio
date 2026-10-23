@@ -295,6 +295,47 @@ namespace Owned.Task009
         public EmptyFactoryCatchesFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
         { EmptyControlFixture.Factories++; try { provider.Touch(); } catch (NotSupportedException) { } }
     }
+    public interface ITraceLifetimeFixture : IDisposable { void UnsupportedUse(); }
+    public static class TraceLifetimeControl
+    {
+        public static int Constructors, Disposals, Uses, Attributes;
+        public static string Behavior;
+        public static Action ConstructorCallback, DisposeCallback;
+        public static void Reset(string behavior) { Constructors = Disposals = Uses = Attributes = 0; Behavior = behavior; ConstructorCallback = DisposeCallback = null; }
+    }
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class TraceTrapAttribute : Attribute
+    { public TraceTrapAttribute() { TraceLifetimeControl.Attributes++; throw new InvalidOperationException("OWNED_ATTRIBUTE_EXECUTED"); } }
+    public sealed class TraceLifetimeFixture : ITraceLifetimeFixture
+    {
+        public TraceLifetimeFixture([TraceTrap] int iterations = 1)
+        {
+            TraceLifetimeControl.Constructors++;
+            if (iterations != 1) throw new InvalidOperationException("OWNED_DEFAULT_ARGUMENT");
+            if (TraceLifetimeControl.ConstructorCallback != null) {
+                try { TraceLifetimeControl.ConstructorCallback(); } catch (NotSupportedException) { if (TraceLifetimeControl.Behavior != "ctor-catch") throw; }
+            }
+            if (TraceLifetimeControl.Behavior == "ctor-throw") throw new InvalidOperationException("OWNED_TRACE_CTOR_THROW");
+        }
+        public void Dispose()
+        {
+            TraceLifetimeControl.Disposals++;
+            if (TraceLifetimeControl.DisposeCallback != null) {
+                try { TraceLifetimeControl.DisposeCallback(); } catch (NotSupportedException) { if (TraceLifetimeControl.Behavior != "dispose-catch") throw; }
+            }
+            if (TraceLifetimeControl.Behavior == "dispose-throw") throw new InvalidOperationException("OWNED_TRACE_DISPOSE_THROW");
+        }
+        public void UnsupportedUse() { TraceLifetimeControl.Uses++; throw new NotSupportedException("OWNED_TRACE_USE_DENIED"); }
+    }
+    public class TraceUnsealedFixture : ITraceLifetimeFixture { public TraceUnsealedFixture(int iterations = 1) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public abstract class TraceAbstractFixture : ITraceLifetimeFixture { public TraceAbstractFixture(int iterations = 1) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public sealed class TraceGenericFixture<T> : ITraceLifetimeFixture { public TraceGenericFixture(int iterations = 1) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public sealed class TracePrivateConstructorFixture : ITraceLifetimeFixture { private TracePrivateConstructorFixture(int iterations = 1) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public sealed class TraceWrongTypeFixture : ITraceLifetimeFixture { public TraceWrongTypeFixture(uint iterations = 1) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public sealed class TraceWrongNameFixture : ITraceLifetimeFixture { public TraceWrongNameFixture(int other = 1) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public sealed class TraceRequiredFixture : ITraceLifetimeFixture { public TraceRequiredFixture(int iterations) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public sealed class TraceWrongDefaultFixture : ITraceLifetimeFixture { public TraceWrongDefaultFixture(int iterations = 2) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
+    public interface ITraceWrongContractFixture { }
     public static class ProjectIdAssertions
     {
         static void Denied(Action action)
