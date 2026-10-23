@@ -94,6 +94,14 @@ Update this record only with observed results. Follow the task-scoped branch/com
 
 ## Source19b subsequent owned result and review
 
+Current execution checkpoint: the one fixed original19b plan and runner are
+prepared and critically reviewed PASS, but live preflight and original runtime
+remain NOT RUN. The read-only readiness retry reached SSH and failed
+authentication (exit 255); the authenticated local master socket is absent.
+The owner is restoring access. This is an access prerequisite, not a failed SDK
+diagnostic. Exact private plan/runner/review hashes and source revisions are in
+the [Project context contract](../docs/DCA-PROJECT-CONTEXT.md).
+
 Reviewed source/owned-evidence increment:
 `61b39b421a8b25a5fafd25f4f971756dc4993c37`.
 

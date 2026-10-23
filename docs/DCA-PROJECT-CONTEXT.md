@@ -1,5 +1,36 @@
 # Static Project context qualification
 
+## Original19b preparation and live-access checkpoint
+
+The reviewed source19b increment is committed at
+`61b39b421a8b25a5fafd25f4f971756dc4993c37`, with exact-revision record `bd4855e`.
+The dedicated Task-009 source worktree remains clean at that latter revision.
+The current session branch includes the same sources plus the separate Task-005
+owner/status clarification; no frozen runtime source bytes differ.
+
+One original19b plan has been prepared privately, without execution:
+`project19b-plan.json`, SHA-256
+`805d77aea9dbb90ddd0e045b051b6b47339319e7687c6f3d3b6eced072245018`;
+runner SHA-256
+`d44a00f1108e6e0145e8eb1fef595a6759094657da4fa5e1cdc4be99433ca447`.
+Its private critical plan review `review19b/plan-review.txt`, SHA-256
+`cc9669649425c970ca60fbe594585eab17269adb1af4bcf23a9fca6eb1a0c67c`,
+is PASS: unchanged ordered 19 inputs, 18 build19b artifacts, ten frozen sources,
+one limited-interactive launch, 15-second child deadline, 64-KiB capture,
+no automatic retry or dependency widening. This is not a device-operation grant.
+
+The coordinator prepared fixed launch/collect/cleanup helpers and checked their
+Python syntax without executing them. Their hashes are retained in
+`project19b-preparation-manifest.json`. A read-only Windows readiness attempt was
+denied by the local execution sandbox. The authorized unchanged inventory retry
+reached SSH but authentication failed (exit 255). The local authenticated master
+socket was subsequently absent. The owner is restoring that connection; no
+credential is stored in source. Live preflight and original19b remain NOT RUN.
+Connection failure is not a vendor-runtime outcome. Once access is restored,
+perform live preflight of the fixed source/build/input/session state before the
+one planned attempt. Task-009 remains In progress, qualification NOT_ESTABLISHED,
+all ACs unchecked and no gate advanced.
+
 ## Source19b subsequent owned verification and critical review
 
 Reviewed source/owned-evidence increment:
