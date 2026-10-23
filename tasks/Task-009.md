@@ -82,15 +82,36 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; latest original Factory13 diagnostic FAIL10 at unregistered IProjectTraceEncryptor, contract/semantics UNKNOWN; no qualified Factory/Project/service |
-| Source commit(s) | Original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
-| Tests executed | Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Source commit(s) | New fixed Common metadata increment based on `80ff78eda135179ad499c19b7fc231eea4a9d975`, six-source private freeze recorded below; Original13 reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`; prior source/result history retained |
+| Tests executed | New declaration-only owned metadata PASS242 PowerShell/21 Python; parse/preservation/scope/diff PASS, original Common extraction NOT RUN. Source13/owned Windows29/60/34/full18 preflight PASS remains separate. One original13 FAIL10: four null resource probes, no satellite load observed, context READY but Factory not returned/unregistered service. Earlier original12 FAIL2/Factory11 unknown origin retained; explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/factory13-observation.json`, `factory13.log`, and `verifier13/factory-result-audit.txt`; earlier dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | THIS13 ValueTuple GAC pin/audit allowed, builder/Build/context READY; Factory0600012E ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Four NULL_UNKNOWN probes/no ownership proof; phase inactive before disposal. ComponentNotRegisteredException names IProjectTraceEncryptor; owner/interface/semantics/licensing/KNX Secure relationship NOT metadata-qualified. No service implementation/qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
+| Reviewer | New Common source/owned independent verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); Source13 source/owned critical review PASS; original13 provenance audit and critical result documentation review PASS (the diagnostic remains FAIL exit 10; private review13/critical-review-result.txt). Prior reviewed results preserved; no task/service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Fixed Common declaration source freeze
+
+Baseline `80ff78eda135179ad499c19b7fc231eea4a9d975`; separate fixed
+`project-trace-encryptor` metadata-only mode, sole Common pin503,248B SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`.
+Exception-named root only; exact owner/kind/API UNKNOWN pending actual extraction.
+Bounded declarations and direct owner-matched candidate edges only; no IL, values,
+resolution, runtime, registration or crypto/no-op fixture. Forwarders unexamined,
+missing TypeDef/empty matches cannot prove SDK absence. No global limit changes:
+all tables32768, prior profiles/reports/constructor sources unchanged.
+
+Owned macOS/pinned PowerShell7.6.7 **PASS242**, Python **PASS21**;
+compile/parse/legacy-source preservation/scope/diff PASS. Exact commands/limits in
+[Project context contract](../docs/DCA-PROJECT-CONTEXT.md). Private
+`task009-project-trace-encryptor-metadata/owned-source-freeze.json` 1,387B SHA-256
+`d88b3325623bed9184dc07562138f31e9fd6a5e3938973662fb67f5855d7f792`
+binds six source hashes, with exact commands/results in owned-checks.json/logs.
+Independent owned verification and critical source review PASS (private task009-project-trace-encryptor-metadata/verifier14/audit.txt and review14/critical-review-source.txt); actual Common
+extraction and new runtime/service operations NOT RUN. Latest runtime original13
+FAIL10 retained; Task Blocked/ACs unchecked/no qualification or gate change.
 
 ## Factory13 actual result
 

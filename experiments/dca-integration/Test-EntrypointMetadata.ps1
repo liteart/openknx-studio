@@ -256,5 +256,40 @@ try{
  $undoWorker=Join-Path $PSScriptRoot 'Read-ProjectUndoManagerMetadata.ps1'
  Reject {& $undoWorker -InputPath $undo -InputSha256 (Hash $undo)} 'DCAENTRY_INPUT_PIN'
  Assert ((ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All old report bytes and policies preserved after UndoManager mode';$passed++
+ $trace=Join-Path $root 'OwnedTraceEncryptor.dll';[Task144OwnedFixtures]::CreateProjectTraceEncryptor($trace)
+ function Trace([string] $p=$trace){[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptor($p,(Hash $p))}
+ $traceRaw=Trace;$tr=$traceRaw|ConvertFrom-Json
+ Assert ($tr.operation -eq 'static_dca_project_trace_encryptor' -and $tr.runtime_execution -eq 'NOT_RUN' -and $tr.inputs.Count -eq 1 -and $tr.inputs[0].identity -eq 'Task009.OwnedTraceEncryptor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $tr.selected_root -eq 'Owned.Task009.TraceContract' -and $tr.forwarded_declarations -eq 'UNEXAMINED' -and $tr.creation_route -eq 'INCONCLUSIVE') 'Fixed independent owned declaration root/identity and explicit limits';$passed++
+ Assert ($tr.types[0].methods.Count -eq 4 -and $tr.types[0].fields.Count -eq 2 -and $tr.candidates.Count -eq 0 -and -not $traceRaw.Contains('PrivateIgnored') -and -not $traceRaw.Contains('OWNED_CONSTANT_VALUE') -and -not $traceRaw.Contains($root) -and @([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedTraceEncryptor'}).Count -eq 0) 'Declarations only, no values/private method/path';$passed++
+ foreach($profile in @(1,2,3,4,5,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,28,30,31,32,44,45,46)){
+  $bad=Join-Path $root ('TraceBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectTraceEncryptor($bad,$profile)
+  $code=@{1='ROOT_NOT_FOUND_FORWARDERS_UNEXAMINED';2='DUPLICATE_ROOT';3='MALFORMED_SIGNATURE';4='MALFORMED_SIGNATURE';5='INPUT_IDENTITY';8='FIELD_LIMIT';9='METHOD_LIMIT';10='ROW_LIMIT';11='STRING_LIMIT';12='SIGNATURE_LIMIT';13='SIGNATURE_SHAPE';14='SIGNATURE_SHAPE';15='SIGNATURE_LIMIT';16='REPORT_LIMIT';17='BASE_CYCLE';18='BASE_LIMIT';20='SIGNATURE_SHAPE';21='INTERFACE_LIMIT';22='FIELD_LIMIT';23='METHOD_LIMIT';24='SIGNATURE_SHAPE';28='ROW_LIMIT';30='SIGNATURE_LIMIT';31='MALFORMED_SIGNATURE';32='ROW_LIMIT';44='PROVIDER_TYPE_LIMIT';45='PROVIDER_EDGE_LIMIT';46='INTERFACE_LIMIT'}[$profile]
+  Reject {Trace $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(6,19,25,26,27,29,40,41,42,43,48,49,50,51)){
+  $positive=Join-Path $root ('TracePositive'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectTraceEncryptor($positive,$profile)
+  $t=Trace $positive|ConvertFrom-Json
+  if($profile -eq 6){Assert ($t.base_chain_disposition -eq 'TYPESPEC_BASE_NOT_FOLLOWED') 'TypeSpec ancestry not followed'}
+  elseif($profile -eq 19){Assert ($t.types.Count -eq 2 -and $t.base_chain_disposition -eq 'EXTERNAL_BASE_NOT_RESOLVED') 'Bounded same-assembly base'}
+  elseif($profile -eq 25){Assert ($t.types[0].fields.Count -eq 256) 'Field bound accepted'}
+  elseif($profile -eq 26){Assert ($t.types[0].methods.Count -eq 256) 'Method bound accepted'}
+  elseif($profile -eq 40){Assert ($t.candidates.Count -eq 2 -and $t.matching_edges -eq 2 -and $t.candidates[0].attributes -eq 128 -and $t.candidates[1].attributes -eq 1 -and $t.base_chain_disposition -eq 'NO_BASE' -and $t.candidates[0].relationships[0].target_assembly -eq $t.inputs[0].identity -and $t.candidates[0].relationships[0].target_token -eq $t.types[0].token -and $t.candidates[0].relationships[0].kind -eq 'implements' -and $null -eq $t.candidates[0].PSObject.Properties['methods']) 'Direct owned internal/abstract candidate identity/token/flags only'}
+  elseif($profile -eq 41){Assert ($t.candidates.Count -eq 0 -and $t.uncertainty_counts.TARGET_NAME_OWNER_MISMATCH -eq 1) 'Foreign exact-name collision not matched'}
+  elseif($profile -eq 42){Assert ($t.candidates.Count -eq 1 -and -not (@($t.candidates|Where-Object name -eq 'Owned.Candidates.Indirect').Count)) 'Indirect candidate not claimed'}
+  elseif($profile -eq 43){Assert ($t.candidates.Count -eq 0 -and $t.uncertainty_counts.TYPESPEC_NOT_INSPECTED -eq 1) 'Generic relationship uncertainty retained'}
+  elseif($profile -eq 48){Assert ($t.base_chain_disposition -eq 'NO_BASE' -and ($t.types[0].attributes -band 32) -eq 32) 'Actual interface flag/nil base reported without name inference'}
+  elseif($profile -eq 49){Assert ($t.candidates.Count -eq 1 -and $t.matching_edges -eq 1) 'Exact same-owner TypeRef relationship accepted'}
+  elseif($profile -eq 50){Assert ($t.matching_edges -eq 128 -and $t.candidates.Count -eq 4) '128 edge boundary accepted'}
+  elseif($profile -eq 51){Assert ($t.candidates.Count -eq 64) '64 candidate boundary accepted'}
+  else{Assert ($t.types.Count -eq 1) '32768 row boundary accepted'}
+  $passed++
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptor($broken,('0'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectTraceEncryptor($id,(Hash $id))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectTraceEncryptor($trace,(Hash $trace))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectTraceEncryptor($broken,'4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd')} 'DCAENTRY_INPUT_HASH'
+ $traceWorker=Join-Path $PSScriptRoot 'Read-ProjectTraceEncryptorMetadata.ps1'
+ Reject {& $traceWorker -InputPath $trace -InputSha256 (Hash $trace)} 'DCAENTRY_INPUT_PIN'
+ Assert ((UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reader bytes unchanged after Common inquiry';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

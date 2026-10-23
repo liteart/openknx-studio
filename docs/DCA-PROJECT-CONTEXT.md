@@ -1,5 +1,62 @@
 # Static Project context qualification
 
+## Fixed trace-encryptor declaration inquiry: source contract
+
+Baseline `80ff78eda135179ad499c19b7fc231eea4a9d975`; Task-008 accepted analysis,
+Task-009 Blocked/all acceptance criteria unchecked. Latest original13 remains FAIL10.
+The exception names `Knx.Ets.Common.Security.IProjectTraceEncryptor`; its owner/kind
+and semantics remain UNKNOWN until separately reviewed guarded metadata extraction.
+New fixed `project-trace-encryptor` mode selects only Common.dll 503,248B, SHA-256
+`4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd`, identity
+Knx.Ets.Common 6.4.8718.0/neutral/61439873ec5e1159. Hash/size precede PEReader;
+identity precedes the exact root lookup. No caller-selected roots or other assemblies.
+An unsigned independently owned fixture route cannot be selected by the original worker.
+
+Report raw flags, bounded same-assembly base/interface declarations, public/protected
+method/constructor and declared field signatures; no values, bodies, custom attributes,
+resolution or target execution. TypeSpec/external ancestry stays unresolved. Missing
+TypeDef fails closed; exported/forwarded declarations are unexamined, so this cannot
+establish SDK-wide absence. Direct owner/name-matched base/interface edges in this one
+assembly report candidate flags/tokens/relationships only, no candidate members or
+recursive inheritance. Unsupported generic/foreign relationships remain uncertainty.
+Empty matches do not establish absence or a usable implementation.
+
+All tables stay 32,768 rows; no ObjectModel exception applies. Existing file16MiB/
+aggregate32MiB, base16, methods and fields each256/type/2048 total, interfaces32, signature128bytes/
+128nodes/depth16, report512KiB ASCII-escaped limits remain. Direct matches64types/
+128edges/work262144; outer30s/2MiB and write/network denial probes remain unchanged.
+Prior entrypoints, pinsets, reports and constructor runtime tools stay unchanged.
+Source/owned-test verification and critical review precede any private extraction;
+original metadata and all new runtime/service behavior NOT_RUN in this increment.
+No registration, crypto/no-op fixture, KNX Secure inference, qualification or gate change.
+
+Owned source freeze (macOS/PowerShell7.6.7): **PASS242 PowerShell /21 Python**;
+Add-Type compiled both owned metadata sources. Parse/source-preservation/scope/diff PASS.
+Owned fixtures exercise declaration/interface nil-base, exact direct owner/token edges,
+internal/abstract and public flags, foreign-name refusal, indirect/TypeSpec uncertainty,
+64candidate/128edge boundaries and fail-closed excess, row/signature/member/base/report
+limits. The baseline lacks this mode; all prior C#/fixture/PS bytes outside additive
+blocks, old Python helpers/constants/tests, report bytes and constructor sources remain
+unchanged. These are owned static tests, not the actual service declaration.
+
+Private `task009-project-trace-encryptor-metadata/owned-source-freeze.json`, 1,387B,
+SHA-256 `d88b3325623bed9184dc07562138f31e9fd6a5e3938973662fb67f5855d7f792`,
+binds six source hashes; `owned-checks.json` and stdout/stderr retain exact commands.
+Reproduce from the task worktree with the pinned PowerShell executable:
+
+```text
+pwsh -NoProfile -File experiments/dca-integration/Test-EntrypointMetadata.ps1
+python3 -B -m unittest discover -s experiments/dca-metadata -p test_run_probe.py
+python3 -B <repository-root>/private/evidence/task009-project-trace-encryptor-metadata/check_owned_source.py
+python3 -B scripts/check_project_scope.py
+git diff --check
+```
+
+Independent owned verification and critical source review PASS; private task009-project-trace-encryptor-metadata/verifier14/audit.txt (SHA-256 d8e25437b6033b86bfaeb3bf2bd61f7148e5038de55b819eb05cbcd44e2e5a0c) and review14/critical-review-source.txt record the bounded checks and verdict. Actual Common
+extraction **NOT_RUN**, exact service owner/API still UNKNOWN; no runtime change or
+fixture, no qualification/gate advance. Any later result must bind reviewed source
+and original report separately; ADR-005 scope and original13 FAIL10 remain unchanged.
+
 ## Factory13 original resource-probe diagnostic result
 
 At reviewed source `44b1f13e4b07a8ea5251fb0eeb2ef14c62de5227`, one original13

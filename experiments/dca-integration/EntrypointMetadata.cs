@@ -317,6 +317,73 @@ public static class EntrypointMetadata {
    if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ const string ProjectTraceEncryptorHash="4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd";
+ const string ProjectTraceEncryptorIdentity="Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string OwnedProjectTraceEncryptorIdentity="Task009.OwnedTraceEncryptor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string ProjectTraceEncryptorRoot="Knx.Ets.Common.Security.IProjectTraceEncryptor";
+ const string OwnedProjectTraceEncryptorRoot="Owned.Task009.TraceContract";
+ public static string ReadProjectTraceEncryptor(string path,string hash){
+  if(hash!=ProjectTraceEncryptorHash)throw Fail("INPUT_PIN");
+  return ReadProjectTraceEncryptorInternal(path,hash,false);
+ }
+ // Explicit synthetic route: rejects original identities and cannot be selected by the worker.
+ public static string ReadOwnedProjectTraceEncryptor(string path,string hash){return ReadProjectTraceEncryptorInternal(path,hash,true);}
+ static string ReadProjectTraceEncryptorInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);
+  if(!owned&&bytes.Length!=503248)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   CheckRows(r,false,0);
+   string identity=AssemblyIdentity(r);
+   if(identity!=(owned?OwnedProjectTraceEncryptorIdentity:ProjectTraceEncryptorIdentity))throw Fail("INPUT_IDENTITY");
+   string rootName=owned?OwnedProjectTraceEncryptorRoot:ProjectTraceEncryptorRoot;
+   TypeDefinitionHandle root=default;
+   foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)==rootName){if(!root.IsNil)throw Fail("DUPLICATE_ROOT");root=h;}
+   if(root.IsNil)throw Fail("ROOT_NOT_FOUND_FORWARDERS_UNEXAMINED");
+   var selected=new HashSet<TypeDefinitionHandle>();var current=root;string disposition;
+   while(true){
+    if(!selected.Add(current))throw Fail("BASE_CYCLE");if(selected.Count>16)throw Fail("BASE_LIMIT");
+    var b=r.GetTypeDefinition(current).BaseType;if(b.IsNil){disposition="NO_BASE";break;}
+    if(b.Kind==HandleKind.TypeDefinition){current=(TypeDefinitionHandle)b;continue;}
+    if(b.Kind==HandleKind.TypeReference){disposition="EXTERNAL_BASE_NOT_RESOLVED";break;}
+    if(b.Kind==HandleKind.TypeSpecification){disposition="TYPESPEC_BASE_NOT_FOLLOWED";break;}
+    throw Fail("BASE_SHAPE");
+   }
+   var types=new List<object>();int methods=0,fields=0;
+   foreach(var h in r.TypeDefinitions){
+    if(!selected.Contains(h))continue;if(types.Count>=16)throw Fail("TYPE_LIMIT");var t=r.GetTypeDefinition(h);
+    var interfaces=new List<string>();foreach(var ih in t.GetInterfaceImplementations()){if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");interfaces.Add(new Names(r,true).Named(r.GetInterfaceImplementation(ih).Interface));}
+    var declared=new List<object>();foreach(var mh in t.GetMethods()){
+     var m=r.GetMethodDefinition(mh);string name=Str(r,m.Name);var access=m.Attributes&MethodAttributes.MemberAccessMask;
+     if(access!=MethodAttributes.Public&&access!=MethodAttributes.Family&&access!=MethodAttributes.FamORAssem&&access!=MethodAttributes.FamANDAssem)continue;
+     if(++methods>2048||declared.Count>=256)throw Fail("METHOD_LIMIT");string signature;
+     try{signature=new Names(r,true).Method(m.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     declared.Add(Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",name,"attributes",(int)m.Attributes,"accessibility",access.ToString(),"signature",signature));
+    }
+    var fieldDeclarations=new List<object>();foreach(var fh in t.GetFields()){
+     if(++fields>2048||fieldDeclarations.Count>=256)throw Fail("FIELD_LIMIT");var f=r.GetFieldDefinition(fh);string signature;
+     try{signature=new Names(r,true).Field(f.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     fieldDeclarations.Add(Obj("token",MetadataTokens.GetToken(fh).ToString("X8"),"name",Str(r,f.Name),"attributes",(int)f.Attributes,"signature",signature));
+    }
+    types.Add(Obj("token",MetadataTokens.GetToken(h).ToString("X8"),"name",new Names(r,true).Named(h),"attributes",(int)t.Attributes,"base_type",new Names(r,true).Named(t.BaseType),"interfaces",interfaces,"methods",declared,"fields",fieldDeclarations));
+   }
+   var target=new ProviderTarget{Assembly=identity,Name=rootName,Token=MetadataTokens.GetToken(root).ToString("X8")};
+   var targets=new Dictionary<string,ProviderTarget>(StringComparer.Ordinal){{rootName,target}};
+   var candidates=new List<object>();var uncertainty=new Dictionary<string,int>(StringComparer.Ordinal);int edgeCount=0,work=0;
+   foreach(var h in r.TypeDefinitions){
+    var t=r.GetTypeDefinition(h);var matches=new List<object>();
+    void Edge(EntityHandle edge,string kind){
+     if(edge.IsNil)return;if(++work>262144)throw Fail("PROVIDER_WORK_LIMIT");var match=DirectTarget(r,identity,edge,targets,uncertainty);if(match==null)return;
+     if(++edgeCount>128)throw Fail("PROVIDER_EDGE_LIMIT");matches.Add(Obj("kind",kind,"target_assembly",match.Assembly,"target_name",match.Name,"target_token",match.Token));
+    }
+    Edge(t.BaseType,"extends");int count=0;foreach(var ih in t.GetInterfaceImplementations()){if(++count>32)throw Fail("INTERFACE_LIMIT");Edge(r.GetInterfaceImplementation(ih).Interface,"implements");}
+    if(matches.Count==0)continue;if(candidates.Count>=64)throw Fail("PROVIDER_TYPE_LIMIT");
+    candidates.Add(Obj("assembly",identity,"token",MetadataTokens.GetToken(h).ToString("X8"),"name",new Names(r,true).Named(h),"attributes",(int)t.Attributes,"relationships",matches));
+   }
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_trace_encryptor","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_root",rootName,"base_chain_disposition",disposition,"types",types,"candidates",candidates,"matching_edges",edgeCount,"uncertainty_counts",uncertainty,"creation_route","INCONCLUSIVE","forwarded_declarations","UNEXAMINED","limitations",new[]{"Fixed exception-named root and bounded same-assembly bases only; kind/owner must be read from declarations. TypeSpec ancestry and external declarations remain unresolved; forwarders are unexamined.","Public/protected constructor/method and declared field metadata only; no field values, custom attributes, bodies, dependency resolution or target execution. No service instance, implementation behavior, registration or cryptographic semantics is established. Direct candidate edges only; indirect/external/generic implementations are unqualified, and empty results do not prove absence."}));
+   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  static string ReadInternal(string dca,string hash,string[] refs,string[] hashes,bool project,bool construction=false,bool services=false,bool constructors=false){
   if(refs==null||hashes==null||refs.Length!=hashes.Length||(construction?refs.Length!=3:refs.Length<1||refs.Length>2))throw Fail("INPUT_COUNT");
   var paths=new List<string>{dca};paths.AddRange(refs);var pins=new List<string>{hash};pins.AddRange(hashes);var bytes=new List<byte[]>();long total=0;
