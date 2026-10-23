@@ -16,10 +16,16 @@ Qualify owner-authorized local DCA and SDK dependency compatibility
 | Owner | Simon |
 | Requirement references | [R-001](../docs/REQUIREMENTS.md), [R-002](../docs/REQUIREMENTS.md), [R-011](../docs/REQUIREMENTS.md), [R-028](../docs/REQUIREMENTS.md) |
 
+**Current status reaffirmed 2026-10-23: Done.** Simon confirmed permission for
+private copies and prohibited redistribution of the proprietary DLLs. The
+existing selected-route compile and ETS-free constructor evidence already
+satisfies this task; no new Windows execution was needed for this reaffirmation.
+See the final acceptance and the status reconciliation below.
+
 Historical dated evidence below records earlier blockers and decisions. The
-owner decision in the latest update supersedes earlier legal-document,
-provisioning-rights, and legal-review prerequisites; the current blocker is
-technical qualification only; the latest completion record governs its result.
+owner decision supersedes earlier legal-document, provisioning-rights and
+legal-review prerequisites. Earlier technical blockers are dated snapshots;
+the accepted completion record governs the current Done result.
 
 ## Description
 
@@ -471,3 +477,32 @@ Next ready task: Task-007 neutral shell acceptance.
 
 Reviewed implementation/qualification source commit:
 `ee3cbdf0afd1e80184c43a0a9c4a1a2f2127f75b`.
+
+## Owner reaffirmation and retained-evidence audit, 2026-10-23
+
+Simon reaffirmed that he has clarified private-copy permission; original DLLs
+are proprietary and must not be redistributed. He also reaffirmed DCA support
+for ETS 5.7 and later, including his ETS 6.4. This is recorded in ADR-005;
+the selected compatibility result is additionally supported by accepted
+Task-143 binding and Task-148 actual constructor evidence. The assembly-version
+difference alone is not an incompatibility or a reason to reopen Task-005.
+
+The coordinator corrected a stale-branch status error by reconciling existing
+worktrees and continuing from DCA work baseline `d742cab`. The accepted Task-005
+record is `ee3cbdf0afd1e80184c43a0a9c4a1a2f2127f75b`, with revision-record commit
+`546b126585541f77df0851419bfdbb7ea649970f`. Task-148's accepted runtime record
+is `134ebb4243c349f7128e655f60274f6465f526b8`.
+
+Read-only local hash audit PASS: all 11 files in Task-005's private evidence
+manifest and all five files in Task-148's original runtime evidence manifest
+match their recorded sizes and SHA-256. The Task-148 result and evidence manifest
+also match the hashes in the committed public report. No vendor code, Windows
+command, hardware operation or new runtime test was executed by this audit.
+Task-005 remains Done for the accepted bounded route; later initialization,
+UI/state and services retain the results recorded in Tasks 008–012. No phase
+gate or redistribution permission follows.
+
+Documentation checks for this reaffirmation: `python3 -B scripts/check_project_scope.py`
+and `git diff --check` PASS. The predefined independent reviewer returned PASS,
+no findings, for these four documentation paths and their evidence limits.
+This does not add a runtime rerun or replace the accepted source revisions above.

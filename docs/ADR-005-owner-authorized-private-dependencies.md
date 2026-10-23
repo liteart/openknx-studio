@@ -23,6 +23,13 @@ behavior have not been qualified.
 
 ## Decision
 
+On 2026-10-23 Simon explicitly reaffirmed that he has clarified the permission:
+private copies of the data are allowed. The original DLLs are proprietary and
+must not be redistributed. This is Simon's supplied rights clarification and
+supersedes the earlier description as an unresolved owner assumption for private
+copying; it is not an independent legal determination by an agent. The existing
+authorization for local technical investigation remains in effect.
+
 Assume local use of the selected private references and original DCA is
 authorized for this project investigation. Simon accepts responsibility for
 that assumption. No license documents, lawyer review, vendor confirmation, or
@@ -83,3 +90,20 @@ governs acceptance. Later Initialize/UI/state/service compatibility belongs to
 Tasks 008–012. These technical observations do not change this owner assumption,
 assign legal certification to an agent, allow original DLL distribution, or
 approve any phase gate or device operation.
+
+## Owner reaffirmation and status reconciliation, 2026-10-23
+
+Simon also reaffirmed that the DCA supports ETS 5.7 and later, including his ETS
+6.4 installation. The requested/supplied assembly-version difference is not an
+incompatibility finding. Accepted Task-143 supplies selected binding/member
+resolution evidence; Task-148 supplies actual startup/constructor execution with
+SDK 6.4 on Windows without installed/running ETS. Task-005 is Done for that
+selected route at `ee3cbdf0afd1e80184c43a0a9c4a1a2f2127f75b`, followed by its
+exact-revision record `546b126585541f77df0851419bfdbb7ea649970f`.
+
+The coordinator's later claim that Task-005 was still Blocked came from reading
+an older checkout without reconciling the existing task worktrees. That claim
+is withdrawn. The accepted evidence has not been replaced by a new runtime
+attempt; the current check verified its retained artifact hashes. Later
+Initialize/UI/state/services and device effects retain their own actual outcomes
+and prerequisites. No vendor DLL is committed or redistributed.

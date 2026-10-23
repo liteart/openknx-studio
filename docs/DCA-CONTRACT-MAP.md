@@ -1,5 +1,14 @@
 # Static reference-candidate experiment
 
+**Historical Task-140 snapshot.** Its unresolved-member and Blocked statements
+below describe 2026-10-21, not current readiness. Subsequent
+[Task-142](../tasks/Task-142.md), [Task-143](../tasks/Task-143.md) and
+[Task-148](../tasks/Task-148.md) provide the selected signature, binding and
+ETS-free startup/constructor evidence. [Task-005](../tasks/Task-005.md) is Done
+for its selected route. [ADR-005](ADR-005-owner-authorized-private-dependencies.md)
+records Simon's private-copy permission and prohibition on proprietary DLL
+redistribution. No blanket SDK or later-lifecycle compatibility is inferred.
+
 Task-140 investigates the unchanged MDT DALI DCA using private, operator-supplied
 ETS reference candidates. It does not establish runtime compatibility or rights.
 No vendor assembly is loaded; the original helper reads managed metadata bytes.

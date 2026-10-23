@@ -1,5 +1,14 @@
 # DCA and ETS SDK provisioning disposition
 
+**Current status (reconfirmed 2026-10-23): Task-005 is Done for the selected
+private-reference compile and ETS-free startup/constructor route.** Simon has
+clarified that private copies are permitted and proprietary original DLLs must
+not be redistributed; [ADR-005](ADR-005-owner-authorized-private-dependencies.md)
+records his decision. The selected SDK 6.4 binding and runtime evidence is in
+Tasks 143/148 and the accepted Task-005 record. A requested 5.7 assembly version
+does not itself establish incompatibility with the selected 6.4 references.
+Later lifecycle/UI/state qualification remains separate.
+
 Historical evidence snapshot. Active owner decision and current technical
 disposition are recorded at the end of this file; later decision supersedes
 historical legal-review prerequisites below.
