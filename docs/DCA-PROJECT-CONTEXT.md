@@ -2744,3 +2744,49 @@ single 15-second diagnostic may follow under existing authorization; failures st
 without automatic expansion or retry. The private review record binds the
 pre-append document hashes; it does not claim those hashes identify this later
 review note.
+
+## Project12 original Factory diagnostic
+
+At source `f29d3c2d571a34bcae360c8a028ca2abbc37d180`, the one original Factory12
+diagnostic **FAIL**, exit 2. The actual Windows owned suites are separately
+**PASS 28/59/33** with full18 artifact preflight. Builder type `02000015`,
+constructor `06000026`, and Build `0600002E` returned; Build produced a non-null
+container and reached `EMPTY_CONTAINER_READY` in a genuine context. This did not
+qualify that context or the Factory.
+
+The attempt's 25,544-byte System.ValueTuple pin has SHA-256
+`62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a`; its exact
+identity/path, GAC=true, ReflectionOnly=false, held pin and audit allowed=true
+apply to this attempt only. They do not establish Factory11's historical origin
+or facade proof. Factory token `0600012E` began invocation. Resolution of
+`Autofac.resources, Version=8.2.0.0, Culture=en-GB,
+PublicKeyToken=17863af14b0044da` was denied with
+`PROJECT_DEPENDENCY_NOT_ALLOWLISTED`. The exception chain ends in
+`PROJECT_DEPENDENCY_BLOCKER`; Factory returned=false and provider denials=0.
+Constructor body entry and lower-level causal root are not established. Managed
+disposal returned once; post-disposal audit recorded scope=false and zero denied
+requests. No standalone PROJECT_RESULT marker was recorded; launcher/done/cleanup confirm exit 2. Resource fallback is not established; no dependency expansion or retry occurred.
+
+Private `task009-constructor-windows/factory12-observation.json` (6,778 bytes,
+SHA-256 `51d900d625656f43b916537e1cb09ad98e7f616a893ee5d7abaccc75e6fc9fb8`)
+binds the raw 13,894-byte `factory12.log` (SHA-256
+`3578aad25d55133b7f42b0c0b1a9e104f05836762636e4f666fa9f942261a2d0`). The
+independent `verifier12/factory-result-audit.txt` (4,650 bytes, SHA-256
+`2e410a662214877188040ad631efce9d0e8f6a10665ef515ef41c38ced216edb`) is
+**PASS** for provenance/result consistency; the underlying diagnostic remains
+**FAIL**. The audit checked 25 bound files and did not rerun Windows or read SDK
+binaries. Recorded coordinator commands:
+
+```text
+python3 private/evidence/task009-constructor-windows/prepare_factory12.py
+python3 private/evidence/task009-constructor-windows/run_factory12.py
+python3 private/evidence/task009-constructor-windows/collect_factory12.py
+python3 private/evidence/task009-constructor-windows/cleanup_factory12.py
+```
+
+Context was interactive session 2, non-administrator; child limit 15 seconds,
+capture limit 65,536 bytes. Cleanup recorded expected/last exit 2, task removed,
+zero owned processes and scratch files. Network and descendants were not
+contained. Factory body entry, Project/Id/UndoManager calls, DCA initialization,
+UI/state and hardware operations remain **NOT ESTABLISHED/NOT RUN**. Task-009
+remains **Blocked**, acceptance criteria unchecked; no gate advances. Critical documentation review PASS for this appended result; the diagnostic remains FAIL exit 2.

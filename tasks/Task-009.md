@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; latest original Factory11 empty-container diagnostic FAIL2 after ValueTuple audit rejection/post-Build dependency guard; no qualified context/Factory/Project/service |
-| Source commit(s) | Latest original Factory11 reviewed source `49d4c155bf13d5ca92cdaf9f4650a8dc6cfd81c8`; source12 freeze against reviewed result baseline `8434aec9c4e78eb4aeec64d5638c4d6ee0f98ca7`; no future source commit asserted |
-| Tests executed | Windows12 owned PASS28/59/33 with full18 artifact preflight; modeled builder guards/disposal regression/pure ValueTuple predicates PASS, original12 NOT RUN. Windows11 owned PASS27/58/32 remains historical. Exactly one original11 FAIL2, builder/Build returned then guard rejected, Factory constructor NOT ATTEMPTED. Historical source10 owned PASS27/58/32 and critical source review FAIL retained; prior originalFactory09 FAIL10/Factory08 FAIL2 and UndoManager declaration PASS preserved. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
+| Implementation / report status | Blocked; latest original Factory12 empty-container diagnostic FAIL2 at the allowlisted Factory constructor's resource dependency; no qualified Factory/Project/service |
+| Source commit(s) | Original Factory12 diagnostic source `f29d3c2d571a34bcae360c8a028ca2abbc37d180`; prior reviewed source/result history remains recorded below |
+| Tests executed | Actual Windows12 owned suites PASS28/59/33 and full18 artifact preflight. Exactly one original12 diagnostic FAIL2; genuine empty context reached, Factory constructor invocation attempted but did not return after `Autofac.resources` was denied. Independent provenance/result audit PASS. Earlier Windows11 owned PASS27/58/32 and original11 FAIL2 remain historical. Explicit Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN |
+| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-constructor-windows/factory12-observation.json`, `factory12.log`, and `verifier12/factory-result-audit.txt`; earlier dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Builder02000015/ctor06000026 returned; disallowed ValueTuple4 loaded with location/hash/origin UNKNOWN. Build0600002E then returned nonnull before EMPTY_CONTAINER_BUILD_DEPENDENCY; disposal once/audit scopeFalse requests0; no READY/Factory BEGIN. After-load detection not prevention/CLR or ABI proof; no qualification |
+| Technical outcome | Builder02000015/ctor06000026 and Build0600002E returned; genuine empty context reached. Factory0600012E invocation did not return after `Autofac.resources` resolution was denied. Constructor body entry and lower-level causal root are not established; context/Factory/service qualification absent |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source12 source/owned independent audits and critical source/owned review PASS; original12 remains NOT RUN. Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; the diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
+| Reviewer | Source12 source/owned independent audits and critical source/owned review PASS; original12 provenance/result audit and critical result documentation review PASS (the diagnostic itself FAIL exit 2). Source11 source/owned critical review PASS; actualFactory11 provenance audit and critical actual-result documentation review PASS; its diagnostic remains FAIL exit 2. Source10 review FAIL remains historical; no service/task acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1573,3 +1573,52 @@ and historical original-NOT_RUN records remain separate. Harness Project/Id/
 UndoManager/DCA/UI/state/hardware operations NOT RUN; constructor internals
 UNKNOWN, network/descendants NOT_CONTAINED. Task-009 Blocked/ACs unchecked,
 no Factory/service/Project/gate qualification. Source/pins unchanged; scope/diff PASS.
+
+## Project12 actual Factory diagnostic
+
+At source `f29d3c2d571a34bcae360c8a028ca2abbc37d180`, the single original
+Factory12 diagnostic **FAIL**, exit 2. Owned Windows verification remains
+**PASS 28/59/33** with all 18 artifacts preflighted. The Builder type
+`02000015`, constructor `06000026`, and Build `0600002E` returned; Build produced
+a non-null container and the log reached `EMPTY_CONTAINER_READY` in a genuine
+context. The ValueTuple pin was the exact 25,544-byte Windows GAC file, SHA-256
+`62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a`, with
+held-pin, exact identity/path, GAC and non-reflection facts allowed for this
+attempt only. It does not establish Factory11's historical assembly origin or
+facade proof.
+
+Factory token `0600012E` logged `FACTORY_CONSTRUCTOR_BEGIN`; resolution of
+`Autofac.resources, Version=8.2.0.0, Culture=en-GB,
+PublicKeyToken=17863af14b0044da` was denied as
+`PROJECT_DEPENDENCY_NOT_ALLOWLISTED`. The exception chain ends in
+`PROJECT_DEPENDENCY_BLOCKER`; constructor end says returned=False, provider
+denials=0. The evidence does not establish constructor body entry or the
+lower-level causal root. Disposal returned once; the post-disposal audit found
+scope=false and zero denied requests. No standalone Project result was emitted.
+No resource fallback, dependency expansion or retry is evidenced or authorized.
+
+Private `factory12-observation.json` (6,778 bytes, SHA-256
+`51d900d625656f43b916537e1cb09ad98e7f616a893ee5d7abaccc75e6fc9fb8`) binds
+the 13,894-byte raw `factory12.log` (SHA-256
+`3578aad25d55133b7f42b0c0b1a9e104f05836762636e4f666fa9f942261a2d0`). The
+independent `verifier12/factory-result-audit.txt` (4,650 bytes, SHA-256
+`2e410a662214877188040ad631efce9d0e8f6a10665ef515ef41c38ced216edb`) is
+**PASS** for provenance and bounded-result consistency; it confirms the
+diagnostic remains **FAIL**, not a qualification result. The observation binds
+25 files. Its audit did not rerun Windows or read SDK binaries. The four recorded
+coordinator commands were:
+
+```text
+python3 private/evidence/task009-constructor-windows/prepare_factory12.py
+python3 private/evidence/task009-constructor-windows/run_factory12.py
+python3 private/evidence/task009-constructor-windows/collect_factory12.py
+python3 private/evidence/task009-constructor-windows/cleanup_factory12.py
+```
+
+The bounded context was interactive session 2, non-administrator; child limit
+15 seconds and capture limit 65,536 bytes. Cleanup recorded expected/last exit 2,
+task removed, zero owned processes and zero scratch files. Network and descendant
+processes were not contained. Factory body entry, Project/Id/UndoManager calls,
+DCA initialization/UI/state and hardware operations are **NOT RUN** or
+**NOT ESTABLISHED** as applicable. Task-009 remains **Blocked**, acceptance
+criteria unchecked, and no phase gate advances. Critical documentation review PASS for this appended result; the diagnostic remains FAIL exit 2.
