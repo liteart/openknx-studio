@@ -1,5 +1,119 @@
 # Static Project context qualification
 
+## Source18 genuine trace registration / Factory constructor contract
+
+Baseline `ccd5ce7d07623e6232b3738a6050e9e49ecd3cd5`; actual17 ctor/default1/Dispose
+PASS0 is a prerequisite diagnostic, not encryption/service qualification. New explicit
+`original-factory-registered-trace` / `owned-factory-registered-trace` modes reuse the same
+19 private pins, two OS pins, container config,18 artifacts and15s/64KiB limited STA bounds. No new
+dependency, redirect or general service container. Task In progress/ACs unchecked/no gate: actual17 PASS0 and verified API evidence
+make this source increment ready; remaining behavior is unqualified implementation work.
+
+Immutable Autofac8.2 commit `07cac9047f4059de2d72834042c9649cbd228085` public API
+source-observation SHA `2f9fcfa159a07367b3e7414ded3470416729bbcbd02ffa0fd21ad9cf9fb9124f`
+and coordinator audit SHA `594caf702ddadab66228ca042bff13d1d999709d631f5cf15f5d35111ac67021`
+bind public RegisterInstance<TContract> default TypedService(TContract) and public
+closed IRegistrationBuilder.ExternallyOwned(). Invoke public interface MethodInfo,
+not internal implementation member. Validate exact public shapes/held owners/closed
+return types before effects; actual tokens unknown until logged, no source-only ABI claim.
+
+Genuine trace(default1) outer lifetime encloses one exact-interface instance registration,
+ExternallyOwned BEFORE Build(None), one existing public Factory ctor with Kim deny-all,
+and inner container Dispose. Outer trace Dispose once then final dependency/provider
+audit after BOTH lifetimes, including caught cleanup denials. Old standalone trace
+reports explicit-other-sdk-calls=0 only without a callback. No harness Resolve/crypto/
+Factory method/Project/Id/UndoManager/DCA/UI/state/bus/hardware calls. Vendor internals,
+including crypto/disposal/retention, UNKNOWN and unintercepted; network/descendants
+NOT_CONTAINED, hardkill cleanup/final audit NOT_ESTABLISHED. Return stays NOT_QUALIFIED.
+Exact two resource cultures/thread phase/eight probes extend only this original Factory
+mode; no assembly supplied by handler, CLR probing/use before post-load audit possible.
+
+Owned public-interface/internal-implementation shapes test exact-T mapping, external
+ownership/order/failure paths and denial caught during outer trace Dispose. No signed
+SDK impersonation. Source/local/owned Windows verification, critical review and commit
+precede one separately frozen original plan. Original18 registration/Factory NOT_RUN.
+
+### Source18 local source freeze
+
+Source-freeze-18.json3,507B SHA
+`15106f307b4ed07bea3208bd444a9d5553aa483d82bf5faecd6d2032cc143023`
+binds all10 sources/current baseline, SAME19pins/config hashes/18 artifacts and primary
+API/default evidence. Four runtime sources changed; six others, all13 pin/policy arrays
+and every pre-existing owned fixture byte unchanged. Preservation compares54 unchanged
+old method bodies;11 finite method families intentionally extend profile/dispatch/shared
+lifetime behavior. Shared standalone log strings remain accurate only on standalone use.
+
+Local **C#5/x64/Werror/six-pinned-net48-reference compilation PASS** for probe, launcher,
+fixture library; PS driver/build parse/all9 source guards/scope/diff PASS. Fresh helper
+`private/evidence/task009-constructor-windows/source18/local-sourcecheck.ps1`,3,923B
+SHA `2b5027fdd0588153e055b871b15fc454cf0947006625b6e0fe24e28956d49024`;
+that directory retains exact command/arguments/stdout/stderr/result JSON and preservation
+result1,098B SHA `187f4971a0a399415d714c6dec891fdb5cea73e7d878120dd757f18acb59aa4f`.
+No local compilation/guard failure. Windows18 owned/original NOT_RUN at SOURCE_FREEZE;
+written owned cases are not executed SDK evidence. Independent verification/critical
+source+owned review pending at this checkpoint; later bound records may close review,
+not Task acceptance. Current Task In progress; actual17 limited ctor/Dispose PASS0 is
+latest runtime, earlier original13 Factory FAIL10 remains unresolved Factory evidence.
+
+Public source declarations: [RegisterInstance8.2](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/RegistrationExtensions.cs#L45-L80),
+[public registration-builder ownership method](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/Builder/IRegistrationBuilder.cs#L43-L47).
+Original notices/source bytes stay private; no new SDK binary read/runtime by writer.
+
+### Source18 Windows owned results
+
+Windows build18 passed with the pinned .NET compiler 4.8.9221.0, eight compiled sources
+and the same 18 artifacts/configuration bytes. All three runners checked every artifact's
+size/hash and the frozen test driver before execution. Owned suites passed **37 Session0,
+74 limited interactive and 42 administrator-negative cases**. Both interactive contexts
+were Session 2 with the expected roles; done and cleanup results were 0. Tasks were removed,
+with zero owned processes/no junction and 185 limited/89 admin case files retained.
+Raw interactive UTF16 streams and strict UTF8 derivatives/encoding manifests are retained.
+Session0 stderr contains CLIXML progress; it is not empty.
+
+The owned registered-trace case passed nine API negatives before effects and 13 lifetime
+scenarios (13 constructor/12 explicit Dispose attempts). It checked exact-T mapping on a
+public interface/internal implementation, external ownership before Build, the same live
+instance and container-before-trace disposal. Registration/Build/Factory/disposal failures
+and provider denial caught during outer trace Dispose still failed as expected. These
+are independently owned fixtures; genuine Autofac registration/SDK behavior remain NOT_RUN.
+The standalone trace and legacy cases passed separately; no source/pin/config changes.
+
+Private evidence under `task009-constructor-windows`:
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| owned18-observation.json (339-file manifest) | 64786 | `8ac65990ced82d53a5c9e82e73f34d372d6ecd417a3e1b5b6e88ddeccbfffbec` |
+| canonical build18-report.json | 6814 | `121584af42f4a6da2e03e9f16ed27ebaf242977910b00f1a219860bf26d88d85` |
+| verifier18/source-audit.txt (PASS) | 4654 | `a42b385dbd6c300ad3980049e3d797e75f55b6a7b59111a3176c94640b261086` |
+| verifier18/owned-result-audit.txt (PASS) | 6080 | `de3a6ed8e3249a0aebf12853fba1a4d2a2a4719cc0d0918fda03257ff2b4d0ee` |
+
+The source verifier initially mapped the evidence root as the source root and reported
+missing paths; correcting its mapping to the worktree made all 10 hashes pass. No source
+was missing or changed. This was an audit setup issue, not a build/test-suite failure.
+No source18 coordinator helper or Windows preparation/runtime failure was observed.
+The owned-results auditor corrected two preliminary snippet errors (boolean passed to
+all(), then marker case mismatch); its final 21 assertions and 339 file bindings passed.
+These were verifier-script issues, not Windows suite failures or reruns.
+
+The coordinator execution record confirms each command once, without arguments, from
+repository root. The audit checks saved artifacts, not shell history or target binaries:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/build_owned18.py
+python3 -B private/evidence/task009-constructor-windows/run_session0_18.py
+python3 -B private/evidence/task009-constructor-windows/run_owned18.py
+python3 -B private/evidence/task009-constructor-windows/collect_owned18.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_owned18.py
+python3 -B private/evidence/task009-constructor-windows/run_owned_admin18.py
+python3 -B private/evidence/task009-constructor-windows/collect_owned_admin18.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_owned_admin18.py
+python3 -B private/evidence/task009-constructor-windows/record_owned18.py
+```
+
+Original18 remains NOT_RUN; prepared original helpers are not an executed plan. Independent critical source/owned-evidence review PASS (private review18/critical-review-source.txt), for the frozen source18 diff and OWNED18 provenance only; Original18 NOT_RUN, qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate. Historical source-freeze checkpoints retained. Current Task In progress, ACs unchecked, no gate or service/Factory qualification.
+Actual17 constructor/disposal PASS0 remains the latest original runtime. Network and
+descendants are NOT_CONTAINED; hard termination cannot establish disposal or final audit.
+
 ## Source17 genuine trace-constructor lifetime diagnostic contract
 
 Baseline `17111eee478a9b1d4addd1f5bb4cb4004a06ecec`; actual16 reviewed static metadata

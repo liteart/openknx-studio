@@ -107,7 +107,7 @@ $factoryPlatform=$factoryBody.IndexOf('PinPlatformFacade();',[StringComparison]:
 $factoryIdentity=$factoryBody.IndexOf('AssemblyName.GetAssemblyName(',[StringComparison]::Ordinal)
 $factoryReady=$factoryBody.IndexOf('factoryInputsReady = true;',[StringComparison]::Ordinal)
 if($factoryCount -lt 0 -or $factoryPrefix -le $factoryCount -or $factoryExtra -le $factoryPrefix -or $factoryPlatform -le $factoryExtra -or $factoryIdentity -le $factoryPlatform -or $factoryReady -le $factoryIdentity -or $factoryBody.Contains('LoadFrom(')){Fail 'FACTORY_PIN_ORDER'}
-foreach($guard in @('FactoryExtraSizes = { 374784, 282064 }','747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12','1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a','Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da','Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159','(selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor") || !complete || reflectionOnly','if (FactoryOriginal && factoryInputsReady)','type == 0x02000023 && ctor == 0x0600012e','(int)type.Attributes == 1048577','parameter.IsPublic && parameter.IsInterface && !parameter.IsGenericType')){if(-not $projectSource.Contains($guard)){Fail 'FACTORY_FIXED_PROFILE_SOURCE'}}
+foreach($guard in @('FactoryExtraSizes = { 374784, 282064 }','747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12','1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a','Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da','Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159','(selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace") || !complete || reflectionOnly','if (FactoryOriginal && factoryInputsReady)','type == 0x02000023 && ctor == 0x0600012e','(int)type.Attributes == 1048577','parameter.IsPublic && parameter.IsInterface && !parameter.IsGenericType')){if(-not $projectSource.Contains($guard)){Fail 'FACTORY_FIXED_PROFILE_SOURCE'}}
 if([regex]::Matches($projectSource,'factoryInputsReady\s*=').Count -ne 1){Fail 'FACTORY_PIN_BOUNDARY'}
 Write-Output 'OWNED_CASE PASS factory-source-guards fixed14=true hashes-before-platform-and-identities=true extra-reference-admission=new-mode-only constructor-only=true'
 $mainStart=$projectSource.IndexOf('internal static int Main(',[StringComparison]::Ordinal)
@@ -129,7 +129,7 @@ if($lifetimeAudit.IndexOf('finally {') -le $lifetimeAudit.IndexOf('WithEmptyCont
 Write-Output 'OWNED_CASE PASS empty-container-source-guards fixed19=true hashes-before-platform-identities=true shape-before-builder=true no-application-registrations=true dispose-finally=true provider-denial-fails=true'
 $valuePin=$projectSource.Substring($projectSource.IndexOf('static void PinValueTupleReference()'),$projectSource.IndexOf('// Private finite predicate only.')-$projectSource.IndexOf('static void PinValueTupleReference()'))
 if($containerPins.IndexOf('PinValueTupleReference();') -le $containerLastHash -or $containerPins.IndexOf('PinValueTupleReference();') -ge $containerPins.IndexOf('PinPlatformFacade();') -or $valuePin.IndexOf('ProbeFiles.Hash(stream)') -ge $valuePin.IndexOf('AssemblyName.GetAssemblyName') -or $valuePin.IndexOf('valueTuplePinned = true;') -le $valuePin.IndexOf('AssemblyName.GetAssemblyName')){Fail 'VALUETUPLE_PIN_ORDER'}
-foreach($guard in @('stream.Length == 25544','62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a','(selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly','allowed = selected;','VALUETUPLE_REFERENCE_AUDIT','CheckBuilderDependencies(unexpected, rejected);','ownedBuilderGuard == null || mode == "owned-factory-empty-container"')){if(-not $projectSource.Contains($guard)){Fail 'SOURCE12_FIXED_SCOPE'}}
+foreach($guard in @('stream.Length == 25544','62216986c754ad8f0ee68412c42cfc3fc6e025bd908ae1fef1a3a8d528b1495a','(selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly','allowed = selected;','VALUETUPLE_REFERENCE_AUDIT','CheckBuilderDependencies(unexpected, rejected);','ownedBuilderGuard == null || mode == "owned-factory-empty-container"')){if(-not $projectSource.Contains($guard)){Fail 'SOURCE12_FIXED_SCOPE'}}
 $builderCore=$projectSource.Substring($projectSource.IndexOf('static void WithEmptyContainerCore('),$projectSource.IndexOf('static void InvokeFactoryWithContainer(')-$projectSource.IndexOf('static void WithEmptyContainerCore('))
 if($builderCore.IndexOf('CheckBuilderDependencies(unexpected, rejected);') -le $builderCore.IndexOf('EMPTY_CONTAINER_EXACT_BUILDER') -or $builderCore.IndexOf('CheckBuilderDependencies(unexpected, rejected);') -ge $builderCore.IndexOf('EMPTY_CONTAINER_BUILD_BEGIN') -or -not $builderCore.Contains('EMPTY_CONTAINER_BUILD_DEPENDENCY')){Fail 'PREBUILD_DEPENDENCY_GUARD'}
 if([regex]::Matches($projectSource,'valueTuplePinned\s*=').Count -ne 1){Fail 'VALUETUPLE_COMPLETE_BOUNDARY'}
@@ -153,6 +153,13 @@ $traceOriginal=$projectSource.Substring($projectSource.IndexOf('static void Orig
 if($traceOriginal -match 'Register|Resolve\(|OriginalFactory\(|OriginalProject\(|EmptyApi\(|WithFactory|GetCustomAttributes|BindingFlags.NonPublic' -or $traceCore -match '(unexpected|rejected)\s*=' -or -not $traceOriginal.Contains('TraceOriginal && containerInputsReady')){Fail 'TRACE_ORIGINAL_SCOPE'}
 Write-Output 'OWNED_CASE PASS source17-source-guards exact-original-default=true public-reflection-only=true one-ctor-dispose=true shared-phase-audit=true'
 
+foreach($guard in @('original-factory-registered-trace','owned-factory-registered-trace','static TraceRegistrationApi RegistrationApi(','generic[0].GenericParameterAttributes == GenericParameterAttributes.ReferenceTypeConstraint','new object[] { builder, trace }','external.DeclaringType == closed','api.External.Invoke(registration, new object[0])','Object.ReferenceEquals(registration, external)','TRACE_REGISTER_END external-ownership=True','REGISTERED_TRACE_FINAL_AUDIT after-container-and-trace-disposal=True','if (use == null) Record("TRACE_CONSTRUCTOR_DISPOSE_RETURNED_NOT_QUALIFIED explicit-other-sdk-calls=0','if (register != null) { register(builder); CheckBuilderDependencies(unexpected, rejected); }')){if(-not $projectSource.Contains($guard)){Fail 'REGISTERED_TRACE_FIXED_SOURCE'}}
+$registeredCore=$projectSource.Substring($projectSource.IndexOf('static void WithRegisteredTrace('),$projectSource.IndexOf('static void OriginalRegisteredTrace()')-$projectSource.IndexOf('static void WithRegisteredTrace('))
+if($registeredCore.IndexOf('WithTraceLifetimeCore(') -ge $registeredCore.IndexOf('WithEmptyContainerCore(') -or $registeredCore.IndexOf('int denied = provider.Requests;') -le $registeredCore.IndexOf('finally {') -or $registeredCore -match '(unexpected|rejected)\s*=|BindingFlags.NonPublic'){Fail 'REGISTERED_TRACE_COMPLETE_LIFETIME'}
+$registeredOriginal=$projectSource.Substring($projectSource.IndexOf('static void OriginalRegisteredTrace()'),$projectSource.IndexOf('static void OwnedRegisteredTrace()')-$projectSource.IndexOf('static void OriginalRegisteredTrace()'))
+if($registeredOriginal.IndexOf('RegistrationApi(') -ge $registeredOriginal.IndexOf('WithRegisteredTrace(') -or $registeredOriginal -match 'Resolve\(|GetCustomAttributes|BindingFlags.NonPublic|Encrypt\(|Decrypt\(|IsEncrypted\('){Fail 'REGISTERED_TRACE_ORIGINAL_SCOPE'}
+Write-Output 'OWNED_CASE PASS source18-source-guards exact-T-interface=true public-interface-ownership=true shape-before-effects=true two-lifetime-final-audit=true original=NOT_RUN'
+
 $invalidLog='\\owned-invalid\share\never.log'
 Run 'unc-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log',$invalidLog) 127 'LOCAL_PATH_REQUIRED'
 Run 'drive-relative-log' $launcher @('--seconds','1','--mode','owned-Success','--input',$fixtures,'--log','C:owned-never.log') 127 'LOCAL_PATH_REQUIRED'
@@ -160,6 +167,7 @@ Run 'excessive-deadline' $launcher @('--seconds','31','--mode','owned-Success','
 Run 'fixture-excessive-deadline' $launcher @('--seconds','16','--mode','owned-project-store-id','--input',$fixtures,'--log',(Join-Path $output 'fixture-never.log')) 127 'PROJECT_FIXTURE_DEADLINE'
 Run 'factory-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory','--input',$fixtures,'--log',(Join-Path $output 'factory-never.log')) 127 'FACTORY_DIAGNOSTIC_DEADLINE'
 Run 'binding-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory-bcl9','--input',$fixtures,'--log',(Join-Path $output 'binding-never.log')) 127 'FACTORY_BINDING_DEADLINE'
+Run 'registered-trace-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory-registered-trace','--input',$fixtures,'--log',(Join-Path $output 'registered-trace-never.log')) 127 'FACTORY_CONTAINER_DEADLINE'
 Run 'trace-excessive-deadline' $launcher @('--seconds','16','--mode','owned-trace-encryptor','--input',$fixtures,'--log',(Join-Path $output 'trace-never.log')) 127 'FACTORY_CONTAINER_DEADLINE'
 Run 'empty-excessive-deadline' $launcher @('--seconds','16','--mode','owned-factory-empty-container','--input',$fixtures,'--log',(Join-Path $output 'empty-never.log')) 127 'FACTORY_CONTAINER_DEADLINE'
 $existing=Join-Path $output 'existing.log';[IO.File]::WriteAllText($existing,'owned-preserved',$utf8)
@@ -180,6 +188,8 @@ if(-not $interactive){
  Case 'session0-original-factory-binding' 'original-factory-bcl9' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-empty-container' 'owned-factory-empty-container' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-original-empty-container' 'original-factory-empty-container' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-registered-trace' 'owned-factory-registered-trace' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
+ Case 'session0-original-registered-trace' 'original-factory-registered-trace' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-trace' 'owned-trace-encryptor' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
  Case 'session0-original-trace' 'original-trace-encryptor' 4 'child-exit-confirmed=true' 'INTERACTIVE_SESSION_REQUIRED'
 }else{
@@ -197,6 +207,8 @@ if(-not $interactive){
   Case 'original-factory-binding-admin' 'original-factory-bcl9' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'empty-container-admin' 'owned-factory-empty-container' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'original-empty-container-admin' 'original-factory-empty-container' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'registered-trace-admin' 'owned-factory-registered-trace' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
+  Case 'original-registered-trace-admin' 'original-factory-registered-trace' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'trace-admin' 'owned-trace-encryptor' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
   Case 'original-trace-admin' 'original-trace-encryptor' 5 'child-exit-confirmed=true' 'PROJECT_NONADMIN_REQUIRED'
  }else{
@@ -220,7 +232,11 @@ if(-not $interactive){
   Case 'factory-binding-policy' 'owned-factory-bcl9' 0 'child-exit-confirmed=true' 'FACTORY_BINDING_POLICY_PASS exact8-to9=true'
   $bindingLog=[IO.File]::ReadAllText((Join-Path $output 'factory-binding-policy.log'))
   if(-not $bindingLog.Contains('CONTAINER_BINDING_POLICY_PASS enabled=False exact4=true') -or -not $bindingLog.Contains('OWNED_FACTORY_CONSTRUCTOR_PASS') -or $bindingLog.Contains('FACTORY_BINDING_ASSEMBLY') -or $bindingLog.Contains('FACTORY_BINDING_RESOLVE ') -or $bindingLog.Contains('PROJECT_SERVICE_FIXTURE')){Fail 'BINDING_OWNED_TARGET_LOAD_OR_RESULT'}
-  Case 'trace-lifetime' 'owned-trace-encryptor' 0 'child-exit-confirmed=true' 'OWNED_TRACE_LIFETIME_PASS'
+  Case 'registered-trace-lifetime' 'owned-factory-registered-trace' 0 'child-exit-confirmed=true' 'OWNED_REGISTERED_TRACE_PASS'
+  $registeredLog=[IO.File]::ReadAllText((Join-Path $output 'registered-trace-lifetime.log'))
+  foreach($marker in @('OWNED_REGISTERED_TRACE_API_PASS negatives=9 before-effects=True public-interface-internal-implementation=True exact-T-default-mapping=True','TRACE_REGISTER_END external-ownership=True','application-registrations=1','REGISTERED_TRACE_FINAL_AUDIT after-container-and-trace-disposal=True scope-returned=False provider-denied=1','behavior=trace-denial-caught expected-failure=True explicit-trace-dispose=1 container-dispose=1 provider-denied=1','REGISTERED_TRACE_LIFETIME_RETURNED_NOT_QUALIFIED')){if(-not $registeredLog.Contains($marker)){Fail 'REGISTERED_TRACE_OWNED_REGRESSION'}}
+  if([regex]::Matches($registeredLog,'TRACE_CONSTRUCTOR_BEGIN').Count -ne 13 -or [regex]::Matches($registeredLog,'TRACE_DISPOSE_BEGIN').Count -ne 12 -or [regex]::Matches($registeredLog,'OWNED_REGISTERED_TRACE_CASE').Count -ne 13 -or $registeredLog -match 'explicit-other-sdk-calls=0|TRACE_PHASE original-type|PROJECT_CONSTRUCTOR_BEGIN|PROJECT_ID_CONSTRUCTOR_BEGIN|PROJECT_SERVICE_FIXTURE'){Fail 'REGISTERED_TRACE_OWNED_SCOPE'}
+  Case 'trace-lifetime'  'owned-trace-encryptor' 0 'child-exit-confirmed=true' 'OWNED_TRACE_LIFETIME_PASS'
   $traceLog=[IO.File]::ReadAllText((Join-Path $output 'trace-lifetime.log'))
   foreach($marker in @('OWNED_TRACE_REFERENCE_POLICY_PASS','OWNED_TRACE_CONTRACT_PASS negatives=10 token-negatives=4 trap-attributes=0','TRACE_CONSTRUCTOR_END returned=True','TRACE_CONSTRUCTOR_END returned=False','TRACE_DISPOSE_END returned=False attempts=1','TRACE_LIFETIME_AUDIT passed=False','phase-guards=6 caught-guards=2','TRACE_CONSTRUCTOR_DISPOSE_RETURNED_NOT_QUALIFIED')){if(-not $traceLog.Contains($marker)){Fail 'TRACE_OWNED_REGRESSION'}}
   if([regex]::Matches($traceLog,'TRACE_CONSTRUCTOR_BEGIN').Count -ne 9 -or [regex]::Matches($traceLog,'TRACE_DISPOSE_BEGIN').Count -ne 8 -or $traceLog -match 'FACTORY_CONSTRUCTOR_BEGIN|EMPTY_CONTAINER_BUILDER_BEGIN|PROJECT_CONSTRUCTOR_BEGIN|PROJECT_ID_CONSTRUCTOR_BEGIN|PROJECT_SERVICE_FIXTURE|TRACE_PHASE original-type'){Fail 'TRACE_OWNED_SCOPE_ONCE'}
@@ -239,7 +255,9 @@ if(-not $interactive){
   if([IO.File]::ReadAllText($containerConfig) -cne ([IO.File]::ReadAllText($aliasConfig)).Replace('</assemblyBinding>',$containerRedirect+'</assemblyBinding>')){Fail 'CONTAINER_EXACT_CONFIG'}
   $oldProbe=Local (Join-Path $build 'bin\ProjectConstructorProbe.exe');$aliasProbe=Local (Join-Path $build 'bin\ProjectFactoryBindingProbe.exe')
   Run 'binding-newmode-old-exe' $oldProbe @('--mode','owned-factory-bcl9','--input',$fixtures,'--log',(Join-Path $output 'binding-newmode-old-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
-  Run 'trace-newmode-old-exe' $oldProbe @('--mode','owned-trace-encryptor','--input',$fixtures,'--log',(Join-Path $output 'trace-old-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  Run 'registered-trace-old-exe' $oldProbe @('--mode','owned-factory-registered-trace','--input',$fixtures,'--log',(Join-Path $output 'registered-trace-old-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  Run 'registered-trace-binding-exe' $aliasProbe @('--mode','owned-factory-registered-trace','--input',$fixtures,'--log',(Join-Path $output 'registered-trace-binding-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
+  Run 'trace-newmode-old-exe'  $oldProbe @('--mode','owned-trace-encryptor','--input',$fixtures,'--log',(Join-Path $output 'trace-old-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
   Run 'trace-newmode-binding-exe' $aliasProbe @('--mode','owned-trace-encryptor','--input',$fixtures,'--log',(Join-Path $output 'trace-binding-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
   Run 'empty-newmode-old-exe' $oldProbe @('--mode','owned-factory-empty-container','--input',$fixtures,'--log',(Join-Path $output 'empty-newmode-old-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
   Run 'empty-newmode-binding-exe' $aliasProbe @('--mode','owned-factory-empty-container','--input',$fixtures,'--log',(Join-Path $output 'empty-newmode-binding-exe.log')) 2 'EXACT_CONFIG_REQUIRED' 'EXACT_CONFIG_REQUIRED'
@@ -289,11 +307,13 @@ if(-not $interactive){
   $containerBad=Join-Path $output 'container-nineteen-bad-hash';$null=New-Item -ItemType Directory $containerBad
   $containerNames=@('System.Diagnostics.DiagnosticSource.dll','System.Memory.dll','System.Runtime.CompilerServices.Unsafe.dll','System.Buffers.dll','System.Numerics.Vectors.dll')
   foreach($name in $projectNames+@('Autofac.dll','Knx.Kim.DataProvider.dll')+$containerNames[0..3]){Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $containerBad $name)}
+  Case 'registered-trace-missing-nineteen' 'original-factory-registered-trace' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $containerBad
   Case 'trace-missing-nineteen' 'original-trace-encryptor' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $containerBad
   Case 'empty-missing-nineteen' 'original-factory-empty-container' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $containerBad
   Copy-Item -LiteralPath (Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll') -Destination (Join-Path $containerBad $containerNames[4])
+  Case 'registered-trace-nineteen-wrong-hash' 'original-factory-registered-trace' 2 'INPUT_HASH' 'INPUT_HASH' $containerBad
   Case 'trace-nineteen-wrong-hash' 'original-trace-encryptor' 2 'INPUT_HASH' 'INPUT_HASH' $containerBad
-  foreach($name in @('trace-missing-nineteen','trace-nineteen-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked -match ' PIN |PLATFORM_FACADE_PIN|VALUETUPLE_REFERENCE_PIN|TRACE_PHASE original-type|TRACE_CONSTRUCTOR_BEGIN|PROJECT_ASSEMBLY '){Fail 'TRACE_INPUT_NEGATIVE_LOADED'}}
+  foreach($name in @('registered-trace-missing-nineteen','registered-trace-nineteen-wrong-hash','trace-missing-nineteen','trace-nineteen-wrong-hash')){$blocked=[IO.File]::ReadAllText((Join-Path $output ($name+'.log')));if($blocked -match ' PIN |PLATFORM_FACADE_PIN|VALUETUPLE_REFERENCE_PIN|TRACE_PHASE original-type|TRACE_CONSTRUCTOR_BEGIN|PROJECT_ASSEMBLY '){Fail 'TRACE_INPUT_NEGATIVE_LOADED'}}
   Case 'empty-nineteen-wrong-hash' 'original-factory-empty-container' 2 'INPUT_HASH' 'INPUT_HASH' $containerBad
   Case 'factory-reject-container-extras' 'original-factory' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $containerBad
   Case 'binding-reject-container-extras' 'original-factory-bcl9' 2 'PROJECT_EXACT_INPUTS' 'PROJECT_EXACT_INPUTS' $containerBad

@@ -146,13 +146,16 @@ internal static class ProjectConstructorProbe
     static bool Original { get { return mode == "original-project" || mode == "original-project-store-id"; } }
     static bool OwnedProject { get { return mode == "owned-project" || mode == "owned-project-store-id"; } }
     static bool StoreIdFixture { get { return mode == "original-project-store-id" || mode == "owned-project-store-id"; } }
-    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9" || mode == "original-factory-empty-container" || TraceOriginal; } }
-    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9" || mode == "owned-factory-empty-container" || TraceOwned; } }
+    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9" || mode == "original-factory-empty-container" || TraceOriginal || RegisteredOriginal; } }
+    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9" || mode == "owned-factory-empty-container" || TraceOwned || RegisteredOwned; } }
     static bool FactoryOnly { get { return FactoryOriginal || FactoryOwned; } }
-    static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly; } }
+    static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly || RegisteredTrace; } }
     static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
     static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
-    static bool TraceOnly { get { return TraceOriginal || TraceOwned; } }
+    static bool RegisteredOriginal { get { return mode == "original-factory-registered-trace"; } }
+    static bool RegisteredOwned { get { return mode == "owned-factory-registered-trace"; } }
+    static bool RegisteredTrace { get { return RegisteredOriginal || RegisteredOwned; } }
+    static bool TraceOnly { get { return TraceOriginal || TraceOwned || RegisteredOwned; } }
     static bool FactoryBinding { get { return EmptyContainer || mode == "original-factory-bcl9" || mode == "owned-factory-bcl9"; } }
     static bool FactoryProfileReady { get { return factoryInputsReady || (EmptyContainer && containerInputsReady); } }
     internal static string Text(string value)
@@ -217,7 +220,7 @@ internal static class ProjectConstructorProbe
     }
     static void PinValueTupleReference()
     {
-        ProbeFiles.Require(mode == "original-factory-empty-container" || TraceOriginal, "VALUETUPLE_REFERENCE_MODE");
+        ProbeFiles.Require(mode == "original-factory-empty-container" || TraceOriginal || RegisteredOriginal, "VALUETUPLE_REFERENCE_MODE");
         valueTuplePath = ProbeFiles.Local(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath), true, false);
         var stream = new FileStream(valueTuplePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         Inputs.Add(stream);
@@ -230,7 +233,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -275,7 +278,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -283,7 +286,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -353,7 +356,7 @@ internal static class ProjectConstructorProbe
     // Finite private policy seam. Production facts come from the held profile/actual Assembly/phase.
     static bool AutofacResourcePolicy(string selectedMode, bool complete, bool active, bool ownerPinned, string requested, bool requesterNull, bool requesterMatches, int count)
     {
-        return selectedMode == "original-factory-empty-container" && complete && active && ownerPinned
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-factory-registered-trace") && complete && active && ownerPinned
             && (requested == AutofacResourceEnGb || requested == AutofacResourceEn) && (requesterNull ? !requesterMatches : requesterMatches)
             && count >= 1 && count <= 8;
     }
@@ -370,7 +373,7 @@ internal static class ProjectConstructorProbe
         Assembly owner = resourceOwner, requester = args.RequestingAssembly;
         bool pinned = owner != null && !owner.IsDynamic && AutofacResourceOwnerPolicy(owner.FullName, owner.Location, owner.ReflectionOnly, owner.IsDynamic);
         bool requesterNull = requester == null, matches = pinned && Object.ReferenceEquals(owner, requester);
-        if (mode == "original-factory-empty-container" && containerInputsReady && resourcePhaseActive && pinned)
+        if ((mode == "original-factory-empty-container" || RegisteredOriginal) && containerInputsReady && resourcePhaseActive && pinned)
             resourceProbeCount = NextResourceProbe(resourceProbeCount);
         bool allowed = AutofacResourcePolicy(mode, containerInputsReady, resourcePhaseActive, pinned, args.Name, requesterNull, matches, resourceProbeCount);
         Record("AUTOFAC_RESOURCE_PROBE allowed=" + allowed + " requested=" + Text(args.Name)
@@ -382,7 +385,7 @@ internal static class ProjectConstructorProbe
     }
     static void WithFactoryResourcePhase(Action invoke)
     {
-        ProbeFiles.Require(mode == "original-factory-empty-container" || mode == "owned-factory-empty-container", "AUTOFAC_RESOURCE_PHASE_MODE");
+        ProbeFiles.Require(mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || RegisteredTrace, "AUTOFAC_RESOURCE_PHASE_MODE");
         ProbeFiles.Require(!resourcePhaseActive, "AUTOFAC_RESOURCE_NESTED_PHASE");
         resourceProbeCount = 0; resourcePhaseActive = true;
         try { invoke(); }
@@ -826,7 +829,7 @@ internal static class ProjectConstructorProbe
         }
         Record("OWNED_FACTORY_CONSTRUCTOR_PASS return=true denial=true caught-denial=true all-unqualified=true dependency-proxies-bounded=true original=NOT_RUN");
     }
-    // Reflective shape checks precede every builder side effect. No registrations.
+    // Reflective shape checks precede every builder side effect.
     sealed class EmptyContainerApi
     {
         internal Type Builder, Options, Container, Context;
@@ -868,7 +871,10 @@ internal static class ProjectConstructorProbe
     { WithEmptyContainerCore(api, use, null); }
     // Additional guard control exists only for finite owned fixtures. Actual latches are never bypassed/reset.
     static void WithEmptyContainerCore(EmptyContainerApi api, Action<object> use, Action ownedBuilderGuard)
+    { WithEmptyContainerCore(api, use, ownedBuilderGuard, null); }
+    static void WithEmptyContainerCore(EmptyContainerApi api, Action<object> use, Action ownedBuilderGuard, Action<object> register)
     {
+        ProbeFiles.Require(register == null || RegisteredTrace, "REGISTERED_CONTAINER_MODE");
         ProbeFiles.Require(ownedBuilderGuard == null || mode == "owned-factory-empty-container", "OWNED_BUILDER_GUARD_MODE");
         object container = null, builder = null;
         try {
@@ -879,13 +885,14 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(builder != null && builder.GetType() == api.Builder, "EMPTY_CONTAINER_EXACT_BUILDER");
             CheckBuilderDependencies(unexpected, rejected);
             if (ownedBuilderGuard != null) ownedBuilderGuard();
+            if (register != null) { register(builder); CheckBuilderDependencies(unexpected, rejected); }
             bool built = false;
-            Record("EMPTY_CONTAINER_BUILD_BEGIN token=" + api.Build.MetadataToken.ToString("X8") + " options=None raw=0 application-registrations=0 defaults=RETAINED");
+            Record("EMPTY_CONTAINER_BUILD_BEGIN token=" + api.Build.MetadataToken.ToString("X8") + " options=None raw=0 application-registrations=" + (register == null ? 0 : 1) + " defaults=RETAINED");
             try { container = api.Build.Invoke(builder, new object[] { Enum.ToObject(api.Options, 0) }); built = true; }
             finally { Record("EMPTY_CONTAINER_BUILD_END returned=" + built + " nonnull=" + (container != null)); }
             EmptyContainerReturn(api, container);
             ProbeFiles.Require(!unexpected && !rejected, "EMPTY_CONTAINER_BUILD_DEPENDENCY");
-            Record("EMPTY_CONTAINER_READY genuine-context=true context-requests=NOT_INTERCEPTED application-registrations=0 defaults=RETAINED qualification=NOT_ESTABLISHED");
+            Record("EMPTY_CONTAINER_READY genuine-context=true context-requests=NOT_INTERCEPTED application-registrations=" + (register == null ? 0 : 1) + " defaults=RETAINED qualification=NOT_ESTABLISHED");
             use(container);
         } finally {
             IDisposable disposable = container as IDisposable;
@@ -905,7 +912,7 @@ internal static class ProjectConstructorProbe
     {
         bool returned = false;
         Record("FACTORY_CONSTRUCTOR_BEGIN type=" + ctor.DeclaringType.FullName + " token=" + ctor.MetadataToken.ToString("X8")
-            + " services=genuine-empty-container+deny-all-provider constructor-only=true context-requests=NOT_INTERCEPTED qualification=NOT_ESTABLISHED");
+            + " services=" + (RegisteredTrace ? "genuine-registered-trace-container+deny-all-provider" : "genuine-empty-container+deny-all-provider") + " constructor-only=true context-requests=NOT_INTERCEPTED qualification=NOT_ESTABLISHED");
         try {
             ProbeFiles.Require(!unexpected && !rejected, "FACTORY_PRECONSTRUCTOR_DEPENDENCY");
             object[] arguments = new object[] { context, provider.GetTransparentProxy() };
@@ -1136,8 +1143,11 @@ internal static class ProjectConstructorProbe
     static void WithTraceLifetime(TraceLifetimeApi api) { WithTraceLifetimeCore(api, null); }
     // Finite owned refusal controls cannot reset latches or activate the original route.
     static void WithTraceLifetimeCore(TraceLifetimeApi api, Action<string> ownedGuard)
+    { WithTraceLifetimeCore(api, ownedGuard, null); }
+    static void WithTraceLifetimeCore(TraceLifetimeApi api, Action<string> ownedGuard, Action<object> use)
     {
-        ProbeFiles.Require(ownedGuard == null || TraceOwned, "TRACE_OWNED_GUARD_MODE");
+        ProbeFiles.Require(use == null || RegisteredTrace, "TRACE_CALLBACK_MODE");
+        ProbeFiles.Require(ownedGuard == null || TraceOwned || RegisteredOwned, "TRACE_OWNED_GUARD_MODE");
         Action<string> check = delegate(string phase) { TraceDependencyGuard(unexpected, rejected, phase); if (ownedGuard != null) ownedGuard(phase); };
         object instance = null; bool exact = false;
         try {
@@ -1150,6 +1160,7 @@ internal static class ProjectConstructorProbe
                 ProbeFiles.Require(exact, "TRACE_EXACT_RETURN"); check("POST_CTOR");
             } catch (Exception error) { Errors(error); throw; }
             finally { Record("TRACE_CONSTRUCTOR_END returned=" + returned + " body-entry=" + (returned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
+            if (use != null) use(instance);
         } finally {
             try {
                 if (exact) {
@@ -1167,7 +1178,181 @@ internal static class ProjectConstructorProbe
                 finally { Record("TRACE_LIFETIME_AUDIT passed=" + auditPassed + " after-managed-disposal=true explicit-dispose-attempted=" + exact); GC.KeepAlive(instance); }
             }
         }
-        Record("TRACE_CONSTRUCTOR_DISPOSE_RETURNED_NOT_QUALIFIED explicit-other-sdk-calls=0 network-descendants=NOT_CONTAINED");
+        if (use == null) Record("TRACE_CONSTRUCTOR_DISPOSE_RETURNED_NOT_QUALIFIED explicit-other-sdk-calls=0 network-descendants=NOT_CONTAINED");
+        else Record("REGISTERED_TRACE_LIFETIME_RETURNED_NOT_QUALIFIED vendor-crypto-use=NOT_INTERCEPTED network-descendants=NOT_CONTAINED");
+    }
+    sealed class TraceRegistrationApi
+    {
+        internal MethodInfo Register, External;
+        internal Type Return, Contract;
+    }
+    static TraceRegistrationApi RegistrationApi(EmptyContainerApi container, Type extension, Type open, Type data, Type style, Type contract)
+    {
+        Assembly owner = container.Builder.Assembly;
+        ProbeFiles.Require(extension != null && extension.IsPublic && extension.IsAbstract && extension.IsSealed && !extension.IsGenericType
+            && open != null && open.IsPublic && open.IsInterface && open.IsGenericTypeDefinition && open.GetGenericArguments().Length == 3
+            && data != null && data.IsPublic && !data.ContainsGenericParameters && style != null && style.IsPublic && !style.ContainsGenericParameters
+            && extension.Assembly == owner && open.Assembly == owner && data.Assembly == owner && style.Assembly == owner && !owner.ReflectionOnly
+            && PublicInterface(contract), "TRACE_REGISTRATION_TYPES");
+        MemberInfo[] matches = extension.GetMember("RegisterInstance", MemberTypes.Method, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(matches.Length == 1, "TRACE_REGISTRATION_OVERLOAD");
+        MethodInfo method = (MethodInfo)matches[0]; Type[] generic = method.GetGenericArguments(); ParameterInfo[] parameters = method.GetParameters();
+        ProbeFiles.Require(method.IsPublic && method.IsStatic && method.DeclaringType == extension && method.IsGenericMethodDefinition && generic.Length == 1
+            && generic[0].GenericParameterAttributes == GenericParameterAttributes.ReferenceTypeConstraint && generic[0].GetGenericParameterConstraints().Length == 0
+            && parameters.Length == 2 && parameters[0].ParameterType == container.Builder && parameters[1].ParameterType == generic[0]
+            && method.ReturnType.IsGenericType && method.ReturnType.GetGenericTypeDefinition() == open
+            && (method.CallingConvention & CallingConventions.VarArgs) == 0, "TRACE_REGISTRATION_SIGNATURE");
+        Type[] result = method.ReturnType.GetGenericArguments();
+        ProbeFiles.Require(result[0] == generic[0] && result[1] == data && result[2] == style, "TRACE_REGISTRATION_RETURN");
+        Type closed = open.MakeGenericType(contract, data, style);
+        MethodInfo external = closed.GetMethod("ExternallyOwned", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        ProbeFiles.Require(external != null && external.DeclaringType == closed && external.IsPublic && !external.IsStatic && !external.IsGenericMethod
+            && external.ReturnType == closed && external.GetParameters().Length == 0 && (external.CallingConvention & CallingConventions.VarArgs) == 0,
+            "TRACE_EXTERNAL_PUBLIC_INTERFACE");
+        MethodInfo register = method.MakeGenericMethod(contract);
+        ProbeFiles.Require(register.ReturnType == closed && register.GetParameters()[1].ParameterType == contract && !register.ContainsGenericParameters, "TRACE_CLOSED_REGISTRATION");
+        return new TraceRegistrationApi { Register = register, External = external, Return = closed, Contract = contract };
+    }
+    static void RegisterTrace(TraceRegistrationApi api, object builder, object trace)
+    {
+        ProbeFiles.Require(RegisteredTrace && trace != null && api.Contract.IsInstanceOfType(trace), "TRACE_REGISTRATION_INSTANCE");
+        TraceDependencyGuard(unexpected, rejected, "PRE_REGISTER");
+        Record("TRACE_REGISTER_BEGIN service=" + api.Contract.FullName + " token=" + api.Register.MetadataToken.ToString("X8") + " token-source=OBSERVED application-registrations=1");
+        object registration = api.Register.Invoke(null, new object[] { builder, trace });
+        ProbeFiles.Require(registration != null && api.Return.IsInstanceOfType(registration) && registration.GetType().Assembly == api.Return.Assembly
+            && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(registration), "TRACE_REGISTRATION_EXACT_RETURN");
+        TraceDependencyGuard(unexpected, rejected, "POST_REGISTER");
+        object external = api.External.Invoke(registration, new object[0]);
+        ProbeFiles.Require(Object.ReferenceEquals(registration, external), "TRACE_EXTERNAL_SAME_BUILDER");
+        TraceDependencyGuard(unexpected, rejected, "POST_EXTERNAL");
+        Record("TRACE_REGISTER_END external-ownership=True exact-interface-default-service=True before-build=True method-owner=PUBLIC_INTERFACE vendor-service-calls=NOT_INTERCEPTED");
+    }
+    static void WithRegisteredTrace(TraceLifetimeApi trace, EmptyContainerApi container, TraceRegistrationApi registration, ConstructorInfo factory, ProjectDenyProxy provider)
+    {
+        bool returned = false;
+        try {
+            WithTraceLifetimeCore(trace, null, delegate(object instance) {
+                WithEmptyContainerCore(container, delegate(object context) { InvokeFactoryWithContainer(factory, context, provider); }, null,
+                    delegate(object builder) { RegisterTrace(registration, builder, instance); });
+            });
+            returned = true;
+        } finally {
+            try { TraceDependencyGuard(unexpected, rejected, "REGISTERED_FINAL"); }
+            finally {
+                int denied = provider.Requests;
+                Record("REGISTERED_TRACE_FINAL_AUDIT after-container-and-trace-disposal=True scope-returned=" + returned + " provider-denied=" + denied + " qualification=NOT_ESTABLISHED");
+                if (denied != 0) throw new NotSupportedException("REGISTERED_TRACE_PROVIDER_LIFETIME_DENIAL");
+            }
+        }
+    }
+    static void OriginalRegisteredTrace()
+    {
+        ProbeFiles.Require(RegisteredOriginal && containerInputsReady, "REGISTERED_TRACE_COMPLETE_PROFILE");
+        Assembly common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.dll"));
+        Assembly autofac = Assembly.LoadFrom(Path.Combine(stage, "Autofac.dll"));
+        Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll")), kim = Assembly.LoadFrom(Path.Combine(stage, "Knx.Kim.DataProvider.dll"));
+        ProbeFiles.Require(common.FullName == Identities[10] && !common.ReflectionOnly && ProbeFiles.Same(common.Location, Path.Combine(stage, "Knx.Ets.Common.dll"))
+            && autofac.FullName == FactoryExtraIdentities[0] && !autofac.ReflectionOnly && ProbeFiles.Same(autofac.Location, Path.Combine(stage, "Autofac.dll")), "REGISTERED_TRACE_PINNED_ASSEMBLIES");
+        Type type = common.GetType("Knx.Ets.Common.Security.ProjectTraceEncryptor", true, false), contract = common.GetType("Knx.Ets.Common.Security.IProjectTraceEncryptor", true, false);
+        TraceLifetimeApi trace = TraceApi(type, contract);
+        ProbeFiles.Require(type.Assembly == common && contract.Assembly == common && (int)type.Attributes == 1048833
+            && ReviewedTraceTokens(type.MetadataToken, trace.Constructor.MetadataToken, trace.Parameter.MetadataToken, contract.MetadataToken), "TRACE_ORIGINAL_TOKENS");
+        Type context = autofac.GetType("Autofac.IComponentContext", true, false), provider = kim.GetType("Knx.Kim.DataProvider.IKimDataProvider", true, false), factory = om.GetType("Knx.Ets.ObjectModel.Factory", true, false);
+        ProbeFiles.Require(context.Assembly == autofac && provider.Assembly == kim && factory.Assembly == om, "FACTORY_TYPE_OWNERSHIP");
+        ConstructorInfo ctor = FactoryCtor(factory, context, provider); OriginalFactoryTokens(factory, ctor, context, provider);
+        EmptyContainerApi container = EmptyApi(autofac.GetType("Autofac.ContainerBuilder", true), autofac.GetType("Autofac.Builder.ContainerBuildOptions", true), autofac.GetType("Autofac.IContainer", true), context);
+        TraceRegistrationApi registration = RegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true),
+            autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), contract);
+        Record("TRACE_REGISTRATION_API_READY token-source=OBSERVED register-token=" + registration.Register.MetadataToken.ToString("X8") + " external-token=" + registration.External.MetadataToken.ToString("X8")
+            + " upstream-commit=07cac9047f4059de2d72834042c9649cbd228085 api-observation-sha256=2f9fcfa159a07367b3e7414ded3470416729bbcbd02ffa0fd21ad9cf9fb9124f default-report-sha256=" + ReviewedTraceParameterReportSha256);
+        resourceOwner = autofac;
+        WithRegisteredTrace(trace, container, registration, ctor, new ProjectDenyProxy(provider, Record));
+    }
+    static void OwnedRegisteredTrace()
+    {
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true, false); };
+        Type traceControl = type("TraceLifetimeControl"), emptyControl = type("EmptyControlFixture"), registrationControl = type("RegistrationControl"), contract = type("ITraceLifetimeFixture");
+        Action<string> reset = delegate(string behavior) {
+            traceControl.GetMethod("Reset").Invoke(null, new object[] { behavior == "trace-ctor-throw" ? "ctor-throw" : behavior == "trace-dispose-throw" ? "dispose-throw" : behavior == "trace-denial-caught" ? "dispose-catch" : "return" });
+            emptyControl.GetMethod("Reset").Invoke(null, new object[] { "return" }); registrationControl.GetMethod("Reset").Invoke(null, new object[] { behavior });
+        };
+        Func<Type, string, int> count = delegate(Type owner, string name) { return (int)owner.GetField(name).GetValue(null); };
+        Action<string> step = delegate(string name) { registrationControl.GetMethod("Event").Invoke(null, new object[] { name }); };
+        EmptyContainerApi container = EmptyApi(type("RegisteredBuilderFixture"), type("EmptyOptionsFixture"), type("IRegisteredContainerFixture"), type("IContainerDependencyFixture"));
+        Type extension = type("RegistrationExtensionsFixture"), open = type("IRegistrationFixture`3"), data = type("RegistrationDataFixture"), style = type("RegistrationStyleFixture");
+        reset("return"); int negatives = 0;
+        foreach (string name in new string[] { "RegistrationNoConstraintFixture", "RegistrationWrongParameterFixture", "RegistrationWrongReturnFixture", "RegistrationWrongArgumentsFixture", "RegistrationInstanceMethodFixture" }) {
+            bool denied = false; try { RegistrationApi(container, type(name), open, data, style, contract); } catch (IOException) { denied = true; }
+            ProbeFiles.Require(denied, "OWNED_REGISTRATION_SHAPE_NEGATIVE"); negatives++;
+        }
+        foreach (Action wrong in new Action[] {
+            delegate { RegistrationApi(container, type("RegistrationWrongExternalFixture"), type("IWrongExternalFixture`3"), data, style, contract); },
+            delegate { RegistrationApi(container, extension, open, style, data, contract); },
+            delegate { RegistrationApi(container, extension, open, data, style, typeof(string)); },
+            delegate { RegistrationApi(container, typeof(string), open, data, style, contract); }
+        }) { bool denied = false; try { wrong(); } catch (IOException) { denied = true; } ProbeFiles.Require(denied, "OWNED_REGISTRATION_CONTRACT_NEGATIVE"); negatives++; }
+        ProbeFiles.Require(count(traceControl, "Constructors") == 0 && count(emptyControl, "Constructors") == 0 && count(registrationControl, "Registrations") == 0, "OWNED_REGISTRATION_BEFORE_EFFECTS");
+        TraceLifetimeApi trace = TraceApi(type("TraceLifetimeFixture"), contract);
+        TraceRegistrationApi registration = RegistrationApi(container, extension, open, data, style, contract);
+        ConstructorInfo factory = FactoryCtor(type("RegisteredFactoryFixture"), container.Context, type("IDataDependencyFixture"));
+        ProbeFiles.Require(registration.External.DeclaringType.IsPublic && registration.External.DeclaringType.IsInterface
+            && !type("RegistrationFixture`3").IsPublic && registration.Register.GetGenericArguments()[0] == contract, "OWNED_PUBLIC_INTERFACE_INTERNAL_IMPLEMENTATION");
+        Record("OWNED_REGISTERED_TRACE_API_PASS negatives=" + negatives + " before-effects=True public-interface-internal-implementation=True exact-T-default-mapping=True original=NOT_RUN");
+        foreach (string request in new string[] { AutofacResourceEnGb, AutofacResourceEn }) foreach (bool missingOwner in new bool[] { true, false })
+            ProbeFiles.Require(AutofacResourcePolicy("original-factory-registered-trace", true, true, true, request, missingOwner, !missingOwner, 8)
+                && !AutofacResourcePolicy("original-factory-registered-trace", true, true, true, request, missingOwner, !missingOwner, 9)
+                && !AutofacResourcePolicy("owned-factory-registered-trace", true, true, true, request, missingOwner, !missingOwner, 1)
+                && !AutofacResourcePolicy("original-factory-registered-trace", true, false, true, request, missingOwner, !missingOwner, 1)
+                && !AutofacResourcePolicy("original-factory-registered-trace", false, true, true, request, missingOwner, !missingOwner, 1)
+                && !AutofacResourcePolicy("original-factory-registered-trace", true, true, false, request, missingOwner, !missingOwner, 1), "OWNED_REGISTERED_RESOURCE_SCOPE");
+        for (int i = 0; i < ContainerNames.Length; i++) {
+            string path = Path.Combine(stage, ContainerNames[i] + ".dll");
+            ProbeFiles.Require(ContainerReferencePolicy("original-factory-registered-trace", true, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("owned-factory-registered-trace", true, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("original-factory-registered-trace", false, ContainerIdentities[i], path, false), "OWNED_REGISTERED_COMPLETE_POLICY");
+        }
+        for (int i = 0; i < FactoryExtraNames.Length; i++) {
+            string path = Path.Combine(stage, FactoryExtraNames[i] + ".dll");
+            ProbeFiles.Require(FactoryReferencePolicy("original-factory-registered-trace", true, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("owned-factory-registered-trace", true, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("original-factory-registered-trace", false, FactoryExtraIdentities[i], path, false)
+                && !FactoryReferencePolicy("original-factory-registered-trace", true, FactoryExtraIdentities[i], fixture, false)
+                && !FactoryReferencePolicy("original-factory-registered-trace", true, FactoryExtraIdentities[i], path, true), "OWNED_REGISTERED_FACTORY_POLICY");
+        }
+        string reference = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath);
+        ProbeFiles.Require(ValueTupleReferencePolicy("original-factory-registered-trace", true, ValueTupleIdentity, reference, true, false)
+            && !ValueTupleReferencePolicy("owned-factory-registered-trace", true, ValueTupleIdentity, reference, true, false)
+            && !ValueTupleReferencePolicy("original-factory-registered-trace", false, ValueTupleIdentity, reference, true, false)
+            && !ValueTupleReferencePolicy("original-factory-registered-trace", true, ValueTupleIdentity, fixture, true, false)
+            && !ValueTupleReferencePolicy("original-factory-registered-trace", true, ValueTupleIdentity, reference, false, false)
+            && !ValueTupleReferencePolicy("original-factory-registered-trace", true, ValueTupleIdentity, reference, true, true), "OWNED_REGISTERED_OS_POLICY");
+        string[] behaviors = { "return", "trace-ctor-throw", "register-throw", "register-null", "external-throw", "external-null", "build-throw", "factory-throw", "container-dispose-throw", "trace-dispose-throw", "provider-caught", "container-denial-caught", "trace-denial-caught" };
+        foreach (string behavior in behaviors) {
+            reset(behavior); var provider = new ProjectDenyProxy(type("IDataDependencyFixture"), Record);
+            traceControl.GetField("ConstructorCallback").SetValue(null, new Action(delegate { step("trace-ctor"); }));
+            traceControl.GetField("DisposeCallback").SetValue(null, new Action(delegate { step("trace-dispose"); }));
+            // Owned assertion invokes/catches a real deny-all proxy call; the production final audit must reject its count.
+            if (behavior == "trace-denial-caught") traceControl.GetField("DisposeCallback").SetValue(null,
+                new Action(delegate { step("trace-dispose"); owned.GetType("Owned.Task009.RegistrationAssertions", true).GetMethod("DenyProvider").Invoke(null, new object[] { provider.GetTransparentProxy() }); }));
+            bool failed = false;
+            try { WithRegisteredTrace(trace, container, registration, factory, provider); } catch (Exception error) {
+                ProbeFiles.Require(error is IOException || error is NotSupportedException || error is TargetInvocationException || error is InvalidOperationException, "OWNED_REGISTERED_EXPECTED_ERROR"); failed = true;
+            }
+            bool traceReturned = behavior != "trace-ctor-throw";
+            bool built = behavior == "return" || behavior == "factory-throw" || behavior == "container-dispose-throw" || behavior == "trace-dispose-throw" || behavior == "provider-caught" || behavior == "container-denial-caught" || behavior == "trace-denial-caught";
+            ProbeFiles.Require(failed == (behavior != "return") && count(traceControl, "Constructors") == 1 && count(traceControl, "Disposals") == (traceReturned ? 1 : 0)
+                && count(emptyControl, "Disposals") == (built ? 1 : 0) && count(emptyControl, "Factories") == (built ? 1 : 0)
+                && count(traceControl, "Uses") == 0 && count(traceControl, "Attributes") == 0, "OWNED_REGISTERED_LIFETIME_COUNTS");
+            bool externalAttempted = traceReturned && behavior != "register-throw" && behavior != "register-null";
+            bool buildAttempted = externalAttempted && behavior != "external-throw" && behavior != "external-null";
+            ProbeFiles.Require(count(registrationControl, "Registrations") == (traceReturned ? 1 : 0)
+                && count(registrationControl, "ExternalCalls") == (externalAttempted ? 1 : 0) && count(emptyControl, "Builds") == (buildAttempted ? 1 : 0), "OWNED_REGISTERED_STAGE_COUNTS");
+            string order = (string)registrationControl.GetField("Order").GetValue(null);
+            if (built) ProbeFiles.Require(order.StartsWith("trace-ctor>builder>register>external>build>factory>container-dispose>trace-dispose>", StringComparison.Ordinal), "OWNED_REGISTERED_ORDER");
+            ProbeFiles.Require(provider.Requests == (behavior == "provider-caught" || behavior == "container-denial-caught" || behavior == "trace-denial-caught" ? 1 : 0), "OWNED_REGISTERED_DENIAL_COUNT");
+            Record("OWNED_REGISTERED_TRACE_CASE behavior=" + behavior + " expected-failure=" + failed + " explicit-trace-dispose=" + count(traceControl, "Disposals") + " container-dispose=" + count(emptyControl, "Disposals") + " provider-denied=" + provider.Requests);
+        }
+        Record("OWNED_REGISTERED_TRACE_PASS cases=13 external-before-build=True exact-interface=True same-live-instance=True disposal-order=container-then-trace caught-final-provider-denial=True no-crypto-harness-call=True original=NOT_RUN qualification=NOT_ESTABLISHED");
     }
     static void OriginalTraceEncryptor()
     {
@@ -1302,7 +1487,8 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
+                        if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
+                        else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
                         else if (FactoryOnly) { if (FactoryOriginal) OriginalFactory(); else OwnedFactory(); }
                         else if (StoreIdFixture) { if (Original) OriginalProjectStoreId(); else OwnedProjectStoreId(); }

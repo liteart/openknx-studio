@@ -336,6 +336,101 @@ namespace Owned.Task009
     public sealed class TraceRequiredFixture : ITraceLifetimeFixture { public TraceRequiredFixture(int iterations) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
     public sealed class TraceWrongDefaultFixture : ITraceLifetimeFixture { public TraceWrongDefaultFixture(int iterations = 2) { TraceLifetimeControl.Constructors++; } public void Dispose() { } public void UnsupportedUse() { } }
     public interface ITraceWrongContractFixture { }
+    // Independently owned API shapes; public interface invocation on an internal implementation.
+    public sealed class RegistrationDataFixture { }
+    public sealed class RegistrationStyleFixture { }
+    public interface IRegistrationFixture<out T, out D, out S>
+    { IRegistrationFixture<T, D, S> ExternallyOwned(); }
+    public interface IWrongExternalFixture<out T, out D, out S>
+    { object ExternallyOwned(); }
+    public static class RegistrationAssertions
+    { public static void DenyProvider(object provider) { try { ((IDataDependencyFixture)provider).Touch(); } catch (NotSupportedException) { } } }
+    public static class RegistrationControl
+    {
+        public static int Registrations, ExternalCalls;
+        public static object Instance;
+        public static Type Service;
+        public static bool External;
+        public static string Behavior, Order;
+        public static void Reset(string behavior) { Registrations = ExternalCalls = 0; Instance = null; Service = null; External = false; Behavior = behavior; Order = ""; }
+        public static void Event(string value) { Order += value + ">"; }
+    }
+    internal sealed class RegistrationFixture<T, D, S> : IRegistrationFixture<T, D, S>
+    {
+        public IRegistrationFixture<T, D, S> ExternallyOwned()
+        {
+            RegistrationControl.ExternalCalls++; RegistrationControl.Event("external");
+            if (RegistrationControl.Behavior == "external-throw") throw new NotSupportedException("OWNED_EXTERNAL_THROW");
+            if (RegistrationControl.Behavior == "external-null") return null;
+            RegistrationControl.External = true; return this;
+        }
+    }
+    public static class RegistrationExtensionsFixture
+    {
+        public static IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(RegisteredBuilderFixture builder, T instance) where T : class
+        {
+            RegistrationControl.Registrations++; RegistrationControl.Event("register");
+            if (builder == null || instance == null) throw new InvalidOperationException("OWNED_REGISTER_ARGUMENTS");
+            RegistrationControl.Instance = instance; RegistrationControl.Service = typeof(T);
+            if (RegistrationControl.Behavior == "register-throw") throw new NotSupportedException("OWNED_REGISTER_THROW");
+            if (RegistrationControl.Behavior == "register-null") return null;
+            return new RegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture>();
+        }
+    }
+    public static class RegistrationNoConstraintFixture
+    { public static IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(RegisteredBuilderFixture builder, T instance) { throw new InvalidOperationException("OWNED_INVALID_REGISTRATION_EXECUTED"); } }
+    public static class RegistrationWrongParameterFixture
+    { public static IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(object builder, T instance) where T : class { throw new InvalidOperationException("OWNED_INVALID_REGISTRATION_EXECUTED"); } }
+    public static class RegistrationWrongReturnFixture
+    { public static object RegisterInstance<T>(RegisteredBuilderFixture builder, T instance) where T : class { throw new InvalidOperationException("OWNED_INVALID_REGISTRATION_EXECUTED"); } }
+    public static class RegistrationWrongArgumentsFixture
+    { public static IRegistrationFixture<object, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(RegisteredBuilderFixture builder, T instance) where T : class { throw new InvalidOperationException("OWNED_INVALID_REGISTRATION_EXECUTED"); } }
+    public sealed class RegistrationInstanceMethodFixture
+    { public IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(RegisteredBuilderFixture builder, T instance) where T : class { throw new InvalidOperationException("OWNED_INVALID_REGISTRATION_EXECUTED"); } }
+    public static class RegistrationWrongExternalFixture
+    { public static IWrongExternalFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(RegisteredBuilderFixture builder, T instance) where T : class { throw new InvalidOperationException("OWNED_INVALID_REGISTRATION_EXECUTED"); } }
+    public interface IRegisteredContainerFixture : IEmptyContainerFixture { object RegisteredTrace { get; } }
+    public sealed class RegisteredBuilderFixture
+    {
+        public RegisteredBuilderFixture() { EmptyControlFixture.Constructors++; RegistrationControl.Event("builder"); }
+        public IRegisteredContainerFixture Build(EmptyOptionsFixture options)
+        {
+            EmptyControlFixture.Builds++; RegistrationControl.Event("build");
+            if (options != EmptyOptionsFixture.None || !RegistrationControl.External || RegistrationControl.Service != typeof(ITraceLifetimeFixture)
+                || RegistrationControl.Registrations != 1 || RegistrationControl.ExternalCalls != 1) throw new InvalidOperationException("OWNED_EXACT_MAPPING_OWNERSHIP_REQUIRED");
+            if (RegistrationControl.Behavior == "build-throw") throw new NotSupportedException("OWNED_REGISTERED_BUILD_THROW");
+            return new RegisteredContainerFixture();
+        }
+    }
+    internal sealed class RegisteredContainerFixture : IRegisteredContainerFixture
+    {
+        public object RegisteredTrace { get { return RegistrationControl.Instance; } }
+        public void Dispose()
+        {
+            EmptyControlFixture.Disposals++; RegistrationControl.Event("container-dispose");
+            if (!RegistrationControl.External) ((IDisposable)RegistrationControl.Instance).Dispose();
+            if (RegistrationControl.Behavior == "container-dispose-throw") throw new NotSupportedException("OWNED_REGISTERED_DISPOSE_THROW");
+            if (RegistrationControl.Behavior == "container-denial-caught") try { EmptyControlFixture.DisposalProvider.Touch(); } catch (NotSupportedException) { }
+        }
+        public string Name { get { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); } }
+        public void Touch() { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public bool TryRead(out int value) { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public T Read<T>() { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public void Change(ref int value) { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public void Download() { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+    }
+    public sealed class RegisteredFactoryFixture
+    {
+        public RegisteredFactoryFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
+        {
+            EmptyControlFixture.Factories++; RegistrationControl.Event("factory"); EmptyControlFixture.DisposalProvider = provider;
+            IRegisteredContainerFixture registered = context as IRegisteredContainerFixture;
+            if (registered == null || !Object.ReferenceEquals(registered.RegisteredTrace, RegistrationControl.Instance)
+                || !(registered.RegisteredTrace is ITraceLifetimeFixture) || TraceLifetimeControl.Disposals != 0) throw new InvalidOperationException("OWNED_SAME_LIVE_TRACE_REQUIRED");
+            if (RegistrationControl.Behavior == "factory-throw") throw new NotSupportedException("OWNED_REGISTERED_FACTORY_THROW");
+            if (RegistrationControl.Behavior == "provider-caught") try { provider.Touch(); } catch (NotSupportedException) { }
+        }
+    }
     public static class ProjectIdAssertions
     {
         static void Denied(Action action)
