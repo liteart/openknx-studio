@@ -1,5 +1,43 @@
 # Static Project context qualification
 
+## Project07 original Id-only fixture diagnostic result
+
+After reviewed source commit `3161dd889fe4a8f995cf122542a06503c94b9172`,
+exactly one `original-project-store-id` attempt **FAIL**, exit 10. All twelve
+private pins and the exact OS facade pin/alias passed. Original ProjectId public
+constructor `060001EF` **RETURNED**; public numeric getter `060001F2`
+**RETURNED**, validating exact UInt32 `1`. This remains explicitly owned
+synthetic data, not a real/manufacturer identity or claimed-valid SDK ProjectId.
+The proxy supplied that same labeled object for one observed
+`IProjectStore.get_Id` request (`060002F5`, zero arguments).
+
+The next request was `IFactory.UndoManager`, token `060001FD`, two arguments,
+explicitly denied unsupported. Project constructor `06002830` was
+**ATTEMPTED_NOT_RETURNED**: returned=False, fixture-calls=1, denied-requests=1,
+TargetInvocationException -> NotSupportedException
+`PROJECT_FIXTURE_UNSUPPORTED:Knx.Ets.ObjectModel.IFactory.UndoManager`.
+Project body entry remains **NOT_ESTABLISHED_BY_STACK_TRACE**. No dependency
+resolution blocker or unexpected assembly marker occurred. No retry, dependency
+or service expansion followed. Earlier source/owned NOT_RUN records remain
+historical; they are not rewritten as original execution evidence.
+
+Private `task009-constructor-windows/project07-observation.json`, 4,058 bytes,
+SHA-256 `4f307c0b31dce38319c5fa51384c7b8ab236fbbc6aa7a1139fe54c6505482fdc`,
+binds fifteen provenance files. Raw project07.log, 7,321 bytes, SHA-256
+`36ff5591ea9589d2f28e56081dd25b48e05146ad0fdab9331dc1a59f124618af`,
+agrees with independent result-audit **PASS** at verifier07/result-audit.txt,
+SHA-256 `ef16ee954718cac43a99116d09195cf0080f72dc35c13e2e96ddda36caef91d3`.
+Context was interactive Session2/nonadmin; launcher confirmed child exit 10
+under 15 seconds/65,536-byte capture. Cleanup expected/last exit 10, task removed,
+zero owned processes/scratch files; network/descendants remain NOT_CONTAINED.
+
+Owned Windows07 tests remain **PASS 15 / 25 / 20**, distinct from this actual
+original diagnostic **FAIL**. Task-009 stays Blocked, ACs unchecked; no completed
+Project, valid fixture/service, DCA initialization/UI/state, hardware or gate
+qualification is established. Next work is metadata readiness investigation of
+the observed service only; no positive UndoManager fixture is authorized here.
+Scope/diff checks **PASS**; this result append changes no source or pin.
+
 ## Project-store Id fixture experiment contract, source freeze after metadata
 
 Baseline `91121b184043e32db930fd596e751a53ee69751a` contains the reviewed

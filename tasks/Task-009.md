@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; fixed ProjectId metadata PASS declarations only; Id-only fixture owned Windows suites PASS, original runtime NOT RUN. Project06 remains FAIL exit 10, no qualified fixture/service |
-| Source commit(s) | Prior increments recorded below; profile12/project06 source `de5d65056510b240deb93971313bca9f164b7b40`; reviewed project06 result `28398f0de002c6bef613325dc3431fe48e7cb656`; ProjectId source/metadata `a2976171e6bd571243c8f1a0f3ab88bbf9674911`, reviewed result `91121b184043e32db930fd596e751a53ee69751a`; Id-only fixture source commit pending |
-| Tests executed | Earlier results retained: project06 original FAIL exit 10/unsupported get_Id, ProjectId metadata PASS. New Id-only fixture local C#5/source checks PASS; generation07 pinned Windows build and owned suites PASS 15 Session0/25 limited/20 admin negative, including owned Id construction/getter/proxy. Original Id/fixture execution NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
+| Implementation / report status | Blocked; Project07 original Id-only diagnostic FAIL exit 10 at unsupported IFactory.UndoManager after one positive synthetic get_Id; no qualified Project/fixture/service |
+| Source commit(s) | Prior increments recorded below; reviewed ProjectId metadata result `91121b184043e32db930fd596e751a53ee69751a`; Id-only fixture source and actual project07 run `3161dd889fe4a8f995cf122542a06503c94b9172`; result documentation recorded in this increment |
+| Tests executed | Earlier results retained. Generation07 pinned build/owned suites PASS 15 Session0/25 limited/20 admin negative. Exactly one original project07 diagnostic FAIL exit 10: original Id constructor/getter returned exact synthetic UInt32 1; get_Id fixture once, UndoManager denied, Project not returned. DCA initialization/UI/state/hardware NOT RUN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | ProjectId public UInt32/StringSection constructor and UInt32 getter declarations observed; no method/value semantics or getter response supplied. Prior get_Id remains explicitly unsupported, no Project constructor return/body-entry proof. Creation INCONCLUSIVE, fixture NOT_QUALIFIED; project04 origin still unknown |
+| Technical outcome | Original public Id constructor/getter returned and validated synthetic 1; one fixture get_Id return, then unsupported UndoManager. Project invocation ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. Valid identity/Project/fixture NOT_QUALIFIED; project04 origin still unknown |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Profile12/project06 and ProjectId source/result independent verification/critical review PASS; Id-only fixture source/Windows verification/review pending; no runtime service acceptance |
+| Reviewer | Prior source/results and Id-only source/owned Windows verification/critical review PASS; actual project07 integrity/result audit and documentation critical review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1226,3 +1226,24 @@ single 15-second diagnostic may follow under existing authorization; failures st
 without automatic expansion or retry. The private review record binds the
 pre-append document hashes; it does not claim those hashes identify this later
 review note.
+
+## Project07 actual original Id-only fixture result
+
+At committed `3161dd889fe4a8f995cf122542a06503c94b9172`, exactly one original
+attempt **FAIL**, exit 10, after twelve pins/OS facade PASS. Public ProjectId
+constructor `060001EF` returned and getter `060001F2` validated exact UInt32 1,
+explicit owned synthetic data, not a claimed-valid project identity. One
+get_Id `060002F5` fixture return preceded denied IFactory.UndoManager
+`060001FD` (two arguments). Project `06002830` returned=False,
+fixture-calls=1/denied-requests=1; invocation ATTEMPTED_NOT_RETURNED, body entry
+NOT_ESTABLISHED_BY_STACK_TRACE. TargetInvocationException -> NotSupportedException;
+no dependency/unexpected assembly blocker, retry or service/dependency expansion.
+Private project07-observation.json SHA-256
+`4f307c0b31dce38319c5fa51384c7b8ab236fbbc6aa7a1139fe54c6505482fdc`
+and raw-log/audit hashes are in the [result record](../docs/DCA-PROJECT-CONTEXT.md).
+Independent result audit PASS; Session2/nonadmin child exit10 confirmed under
+15s/64KiB, cleanup expected/last10 removed task/zero owned processes/scratch.
+Owned15/25/20 PASS remains separate; historical NOT_RUN records are preserved.
+Task-009 Blocked/ACs unchecked, no Project/fixture/DCA/UI/state/hardware/gate
+qualification. Next work is metadata readiness only, no UndoManager fixture.
+Scope/diff checks PASS; independent documentation critical review PASS, source unchanged. This record does not qualify a fixture or authorize an UndoManager response.
