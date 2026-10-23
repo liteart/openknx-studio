@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked; Project07 original Id-only diagnostic FAIL exit 10 at unsupported IFactory.UndoManager after one positive synthetic get_Id; no qualified Project/fixture/service |
-| Source commit(s) | Prior increments recorded below; project07 runtime source `3161dd889fe4a8f995cf122542a06503c94b9172`; UndoManager metadata source `9d86e5e98f0d1a2afd9d32bdbce869067aa73a9d`, reviewed result `f6c441611c4c7aafc61b75904eecaa1c4b2c4bb7`; public Factory constructor-only source recorded in this increment |
-| Tests executed | Earlier results retained: latest original runtime project07 FAIL exit10, UndoManager metadata PASS declarations only. Factory local C#5/PS/source guards PASS; actual Windows08 pinned build and owned suites PASS 19 Session0/32 limited/24 admin negative. Original Factory runtime NOT RUN; DCA initialization/UI/state/hardware NOT RUN |
+| Implementation / report status | Blocked; latest original Factory08 diagnostic FAIL exit 2 at denied AsyncInterfaces8 dependency after fourteen pins/profile validation; no qualified Factory/Project/fixture/service |
+| Source commit(s) | Prior increments retained; public Factory source/actual Factory08 run `edf408eb08fd60b4954fc61c349efbf14a6748dc`; bounded runtime result documented by this append |
+| Tests executed | Earlier results retained: Windows08 pinned build/owned suites PASS 19 Session0/32 limited/24 admin negative; UndoManager metadata PASS declarations only. Exactly one original Factory08 FAIL exit2, constructor not returned/zero proxy requests. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; constructor internals UNKNOWN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | UndoManager declaration root02000131/protected ctor06000B9C observed, external base unresolved; no invocation/service supplied. Latest project07 runtime remains FAIL after synthetic get_Id/denied UndoManager; Project ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED_BY_STACK_TRACE. Project/fixture NOT_QUALIFIED; project04 origin still unknown |
+| Technical outcome | Actual interface tokens Autofac02000017/Kim02000005 checked, Factory0600012E ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED. Requested AsyncInterfaces8 denied against pinned/validated9 profile, no alias/retry/widening. Factory/Project/fixture NOT_QUALIFIED; prior project07 FAIL10 and project04 origin unknown retained |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Prior source/results independent review PASS; public Factory source/build/owned Windows independent audit and critical review PASS; original Factory attempt NOT RUN; no runtime service acceptance |
+| Reviewer | Prior source/results and Factory source/build/owned Windows independent audit/critical review PASS; actual Factory08 result audit and critical result documentation review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -1346,3 +1346,23 @@ Historical source-freeze NOT_RUN is preserved; owned PASS establishes no origina
 Factory/service semantics. Critical source/owned-evidence review PASS; original Factory remains NOT RUN until the explicit source commit and separately authorized fixed attempt; Task-009 Blocked/ACs unchecked, latest runtime project07 FAIL exit 10,
 metadata declarations-only PASS separate, no Project/Id/UndoManager/DCA/UI/state/
 hardware/gate qualification. Four source hashes unchanged; scope/diff PASS.
+
+## Factory08 actual original constructor result
+
+At `edf408eb08fd60b4954fc61c349efbf14a6748dc`, exactly one original-factory
+attempt **FAIL exit 2** after fourteen pins/OS facade/profile identities passed.
+Actual interfaces Autofac `02000017` / Kim `02000005` were checked; Factory
+`0600012E` BEGIN/END returned=False, zero denied proxy requests, invocation
+ATTEMPTED_NOT_RETURNED/body entry NOT_ESTABLISHED. Requested AsyncInterfaces
+8.0.0.0/PKTcc7b13ffcd2ddd51 was denied against the pinned/validated 9 profile,
+without an alias, retry or widening. Version 9 is source/profile-bound, not new
+binary inspection or an individual staged-identity raw-log line. Captured
+TargetInvocationException/FileNotFoundException denial precedes final
+IOException PROJECT_DEPENDENCY_BLOCKER. [Observation/log/audit hashes and limits](../docs/DCA-PROJECT-CONTEXT.md)
+bind nineteen artifacts; independent result audit and critical documentation review PASS.
+Nonadmin interactive Session2, child exit 2 confirmed under 15s/64KiB; cleanup
+expected/last 2 removed task, zero owned processes/scratch. Owned 19/32/24 PASS
+and historical original-NOT_RUN records remain separate. Harness Project/Id/
+UndoManager/DCA/UI/state/hardware operations NOT RUN; constructor internals
+UNKNOWN, network/descendants NOT_CONTAINED. Task-009 Blocked/ACs unchecked,
+no Factory/service/Project/gate qualification. Source/pins unchanged; scope/diff PASS.

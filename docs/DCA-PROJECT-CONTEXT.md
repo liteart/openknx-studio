@@ -1,5 +1,44 @@
 # Static Project context qualification
 
+## Factory08 original constructor diagnostic result
+
+At reviewed source `edf408eb08fd60b4954fc61c349efbf14a6748dc`, exactly one
+`original-factory` attempt **FAIL**, exit 2; no retry or dependency widening.
+All fourteen private pins, the exact OS facade pin and profile identities passed before FACTORY_PROFILE_READY. The exact OS facade runtime alias was subsequently observed allowed during the constructor attempt. Actual public interface tokens were
+Autofac.IComponentContext `02000017` and IKimDataProvider `02000005`. The public
+Factory constructor `0600012E` has one BEGIN/END pair, returned=False and zero
+denied proxy requests: **ATTEMPTED_NOT_RETURNED**, body entry **NOT_ESTABLISHED**.
+No Factory instance or usable dependency semantics are established.
+
+The resolver rejected `Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0,
+Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51`. The approved fourteen-input
+profile pins/validates version 9.0.0.0 and contains no 8-to-9 alias. This version
+is source/profile-bound through completed identity guards and READY, not a new
+DLL inspection or an individually printed staged identity in the raw log.
+TargetInvocationException wraps FileNotFoundException
+`PROJECT_DEPENDENCY_NOT_ALLOWLISTED`; the final IOException
+`PROJECT_DEPENDENCY_BLOCKER` produces exit 2. Zero proxy requests and a BEGIN
+marker do not prove constructor body entry or absence of internal behavior.
+
+Private task009-constructor-windows/factory08-observation.json, 4,346 bytes,
+SHA-256 `86a5653a7492a9a7d55185c6820cb4c78fe3b0a3757616befaf96f9f25e0ea8c`,
+binds nineteen artifacts. Raw factory08.log, 7,318 bytes, SHA-256
+`5cdf1dec5682b7ff712d7aa41b05e14d44ac44100edf577cab18c34c555966dd`,
+agrees with context/done/launcher/UTF-8 cleanup records: nonadmin interactive
+Session2, 15 seconds/65,536-byte capture, confirmed child exit 2, expected/last
+cleanup result 2, task removed, zero owned processes/scratch files.
+Independent result audit **PASS** is verifier08/factory-result-audit.txt,
+SHA-256 `a947a605648ec806560b2209f6be54c2a78a9c6e7bdb50ea30f86d0313d9d293`;
+Critical actual-result documentation review PASS; the diagnostic remains FAIL exit 2.
+
+Owned Windows08 **PASS 19 / 32 / 24** remains separate. Historical source/owned
+original-NOT_RUN records are retained; this is now the latest actual runtime
+diagnostic. The harness explicitly attempted no Project/Id/UndoManager/DCA/UI/
+state/hardware operations; constructor internals remain UNKNOWN and network/
+descendants NOT_CONTAINED. Task-009 stays Blocked, ACs unchecked; no Factory,
+service, Project, DCA or gate qualification follows. Scope/diff checks **PASS**;
+this append changes no source, profile, pin, alias or resolver.
+
 ## Public Factory constructor-only diagnostic contract
 
 Baseline `f6c441611c4c7aafc61b75904eecaa1c4b2c4bb7` contains the reviewed
