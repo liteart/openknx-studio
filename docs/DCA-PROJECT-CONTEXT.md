@@ -3346,3 +3346,52 @@ latest actual runtime13 **FAIL** exit 10 is unchanged. Task-009 remains
 **Blocked**, acceptance criteria unchecked, with no gate, fixture, service,
 DCA/UI/state or hardware qualification. The earlier source-freeze statement
 that extraction was NOT RUN is historical and predates this result. Critical result documentation review PASS (private review16/critical-review-result.txt); creation remains INCONCLUSIVE.
+
+## Actual17 original ProjectTraceEncryptor constructor/disposal diagnostic
+
+At source revision `24593019a2455b95101c3c776a303571c9208171`, the one fixed,
+limited Windows diagnostic **PASS**, exit 0. All 18 artifacts and 19 ordered
+input pins were preflighted before execution. The runner made exactly one public
+constructor call `06000364` using the reviewed metadata-declared Int32 default
+1; it returned, while body entry remained **NOT_INSTRUMENTED**. One managed
+`Dispose` call returned and the final lifetime audit passed. Result scope is
+constructor/disposal only; qualification is **NOT_ESTABLISHED**.
+
+Private `trace17-observation.json` (5,343 bytes, SHA-256
+`2bc0ed722edeac888162280c12bceb097c0c1f0ffbe0be3f1fd688fbd581827b`) binds 26
+files, including `trace17-plan.json` (7,270 bytes, SHA-256
+`3b208a305414c8f7fab9fdfc0fd97cf47bede6eb18e8f454114b5956291198be`),
+`trace17.log` (9,097 bytes, SHA-256
+`54f49941bbe0dbbf413f9f6e7a523293c1b2849f14a34d4a83835bc09fac6cdd`), and
+`source-commit17.json` (1,130 bytes, SHA-256
+`9021a0b43a75a53c07a741a15bb5754a3dd1f759bc17cc82f368b578b30a6973`). The
+independent result audit **PASS** verifies provenance and bounded outcome;
+`verifier17/original-result-audit.txt` is 4,483 bytes, SHA-256
+`1202487be9a76477cc0e90cba443276a54b7fd29ad0cadadb0496e2b2c92a4b1`. It
+checked saved text records, without rerunning Windows or reading SDK DLL bytes.
+
+The five recorded one-time commands, from repository root, were:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/prepare_trace17.py
+python3 -B private/evidence/task009-constructor-windows/run_trace17.py
+python3 -B private/evidence/task009-constructor-windows/collect_trace17.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_trace17.py
+python3 -B private/evidence/task009-constructor-windows/record_trace17.py
+```
+
+Context was limited interactive Session 2; child deadline 15 seconds, capture
+bound 65,536 bytes. Child exit 0 was confirmed, driver stderr empty. Cleanup
+recorded expected/last exit 0, task removed, zero owned processes and scratch
+files. The fixed netstandard GAC facade audit was allowed. ValueTuple was pinned
+but no load event was observed; necessity is not inferred. Network/descendants
+were **NOT_CONTAINED** under the retained waiver, vendor internals remain
+**UNKNOWN**, and no retry/input widening occurred.
+
+No explicit Encrypt/Decrypt/IsEncrypted, registration, Autofac builder/Factory,
+Project, DCA initialization, UI/state or hardware operation was observed. The
+result does not qualify a usable encryptor, registration, full DCA, SDK-wide
+compatibility or device behavior. The distinct original13 FAIL exit 10 remains
+preserved. Task-009 remains **Blocked**, acceptance criteria unchecked; no gate
+advances. Source17's earlier NOT RUN statement is a historical checkpoint
+before this attempt. Critical result documentation review PASS (private review17/critical-review-result.txt); constructor/disposal scope only, qualification NOT_ESTABLISHED.
