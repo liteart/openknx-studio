@@ -1,5 +1,89 @@
 # Static Project context qualification
 
+## Actual19b Project constructor diagnostic, 2026-10-23
+
+After the owner restored the authenticated SSH master, the coordinator executed
+the fixed original19b plan exactly once at source
+`bd4855e46912441533af5ab18e0e17935097ae94` (implementation `61b39b4`).
+**Actual result: FAIL, exit 2; Project/SDK-context qualification NOT_ESTABLISHED.**
+The earlier prepared/NOT RUN checkpoints below remain historical.
+
+Live preflight verified all 19 inputs, 18 build19b artifacts, x64 OS/process,
+zero selected ETS processes and zero prior owned test processes. The first
+37,168-character encoded read-only command returned SSH exit 255 without output;
+the cause was not established. Transferring the hash-pinned owned preflight file
+and invoking it by a short command passed. No vendor call occurred in preflight.
+The logged-on user session was disconnected from RDP; the actual diagnostic
+ran in session 2 with UserInteractive=True and administrator-role=False.
+
+The synthetic ProjectId constructor, trace/default1, exact-interface external
+registration, container Build(None) and genuine Factory constructor returned.
+The public Project constructor `06002830` was invoked once and requested the
+labeled synthetic store get_Id once. It did not return. An exact
+`Autofac.resources, Version=8.2.0.0, Culture=en-GB` resolution request had
+RequestingAssembly=NULL_UNKNOWN outside the Factory-constructor-only resource
+phase; the existing handler denied it fatally. The nested FileNotFoundException
+and final dependency latch led to exit 2. The underlying Project/service failure
+remains UNKNOWN; this does not establish that a satellite DLL is indispensable
+or that any particular service registration would fix construction.
+
+No Project instance returned, so no Project Dispose was attempted. Container
+then trace Dispose each returned once; their final dependency/lifetime audit
+failed because of the recorded resolution refusal. Provider denials=0,
+store denials=0, synthetic fixture calls=1. OS cleanup separately PASSed:
+scheduled task removed, zero owned processes and zero scratch files. All 19
+original input sizes/hashes matched again after the call (24,278,056 bytes).
+The launcher confirmed child exit 2 under the 15-second/65,536-byte bounds.
+No retry, dependency addition or policy widening occurred.
+
+Private `project19b-observation.json`, 7,896 bytes, SHA-256
+`e718127578e05210054c16dfae15f8a0ea474d0ebabe37e07e6e3be840533813`,
+binds 37 source/plan/build/owned/review/runtime/cleanup evidence files. It binds
+the 16,781-byte `project19b.log`, SHA-256
+`c73a6697fe73192800a5992e86dcf687c6c575ce829b5651945b703fe2c4030b`.
+`source-commit19b.json` is explicitly a post-execution audit of the pre-existing
+immutable plan: all ten frozen sources match the exact committed revision. It
+is not retroactively presented as an artifact created before execution.
+Independent original-result audit PASS for provenance and recorded-outcome
+consistency only; the runtime outcome remains FAIL2. Private
+`verifier19b/original-result-audit.txt`, 6,320 bytes, SHA-256
+`b3914e956e35d88e262ae12d19be7dcab6922b1079674547468e30355ab25c5e`,
+matched all 37 bindings, ten committed source hashes, plan/build/input pins,
+event order and final integrity/cleanup. It read no SDK binary and performed
+no SSH, Windows or vendor rerun. Critical result-documentation review PASS,
+no unresolved findings, for provenance and bounded outcome consistency only.
+Private `review19b/critical-review-result.txt` SHA-256:
+`9d75a3552a7cba78c4882ba812404ad7f9d3d02aecd5c87ff4b0f46d1fde3169`.
+It independently checked all 37 bindings, ten committed source hashes and event
+counts, and kept runtime FAIL, cleanup PASS and failed dependency audit distinct.
+
+The coordinator ran these fixed helpers once from the repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/run_project19b.py
+python3 -B private/evidence/task009-constructor-windows/collect_project19b.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project19b.py
+python3 -B private/evidence/task009-constructor-windows/record_project19b.py
+```
+
+The collect/cleanup helpers were invoked through Python runpy with private
+console capture. Live preflight, named scheduled-task polling and post-input
+checks used the existing guarded SSH adapter; their exact scripts and raw
+outputs are in the observation manifest. The scheduled task reached Ready with
+matching final result before collection/cleanup; it was not restarted.
+
+The harness invoked no DCA initialization/UI/state or intentional device
+operation. Original vendor internals and transitive effects remain UNKNOWN;
+network and descendants were NOT_CONTAINED under the retained diagnostic
+exception. No hardware, isolation, usable Project, full DCA or phase-gate result
+is inferred. Task-009 remains In progress, all acceptance criteria unchecked.
+
+Next bounded inquiry: verify the framework resource-fallback contract and a
+Project-constructor-only null-resolution window sharing at most eight eligible
+probes with Factory construction. No implementation or original retry follows
+merely from this proposal; preserve fatal behavior for every unapproved phase,
+identity, culture, owner/profile or thread and preserve all original DLL bytes.
+
 ## Original19b preparation and live-access checkpoint
 
 The reviewed source19b increment is committed at
