@@ -210,6 +210,85 @@ namespace Owned.Task009
             }
         }
     }
+    // Owned lifetime shapes only: no Autofac/SDK names, signing or token imitation.
+    public enum EmptyOptionsFixture : int { None = 0 }
+    public enum EmptyByteOptionsFixture : byte { None = 0 }
+    public enum EmptyWrongOptionsFixture : int { None = 1 }
+    public interface IEmptyContainerFixture : IContainerDependencyFixture, IDisposable { }
+    public static class EmptyControlFixture
+    {
+        public static int Constructors, Builds, Disposals, Factories;
+        public static string Behavior;
+        public static IDataDependencyFixture DisposalProvider;
+        public static void Reset(string behavior) { Constructors = Builds = Disposals = Factories = 0; Behavior = behavior; DisposalProvider = null; }
+    }
+    public sealed class EmptyBuilderFixture
+    {
+        public EmptyBuilderFixture() { EmptyControlFixture.Constructors++; if (EmptyControlFixture.Behavior == "ctor-throw") throw new NotSupportedException("OWNED_BUILDER_THROW"); }
+        public IEmptyContainerFixture Build(EmptyOptionsFixture options)
+        {
+            EmptyControlFixture.Builds++;
+            if (options != EmptyOptionsFixture.None) throw new InvalidOperationException("OWNED_NONE_REQUIRED");
+            if (EmptyControlFixture.Behavior == "build-throw") throw new NotSupportedException("OWNED_BUILD_THROW");
+            return EmptyControlFixture.Behavior == "null" ? null : new EmptyContainerFixture();
+        }
+    }
+    public sealed class EmptyContainerFixture : IEmptyContainerFixture
+    {
+        public void Dispose()
+        {
+            EmptyControlFixture.Disposals++;
+            if (EmptyControlFixture.Behavior == "dispose-throw") throw new NotSupportedException("OWNED_DISPOSE_THROW");
+            if (EmptyControlFixture.Behavior == "dispose-denial-caught") {
+                try { EmptyControlFixture.DisposalProvider.Touch(); } catch (NotSupportedException) { }
+            }
+        }
+        public string Name { get { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); } }
+        public void Touch() { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public bool TryRead(out int value) { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public T Read<T>() { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public void Change(ref int value) { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+        public void Download() { throw new NotSupportedException("OWNED_CONTEXT_UNSUPPORTED"); }
+    }
+    public sealed class EmptyPrivateBuilderFixture
+    {
+        private EmptyPrivateBuilderFixture() { throw new InvalidOperationException("OWNED_INVALID_BUILDER_EXECUTED"); }
+        public IEmptyContainerFixture Build(EmptyOptionsFixture options) { throw new InvalidOperationException("OWNED_INVALID_BUILD_EXECUTED"); }
+    }
+    public sealed class EmptyStaticBuilderFixture
+    {
+        public EmptyStaticBuilderFixture() { throw new InvalidOperationException("OWNED_INVALID_BUILDER_EXECUTED"); }
+        public static IEmptyContainerFixture Build(EmptyOptionsFixture options) { throw new InvalidOperationException("OWNED_INVALID_BUILD_EXECUTED"); }
+    }
+    public sealed class EmptyGenericBuilderFixture
+    {
+        public EmptyGenericBuilderFixture() { throw new InvalidOperationException("OWNED_INVALID_BUILDER_EXECUTED"); }
+        public IEmptyContainerFixture Build<T>(EmptyOptionsFixture options) { throw new InvalidOperationException("OWNED_INVALID_BUILD_EXECUTED"); }
+    }
+    public sealed class EmptyWrongReturnBuilderFixture
+    {
+        public EmptyWrongReturnBuilderFixture() { throw new InvalidOperationException("OWNED_INVALID_BUILDER_EXECUTED"); }
+        public object Build(EmptyOptionsFixture options) { throw new InvalidOperationException("OWNED_INVALID_BUILD_EXECUTED"); }
+    }
+    public sealed class EmptyFactoryReturnsFixture
+    {
+        public EmptyFactoryReturnsFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
+        { EmptyControlFixture.Factories++; if (!(context is IEmptyContainerFixture) || provider == null) throw new InvalidOperationException("OWNED_EMPTY_ARGUMENTS"); }
+    }
+    public sealed class EmptyFactoryDisposalProviderFixture
+    {
+        public EmptyFactoryDisposalProviderFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
+        { EmptyControlFixture.Factories++; EmptyControlFixture.DisposalProvider = provider; }
+    }
+    public sealed class EmptyFactoryThrowsFixture
+    {
+        public EmptyFactoryThrowsFixture(IContainerDependencyFixture context, IDataDependencyFixture provider) { EmptyControlFixture.Factories++; provider.Touch(); }
+    }
+    public sealed class EmptyFactoryCatchesFixture
+    {
+        public EmptyFactoryCatchesFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
+        { EmptyControlFixture.Factories++; try { provider.Touch(); } catch (NotSupportedException) { } }
+    }
     public static class ProjectIdAssertions
     {
         static void Denied(Action action)

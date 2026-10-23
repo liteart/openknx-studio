@@ -23,6 +23,9 @@ internal static class ProbeFiles
     internal const string FactoryBindingRedirectText = "<dependentAssembly><assemblyIdentity name=\"Microsoft.Bcl.AsyncInterfaces\" publicKeyToken=\"cc7b13ffcd2ddd51\" culture=\"neutral\"/><bindingRedirect oldVersion=\"8.0.0.0\" newVersion=\"9.0.0.0\"/></dependentAssembly>";
     internal static string FactoryBindingConfigText { get { return ConfigText.Replace("</assemblyBinding>", FactoryBindingRedirectText + "</assemblyBinding>"); } }
 
+    internal const string FactoryContainerRedirectText = "<dependentAssembly><assemblyIdentity name=\"System.Diagnostics.DiagnosticSource\" publicKeyToken=\"cc7b13ffcd2ddd51\" culture=\"neutral\"/><bindingRedirect oldVersion=\"8.0.0.0\" newVersion=\"9.0.0.0\"/></dependentAssembly><dependentAssembly><assemblyIdentity name=\"System.Memory\" publicKeyToken=\"cc7b13ffcd2ddd51\" culture=\"neutral\"/><bindingRedirect oldVersion=\"4.0.1.2\" newVersion=\"4.0.2.0\"/></dependentAssembly><dependentAssembly><assemblyIdentity name=\"System.Runtime.CompilerServices.Unsafe\" publicKeyToken=\"b03f5f7f11d50a3a\" culture=\"neutral\"/><bindingRedirect oldVersion=\"6.0.0.0\" newVersion=\"6.0.1.0\"/></dependentAssembly><dependentAssembly><assemblyIdentity name=\"System.Buffers\" publicKeyToken=\"cc7b13ffcd2ddd51\" culture=\"neutral\"/><bindingRedirect oldVersion=\"4.0.3.0\" newVersion=\"4.0.4.0\"/></dependentAssembly>";
+    internal static string FactoryContainerConfigText { get { return FactoryBindingConfigText.Replace("</assemblyBinding>", FactoryContainerRedirectText + "</assemblyBinding>"); } }
+
     internal static void Require(bool value, string code) { if (!value) throw new IOException(code); }
     internal static bool Same(string left, string right) { return String.Equals(left, right, StringComparison.OrdinalIgnoreCase); }
     internal static string Local(string path, bool exists, bool directory)

@@ -1,5 +1,242 @@
 # Static Project context qualification
 
+## Genuine empty Autofac constructor experiment contract
+
+Baseline `61f3e43c785b015abd22c2006260d8ea7d94c137` contains the reviewed
+Factory09 FAIL10 at get_ComponentRegistry. New fixed modes
+`original-factory-empty-container` / `owned-factory-empty-container` select only
+ProjectFactoryContainerProbe.exe and its separate config. The original route
+attempts public ContainerBuilder(), Build(None), then the reviewed public Factory
+constructor with that genuine context and a deny-all Kim provider. There are zero
+application registrations; Autofac defaults/self-registration remain. The harness
+calls no Register/Resolve, Factory method, Project/Id/UndoManager/DCA or device
+operation. Genuine context requests are NOT_INTERCEPTED and not counted. Provider
+requests remain bounded/denied and fail the diagnostic even if the constructor
+catches denial; that does not guarantee immediate termination on a caught call.
+No positive SDK service or working-container/Factory claim is added.
+
+Primary Autofac8.2 API evidence is immutable commit
+[07cac9047f4059de2d72834042c9649cbd228085](https://github.com/autofac/Autofac/tree/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac):
+[ContainerBuilder](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/ContainerBuilder.cs),
+[ContainerBuildOptions](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/Builder/ContainerBuildOptions.cs),
+[IContainer](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/IContainer.cs),
+[ILifetimeScope](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/ILifetimeScope.cs) and
+[IComponentContext](https://github.com/autofac/Autofac/blob/07cac9047f4059de2d72834042c9649cbd228085/src/Autofac/IComponentContext.cs).
+Private immutable-fetch-record.json SHA-256
+`6bb8d9ffbaeabf0ee1352e1df6f8e63bff980945325518d3f2c0b141bfeb95d3`
+binds five sources; no upstream implementation is copied into this repository.
+
+The initial fourteen-input design was held when guarded Autofac metadata exposed
+DiagnosticSource8. The subsequently authorized bounded profile preserves the
+ordered fourteen-input prefix and appends exactly five private libraries:
+
+| Library / identity version | Bytes | SHA-256 |
+|---|---:|---|
+| System.Diagnostics.DiagnosticSource.dll / 9.0.0.0 | 199944 | `9c4f0069f18d0ffc71056562318d1caec0b60820188426d7005a39612853993c` |
+| System.Memory.dll / 4.0.2.0 | 145192 | `b8fe216aff0f6d162f8eefe7be1712162b7d8199e20ce2e70ffac36c7ce20a4c` |
+| System.Runtime.CompilerServices.Unsafe.dll / 6.0.1.0 | 19224 | `2d6f419d641682d8efc4a40e850d2e85de519d6823b93daf2aeee63206d4e32d` |
+| System.Buffers.dll / 4.0.4.0 | 23856 | `3af1e07305bed0abe0cf32d9854e0a7f5f470216adee1b87d02350be09d31b35` |
+| System.Numerics.Vectors.dll / 4.1.5.0 | 110344 | `22c84be385fe8ba6d0e0138952748f28d781fce36078b5a7aed91a6104bcd99b` |
+
+All five identities are neutral; Unsafe/Vectors PKT is b03f5f7f11d50a3a,
+others cc7b13ffcd2ddd51. Private task009-container-dependency-profile/profile-plan.json,
+12,990 bytes, SHA-256 `a3f133f73e6240493264485d4c7ce5fd87855e7ffde158bc173db5ca4d872d98`,
+binds inventory/static maps/policy declarations. Independent candidate/profile
+audit PASS SHA-256 `0c17029082f47decbc15def3860f6ab402e916e25656ac2c9356d8af8a5e66d0`
+checks five copies, ten evidence files and nineteen AssemblyRef edges across six
+selected libraries. This is not whole-SDK/nineteen-input runtime closure or ABI proof.
+The first static-map outer restriction failure preceded parsing and is retained;
+the later guarded maps use unchanged negative probes, writes/network denied,
+with target execution NOT RUN. Installed broad policies are declarations only,
+not copied or treated as effective policy. ADR-005 private-use scope is unchanged.
+
+The new nineteen-input/24,278,056-byte preflight hashes/sizes every private input
+before OS-facade pin/identity inspection; all identities precede completed readiness.
+Only this new original mode can admit the five additions, with completed nineteen
+pins, exact identity/private path and non-reflection-only assembly. Their audit
+explicitly overrides Framework admission, including Unsafe/Vectors GAC paths;
+Framework itself is unchanged. Old profiles reject these five names. Unknown
+requests remain denied, with after-load detection not claimed as prevention.
+
+The new config derives the unchanged 1,251-byte Bcl binding config and adds only
+four exact redirects: DiagnosticSource8.0.0.0->9.0.0.0, Memory4.0.1.2->4.0.2.0,
+Unsafe6.0.0.0->6.0.1.0 and Buffers4.0.3.0->4.0.4.0. Vectors has no redirect.
+It is 2,063 bytes, SHA-256 `60ac03885b7bbd3b944bb91d27017220fadcde8f7ade15cc1d59ea1d16177225`.
+Old 1,044/1,251-byte configs, old compile commands/output names and fourteen-input
+arrays remain exact. The new exe/config/hash adds three artifacts, eighteen total;
+compiler references remain the same six framework references. Exact mode/exe/config
+checks and real CLR identity-policy positive/near-miss guards precede input access,
+without target loads. Owned old-config checks require the new policies unchanged.
+Resolution logs only real events, requested/post-policy identity and actual fixed
+path/held hash; no resolver event or hash provenance is fabricated.
+
+Before any builder invocation, runtime guards require exact pinned assembly/path,
+public nongeneric builder/parameterless constructor, public instance nongeneric
+Build(exact public Int32 enum with literal None=0), exact IContainer return,
+and IContainer assignability to exact IComponentContext and IDisposable. Tokens
+remain unknown until runtime, then logged as OBSERVED. A build return must implement
+both interfaces, be nonproxy and belong to the same pinned assembly, otherwise refused.
+The retained container is disposed once in finally on managed return/exception,
+even if begin-log recording fails; disposal failure fails. Hard process termination
+cannot guarantee disposal, which remains NOT_ESTABLISHED then. No optional context
+getter preflight is added. Existing constructor methods/deny proxies/final failure
+checks, STA/nonadmin restrictions, 96-assembly/15s/64KiB bounds remain unchanged.
+
+At the generation10 source freeze, local macOS PowerShell7.6.7 **PASS**: six reference pins,
+C#5/x64 warnings-as-errors compilation (Project105,984B/launcher43,008B/fixtures17,408B,
+local Roslyn outputs only), Build/Test PS parsing/source guards, old operation
+method/array/config preservation, exact manifest pin/order/size/total checks,
+scope and diff. Fresh helper `private/evidence/task009-constructor-windows/owned10-sourcecheck.ps1` SHA-256
+`12e73fa105abb32aa813c1b8e715c64e5bc6b42f5208b76561172f625e9bd2eb` was run as
+`pwsh -NoLogo -NoProfile -NonInteractive -File <private-helper> -Worktree <task009-worktree> -FrameworkReferences <private>/evidence/task148-clean-host/references`.
+Owned tests are prepared for API rejection before effects, null/wrong returns,
+constructor/build/dispose failures, dispose-once, provider denial/caught-denial,
+scoped-reference predicates, config/mode/deadline/session/admin and nineteen-input
+negatives using renamed owned bytes; wrong-hash fails the first input, not an
+isolated nineteenth pin. Runtime policy/API/lifetime checks and Windows owned/
+original container execution remain NOT RUN here; independent source/owned
+verification and critical review are pending. Factory09 FAIL10 remains the latest
+actual original runtime. Network/descendants remain NOT_CONTAINED; no Project/DCA/
+UI/state/hardware/service qualification or gate advance. Task009 remains Blocked,
+all ACs unchecked. Historical Factory08/09 and owned23/42/28 records remain separate.
+
+### Subsequent Windows10 owned verification
+
+Windows build **PASS**, eight report sources/eighteen artifacts, source freeze
+SHA-256 `bb4557c60bc0b5086665efc4c50412ec73cb02495dc40948f7821a6dcc6f9f2e`;
+report SHA-256 `dbbf17c5c9a0520fe8a31e4748c9b4c468b561882cb310f24dd6c8e1474a7f4a`.
+The alias is 108,032B, recorded SHA-256
+`683172ad1c22f342a72be411890699508861a57f0fdec578b3e80917fd20f096`;
+new 2,063B and old 1,044/1,251B configs match their frozen hashes above.
+
+Observed owned cases **PASS 27 Session0 /58 limited /32 admin-negative**.
+Limited/admin Session2 runners verified all eighteen artifact sizes/hashes before
+running; Session0 verified compiler/report sources/test-driver hash, but did **not**
+preflight all eighteen artifacts. Its 27-case result is a smoke result with artifact
+integrity binding **INCONCLUSIVE**, not retroactive full-pin evidence. No rerun is
+claimed. Limited/admin contexts respectively nonadmin/admin, done/cleanup 0,
+tasks removed/zero owned processes/no junction, 151/73 case files retained.
+Strict UTF-16 raw/UTF-8 derivatives are bound; cleanup is UTF-8 and Session0 stderr
+retains 616B CLIXML progress. No empty-Session0-stderr claim is made.
+
+Private task009-constructor-windows/owned10-observation.json, 55,878B, SHA-256
+`b6530e8ed3ca9d104e2ca3f047201fbbb06c1aed70fb743813cf87f38cef67bd`,
+binds 291 files. Independent source audit **PASS** SHA-256
+`48411a72413a562c7942e0ea0091b918ef28b20fdbdf65e0e6ae9b5a5a9b7725`;
+owned-result audit **PASS** for bounded evidence consistency, with the Session0
+qualification above, verifier10/owned-result-audit.txt SHA-256
+`f576b686002dbd839c539fea7a7d0b34474e691ed3d28683f27d3dafcce784ac`.
+Actual CLR Bcl/four additional policy positives, near-misses/no target loads,
+owned API/lifetime/caught-provider-denial and nineteen-input/config negatives
+passed. These lifetime cases execute unsigned owned shapes, not original Autofac.
+The nineteen-input 24,278,056B plan is copy/hash-only, no SDK execution; prepared
+original10 helpers remain unexecuted source only and require their own complete
+eighteen-artifact preflight. Original empty-container runtime remains **NOT RUN**,
+critical source/owned review pending. Factory09 FAIL10 remains latest actual original;
+context calls NOT_INTERCEPTED, hard-kill disposal NOT_ESTABLISHED, network/descendants
+NOT_CONTAINED. No Factory/service/Project/DCA/UI/state/hardware qualification or gate
+advance; Task009 Blocked, all ACs unchecked. Historical source-NOT_RUN is retained.
+
+### Generation11 post-disposal provider-denial repair
+
+Generation10 critical review **FAIL** for source readiness, one P2: the Factory
+constructor checked the Kim denial counter before container Dispose. A disposal
+callback could invoke/catch a denial afterward and leave the diagnostic successful.
+This is a source control-flow finding, not observed original SDK behavior. Review
+is preserved as private review10/critical-review-source.txt, SHA-256
+`31298b6f2b20f1173d1279cd960d4c6edf8af40203763069e0323cc2894d766f`; source10/build10/
+owned27/58/32/audits remain historical, within their coverage, not accepted readiness.
+No original generation10 attempt or source commit followed that failed review.
+
+The bounded repair retains the constructor precheck and adds a shared
+WithFactoryContainer wrapper for original and owned paths. Its finally audit
+reads the provider counter after the complete managed container lifetime/disposal
+and fails on any recorded request, including when constructor and Dispose returned.
+It logs post-lifetime count/status; no alternate service, pin, redirect or mode is
+added. Managed disposal still attempts once and disposal errors still fail.
+Hard process termination establishes neither disposal nor final audit; asynchronous
+requests outside the observed managed lifetime remain UNKNOWN, with no timing promise.
+
+The prepared owned regression first exercises the old unaudited lifetime with an
+owned Dispose callback that invokes/catches exactly one denied provider call:
+constructor/disposal return, denial1/disposal1. It then requires the production
+shared wrapper to fail with the same denial1/disposal1, one builder/build/Factory
+call, and a post-disposal audit marker. This is owned test design; no original
+behavior or runtime regression PASS is inferred before Windows11 execution.
+
+Source-freeze-11.json SHA-256
+`a8071beedc9f78c2cc79e0e8188f23a315e3a5ae60b5f45871d08724eeb667be`
+binds the three repaired sources and seven unchanged source files.
+
+Local generation11 checks **PASS**: six pinned framework references, C#5/x64
+warnings-as-errors compilation (local probe107,520B/fixtures17,920B), PS parse/source
+guards including post-disposal audit placement, scope/diff and unchanged other
+three sources/config/pins. Fresh `knx-task009-empty-container-disposal-sourcecheck.ps1`,
+SHA-256 `fdcdc0fa74aaa9c11fe2365dedf6d23bcf9310b23b48a8abfa47fcc11456fc82`,
+is run with the same local command/paths as above, using this fresh helper only;
+prior helper/evidence bytes are preserved. Windows11 owned/policy/lifetime execution
+and original container runtime are **NOT RUN** at this source freeze; independent
+verification/critical re-review are pending. Task009 remains Blocked, all ACs
+unchecked/no qualification or gate advance; latest actual original remains Factory09
+FAIL10. Network/descendants NOT_CONTAINED and genuine context calls NOT_INTERCEPTED.
+
+### Subsequent Windows11 owned verification
+
+Windows11 **PASS**: pinned compiler, eight compiled sources/eighteen artifacts,
+build-report SHA-256 `47e69efaffd505f69edc55252e70de604561d90e4fd4a3528ae48fac5ff1557c`.
+Observed owned cases **PASS 27 Session0 /58 limited /32 admin-negative**. All three
+runner paths now preflight all eighteen artifact sizes/hashes; Session0 stdout
+records SESSION0_ARTIFACT_PREFLIGHT PASS. This applies only to generation11;
+generation10's Session0 artifact binding remains INCONCLUSIVE and its review FAIL.
+Limited/admin Session2 roles are nonadmin/admin, done 0/cleanup 0, tasks removed,
+zero owned processes/no junction, 151/73 case files. Raw UTF-16/strict UTF-8
+derivatives remain bound; cleanup is UTF-8 and Session0 CLIXML stderr is retained.
+
+The owned disposal-denial regression **PASS** reproduces the unaudited return
+with one caught denial/one disposal, then observes the shared original wrapper's
+post-disposal rejection of the same case with exact counts. Expected rejection
+is asserted by the owned harness and its suite exits 0. This is no assertion about
+original Autofac/Factory behavior. Policies/near-misses and lifetime/API fixtures
+remain owned-only; genuine SDK/container runtime is NOT RUN. Hard-kill audit and
+asynchronous work outside the observed lifetime remain unestablished/unknown.
+
+Private task009-constructor-windows/owned11-observation.json, 55,147B, SHA-256
+`b7016e423ac53dd56007aadff4a525d318ea8fb28a1373bc0f99b480e34ac713`,
+binds 283 files, including the preserved source10 snapshot/review and source11 freeze.
+Independent source audit PASS SHA-256
+`35a6a83ec23edb55fca4ef96ea4db6a87280ab8e533d1c3494009069b28bd16d`;
+owned-result audit PASS, verifier11/owned-result-audit.txt SHA-256
+`13919348234faef7b69ea2e58b32327b5efb9f20778bfd204a01e22f62509f09`.
+The coordinator executed the following fixed helpers from repository root:
+
+```text
+python3 private/evidence/task009-constructor-windows/build_owned11.py
+python3 private/evidence/task009-constructor-windows/run_session0_11.py
+python3 private/evidence/task009-constructor-windows/run_owned11.py
+python3 private/evidence/task009-constructor-windows/collect_owned11.py
+python3 private/evidence/task009-constructor-windows/cleanup_owned11.py
+python3 private/evidence/task009-constructor-windows/run_owned_admin11.py
+python3 private/evidence/task009-constructor-windows/collect_owned_admin11.py
+python3 private/evidence/task009-constructor-windows/cleanup_owned_admin11.py
+python3 private/evidence/task009-constructor-windows/record_owned11.py
+```
+
+The metadata observation helper first failed a hash assertion before publication;
+it was corrected and the second invocation published the observation. This was
+not a Windows-suite/SDK rerun. The local source-audit command, with local paths
+normalized, was `pwsh -NoLogo -NoProfile -NonInteractive -File <private-helper>/knx-task009-empty-container-disposal-sourcecheck.ps1 -Worktree <task009-worktree> -FrameworkReferences <private>/evidence/task148-clean-host/references`, using
+PowerShell 7.6.7 and the fresh helper now preserved as
+`private/evidence/task009-constructor-windows/owned11-sourcecheck.ps1`, SHA-256
+`fdcdc0fa74aaa9c11fe2365dedf6d23bcf9310b23b48a8abfa47fcc11456fc82`.
+
+Critical source/owned review PASS; private review11/critical-review-source.txt records the bounded verdict. Original11 helpers remain unexecuted source only, original container runtime NOT RUN; reviewed source/commit and the
+coordinator's fixed original diagnostic plan precede any original run. A later mechanical closure may append
+the actual review verdict/reference and source commit, without changing source,
+private evidence or runtime claims. No original10 attempt/source10 commit occurred.
+Latest actual original remains Factory09 FAIL10; Task009 Blocked/ACs unchecked,
+no gate or Factory/Project/service/DCA/UI/state/hardware qualification. Historical
+source-NOT_RUN/Windows10 evidence remains chronological and unchanged.
+
 ## Factory09 original exact-binding diagnostic result
 
 At source `28f53d27a24b4f11d5507df0a8178063f23bc872`, exactly one

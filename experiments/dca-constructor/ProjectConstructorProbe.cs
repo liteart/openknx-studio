@@ -105,6 +105,11 @@ internal static class ProjectConstructorProbe
     static readonly string[] FactoryExtraIdentities = { "Autofac, Version=8.2.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da", "Knx.Kim.DataProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=61439873ec5e1159" };
     static readonly int[] FactoryPrefixSizes = { 452608, 6979024, 72704, 215504, 78800, 26376, 102856, 27944, 14204880, 139776, 503248, 318928 };
     static readonly int[] FactoryExtraSizes = { 374784, 282064 };
+    static readonly string[] ContainerNames = { "System.Diagnostics.DiagnosticSource", "System.Memory", "System.Runtime.CompilerServices.Unsafe", "System.Buffers", "System.Numerics.Vectors" };
+    static readonly string[] ContainerHashes = { "9c4f0069f18d0ffc71056562318d1caec0b60820188426d7005a39612853993c", "b8fe216aff0f6d162f8eefe7be1712162b7d8199e20ce2e70ffac36c7ce20a4c", "2d6f419d641682d8efc4a40e850d2e85de519d6823b93daf2aeee63206d4e32d", "3af1e07305bed0abe0cf32d9854e0a7f5f470216adee1b87d02350be09d31b35", "22c84be385fe8ba6d0e0138952748f28d781fce36078b5a7aed91a6104bcd99b" };
+    static readonly string[] ContainerIdentities = { "System.Diagnostics.DiagnosticSource, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Memory, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Runtime.CompilerServices.Unsafe, Version=6.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Buffers, Version=4.0.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Numerics.Vectors, Version=4.1.5.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" };
+    static readonly int[] ContainerSizes = { 199944, 145192, 19224, 23856, 110344 };
+    static readonly string[] ContainerRequests = { "System.Diagnostics.DiagnosticSource, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" };
     static readonly string[] Names = { "MDT-DaliDcaPlus", "Knx.Ets.Sdk", "Knx.Ets.Sdk.AddIns.AddInViews", "Knx.Ets.Common.Types", "Knx.Ets.Common.Resources", "Microsoft.Bcl.AsyncInterfaces", "netstandard", "System.Threading.Tasks.Extensions", "Knx.Ets.ObjectModel", "FluentResults", "Knx.Ets.Common", "Knx.Ets.Ids" };
     static readonly string[] Hashes = { "4507e7b0e1eb10fea9556f19dd8d34c5f9fcf3cd8efa79e891b13f2585d7cf8d", "7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989", "5a59b733cbbecb8afe67f54e3b354045a61e092470a13129971f4f99e0b6d87d", CommonHash, "6e07df9e247b1d5e6a11c9e8131ec8cc8ab8aabeca9af02b1911608d1eefe661", "1c95b1a776931ca1c4f2911b2ae1cc99eb78f547cd5feeaf5cdbdf10cedad0db", "bbc58e1e5b1976b8093116007dbc428b09495c7c810a1350d4a379b87716c4bb", "692c324c02a922f890aaf5948c54ec9758f5ab7019b8e8ab169c106ddd3231f4", "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a", "99adb97bc209d19696c9a42db8eceef49b55fc2c3f4cc6d6f5654fe7e5df9159", "4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd", "43b41d5e3a1eda83079c7f96d34ab94daa3d8823ce291efc262bd340d6c7d877" };
     static readonly string[] Identities = {
@@ -125,7 +130,7 @@ internal static class ProjectConstructorProbe
     static volatile bool unexpected, rejected;
     static volatile bool enumInputsPinned;
     static volatile bool platformFacadePinned;
-    static volatile bool factoryInputsReady;
+    static volatile bool factoryInputsReady, containerInputsReady;
     static string platformFacadePath;
     static int logBytes, assemblyCount;
     static object constructed;
@@ -133,10 +138,12 @@ internal static class ProjectConstructorProbe
     static bool Original { get { return mode == "original-project" || mode == "original-project-store-id"; } }
     static bool OwnedProject { get { return mode == "owned-project" || mode == "owned-project-store-id"; } }
     static bool StoreIdFixture { get { return mode == "original-project-store-id" || mode == "owned-project-store-id"; } }
-    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9"; } }
-    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9"; } }
+    static bool FactoryOriginal { get { return mode == "original-factory" || mode == "original-factory-bcl9" || mode == "original-factory-empty-container"; } }
+    static bool FactoryOwned { get { return mode == "owned-factory" || mode == "owned-factory-bcl9" || mode == "owned-factory-empty-container"; } }
     static bool FactoryOnly { get { return FactoryOriginal || FactoryOwned; } }
-    static bool FactoryBinding { get { return mode == "original-factory-bcl9" || mode == "owned-factory-bcl9"; } }
+    static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container"; } }
+    static bool FactoryBinding { get { return EmptyContainer || mode == "original-factory-bcl9" || mode == "owned-factory-bcl9"; } }
+    static bool FactoryProfileReady { get { return factoryInputsReady || (EmptyContainer && containerInputsReady); } }
     internal static string Text(string value)
     {
         value = value.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\0", "\\0");
@@ -214,10 +221,39 @@ internal static class ProjectConstructorProbe
         factoryInputsReady = true;
         Record("FACTORY_PROFILE_READY private-pins=14 extra-reference-admission=THIS_MODE_ONLY");
     }
+    static void PinContainerInputs()
+    {
+        CountInputs(19);
+        for (int i = 0; i < Names.Length; i++) {
+            Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryPrefixSizes[i], "CONTAINER_INPUT_SIZE");
+        }
+        for (int i = 0; i < FactoryExtraNames.Length; i++) {
+            Pin(Path.Combine(stage, FactoryExtraNames[i] + ".dll"), FactoryExtraHashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryExtraSizes[i], "CONTAINER_INPUT_SIZE");
+        }
+        for (int i = 0; i < ContainerNames.Length; i++) {
+            Pin(Path.Combine(stage, ContainerNames[i] + ".dll"), ContainerHashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == ContainerSizes[i], "CONTAINER_INPUT_SIZE");
+        }
+        PinPlatformFacade();
+        for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "CONTAINER_INPUT_IDENTITY");
+        for (int i = 0; i < FactoryExtraNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, FactoryExtraNames[i] + ".dll")).FullName == FactoryExtraIdentities[i], "CONTAINER_INPUT_IDENTITY");
+        for (int i = 0; i < ContainerNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, ContainerNames[i] + ".dll")).FullName == ContainerIdentities[i], "CONTAINER_INPUT_IDENTITY");
+        containerInputsReady = true;
+        Record("FACTORY_CONTAINER_PROFILE_READY private-pins=19 total-bytes=24278056 extra-reference-admission=THIS_MODE_ONLY");
+    }
+    static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
+    {
+        if (selectedMode != "original-factory-empty-container" || !complete || reflectionOnly) return false;
+        for (int i = 0; i < ContainerNames.Length; i++)
+            if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
+        return false;
+    }
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -253,16 +289,22 @@ internal static class ProjectConstructorProbe
                     || (assembly.FullName == Identities[6] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, "netstandard.dll"))))) allowed = true;
             if (Original) for (int i = 0; i < Names.Length; i++)
                 if (assembly.FullName == Identities[i] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
-            if (FactoryOriginal && factoryInputsReady && !assembly.ReflectionOnly) for (int i = 0; i < Names.Length; i++)
+            if (FactoryOriginal && FactoryProfileReady && !assembly.ReflectionOnly) for (int i = 0; i < Names.Length; i++)
                 if (assembly.FullName == Identities[i] && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[i] + ".dll"))) allowed = true;
-            if (FactoryReferencePolicy(mode, factoryInputsReady, assembly.FullName, assembly.Location, assembly.ReflectionOnly)) allowed = true;
+            if (FactoryReferencePolicy(mode, FactoryProfileReady, assembly.FullName, assembly.Location, assembly.ReflectionOnly)) allowed = true;
             if (FactoryBinding && FactoryOriginal && assembly.GetName().Name == "Microsoft.Bcl.AsyncInterfaces") {
-                bool pinned = factoryInputsReady && assembly.FullName == Identities[5] && !assembly.ReflectionOnly
+                bool pinned = FactoryProfileReady && assembly.FullName == Identities[5] && !assembly.ReflectionOnly
                     && ProbeFiles.Same(assembly.Location, Path.Combine(stage, Names[5] + ".dll"));
                 Record("FACTORY_BINDING_ASSEMBLY identity=" + Text(assembly.FullName) + " location=" + Text(assembly.Location)
                     + " pinned=" + pinned + " held-pin-sha256=" + (pinned ? Hashes[5] : "NOT_ESTABLISHED") + " trace=ACTUAL_ASSEMBLY_LOAD");
             }
             if (!Original && !FactoryOriginal && !EnumOnly && assembly.FullName == "Owned.Task148.ConstructorFixtures, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" && ProbeFiles.Same(assembly.Location, fixture)) allowed = true;
+            // These five names never inherit Framework admission, including GAC paths.
+            for (int i = 0; i < ContainerNames.Length; i++) if (assembly.GetName().Name == ContainerNames[i]) {
+                allowed = ContainerReferencePolicy(mode, containerInputsReady, assembly.FullName, assembly.Location, assembly.ReflectionOnly);
+                Record("CONTAINER_REFERENCE_AUDIT allowed=" + allowed + " identity=" + Text(assembly.FullName) + " location=" + Text(assembly.Location)
+                    + " held-pin-sha256=" + (allowed ? ContainerHashes[i] : "NOT_ESTABLISHED") + " framework-fallback=false");
+            }
         }
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         if (!allowed) { unexpected = true; Record("UNEXPECTED_ASSEMBLY_BLOCKER detection=after-load prevention=NOT_ESTABLISHED"); }
@@ -274,7 +316,13 @@ internal static class ProjectConstructorProbe
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
         }
-        if (FactoryBinding && FactoryOriginal && factoryInputsReady) {
+        if (EmptyContainer && FactoryOriginal && containerInputsReady) {
+            string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
+            Record("CONTAINER_BINDING_RESOLVE requested=" + Text(args.Name) + " post-policy=" + Text(policy));
+            for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return ResolvePinnedFactoryReference(args.Name, policy, Names[i], Hashes[i]);
+            for (int i = 0; i < FactoryExtraNames.Length; i++) if (policy == FactoryExtraIdentities[i]) return ResolvePinnedFactoryReference(args.Name, policy, FactoryExtraNames[i], FactoryExtraHashes[i]);
+            for (int i = 0; i < ContainerNames.Length; i++) if (policy == ContainerIdentities[i]) return ResolvePinnedFactoryReference(args.Name, policy, ContainerNames[i], ContainerHashes[i]);
+        } else if (FactoryBinding && FactoryOriginal && factoryInputsReady) {
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             Record("FACTORY_BINDING_RESOLVE requested=" + Text(args.Name) + " post-policy=" + Text(policy));
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return ResolvePinnedFactoryReference(args.Name, policy, Names[i], Hashes[i]);
@@ -289,7 +337,7 @@ internal static class ProjectConstructorProbe
     }
     static Assembly ResolvePinnedFactoryReference(string requested, string policy, string name, string hash)
     {
-        ProbeFiles.Require(FactoryBinding && FactoryOriginal && factoryInputsReady, "FACTORY_BINDING_PIN_REQUIRED");
+        ProbeFiles.Require(FactoryBinding && FactoryOriginal && FactoryProfileReady && (!EmptyContainer || containerInputsReady), "FACTORY_BINDING_PIN_REQUIRED");
         string path = Path.Combine(stage, name + ".dll");
         Assembly assembly = Assembly.LoadFrom(path);
         bool facade = PlatformFacadeAllowed(assembly.FullName, assembly.Location, assembly.GlobalAssemblyCache, assembly.ReflectionOnly);
@@ -301,15 +349,17 @@ internal static class ProjectConstructorProbe
     static void VerifyBindingConfiguration()
     {
         string config = ProbeFiles.Local(AppDomain.CurrentDomain.SetupInformation.ConfigurationFile, true, false);
-        string expected = FactoryBinding ? ProbeFiles.FactoryBindingConfigText : ProbeFiles.ConfigText;
+        string expected = EmptyContainer ? ProbeFiles.FactoryContainerConfigText : FactoryBinding ? ProbeFiles.FactoryBindingConfigText : ProbeFiles.ConfigText;
         ProbeFiles.Require(new FileInfo(config).Length <= 4096 && File.ReadAllText(config) == expected, "EXACT_CONFIG_REQUIRED");
         if (FactoryBinding) ProbeFiles.Require(Encoding.UTF8.GetString(File.ReadAllBytes(config)) == expected, "EXACT_CONFIG_BYTES_REQUIRED");
         bool bindingExe = Path.GetFileName(typeof(ProjectConstructorProbe).Assembly.Location) == "ProjectFactoryBindingProbe.exe";
-        ProbeFiles.Require(bindingExe == FactoryBinding, "FACTORY_BINDING_MODE_EXECUTABLE");
+        ProbeFiles.Require(bindingExe == (FactoryBinding && !EmptyContainer), "FACTORY_BINDING_MODE_EXECUTABLE");
+        ProbeFiles.Require((Path.GetFileName(typeof(ProjectConstructorProbe).Assembly.Location) == "ProjectFactoryContainerProbe.exe") == EmptyContainer, "FACTORY_CONTAINER_MODE_EXECUTABLE");
         if (!FactoryBinding) {
             if (FactoryOwned) {
                 ProbeFiles.Require(AppDomain.CurrentDomain.ApplyPolicy(Async8Identity) == Async8Identity, "OWNED_FACTORY_LEGACY_POLICY");
                 Record("OWNED_FACTORY_LEGACY_POLICY_PASS version8=UNCHANGED no-target-load=true");
+                VerifyContainerPolicies(false);
             }
             return;
         }
@@ -324,6 +374,26 @@ internal static class ProjectConstructorProbe
         }) ProbeFiles.Require(AppDomain.CurrentDomain.ApplyPolicy(identity) == identity, "FACTORY_BINDING_POLICY_NEGATIVE");
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) ProbeFiles.Require(assembly.GetName().Name != "Microsoft.Bcl.AsyncInterfaces", "FACTORY_POLICY_TARGET_LOADED");
         Record("FACTORY_BINDING_POLICY_PASS exact8-to9=true version7-patch-token-culture-name=UNCHANGED target-load=NOT_RUN");
+        if (EmptyContainer || FactoryOwned) VerifyContainerPolicies(EmptyContainer);
+    }
+    static void VerifyContainerPolicies(bool enabled)
+    {
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (string name in ContainerNames) ProbeFiles.Require(assembly.GetName().Name != name, "CONTAINER_POLICY_TARGET_ALREADY_LOADED");
+        for (int i = 0; i < ContainerRequests.Length; i++) {
+            string requested = ContainerRequests[i], mapped = AppDomain.CurrentDomain.ApplyPolicy(requested);
+            ProbeFiles.Require(mapped == (enabled ? ContainerIdentities[i] : requested), "CONTAINER_BINDING_POLICY_EXACT");
+            Record("CONTAINER_BINDING_POLICY enabled=" + enabled + " requested=" + requested + " post-policy=" + Text(mapped) + " target-load=NOT_RUN");
+            AssemblyName name = new AssemblyName(requested);
+            foreach (string identity in new string[] {
+                requested.Replace(name.Version.ToString(), "0.0.0.0"),
+                requested.Replace(name.Version.ToString(), new Version(name.Version.Major, name.Version.Minor, name.Version.Build, name.Version.Revision + 1).ToString()),
+                requested.Substring(0, requested.Length - 1) + "0", requested.Replace("Culture=neutral", "Culture=fr"), requested.Replace(name.Name + ",", "Owned.WrongName,")
+            }) ProbeFiles.Require(AppDomain.CurrentDomain.ApplyPolicy(identity) == identity, "CONTAINER_BINDING_POLICY_NEGATIVE");
+        }
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (string name in ContainerNames) ProbeFiles.Require(assembly.GetName().Name != name, "CONTAINER_POLICY_TARGET_LOADED");
+        Record("CONTAINER_BINDING_POLICY_PASS enabled=" + enabled + " exact4=true near-misses=UNCHANGED target-load=NOT_RUN vector-redirect=NONE");
     }
     static Assembly ReflectionResolve(object sender, ResolveEventArgs args)
     {
@@ -672,6 +742,195 @@ internal static class ProjectConstructorProbe
         }
         Record("OWNED_FACTORY_CONSTRUCTOR_PASS return=true denial=true caught-denial=true all-unqualified=true dependency-proxies-bounded=true original=NOT_RUN");
     }
+    // Reflective shape checks precede every builder side effect. No registrations.
+    sealed class EmptyContainerApi
+    {
+        internal Type Builder, Options, Container, Context;
+        internal ConstructorInfo Constructor;
+        internal MethodInfo Build;
+    }
+    static bool PublicInterface(Type type)
+    { return type != null && type.IsPublic && type.IsInterface && !type.IsGenericType && !type.ContainsGenericParameters; }
+    static EmptyContainerApi EmptyApi(Type builder, Type options, Type container, Type context)
+    {
+        ProbeFiles.Require(builder != null && builder.IsPublic && builder.IsClass && !builder.IsAbstract && !builder.IsGenericType && !builder.ContainsGenericParameters,
+            "EMPTY_CONTAINER_BUILDER_TYPE");
+        ProbeFiles.Require(PublicInterface(container) && PublicInterface(context) && context.IsAssignableFrom(container)
+            && typeof(IDisposable).IsAssignableFrom(container), "EMPTY_CONTAINER_INTERFACES");
+        ProbeFiles.Require(options != null && options.IsPublic && options.IsEnum && !options.IsGenericType && Enum.GetUnderlyingType(options) == typeof(int), "EMPTY_CONTAINER_OPTIONS_TYPE");
+        ProbeFiles.Require(builder.Assembly == options.Assembly && builder.Assembly == container.Assembly && builder.Assembly == context.Assembly
+            && !builder.Assembly.ReflectionOnly, "EMPTY_CONTAINER_API_OWNERSHIP");
+        FieldInfo none = options.GetField("None", BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(none != null && none.DeclaringType == options && none.FieldType == options && none.IsLiteral && !none.IsInitOnly
+            && Object.Equals(none.GetRawConstantValue(), 0), "EMPTY_CONTAINER_NONE_LITERAL");
+        ConstructorInfo ctor = builder.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        MethodInfo build = builder.GetMethod("Build", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, new Type[] { options }, null);
+        ProbeFiles.Require(ctor != null && ctor.DeclaringType == builder && ctor.IsPublic && !ctor.IsStatic && ctor.GetParameters().Length == 0
+            && (ctor.CallingConvention & CallingConventions.VarArgs) == 0, "EMPTY_CONTAINER_BUILDER_CONSTRUCTOR");
+        ProbeFiles.Require(build != null && build.DeclaringType == builder && build.IsPublic && !build.IsStatic && !build.IsGenericMethod && !build.ContainsGenericParameters
+            && build.ReturnType == container && build.GetParameters().Length == 1 && build.GetParameters()[0].ParameterType == options
+            && (build.CallingConvention & CallingConventions.VarArgs) == 0, "EMPTY_CONTAINER_BUILD_SIGNATURE");
+        return new EmptyContainerApi { Builder = builder, Options = options, Container = container, Context = context, Constructor = ctor, Build = build };
+    }
+    static void EmptyContainerReturn(EmptyContainerApi api, object value)
+    {
+        ProbeFiles.Require(value != null && api.Container.IsInstanceOfType(value) && api.Context.IsInstanceOfType(value) && value is IDisposable
+            && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value) && value.GetType().Assembly == api.Builder.Assembly,
+            "EMPTY_CONTAINER_GENUINE_RETURN");
+    }
+    static void WithEmptyContainer(EmptyContainerApi api, Action<object> use)
+    {
+        object container = null, builder = null;
+        try {
+            bool created = false;
+            Record("EMPTY_CONTAINER_BUILDER_BEGIN type=" + api.Builder.FullName + " token=" + api.Constructor.MetadataToken.ToString("X8") + " token-source=OBSERVED");
+            try { builder = api.Constructor.Invoke(new object[0]); created = true; }
+            finally { Record("EMPTY_CONTAINER_BUILDER_END returned=" + created); }
+            ProbeFiles.Require(builder != null && builder.GetType() == api.Builder, "EMPTY_CONTAINER_EXACT_BUILDER");
+            bool built = false;
+            Record("EMPTY_CONTAINER_BUILD_BEGIN token=" + api.Build.MetadataToken.ToString("X8") + " options=None raw=0 application-registrations=0 defaults=RETAINED");
+            try { container = api.Build.Invoke(builder, new object[] { Enum.ToObject(api.Options, 0) }); built = true; }
+            finally { Record("EMPTY_CONTAINER_BUILD_END returned=" + built + " nonnull=" + (container != null)); }
+            EmptyContainerReturn(api, container);
+            ProbeFiles.Require(!unexpected && !rejected, "EMPTY_CONTAINER_BUILD_DEPENDENCY");
+            Record("EMPTY_CONTAINER_READY genuine-context=true context-requests=NOT_INTERCEPTED application-registrations=0 defaults=RETAINED qualification=NOT_ESTABLISHED");
+            use(container);
+        } finally {
+            IDisposable disposable = container as IDisposable;
+            if (disposable != null) {
+                bool disposed = false;
+                // Even a bounded-log failure must not skip managed disposal.
+                try { Record("EMPTY_CONTAINER_DISPOSE_BEGIN attempts=1 hard-termination-disposal=NOT_ESTABLISHED"); }
+                finally {
+                    try { disposable.Dispose(); disposed = true; }
+                    finally { Record("EMPTY_CONTAINER_DISPOSE_END returned=" + disposed + " attempts=1"); }
+                }
+            }
+            GC.KeepAlive(builder); GC.KeepAlive(container);
+        }
+    }
+    static void InvokeFactoryWithContainer(ConstructorInfo ctor, object context, ProjectDenyProxy provider)
+    {
+        bool returned = false;
+        Record("FACTORY_CONSTRUCTOR_BEGIN type=" + ctor.DeclaringType.FullName + " token=" + ctor.MetadataToken.ToString("X8")
+            + " services=genuine-empty-container+deny-all-provider constructor-only=true context-requests=NOT_INTERCEPTED qualification=NOT_ESTABLISHED");
+        try {
+            ProbeFiles.Require(!unexpected && !rejected, "FACTORY_PRECONSTRUCTOR_DEPENDENCY");
+            constructed = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true;
+            ProbeFiles.Require(constructed != null && constructed.GetType() == ctor.DeclaringType, "FACTORY_EXACT_RETURN_TYPE");
+            if (provider.Requests != 0) throw new NotSupportedException("FACTORY_PROVIDER_DENIAL_RECORDED");
+        } finally {
+            Record("FACTORY_CONSTRUCTOR_END returned=" + returned + " provider-denied-requests=" + provider.Requests
+                + " context-requests=NOT_INTERCEPTED qualification=NOT_ESTABLISHED project=NOT_RUN Id=NOT_RUN UndoManager=NOT_RUN DCA=NOT_RUN ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
+            GC.KeepAlive(provider);
+        }
+    }
+    // The same post-disposal audit is used by the original route and owned regression.
+    static void WithFactoryContainer(EmptyContainerApi api, ConstructorInfo ctor, ProjectDenyProxy provider)
+    {
+        bool returned = false;
+        try {
+            WithEmptyContainer(api, delegate(object value) { InvokeFactoryWithContainer(ctor, value, provider); });
+            returned = true;
+        } finally {
+            int denied = provider.Requests;
+            Record("FACTORY_PROVIDER_LIFETIME_AUDIT after-managed-disposal=true scope-returned=" + returned + " denied-requests=" + denied
+                + " hard-termination-audit=NOT_ESTABLISHED asynchronous-outside-lifetime=UNKNOWN qualification=NOT_ESTABLISHED");
+            if (denied != 0) throw new NotSupportedException("FACTORY_PROVIDER_LIFETIME_DENIAL_RECORDED");
+        }
+    }
+    static void OriginalEmptyContainer()
+    {
+        ProbeFiles.Require(EmptyContainer && FactoryOriginal && containerInputsReady, "EMPTY_CONTAINER_ORIGINAL_PROFILE");
+        Record("FACTORY_PHASE original-empty-container-type-materialization");
+        Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll"));
+        Assembly autofac = Assembly.LoadFrom(Path.Combine(stage, FactoryExtraNames[0] + ".dll"));
+        Assembly kim = Assembly.LoadFrom(Path.Combine(stage, FactoryExtraNames[1] + ".dll"));
+        ProbeFiles.Require(autofac.FullName == FactoryExtraIdentities[0] && !autofac.ReflectionOnly
+            && ProbeFiles.Same(autofac.Location, Path.Combine(stage, FactoryExtraNames[0] + ".dll")), "EMPTY_CONTAINER_PINNED_ASSEMBLY");
+        Type context = autofac.GetType("Autofac.IComponentContext", true, false), provider = kim.GetType("Knx.Kim.DataProvider.IKimDataProvider", true, false);
+        Type factory = om.GetType("Knx.Ets.ObjectModel.Factory", true, false);
+        ProbeFiles.Require(factory.Assembly == om && provider.Assembly == kim && context.Assembly == autofac, "FACTORY_TYPE_OWNERSHIP");
+        ConstructorInfo ctor = FactoryCtor(factory, context, provider); OriginalFactoryTokens(factory, ctor, context, provider);
+        EmptyContainerApi api = EmptyApi(autofac.GetType("Autofac.ContainerBuilder", true, false), autofac.GetType("Autofac.Builder.ContainerBuildOptions", true, false),
+            autofac.GetType("Autofac.IContainer", true, false), context);
+        ProbeFiles.Require(api.Builder.Assembly == autofac && !unexpected && !rejected, "EMPTY_CONTAINER_PREBUILDER_DEPENDENCY");
+        Record("EMPTY_CONTAINER_API type-token=" + api.Builder.MetadataToken.ToString("X8") + " ctor-token=" + api.Constructor.MetadataToken.ToString("X8")
+            + " build-token=" + api.Build.MetadataToken.ToString("X8") + " token-source=OBSERVED identity=" + Text(autofac.FullName)
+            + " api-source-commit=07cac9047f4059de2d72834042c9649cbd228085");
+        var denied = new ProjectDenyProxy(provider, Record);
+        WithFactoryContainer(api, ctor, denied);
+    }
+    static void OwnedEmptyContainer()
+    {
+        Assembly assembly = Assembly.LoadFrom(fixture);
+        Func<string, Type> type = delegate(string name) { return assembly.GetType("Owned.Task009." + name, true, false); };
+        Type builder = type("EmptyBuilderFixture"), options = type("EmptyOptionsFixture"), container = type("IEmptyContainerFixture"), context = type("IContainerDependencyFixture"), control = type("EmptyControlFixture");
+        Action<string> reset = delegate(string behavior) { control.GetMethod("Reset").Invoke(null, new object[] { behavior }); };
+        Func<string, int> count = delegate(string name) { return (int)control.GetField(name).GetValue(null); };
+        EmptyContainerApi api = EmptyApi(builder, options, container, context);
+        foreach (string oldMode in new string[] { "original-project", "original-project-store-id", "original-factory", "original-factory-bcl9", "owned-factory-empty-container" })
+            for (int i = 0; i < ContainerNames.Length; i++) ProbeFiles.Require(!ContainerReferencePolicy(oldMode, true, ContainerIdentities[i], Path.Combine(stage, ContainerNames[i] + ".dll"), false), "OWNED_CONTAINER_OLD_MODE_REFERENCE");
+        for (int i = 0; i < ContainerNames.Length; i++) {
+            string path = Path.Combine(stage, ContainerNames[i] + ".dll");
+            ProbeFiles.Require(ContainerReferencePolicy("original-factory-empty-container", true, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("original-factory-empty-container", false, ContainerIdentities[i], path, false)
+                && !ContainerReferencePolicy("original-factory-empty-container", true, ContainerIdentities[i], path, true)
+                && !ContainerReferencePolicy("original-factory-empty-container", true, "Owned.WrongIdentity", path, false)
+                && !ContainerReferencePolicy("original-factory-empty-container", true, ContainerIdentities[i], Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ContainerNames[i] + ".dll"), false), "OWNED_CONTAINER_REFERENCE_POLICY");
+        }
+        Record("OWNED_CONTAINER_REFERENCE_POLICY_PASS old-modes-incomplete-identity-location-reflection=denied framework-fallback=false policy-only=true");
+        reset("normal"); int negatives = 0;
+        foreach (Action action in new Action[] {
+            delegate { EmptyApi(type("EmptyPrivateBuilderFixture"), options, container, context); },
+            delegate { EmptyApi(type("EmptyStaticBuilderFixture"), options, container, context); },
+            delegate { EmptyApi(type("EmptyGenericBuilderFixture"), options, container, context); },
+            delegate { EmptyApi(type("EmptyWrongReturnBuilderFixture"), options, container, context); },
+            delegate { EmptyApi(builder, type("EmptyByteOptionsFixture"), container, context); },
+            delegate { EmptyApi(builder, type("EmptyWrongOptionsFixture"), container, context); },
+            delegate { EmptyApi(builder, options, context, context); },
+            delegate { EmptyApi(builder, options, container, typeof(IDisposable)); },
+            delegate { EmptyApi(builder, options, container, typeof(string)); },
+            delegate { EmptyContainerReturn(api, null); },
+            delegate { EmptyContainerReturn(api, new object()); },
+            delegate { EmptyContainerReturn(api, new ProjectDenyProxy(container, Record).GetTransparentProxy()); }
+        }) { bool failed = false; try { action(); } catch (IOException) { failed = true; } ProbeFiles.Require(failed, "OWNED_EMPTY_API_NEGATIVE"); negatives++; }
+        ProbeFiles.Require(count("Constructors") == 0 && count("Builds") == 0 && count("Disposals") == 0, "OWNED_EMPTY_NO_EARLY_EFFECTS");
+        Record("OWNED_EMPTY_API_PASS negatives=" + negatives + " before-builder=true unsigned-owned-only=true");
+        foreach (string behavior in new string[] { "normal", "ctor-throw", "build-throw", "null", "dispose-throw" }) {
+            reset(behavior); int used = 0; bool failed = false;
+            try { WithEmptyContainer(api, delegate(object value) { used++; }); } catch (Exception error) {
+                failed = error is IOException || (error is TargetInvocationException && error.InnerException is NotSupportedException) || error is NotSupportedException;
+                if (!failed) throw;
+            }
+            ProbeFiles.Require(failed == (behavior != "normal") && count("Constructors") == 1
+                && count("Builds") == (behavior == "ctor-throw" ? 0 : 1)
+                && count("Disposals") == (behavior == "normal" || behavior == "dispose-throw" ? 1 : 0)
+                && used == (behavior == "normal" || behavior == "dispose-throw" ? 1 : 0), "OWNED_EMPTY_LIFETIME_RESULT");
+        }
+        Type provider = type("IDataDependencyFixture");
+        foreach (string name in new string[] { "EmptyFactoryReturnsFixture", "EmptyFactoryThrowsFixture", "EmptyFactoryCatchesFixture" }) {
+            reset("normal"); var denied = new ProjectDenyProxy(provider, Record); bool failed = false;
+            try { WithFactoryContainer(api, FactoryCtor(type(name), context, provider), denied); }
+            catch (TargetInvocationException error) { failed = error.InnerException is NotSupportedException; if (!failed) throw; }
+            catch (NotSupportedException) { failed = true; }
+            ProbeFiles.Require(failed == (name != "EmptyFactoryReturnsFixture") && count("Constructors") == 1 && count("Builds") == 1 && count("Disposals") == 1
+                && count("Factories") == 1 && denied.Requests == (name == "EmptyFactoryReturnsFixture" ? 0 : 1), "OWNED_EMPTY_FACTORY_RESULT");
+        }
+        // Reproduce the old unaudited lifetime using OWNED bytes only, then test the production wrapper.
+        ConstructorInfo disposalCtor = FactoryCtor(type("EmptyFactoryDisposalProviderFixture"), context, provider);
+        reset("dispose-denial-caught"); var baseline = new ProjectDenyProxy(provider, Record);
+        WithEmptyContainer(api, delegate(object value) { InvokeFactoryWithContainer(disposalCtor, value, baseline); });
+        ProbeFiles.Require(baseline.Requests == 1 && count("Disposals") == 1 && count("Factories") == 1, "OWNED_DISPOSAL_DENIAL_BASELINE");
+        Record("OWNED_DISPOSAL_DENIAL_BASELINE reproduced=true unaudited-returned=True provider-denied-requests=1 disposals=1 original=NOT_RUN");
+        reset("dispose-denial-caught"); var guarded = new ProjectDenyProxy(provider, Record); bool disposalDenied = false;
+        try { WithFactoryContainer(api, disposalCtor, guarded); }
+        catch (NotSupportedException error) { disposalDenied = error.Message == "FACTORY_PROVIDER_LIFETIME_DENIAL_RECORDED"; if (!disposalDenied) throw; }
+        ProbeFiles.Require(disposalDenied && guarded.Requests == 1 && count("Disposals") == 1 && count("Factories") == 1
+            && count("Constructors") == 1 && count("Builds") == 1, "OWNED_DISPOSAL_DENIAL_FIX");
+        Record("OWNED_DISPOSAL_DENIAL_FIX_PASS failed=true provider-denied-requests=1 disposals=1 shared-original-wrapper=true original=NOT_RUN");
+        Record("OWNED_EMPTY_CONTAINER_PASS builder-build-once=true null-wrong-return-denied=true disposal-once=true disposal-failure-fails=true provider-denial-caught-still-fails=true all-unqualified=true original=NOT_RUN");
+    }
     [STAThread]
     internal static int Main(string[] args)
     {
@@ -696,6 +955,8 @@ internal static class ProjectConstructorProbe
                 for (int i = 0; i < Names.Length; i++) Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
                 PinPlatformFacade();
                 for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "INPUT_IDENTITY");
+            } else if (EmptyContainer && FactoryOriginal) {
+                PinContainerInputs();
             } else if (FactoryOriginal) {
                 PinFactoryInputs();
             } else {
@@ -719,7 +980,8 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (FactoryOnly) { if (FactoryOriginal) OriginalFactory(); else OwnedFactory(); }
+                        if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
+                        else if (FactoryOnly) { if (FactoryOriginal) OriginalFactory(); else OwnedFactory(); }
                         else if (StoreIdFixture) { if (Original) OriginalProjectStoreId(); else OwnedProjectStoreId(); }
                         else if (Original) OriginalProject(); else Owned(); result = 0;
                     }

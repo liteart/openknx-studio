@@ -82,15 +82,105 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked; latest original Factory09 exact-binding diagnostic FAIL exit10 at denied Autofac.get_ComponentRegistry; no qualified Factory/Project/fixture/service |
-| Source commit(s) | Prior increments retained; latest actual Factory09 source `28f53d27a24b4f11d5507df0a8178063f23bc872`; bounded result documentation follows |
-| Tests executed | Windows09 owned PASS23 Session0/42 limited/28 admin-negative remains separate. Exactly one original Factory09 FAIL10 after policy/pins/pinned9 load; constructor not returned/one denied proxy request. Prior Factory08 FAIL2 and UndoManager declaration PASS retained. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; internals UNKNOWN |
+| Source commit(s) | Prior increments retained; latest actual Factory09 source `28f53d27a24b4f11d5507df0a8178063f23bc872`; reviewed generation11 empty-container source recorded in this increment against baseline `61f3e43c785b015abd22c2006260d8ea7d94c137` |
+| Tests executed | Windows11 owned PASS 27/58/32 with all18 artifact preflight in all three runners; post-disposal caught-denial owned regression PASS. Historical Windows10 observed PASS 27 Session0 smoke (artifact binding INCONCLUSIVE)/58 limited/32 admin-negative; original empty-container NOT RUN. Windows09 owned PASS23 Session0/42 limited/28 admin-negative remains separate. Exactly one original Factory09 FAIL10 after policy/pins/pinned9 load; constructor not returned/one denied proxy request. Prior Factory08 FAIL2 and UndoManager declaration PASS retained. Explicit harness Project/Id/UndoManager/DCA/UI/state/hardware operations NOT RUN; internals UNKNOWN |
 | Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); private `task009-objectmodel` inventory/Project report and `task009-construction`, `task009-services` and `task009-providers` reports/verifier logs; dated records below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Exact8-to9 CLR preflight and actual pinned9 AssemblyLoad observed, no Bcl Resolve event. Prior dependency blocker NOT_REPRODUCED_THIS_ATTEMPT, not ABI proof. Factory0600012E ATTEMPTED_NOT_RETURNED/body NOT_ESTABLISHED; denied get_ComponentRegistry06000035 zeroargs. No qualification or retry |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Windows09 source/owned critical review PASS; Factory09 actual result independent audit and critical actual-result documentation review PASS; no runtime service acceptance |
+| Reviewer | Generation10 independent audits PASS within coverage/Session0 artifact-binding INCONCLUSIVE; critical review FAIL readiness at post-disposal provider-audit P2. Generation11 source/owned Windows11 independent verification and critical re-review PASS; the generation10 P2 is resolved in source11. Windows09 source/owned critical review PASS; Factory09 actual result independent audit and critical actual-result documentation review PASS; no runtime service acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Empty-container diagnostic source freeze
+
+Baseline `61f3e43c785b015abd22c2006260d8ea7d94c137` retains reviewed Factory09
+FAIL10. New fixed original/owned-factory-empty-container modes use only separate
+ProjectFactoryContainerProbe.exe/config: genuine public builder/Build(None), zero
+application registrations (defaults retained), then reviewed Factory constructor,
+with Kim denied. No Register/Resolve/Factory method/Project/Id/UndoManager/DCA call.
+Genuine context requests are NOT_INTERCEPTED; caught provider denial still fails.
+Shape guards precede builder effects; retained container disposal is attempted once
+on managed outcomes, disposal failure fails; hard-kill disposal NOT_ESTABLISHED.
+
+Initial fourteen-input readiness was held at actual DiagnosticSource8 metadata.
+Explicitly approved nineteen-input profile keeps the fourteen prefix exact and
+adds only five private pins/24,278,056 total bytes; manifest SHA-256
+`a3f133f73e6240493264485d4c7ce5fd87855e7ffde158bc173db5ca4d872d98` and audit PASS
+`0c17029082f47decbc15def3860f6ab402e916e25656ac2c9356d8af8a5e66d0`
+bind bounded declared closure across six libraries, not the whole SDK/runtime.
+All nineteen hashes/sizes precede OS/identity; only this completed original profile
+admits the five exact private identities/paths, overriding Framework/GAC fallback.
+The separate config preserves old Bcl exact8-to9 and adds four exact policies,
+no broad ranges/vector redirect; SHA-256 `60ac03885b7bbd3b944bb91d27017220fadcde8f7ade15cc1d59ea1d16177225`.
+Old modes/configs/fourteen arrays/constructor methods remain; eighteen artifacts.
+Immutable Autofac8.2 API evidence and all pin/identity/redirect details are in
+[the contract](../docs/DCA-PROJECT-CONTEXT.md).
+
+Local **PASS**: six-reference C#5/x64 compile, Build/Test PS parse/source guards,
+manifest/preservation/scope/diff checks. Fresh helper SHA-256
+`12e73fa105abb32aa813c1b8e715c64e5bc6b42f5208b76561172f625e9bd2eb`;
+exact normalized command in contract. Runtime policy/API/lifetime tests and new
+Windows owned/original execution **NOT RUN** at this chronological freeze;
+source/owned verification and critical review pending. Original Factory09 FAIL10
+and owned Windows09 PASS23/42/28 remain separate. No ABI/service/Project/DCA/UI/state/
+hardware/gate qualification; Task remains Blocked, all ACs unchecked.
+
+### Subsequent Windows10 owned result
+
+Pinned compiler/build **PASS**, eight source bindings/eighteen artifacts; observed
+owned cases **PASS 27 Session0 smoke /58 limited Session2 nonadmin /32 admin-negative
+Session2 admin**. Only limited/admin preflighted all 18 artifact sizes/hashes.
+Session0 checked compiler/source report/test-driver hash, but full 18 artifact binding
+is **INCONCLUSIVE**, not retroactively established; no rerun. Both done/cleanup 0,
+tasks removed/zero owned processes/no junction, 151/73 case files and strict raw UTF16/
+UTF8 derivatives preserved; cleanup UTF8/Session0 CLIXML stderr retained.
+Observation 55,878B SHA-256 `b6530e8ed3ca9d104e2ca3f047201fbbb06c1aed70fb743813cf87f38cef67bd`
+binds 291 files/freeze `bb4557c60bc0b5086665efc4c50412ec73cb02495dc40948f7821a6dcc6f9f2e`.
+Independent bounded source/owned-result audits **PASS**, latter SHA-256
+`f576b686002dbd839c539fea7a7d0b34474e691ed3d28683f27d3dafcce784ac`.
+CLR policies/near-misses/no target-load and owned lifetime/API/provider/count/config
+negatives passed; original Autofac Build was NOT RUN. Input19 copy/hash-only and
+prepared original10 helpers source-only; original requires full 18 artifact preflight.
+Critical source/owned review pending, original empty-container **NOT RUN**; latest
+actual Factory09 FAIL10 remains. No qualification/gate; Task Blocked/ACs unchecked.
+
+### Generation11 disposal-denial source repair
+
+Generation10 critical source readiness review **FAIL**, one P2: Dispose could
+invoke/catch a denied provider call after the constructor-only check. Historical
+freeze10/build10/owned27/58/32/audits are preserved, not accepted readiness; no
+original10 attempt occurred. This is a source finding, not original SDK behavior.
+The shared original/owned WithFactoryContainer wrapper now audits provider requests
+in finally after the complete managed lifetime/disposal and fails on any denial;
+constructor precheck/exact-once disposal/error failure remain. The owned regression
+requires an unaudited return with denial1/disposal1, then production-wrapper failure
+with denial1/disposal1, using owned bytes only. No other source/config/pin/mode change.
+Local C#5/x64 six-reference compile/PS parse/source guards/scope/diff **PASS**;
+fresh helper SHA-256 `fdcdc0fa74aaa9c11fe2365dedf6d23bcf9310b23b48a8abfa47fcc11456fc82`.
+Windows11 owned regression/runtime and original container execution **NOT RUN**
+at this freeze; verification/re-review pending. Hard-kill disposal/audit is
+NOT_ESTABLISHED, asynchronous requests outside observed lifetime UNKNOWN; no timing
+promise. TaskBlocked/ACs unchecked/no qualification/gate, Factory09FAIL10 retained.
+
+### Subsequent Windows11 owned verification
+
+Build PASS (same pinned compiler/eight sources/eighteen artifacts); owned suites
+**PASS 27 Session0 /58 limited /32 admin-negative**, with full 18 artifact size/hash
+preflight in all three runners. Generation10's Session0 gap remains INCONCLUSIVE,
+source10 critical review remains FAIL; no original10 attempt/source10 commit.
+Owned regression reproduced unaudited caught-Dispose denial1/disposal1, then shared
+original wrapper rejection with exact counts; expected failure asserted PASS,
+genuine SDK/container NOT RUN. Session2 roles/done 0/cleanup 0/removal/0process/
+no junction and 151/73 files/strict encoding bound. Observation 55,147B SHA-256
+`b7016e423ac53dd56007aadff4a525d318ea8fb28a1373bc0f99b480e34ac713`
+binds 283 files; independent result audit PASS SHA-256
+`13919348234faef7b69ea2e58b32327b5efb9f20778bfd204a01e22f62509f09`.
+Exact executed Python helper commands/local audit command are in the contract;
+initial record-helper hash assertion failed before publication then corrected,
+not a Windows/SDK rerun. Critical re-review PASS/original11 NOT RUN; private review11/critical-review-source.txt records the bounded verdict.
+Factory09 FAIL10 remains latest actual original; Task Blocked/ACs unchecked/no gate
+or qualification. Hard-kill audit/asynchronous-outside-lifetime limits remain.
 
 ## Factory09 actual exact-binding result
 
