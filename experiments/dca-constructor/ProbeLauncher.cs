@@ -33,11 +33,13 @@ internal static class ProbeLauncher
             seconds = Int32.Parse(args[1]); string mode = args[3];
             string[] resourceCases = { "id-constructor", "id-getter", "getter", "builder", "registration", "external", "build", "factory", "project", "validation", "logging", "error", "project-dispose", "container-dispose", "trace-dispose", "nested-window", "nested-budget", "nested-callback", "off-thread" };
             string[] undoCases = { "get", "new", "root", "invalid", "saturation", "trace-ctor", "builder", "registration", "external", "build", "factory", "project", "project-dispose", "container-dispose", "trace-dispose", "error", "final-audit", "nested", "resource", "register-null", "external-null" };
+            string[] factoryCases = { "project-activation", "no-activation", "null", "wrong-type", "second", "saturation", "nested", "off-thread", "recorder", "resource", "get", "new", "root", "trace-ctor", "builder", "registration", "single", "external", "build", "factory", "project", "project-dispose", "container-dispose", "trace-dispose", "error", "final-audit", "late" };
+            bool selectedFactoryCase = args.Length == 10 && mode == "owned-project-undo-provider-factory" && args[8] == "--owned-factory-case" && Array.IndexOf(factoryCases, args[9]) >= 0;
             bool selectedUndoCase = args.Length == 10 && mode == "owned-project-undo-provider-denied" && args[8] == "--owned-undo-case" && Array.IndexOf(undoCases, args[9]) >= 0;
-            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase;
+            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase;
             ProbeFiles.Require(!selectedResourceCase || (mode == "owned-project-genuine-factory-resources" && args[8] == "--owned-resource-case"
                 && Array.IndexOf(resourceCases, args[9]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            bool emptyContainer = mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || mode == "original-trace-encryptor" || mode == "owned-trace-encryptor" || mode == "original-factory-registered-trace" || mode == "owned-factory-registered-trace" || mode == "original-project-genuine-factory" || mode == "owned-project-genuine-factory" || mode == "original-project-genuine-factory-resources" || mode == "owned-project-genuine-factory-resources" || mode == "original-project-undo-provider-denied" || mode == "owned-project-undo-provider-denied";
+            bool emptyContainer = mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || mode == "original-trace-encryptor" || mode == "owned-trace-encryptor" || mode == "original-factory-registered-trace" || mode == "owned-factory-registered-trace" || mode == "original-project-genuine-factory" || mode == "owned-project-genuine-factory" || mode == "original-project-genuine-factory-resources" || mode == "owned-project-genuine-factory-resources" || mode == "original-project-undo-provider-denied" || mode == "owned-project-undo-provider-denied" || mode == "original-project-undo-provider-factory" || mode == "owned-project-undo-provider-factory";
             bool factoryBinding = mode == "original-factory-bcl9" || mode == "owned-factory-bcl9";
             bool project = emptyContainer || factoryBinding || mode == "project-enum-metadata" || mode == "original-project" || mode == "owned-project" || mode == "original-project-store-id" || mode == "owned-project-store-id" || mode == "original-factory" || mode == "owned-factory";
             ProbeFiles.Require((mode != "original-project-store-id" && mode != "owned-project-store-id") || seconds <= 15, "PROJECT_FIXTURE_DEADLINE");
@@ -52,6 +54,7 @@ internal static class ProbeLauncher
             child = new Process(); child.StartInfo.FileName = exe;
             child.StartInfo.Arguments = mode == "neutral" ? "--seconds 1 --log " + ProbeFiles.Quote(log)
                 : "--mode " + ProbeFiles.Quote(mode) + " --input " + ProbeFiles.Quote(input) + " --log " + ProbeFiles.Quote(log);
+            if (selectedFactoryCase) child.StartInfo.Arguments += " --owned-factory-case " + ProbeFiles.Quote(args[9]);
             if (selectedUndoCase) child.StartInfo.Arguments += " --owned-undo-case " + ProbeFiles.Quote(args[9]);
             if (selectedResourceCase) child.StartInfo.Arguments += " --owned-resource-case " + ProbeFiles.Quote(args[9]);
             child.StartInfo.WorkingDirectory = Path.GetDirectoryName(log);

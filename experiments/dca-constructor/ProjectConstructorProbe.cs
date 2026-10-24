@@ -115,6 +115,64 @@ internal sealed class UndoProviderDenyProxy : RealProxy
     }
 }
 
+// A service-reference factory only. The captured provider still denies every method.
+internal sealed class UndoProviderFactoryHolder
+{
+    readonly object sync = new object(), instance;
+    readonly Type contract;
+    readonly int ownerThread;
+    readonly Action<string> record;
+    internal readonly Delegate Callback;
+    int entries, successes, lifetime;
+    bool violation, inCallback;
+    internal UndoProviderFactoryHolder(Type service, object proxy, Type callbackType, Action<string> recorder)
+    {
+        ProbeFiles.Require(ProjectConstructorProbe.UndoFactoryMode && service != null && service.IsPublic && service.IsInterface && !service.IsGenericType
+            && proxy != null && service.IsInstanceOfType(proxy) && recorder != null && callbackType != null && callbackType.IsGenericType
+            && callbackType.GetGenericTypeDefinition() == typeof(Func<,>) && callbackType.GetGenericArguments()[0].IsPublic && callbackType.GetGenericArguments()[0].IsInterface
+            && callbackType.GetGenericArguments()[1] == service, "UNDO_FACTORY_HOLDER_CONTRACT");
+        contract = service; instance = proxy; record = recorder; ownerThread = Thread.CurrentThread.ManagedThreadId;
+        MethodInfo open = typeof(UndoProviderFactoryHolder).GetMethod("Provide", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(open != null && open.IsGenericMethodDefinition && open.GetGenericArguments().Length == 1
+            && open.GetGenericArguments()[0].GenericParameterAttributes == GenericParameterAttributes.ReferenceTypeConstraint
+            && open.GetGenericArguments()[0].GetGenericParameterConstraints().Length == 0 && open.GetParameters().Length == 1
+            && open.GetParameters()[0].ParameterType == typeof(object) && open.ReturnType == open.GetGenericArguments()[0], "UNDO_FACTORY_FIXED_OWNED_METHOD");
+        MethodInfo method = open.MakeGenericMethod(service);
+        Callback = Delegate.CreateDelegate(callbackType, this, method, true);
+        ProbeFiles.Require(Callback != null && Object.ReferenceEquals(Callback.Target, this) && Callback.Method.Equals(method) && Callback.GetType() == callbackType, "UNDO_FACTORY_CLOSED_DELEGATE");
+    }
+    internal int Entries { get { lock (sync) { return entries; } } }
+    internal int Successes { get { lock (sync) { return successes; } } }
+    internal bool Faulted { get { lock (sync) { return violation; } } }
+    internal void Begin()
+    { lock (sync) { if (lifetime != 0) { violation = true; throw new NotSupportedException("UNDO_FACTORY_LIFETIME_BEGIN"); } lifetime = 1; } }
+    internal void Close() { lock (sync) { if (lifetime != 1) violation = true; lifetime = 2; } }
+    public T Provide<T>(object context) where T : class
+    {
+        int count; lock (sync) { if (entries < 2) entries++; count = entries; }
+        bool entered = false, suspended = false, prepared = false; int previous = 0;
+        try {
+            bool eligible = ProjectConstructorProbe.UndoFactoryWindowEligible(), excluded = ProjectConstructorProbe.UndoFactoryCallbackExcluded();
+            if (!excluded) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
+            lock (sync) {
+                ProbeFiles.Require(count == 1 && lifetime == 1 && !inCallback && !violation && !excluded && typeof(T) == contract
+                    && context != null && Thread.CurrentThread.ManagedThreadId == ownerThread
+                    && eligible, "UNDO_FACTORY_CALLBACK_CONTEXT");
+                inCallback = true; entered = true;
+            }
+            T value = (T)instance;
+            record("UNDO_PROVIDER_FACTORY_CALLBACK entries=1 same-existing-proxy=True provider-value=NOT_PROVIDED context=NOT_INSPECTED");
+            ProbeFiles.Require(!Faulted, "UNDO_FACTORY_CALLBACK_CAUGHT_FAULT");
+            prepared = true; return value;
+        } catch { lock (sync) { violation = true; } throw; }
+        finally {
+            try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); }
+            catch { lock (sync) { violation = true; } throw; }
+            finally { lock (sync) { if (entered) inCallback = false; if (prepared && !violation) successes++; } }
+        }
+    }
+}
+
 internal static class ProjectConstructorProbe
 {
     // Observed enum02 metadata, independently verified/reviewed before this freeze.
@@ -178,6 +236,9 @@ internal static class ProjectConstructorProbe
     static string stage, mode, fixture;
     static string ownedResourceCase;
     static string ownedUndoCase;
+    static string ownedFactoryCase;
+    static UndoProviderFactoryHolder activeFactory;
+    static readonly string[] OwnedFactoryCases = { "project-activation", "no-activation", "null", "wrong-type", "second", "saturation", "nested", "off-thread", "recorder", "resource", "get", "new", "root", "trace-ctor", "builder", "registration", "single", "external", "build", "factory", "project", "project-dispose", "container-dispose", "trace-dispose", "error", "final-audit", "late" };
     static readonly string[] OwnedUndoCases = { "get", "new", "root", "invalid", "saturation", "trace-ctor", "builder", "registration", "external", "build", "factory", "project", "project-dispose", "container-dispose", "trace-dispose", "error", "final-audit", "nested", "resource", "register-null", "external-null" };
     static UndoProviderDenyProxy activeUndo;
     static readonly string[] OwnedResourceCases = { "id-constructor", "id-getter", "getter", "builder", "registration", "external", "build", "factory", "project", "validation", "logging", "error", "project-dispose", "container-dispose", "trace-dispose", "nested-window", "nested-budget", "nested-callback", "off-thread" };
@@ -198,8 +259,14 @@ internal static class ProjectConstructorProbe
     static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly || RegisteredTrace; } }
     static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
     static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
-    static bool UndoDeniedOriginal { get { return mode == "original-project-undo-provider-denied"; } }
-    static bool UndoDeniedOwned { get { return mode == "owned-project-undo-provider-denied"; } }
+    static bool UndoFactoryOriginal { get { return mode == "original-project-undo-provider-factory"; } }
+    static bool UndoFactoryOwned { get { return mode == "owned-project-undo-provider-factory"; } }
+    internal static bool UndoFactoryMode { get { return UndoFactoryOriginal || UndoFactoryOwned; } }
+    internal static bool UndoFactoryCallbackExcluded() { return projectResourceCallbackSuspended; }
+    internal static bool UndoFactoryWindowEligible()
+    { return UndoFactoryMode && projectResourceBudgetActive && !projectResourceCallbackSuspended && (projectResourceWindow == 1 || projectResourceWindow == 2); }
+    static bool UndoDeniedOriginal { get { return mode == "original-project-undo-provider-denied" || UndoFactoryOriginal; } }
+    static bool UndoDeniedOwned { get { return mode == "owned-project-undo-provider-denied" || UndoFactoryOwned; } }
     internal static bool UndoDeniedMode { get { return UndoDeniedOriginal || UndoDeniedOwned; } }
     static bool ProjectResourcesOriginal { get { return mode == "original-project-genuine-factory-resources" || UndoDeniedOriginal; } }
     static bool ProjectResourcesOwned { get { return mode == "owned-project-genuine-factory-resources" || UndoDeniedOwned; } }
@@ -288,7 +355,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -333,7 +400,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -341,7 +408,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -454,7 +521,7 @@ internal static class ProjectConstructorProbe
     // Separate new-mode budget: old Factory-only reset behavior above is unchanged.
     static bool ProjectResourcePolicy(string selectedMode, bool complete, bool budget, int window, bool suspended, bool pinned, string request, bool requesterNull, bool matches, int count)
     {
-        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
+        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
             && (request == AutofacResourceEnGb || request == AutofacResourceEn) && (requesterNull ? !matches : matches) && count >= 1 && count <= 8;
     }
     static bool AllowProjectResourceNull(string request, bool pinned, bool requesterNull, bool matches, Assembly requester)
@@ -982,7 +1049,7 @@ internal static class ProjectConstructorProbe
             "EMPTY_CONTAINER_GENUINE_RETURN");
     }
     static void CheckBuilderDependencies(bool hasUnexpected, bool hasRejected)
-    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "EMPTY_CONTAINER_BUILDER_DEPENDENCY"); CheckUndoProvider("BUILDER"); }
+    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "EMPTY_CONTAINER_BUILDER_DEPENDENCY"); CheckUndoProvider("BUILDER"); CheckUndoFactory("BUILDER"); }
     static void WithEmptyContainer(EmptyContainerApi api, Action<object> use)
     { WithEmptyContainerCore(api, use, null); }
     // Additional guard control exists only for finite owned fixtures. Actual latches are never bypassed/reset.
@@ -1006,7 +1073,7 @@ internal static class ProjectConstructorProbe
             Record("EMPTY_CONTAINER_BUILD_BEGIN token=" + api.Build.MetadataToken.ToString("X8") + " options=None raw=0 application-registrations=" + (register == null ? 0 : UndoDeniedMode ? 2 : 1) + " defaults=RETAINED");
             try { container = api.Build.Invoke(builder, new object[] { Enum.ToObject(api.Options, 0) }); built = true; }
             finally { Record("EMPTY_CONTAINER_BUILD_END returned=" + built + " nonnull=" + (container != null)); }
-            EmptyContainerReturn(api, container); CheckUndoProvider("POST_BUILD");
+            EmptyContainerReturn(api, container); CheckUndoProvider("POST_BUILD"); CheckUndoFactory("POST_BUILD");
             ProbeFiles.Require(!unexpected && !rejected, "EMPTY_CONTAINER_BUILD_DEPENDENCY");
             Record("EMPTY_CONTAINER_READY genuine-context=true context-requests=NOT_INTERCEPTED application-registrations=" + (register == null ? 0 : UndoDeniedMode ? 2 : 1) + " defaults=RETAINED qualification=NOT_ESTABLISHED");
             use(container);
@@ -1255,7 +1322,7 @@ internal static class ProjectConstructorProbe
     static bool ReviewedTraceTokens(int type, int ctor, int parameter, int contract)
     { return type == 0x0200007e && ctor == 0x06000364 && parameter == 0x080001e4 && contract == 0x02000077; }
     static void TraceDependencyGuard(bool hasUnexpected, bool hasRejected, string phase)
-    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "TRACE_DEPENDENCY_" + phase); CheckUndoProvider(phase); }
+    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "TRACE_DEPENDENCY_" + phase); CheckUndoProvider(phase); CheckUndoFactory(phase); }
     static void WithTraceLifetime(TraceLifetimeApi api) { WithTraceLifetimeCore(api, null); }
     // Finite owned refusal controls cannot reset latches or activate the original route.
     static void WithTraceLifetimeCore(TraceLifetimeApi api, Action<string> ownedGuard)
@@ -1641,10 +1708,10 @@ internal static class ProjectConstructorProbe
         object factory = null; bool returned = false;
         Record("FACTORY_CONSTRUCTOR_BEGIN token=" + ctor.MetadataToken.ToString("X8") + " services=genuine-registered-trace-container+deny-all-provider project=NOT_REACHED qualification=NOT_ESTABLISHED");
         try {
-            ProbeFiles.Require(ProjectScope && !unexpected && !rejected, "PROJECT_FACTORY_PRECONSTRUCTOR"); CheckUndoProvider("FACTORY_PRE_CTOR");
+            ProbeFiles.Require(ProjectScope && !unexpected && !rejected, "PROJECT_FACTORY_PRECONSTRUCTOR"); CheckUndoProvider("FACTORY_PRE_CTOR"); CheckUndoFactory("FACTORY_PRE_CTOR");
             if (ProjectResources) {
                 object[] arguments = new object[] { context, provider.GetTransparentProxy() };
-                WithProjectResourceWindow(1, delegate { factory = ctor.Invoke(arguments); }); returned = true; CheckUndoProvider("FACTORY_POST_CTOR");
+                WithProjectResourceWindow(1, delegate { factory = ctor.Invoke(arguments); }); returned = true; CheckUndoProvider("FACTORY_POST_CTOR"); CheckUndoFactory("FACTORY_POST_CTOR");
             } else WithFactoryResourcePhase(delegate { factory = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true; });
             ProbeFiles.Require(factory != null && factory.GetType() == ctor.DeclaringType && !unexpected && !rejected, "PROJECT_FACTORY_EXACT_RETURN");
             ProbeFiles.Require(provider.Requests == 0, "PROJECT_FACTORY_PROVIDER_DENIAL");
@@ -1684,17 +1751,22 @@ internal static class ProjectConstructorProbe
         TraceDependencyGuard(unexpected, rejected, "PROJECT_SCOPE_SHAPES");
         Record("PROJECT_SCOPE_API_READY public-ctor=06002830 public-dispose=060028BD IFactory=02000037 interface-map=VERIFIED metadata-sha256=" + ReviewedProjectConstructionReportSha256 + " original-runtime=NOT_YET_ATTEMPTED");
         TraceRegistrationApi undoRegistration = null; UndoProviderDenyProxy undo = null;
+        UndoFactoryRegistrationApi factoryRegistration = null; UndoProviderFactoryHolder holder = null;
         if (UndoDeniedOriginal) {
             Type undoType = om.GetType("Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider", true), opaque = om.GetType("Knx.Ets.ObjectModel.IStreamStore", true);
             UndoContract(undoType, opaque); OriginalUndoTokens(undoType);
-            undoRegistration = RegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), undoType);
+            if (UndoFactoryOriginal) factoryRegistration = FactoryRegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), undoType);
+            else undoRegistration = RegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), undoType);
             undo = new UndoProviderDenyProxy(undoType, Record);
+            if (UndoFactoryOriginal) holder = new UndoProviderFactoryHolder(undoType, undo.GetTransparentProxy(), factoryRegistration.CallbackType, Record);
         }
         object value = CreateFixtureId(id, idCtor, idGetter);
         var store = new ProjectStoreIdProxy(storeType, storeGetter, value, Record); var denied = new ProjectDenyProxy(providerType, Record);
         resourceOwner = autofac;
         Action run = delegate {
-            if (UndoDeniedOriginal) WithUndoProvider(trace, container, registration, undoRegistration, factoryCtor, denied, store, undo,
+            if (UndoFactoryOriginal) WithUndoFactoryProvider(trace, container, registration, factoryRegistration, factoryCtor, denied, store, undo, holder,
+                delegate(object actualFactory) { WithProjectScope(scope, actualFactory, selectedStyle, store, null); });
+            else if (UndoDeniedOriginal) WithUndoProvider(trace, container, registration, undoRegistration, factoryCtor, denied, store, undo,
                 delegate(object actualFactory) { WithProjectScope(scope, actualFactory, selectedStyle, store, null); });
             else WithRegisteredTrace(trace, container, registration, factoryCtor, denied,
                 delegate(object actualFactory) { WithProjectScope(scope, actualFactory, selectedStyle, store, null); }, store);
@@ -1996,6 +2068,194 @@ internal static class ProjectConstructorProbe
             && (int)traceControl.GetField("Disposals").GetValue(null) == 1, "OWNED_UNDO_LIFETIME_COUNTS");
         Record("OWNED_UNDO_LIFETIME_PASS exact-two-external=True original=NOT_RUN provider-value=NOT_PROVIDED qualification=NOT_ESTABLISHED order=" + control.GetField("Order").GetValue(null));
     }
+    sealed class UndoFactoryRegistrationApi
+    { internal MethodInfo Register, Single, External; internal Type Return, Contract, CallbackType; }
+    static UndoFactoryRegistrationApi FactoryRegistrationApi(EmptyContainerApi container, Type extension, Type open, Type data, Type style, Type contract)
+    {
+        Assembly owner = container.Builder.Assembly;
+        ProbeFiles.Require(UndoFactoryMode && extension != null && extension.IsPublic && extension.IsAbstract && extension.IsSealed && !extension.IsGenericType
+            && open != null && open.IsPublic && open.IsInterface && open.IsGenericTypeDefinition && open.GetGenericArguments().Length == 3
+            && data != null && data.IsPublic && !data.ContainsGenericParameters && style != null && style.IsPublic && !style.ContainsGenericParameters
+            && extension.Assembly == owner && open.Assembly == owner && data.Assembly == owner && style.Assembly == owner && !owner.ReflectionOnly
+            && PublicInterface(contract), "UNDO_FACTORY_REGISTRATION_TYPES");
+        MethodInfo selected = null; int matches = 0;
+        MethodInfo[] methods = extension.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(methods.Length <= 512, "UNDO_FACTORY_METHOD_BOUND");
+        foreach (MethodInfo method in methods) {
+            if (method.Name != "Register" || !method.IsGenericMethodDefinition || method.GetGenericArguments().Length != 1) continue;
+            Type generic = method.GetGenericArguments()[0]; ParameterInfo[] parameters = method.GetParameters();
+            if (parameters.Length != 2 || parameters[0].ParameterType != container.Builder) continue;
+            Type callback = parameters[1].ParameterType;
+            if (!callback.IsGenericType || callback.GetGenericTypeDefinition() != typeof(Func<,>)) continue;
+            Type[] parts = callback.GetGenericArguments(); if (parts[0] != container.Context || parts[1] != generic) continue;
+            ProbeFiles.Require(method.DeclaringType == extension && method.CallingConvention == CallingConventions.Standard
+                && generic.GenericParameterAttributes == GenericParameterAttributes.None && generic.GetGenericParameterConstraints().Length == 0
+                && method.ReturnType.IsGenericType && method.ReturnType.GetGenericTypeDefinition() == open, "UNDO_FACTORY_REGISTER_SIGNATURE");
+            Type[] result = method.ReturnType.GetGenericArguments();
+            ProbeFiles.Require(result[0] == generic && result[1] == data && result[2] == style, "UNDO_FACTORY_REGISTER_RETURN"); selected = method; matches++;
+        }
+        ProbeFiles.Require(matches == 1, "UNDO_FACTORY_REGISTER_OVERLOAD");
+        Type closed = open.MakeGenericType(contract, data, style), callbackType = typeof(Func<,>).MakeGenericType(container.Context, contract);
+        MethodInfo register = selected.MakeGenericMethod(contract);
+        ProbeFiles.Require(register.ReturnType == closed && register.GetParameters()[1].ParameterType == callbackType && !register.ContainsGenericParameters, "UNDO_FACTORY_REGISTER_CLOSED");
+        MethodInfo single = FactoryRegistrationMember(closed, "SingleInstance"), external = FactoryRegistrationMember(closed, "ExternallyOwned");
+        return new UndoFactoryRegistrationApi { Register = register, Single = single, External = external, Return = closed, Contract = contract, CallbackType = callbackType };
+    }
+    static MethodInfo FactoryRegistrationMember(Type closed, string name)
+    {
+        MethodInfo method = closed.GetMethod(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        ProbeFiles.Require(method != null && method.DeclaringType == closed && method.IsPublic && !method.IsStatic && !method.IsGenericMethod
+            && method.GetParameters().Length == 0 && method.ReturnType == closed && method.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "UNDO_FACTORY_PUBLIC_OWNERSHIP_SHARING"); return method;
+    }
+    static void CheckUndoFactory(string phase)
+    { if (UndoFactoryMode && activeFactory != null) ProbeFiles.Require(!activeFactory.Faulted && activeFactory.Entries <= 1 && activeFactory.Successes <= 1, "UNDO_FACTORY_DENIED_" + phase); }
+    static void FinishUndoFactoryAudit(int entries, int successes, bool faulted)
+    {
+        try { Record("UNDO_FACTORY_FINAL_AUDIT after-all-managed-disposal=True entries=" + entries + " successes=" + successes + " faulted=" + faulted + " provider-value=NOT_PROVIDED"); }
+        finally { if (faulted || entries > 1 || successes > 1) throw new NotSupportedException("UNDO_FACTORY_FINAL_DENIAL"); }
+    }
+    static void RegisterUndoFactory(UndoFactoryRegistrationApi api, object builder, UndoProviderFactoryHolder holder)
+    {
+        ProbeFiles.Require(UndoFactoryMode && holder.Callback.GetType() == api.CallbackType, "UNDO_FACTORY_REGISTRATION_CALLBACK");
+        TraceDependencyGuard(unexpected, rejected, "UNDO_FACTORY_PRE_REGISTER");
+        object registration = api.Register.Invoke(null, new object[] { builder, holder.Callback });
+        ProbeFiles.Require(registration != null && api.Return.IsInstanceOfType(registration) && registration.GetType().Assembly == api.Return.Assembly
+            && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(registration), "UNDO_FACTORY_REGISTRATION_RETURN");
+        TraceDependencyGuard(unexpected, rejected, "UNDO_FACTORY_POST_REGISTER");
+        ProbeFiles.Require(Object.ReferenceEquals(registration, api.Single.Invoke(registration, new object[0])), "UNDO_FACTORY_SINGLE_SAME_BUILDER");
+        TraceDependencyGuard(unexpected, rejected, "UNDO_FACTORY_POST_SINGLE");
+        ProbeFiles.Require(Object.ReferenceEquals(registration, api.External.Invoke(registration, new object[0])), "UNDO_FACTORY_EXTERNAL_SAME_BUILDER");
+        TraceDependencyGuard(unexpected, rejected, "UNDO_FACTORY_POST_EXTERNAL");
+        Record("UNDO_FACTORY_REGISTER_END exact-two-registrations=True sharing=SingleInstance external-ownership=True before-build=True provider-value=NOT_PROVIDED");
+    }
+    static void WithUndoFactoryProvider(TraceLifetimeApi trace, EmptyContainerApi container, TraceRegistrationApi traceRegistration, UndoFactoryRegistrationApi factoryRegistration,
+        ConstructorInfo factory, ProjectDenyProxy kim, ProjectStoreIdProxy store, UndoProviderDenyProxy undo, UndoProviderFactoryHolder holder, Action<object> projectUse)
+    {
+        ProbeFiles.Require(UndoFactoryMode && activeUndo == null && activeFactory == null && undo != null && holder != null, "UNDO_FACTORY_LIFETIME_CONTEXT");
+        activeUndo = undo; activeFactory = holder; holder.Begin(); object scopedFactory = null;
+        try {
+            try { WithTraceLifetimeCore(trace, null, delegate(object instance) {
+                WithEmptyContainerCore(container, delegate(object context) {
+                    InvokeFactoryForProject(factory, context, kim, delegate(object actual) { scopedFactory = actual; projectUse(actual); });
+                }, null, delegate(object builder) { RegisterTrace(traceRegistration, builder, instance); RegisterUndoFactory(factoryRegistration, builder, holder); });
+            }); }
+            catch { if (UndoFactoryOwned) OwnedFactoryPoint("error"); throw; }
+        } finally {
+            holder.Close();
+            try {
+                if (UndoFactoryOwned) { OwnedFactoryPoint("final-audit"); OwnedFactoryPoint("late"); }
+                FinishUndoFactoryAudit(holder.Entries, holder.Successes, holder.Faulted);
+            } finally {
+                try { FinishUndoProviderAudit(undo.Requests); }
+                finally {
+                    try { Record("UNDO_FACTORY_OTHER_FINAL_AUDIT kim-denied=" + kim.Requests + " store-denied=" + store.DeniedRequests);
+                        ProbeFiles.Require(kim.Requests == 0 && store.DeniedRequests == 0, "UNDO_FACTORY_OTHER_LIFETIME_DENIAL"); }
+                    finally { GC.KeepAlive(scopedFactory); GC.KeepAlive(store); GC.KeepAlive(kim); GC.KeepAlive(undo); GC.KeepAlive(holder.Callback); GC.KeepAlive(holder); }
+                }
+            }
+        }
+    }
+    static bool ownedFactoryReentry;
+    static MethodInfo[] ownedFactoryProviderMethods;
+    static void InvokeOwnedFactory(object context, bool wrongType)
+    {
+        ProbeFiles.Require(UndoFactoryOwned && activeFactory != null, "OWNED_FACTORY_INVOKE_MODE");
+        if (wrongType) activeFactory.Provide<object>(context);
+        else activeFactory.Callback.Method.Invoke(activeFactory, new object[] { context });
+    }
+    static void OwnedFactoryRecord(string message)
+    {
+        ProbeFiles.Require(UndoFactoryOwned && projectResourceWindow == 0 && projectResourceCallbackSuspended, "OWNED_FACTORY_CALLBACK_EXCLUDED");
+        if (ownedFactoryCase == "recorder") throw new IOException("OWNED_FACTORY_RECORDER_FAULT");
+        if (!ownedFactoryReentry && ownedFactoryCase == "nested") {
+            ownedFactoryReentry = true; int before = projectResourceProbeCount; bool refused = false;
+            try { InvokeOwnedFactory(new object(), false); } catch (Exception) { refused = true; }
+            ProbeFiles.Require(refused && activeFactory.Faulted && activeFactory.Entries == 2 && projectResourceWindow == 0 && projectResourceCallbackSuspended && projectResourceProbeCount == before, "OWNED_FACTORY_NESTED_STICKY");
+            Record("OWNED_FACTORY_NESTED_REFUSAL sticky=True window=0 suspended=True aggregate-unchanged=True");
+        }
+        if (ownedFactoryCase == "resource") Resolve(null, new ResolveEventArgs(AutofacResourceEnGb));
+        Record("OWNED_FACTORY_CALLBACK_EXCLUDED window=0 suspended=True " + message);
+    }
+    static void OwnedFactoryProviderRecord(string message)
+    { ProbeFiles.Require(UndoFactoryOwned && projectResourceWindow == 0 && projectResourceCallbackSuspended, "OWNED_FACTORY_PROVIDER_EXCLUDED"); Record(message); }
+    static void OwnedFactoryPoint(string point)
+    {
+        ProbeFiles.Require(UndoFactoryOwned, "OWNED_FACTORY_POINT_MODE");
+        int previous = projectResourceWindow, probes = projectResourceProbeCount;
+        Record("OWNED_FACTORY_POINT phase=" + point + " window=" + previous + " entries=" + (activeFactory == null ? 0 : activeFactory.Entries));
+        bool after = point == "after-activation" && Array.IndexOf(new string[] { "second", "saturation", "get", "new", "root", "nested", "recorder", "resource" }, ownedFactoryCase) >= 0;
+        bool selected = after || ownedFactoryCase == point || (point == "factory" && Array.IndexOf(new string[] { "null", "wrong-type", "off-thread" }, ownedFactoryCase) >= 0);
+        if (!selected || activeFactory == null || ownedFactoryCase == "project-activation") return;
+        bool refused = false;
+        try {
+            if (after && activeFactory.Faulted && (ownedFactoryCase == "nested" || ownedFactoryCase == "recorder" || ownedFactoryCase == "resource")) refused = true;
+            else if (after && (ownedFactoryCase == "get" || ownedFactoryCase == "new" || ownedFactoryCase == "root")) {
+                int slot = ownedFactoryCase == "get" ? 0 : ownedFactoryCase == "new" ? 1 : 2;
+                ownedFactoryProviderMethods[slot].Invoke(activeUndo.GetTransparentProxy(), slot == 0 ? new object[] { Guid.Empty } : new object[0]);
+            } else if (ownedFactoryCase == "off-thread") {
+                Exception failure = null; var thread = new Thread(new ThreadStart(delegate { try { InvokeOwnedFactory(new object(), false); } catch (Exception error) { failure = error; } }));
+                thread.IsBackground = true; thread.Start(); ProbeFiles.Require(thread.Join(1000) && failure != null, "OWNED_FACTORY_OFF_THREAD_REFUSAL"); refused = true;
+            } else {
+                int count = ownedFactoryCase == "saturation" ? 20 : 1;
+                for (int i = 0; i < count; i++) try { InvokeOwnedFactory(ownedFactoryCase == "null" || ownedFactoryCase == "factory" || ownedFactoryCase == "final-audit" ? null : new object(), ownedFactoryCase == "wrong-type"); }
+                    catch (Exception) { refused = true; }
+            }
+        } catch (Exception) { refused = true; }
+        ProbeFiles.Require(refused && projectResourceWindow == previous && !projectResourceCallbackSuspended && projectResourceProbeCount == probes, "OWNED_FACTORY_REFUSAL_RESTORED");
+        ProbeFiles.Require(activeFactory.Faulted || activeUndo.Requests != 0, "OWNED_FACTORY_REFUSAL_STICKY");
+        Record("OWNED_FACTORY_REFUSAL case=" + ownedFactoryCase + " phase=" + point + " caught=True entries=" + activeFactory.Entries + " faulted=" + activeFactory.Faulted
+            + " successes=" + activeFactory.Successes + " window-restored=" + previous + " dependency-flags=" + (unexpected || rejected));
+    }
+    static void OwnedUndoFactoryProvider()
+    {
+        ProbeFiles.Require(UndoFactoryOwned, "OWNED_UNDO_FACTORY_MODE");
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true); };
+        Type contract = type("IUndoDeniedFixture"), opaque = type("IOpaqueUndoFixture"), control = type("UndoOwnedControl"), delivery = type("UndoFactoryOwnedControl"), traceControl = type("TraceLifetimeControl");
+        ownedFactoryProviderMethods = UndoContract(contract, opaque);
+        Type factoryType = type("UndoFactoryDeliveryFixture"), factoryContract = type("IFactoryFixture"), storeType = type("IScopedProjectStoreFixture"), style = type("GroupAddressStyleFixture"), id = type("ScopedIdFixture");
+        ProjectScopeApi scope = ScopedProjectApi(type("UndoFactoryProjectFixture"), factoryType, factoryContract, style, storeType);
+        EmptyContainerApi container = EmptyApi(type("UndoBuilderFixture"), type("EmptyOptionsFixture"), type("IRegisteredContainerFixture"), type("IContainerDependencyFixture"));
+        TraceLifetimeApi trace = TraceApi(type("TraceLifetimeFixture"), type("ITraceLifetimeFixture"));
+        Type extension = type("UndoFactoryRegistrationExtensionsFixture"), open = type("IUndoFactoryRegistrationFixture`3"), data = type("RegistrationDataFixture"), registrationStyle = type("RegistrationStyleFixture");
+        UndoFactoryRegistrationApi api = FactoryRegistrationApi(container, extension, open, data, registrationStyle, contract);
+        if (ownedFactoryCase == null) {
+            int negatives = 0;
+            foreach (string name in new string[] { "UndoFactoryWrongContextFixture", "UndoFactoryWrongArityFixture", "UndoFactoryWrongConstraintFixture", "UndoFactoryWrongReturnFixture" }) {
+                bool refused = false; try { FactoryRegistrationApi(container, type(name), open, data, registrationStyle, contract); } catch (IOException) { refused = true; }
+                ProbeFiles.Require(refused, "OWNED_FACTORY_API_NEGATIVE"); negatives++;
+            }
+            foreach (string name in new string[] { "IUndoFactoryWrongSingleFixture`3", "IUndoFactoryWrongExternalFixture`3" }) {
+                bool refused = false; try { FactoryRegistrationMember(type(name).MakeGenericType(contract, data, registrationStyle), name.Contains("Single") ? "SingleInstance" : "ExternallyOwned"); } catch (IOException) { refused = true; }
+                ProbeFiles.Require(refused, "OWNED_FACTORY_MEMBER_NEGATIVE"); negatives++;
+            }
+            var testProxy = new UndoProviderDenyProxy(contract, Record);
+            bool invalid = false; try { new UndoProviderFactoryHolder(contract, testProxy.GetTransparentProxy(), typeof(Func<object, object>), Record); } catch (IOException) { invalid = true; }
+            ProbeFiles.Require(invalid && testProxy.Requests == 0, "OWNED_FACTORY_BIND_NEGATIVE"); negatives++;
+            Record("OWNED_FACTORY_API_PASS negatives=" + negatives + " before-effects=True provider-calls=0 arbitrary-reflection=False");
+        }
+        TraceRegistrationApi traceRegistration = RegistrationApi(container, extension, type("IRegistrationFixture`3"), data, registrationStyle, trace.Contract);
+        ConstructorInfo factory = FactoryCtor(factoryType, container.Context, type("IDataDependencyFixture"));
+        control.GetField("Callback").SetValue(null, new Action<string>(OwnedFactoryPoint));
+        control.GetField("ThrowProject").SetValue(null, ownedFactoryCase == "error");
+        delivery.GetField("SkipActivation").SetValue(null, Array.IndexOf(new string[] { "null", "wrong-type", "off-thread", "no-activation", "final-audit" }, ownedFactoryCase) >= 0);
+        delivery.GetField("ProjectActivation").SetValue(null, ownedFactoryCase == "project-activation");
+        traceControl.GetMethod("Reset").Invoke(null, new object[] { "return" });
+        traceControl.GetField("ConstructorCallback").SetValue(null, new Action(delegate { control.GetMethod("Point").Invoke(null, new object[] { "trace-ctor" }); }));
+        traceControl.GetField("DisposeCallback").SetValue(null, new Action(delegate { control.GetMethod("Point").Invoke(null, new object[] { "trace-dispose" }); }));
+        object value = CreateFixtureId(id, id.GetConstructor(new Type[] { typeof(uint) }), id.GetMethod("get_ProjectNumber"));
+        var store = new ProjectStoreIdProxy(storeType, storeType.GetMethod("get_Id"), value, Record); var kim = new ProjectDenyProxy(type("IDataDependencyFixture"), Record);
+        var undo = new UndoProviderDenyProxy(contract, OwnedFactoryProviderRecord); var holder = new UndoProviderFactoryHolder(contract, undo.GetTransparentProxy(), api.CallbackType, OwnedFactoryRecord);
+        object selectedStyle = Enum.Parse(style, "ThreeLevel", false);
+        WithProjectResourceBudget(delegate { WithUndoFactoryProvider(trace, container, traceRegistration, api, factory, kim, store, undo, holder,
+            delegate(object actual) { WithProjectScope(scope, actual, selectedStyle, store, null); }); });
+        int expected = ownedFactoryCase == "no-activation" ? 0 : 1;
+        ProbeFiles.Require((ownedFactoryCase == null || ownedFactoryCase == "project-activation" || ownedFactoryCase == "no-activation") && !holder.Faulted && holder.Entries == expected && holder.Successes == expected
+            && undo.Requests == 0 && kim.Requests == 0 && store.DeniedRequests == 0 && store.FixtureCalls == 2
+            && (expected == 0 || Object.ReferenceEquals(control.GetField("Undo").GetValue(null), undo.GetTransparentProxy()))
+            && (int)control.GetField("Registrations").GetValue(null) == 2 && (int)control.GetField("ExternalCalls").GetValue(null) == 2 && (int)delivery.GetField("SingleCalls").GetValue(null) == 1
+            && (int)control.GetField("ProjectDisposals").GetValue(null) == 1 && (int)control.GetField("ContainerDisposals").GetValue(null) == 1 && (int)traceControl.GetField("Disposals").GetValue(null) == 1, "OWNED_FACTORY_LIFETIME_COUNTS");
+        Record("OWNED_FACTORY_LIFETIME_PASS entries=" + holder.Entries + " successes=" + holder.Successes + " exact-two-external=True single-instance=True same-existing-proxy=True provider-value=NOT_PROVIDED order=" + control.GetField("Order").GetValue(null));
+    }
     static MethodInfo[] UndoContract(Type contract, Type opaque)
     {
         ProbeFiles.Require(PublicInterface(contract) && !contract.IsGenericType && contract.GetInterfaces().Length == 0
@@ -2074,8 +2334,9 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
             ProbeFiles.Require(args.Length == 6 || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
-                || (UndoDeniedOwned && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+                || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
+                || (UndoFactoryOwned && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
+            if (args.Length == 8) { if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -2118,7 +2379,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (ProjectScopeOriginal) OriginalProjectScope(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (ProjectScopeOriginal) OriginalProjectScope(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
@@ -2131,7 +2392,7 @@ internal static class ProjectConstructorProbe
                 }));
                 app.Run();
             }
-            CheckUndoProvider("PROCESS_FINAL");
+            CheckUndoProvider("PROCESS_FINAL"); CheckUndoFactory("PROCESS_FINAL");
             ProbeFiles.Require(!unexpected && !rejected, "PROJECT_DEPENDENCY_BLOCKER");
             Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
             return result;

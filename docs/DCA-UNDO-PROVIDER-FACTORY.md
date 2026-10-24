@@ -1,6 +1,7 @@
 # Task-009 typed provider factory investigation
 
-Status: investigation only; integrated implementation NOT RUN. Task008 is
+Status: source25 implemented with owned Windows tests PASS; source/result
+critical review PASS; source commit pending. Original25 NOT RUN. Task008 is
 accepted and no phase gate applies. The [superseded type-only investigation](DCA-UNDO-PROVIDER-TYPE.md)
 records why RegisterInstance cannot provide this interface proxy faithfully.
 Original22 remains FAIL2 before container Build/Factory/Project; no original
@@ -236,3 +237,81 @@ this review/audit-record append is later. Reviewer independently checked25+21
 result bindings and bounded contract claims without rerun or SDK payload reads.
 This enables the specified source25 implementation only; original25 still
 requires its later checks/review/commit/immutable plan, no gate acceptance.
+
+
+## Source25 implementation and actual owned Windows checkpoint
+
+Source25 changes only the four contracted constructor files. It uses the
+unchanged deny-only proxy through a typed factory, one eligible activation,
+same-thread exact constructor windows, saturation2 and sticky faults through
+all final audits. Resource eligibility is excluded before validation; nested
+already-excluded calls cannot clear the outer state. All provider methods,
+including GetType, remain unsupported. No store/path/business value is supplied.
+
+Private task009-undo-provider-factory/source-freeze25.json (12,094 bytes),
+SHA-256 `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`,
+binds10 source hashes/runtime8/modified4 and exact command/evidence records.
+Source25 is uncommitted on baselinee3a08e3 at this checkpoint. Native
+source25/evidence-manifest.json SHA-256
+`92e34a6b5d392baa3066dffef7ff782c9a3af76183c68f0ea1754dad621f8224`
+retains local checks, initial harness-only invoker/parser failures and source
+snapshots. Constructor-windows holds an exact freeze copy and58 bound evidence
+copies; source25-copy-manifest.json SHA-256
+`0640bd0684b9de51d9c4dba36fb7631576c68427e8fc7bfe1e5ff1f8c212879f`.
+
+Local checks PASS: three CSharp5/x64/warnings-as-errors compilations with the
+existing six pinned references; PowerShell/source guards;13 fresh extracted
+holder/state cases; final-audit normal proof and expected mutantFAIL1; scope
+and whitespace. These modern-runtime extracted proofs do not qualify Framework
+RealProxy or SDK behavior. Preservation PASS:15 old arrays,88 non-excepted
+method bodies,133 old driver case lines and old proxy/registration cores;
+other constructor6/metadata6 unchanged. Independent local verification
+constructor-windows/verifier25/source-audit.txt SHA-256
+`82d9602c84045053093bde60fde319ebed5dd714cb4d87e059e1b754771cbf0c`
+PASS. Coordinator git diff --check PASS separately; verifier did not run Git.
+
+Actual Windows commands under private constructor-windows, each once:
+
+- preflight_owned25.py: PASS19 fresh paths/x64/ETS0/owned-processes0.
+- build_owned25.py: PASS, pinned Framework compiler/six references/eight sources/18 artifacts.
+- run_session0_25.py: PASS154 owned cases, Session0.
+- run_owned25.py, terminal poll, collect_owned25.py and cleanup_owned25.py: PASS260, Session2/non-administrator, done0/task removed/processes0/no junction;624 case files retained.
+- run_owned_admin25.py, terminal poll, collect_owned_admin25.py and cleanup_owned_admin25.py: PASS159 administrator-negative cases, Session2/administrator, done0/task removed/processes0/no junction;321 case files retained.
+
+Saved-file-only record_owned25.py PASS checks actual build/profile/encoding/
+cleanup results, legacy21 denial cases and new27 factory cases plus the
+positive registration/API/lifetime markers. It produced owned25-observation.json
+(219,497 bytes), SHA-256
+`655f9739222dcd19deee756c372bbe54900129d4f48c08b0f53abba25988904e`,
+binding1,104 evidence files. Exact factory callback/window, provider-denial,
+order/ownership/sharing, resource exclusion and late/caught-fault assertions
+are retained in624+321 case files. These are owned fixtures, not SDK behavior.
+
+Independent Windows-result audit PASS, all1,104 bindings/current10/profile
+counts and624+321 case-file lists: constructor-windows/verifier25/
+owned-result-audit.txt SHA-256
+`52826e17885844ea32426590141fe9a1924ff1d7dfd9edd2be273df9514aa747`.
+No DLL payload was read or rerun by that audit. Final critical source/result
+review PASS, no unresolved findings; exact six-path scope verified. Actual executable/DLL payloads were not independently rehashed locally;
+saved Windows preflights verify all18 artifact size/hash pins and build source
+records. No original25 plan/runtime or original SDK qualification follows.
+Task009 stays In progress/all ACs unchecked; hardware NOT RUN, no gate advance.
+
+
+Before commit, the verifier reconciled an initially reported stale audit digest:
+the final text had received its JSON-result SHA after that earlier calculation.
+The final owned-result-audit.txt pin above is independently recomputed; its
+underlying JSON and all1,104 execution bindings remain unchanged. Correction:
+constructor-windows/verifier25/owned-audit-digest-correction.txt SHA-256
+`5f3730a84d2212e007af430b410138c8585fb382f7061a721ed321ab381febf2`.
+No source or execution result changed and no test was rerun for this correction.
+
+
+Final independent source25 code/owned-result review PASS, no unresolved findings:
+constructor-windows/review25/critical-source-and-owned-results.txt (4,479 bytes),
+SHA-256 `0e12f4259fb76fc8d02247c799c93bbf5411632c3cae6e2f4b53a22ed9ba828b`.
+The reviewed scope is exactly four constructor files plus this contract and
+Task009. It checked source/freeze/snapshots/copy58,1,104 result bindings and
+154/260/159 role/cleanup/lifecycle cases. Coordinator scope/whitespace checks
+PASS. Local source commit is next; no original25 plan/runtime, SDK qualification,
+Task009 acceptance or gate advance is asserted.

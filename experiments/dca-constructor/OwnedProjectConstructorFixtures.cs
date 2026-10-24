@@ -629,6 +629,83 @@ namespace Owned.Task009
         }
         public void Dispose() { UndoOwnedControl.ProjectDisposals++; UndoOwnedControl.Point("project-dispose"); }
     }
+    // Source25 fixtures model only two registrations, one callback and lifetime observations.
+    public interface IUndoFactoryRegistrationFixture<T, TData, TStyle>
+    {
+        IUndoFactoryRegistrationFixture<T, TData, TStyle> SingleInstance();
+        IUndoFactoryRegistrationFixture<T, TData, TStyle> ExternallyOwned();
+    }
+    public interface IUndoFactoryWrongSingleFixture<T, TData, TStyle> { object SingleInstance(); }
+    public interface IUndoFactoryWrongExternalFixture<T, TData, TStyle> { object ExternallyOwned(); }
+    public static class UndoFactoryOwnedControl
+    {
+        public static Action<IContainerDependencyFixture> Activate;
+        public static Action ProjectActivate;
+        public static bool SkipActivation, ProjectActivation, Shared, External;
+        public static int SingleCalls, Activations, CaughtFaults;
+    }
+    public static class UndoFactoryRegistrationExtensionsFixture
+    {
+        public static IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(UndoBuilderFixture builder, T instance) where T : class
+        { return UndoRegistrationExtensionsFixture.RegisterInstance<T>(builder, instance); }
+        public static IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> Register<T>(UndoBuilderFixture builder, Func<IContainerDependencyFixture, T> callback)
+        {
+            if (builder == null || callback == null || typeof(T) != typeof(IUndoDeniedFixture) || ++UndoOwnedControl.Registrations != 2) throw new InvalidOperationException("OWNED_FACTORY_EXACT_TWO_SLOTS");
+            UndoFactoryOwnedControl.Activate = delegate(IContainerDependencyFixture context) {
+                UndoFactoryOwnedControl.Activations++;
+                try { UndoOwnedControl.Undo = callback(context); }
+                catch (Exception) { UndoFactoryOwnedControl.CaughtFaults++; }
+                UndoOwnedControl.Point("after-activation");
+            };
+            UndoOwnedControl.Point("registration"); return new UndoFactoryRegistrationFixture<T>();
+        }
+    }
+    internal sealed class UndoFactoryRegistrationFixture<T> : IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture>
+    {
+        public IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> SingleInstance()
+        {
+            if (++UndoFactoryOwnedControl.SingleCalls != 1 || UndoFactoryOwnedControl.External) throw new InvalidOperationException("OWNED_FACTORY_SHARING_ORDER");
+            UndoFactoryOwnedControl.Shared = true; UndoOwnedControl.Point("single"); return this;
+        }
+        public IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> ExternallyOwned()
+        {
+            if (!UndoFactoryOwnedControl.Shared || UndoFactoryOwnedControl.External) throw new InvalidOperationException("OWNED_FACTORY_OWNERSHIP_ORDER");
+            UndoFactoryOwnedControl.External = true; UndoOwnedControl.UndoExternal = true; UndoOwnedControl.ExternalCalls++; UndoOwnedControl.Point("external"); return this;
+        }
+    }
+    public sealed class UndoFactoryDeliveryFixture : IFactoryFixture
+    {
+        public UndoFactoryDeliveryFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
+        {
+            if (!(context is IRegisteredContainerFixture) || !UndoFactoryOwnedControl.Shared || !UndoFactoryOwnedControl.External) throw new InvalidOperationException("OWNED_FACTORY_LIVE_CONTEXT");
+            UndoOwnedControl.Factories++; UndoOwnedControl.Point("factory");
+            if (UndoFactoryOwnedControl.ProjectActivation) UndoFactoryOwnedControl.ProjectActivate = delegate { UndoFactoryOwnedControl.Activate(context); };
+            else if (!UndoFactoryOwnedControl.SkipActivation) UndoFactoryOwnedControl.Activate(context);
+        }
+        public T Create<T>() { throw new NotSupportedException("OWNED_FACTORY_UNSUPPORTED"); }
+        public void Change(ref int value) { throw new NotSupportedException("OWNED_FACTORY_UNSUPPORTED"); }
+    }
+    public sealed class UndoFactoryProjectFixture : IDisposable
+    {
+        public UndoFactoryProjectFixture(IFactoryFixture factory, string name, GroupAddressStyleFixture style, IScopedProjectStoreFixture store)
+        {
+            if (!(factory is UndoFactoryDeliveryFixture) || name != "Task009 offline constructor diagnostic" || style != GroupAddressStyleFixture.ThreeLevel) throw new InvalidOperationException("OWNED_FACTORY_PROJECT_ARGUMENTS");
+            UndoOwnedControl.Projects++; UndoOwnedControl.Point("project");
+            if (UndoFactoryOwnedControl.ProjectActivation) UndoFactoryOwnedControl.ProjectActivate();
+            if (UndoOwnedControl.ThrowProject) throw new NotSupportedException("OWNED_FACTORY_PROJECT_THROW");
+            ScopedIdFixture first = store.Id, second = store.Id;
+            if (!Object.ReferenceEquals(first, second)) throw new InvalidOperationException("OWNED_FACTORY_ID_IDENTITY");
+        }
+        public void Dispose() { UndoOwnedControl.ProjectDisposals++; UndoOwnedControl.Point("project-dispose"); }
+    }
+    public static class UndoFactoryWrongContextFixture
+    { public static IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> Register<T>(UndoBuilderFixture builder, Func<object, T> callback) { throw new InvalidOperationException("OWNED_INVALID_FACTORY_API_INVOKED"); } }
+    public static class UndoFactoryWrongArityFixture
+    { public static IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> Register<T>(UndoBuilderFixture builder, Func<IContainerDependencyFixture, object, T> callback) { throw new InvalidOperationException("OWNED_INVALID_FACTORY_API_INVOKED"); } }
+    public static class UndoFactoryWrongConstraintFixture
+    { public static IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> Register<T>(UndoBuilderFixture builder, Func<IContainerDependencyFixture, T> callback) where T : class { throw new InvalidOperationException("OWNED_INVALID_FACTORY_API_INVOKED"); } }
+    public static class UndoFactoryWrongReturnFixture
+    { public static object Register<T>(UndoBuilderFixture builder, Func<IContainerDependencyFixture, T> callback) { throw new InvalidOperationException("OWNED_INVALID_FACTORY_API_INVOKED"); } }
     public sealed class ScopedNoDisposeFixture
     { public ScopedNoDisposeFixture(IFactoryFixture f, string n, GroupAddressStyleFixture s, IScopedProjectStoreFixture p) { throw new InvalidOperationException("OWNED_INVALID_SCOPE_EXECUTED"); } public void Dispose() { } }
     public sealed class ScopedExplicitDisposeFixture : IDisposable

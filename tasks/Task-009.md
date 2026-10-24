@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual22 at source72bca2e ended FAIL2 during undo-provider registration: one System.Object.GetType callback was denied before registration completed. Container Build and Factory/Project constructors were not reached; the exact internal caller is NOT_INSTRUMENTED_UNKNOWN. No provider interface method or resource probe occurred. Cleanup and post19private+2OS integrity PASS. Original21 verified provider declarations only; provider/store/path behavior and IStreamStore declarations remain UNKNOWN. Next: a separate bounded CLR type-introspection contract and owned regression, not an automatic original retry. Earlier20a FAIL10 and19b FAIL2 retain their own evidence. Task stays In progress, all ACs unmet; ADR-005 private-use/no proprietary redistribution decision remains in force.
+Actual22 at source72bca2e remains FAIL2 before container Build/Factory/Project, exact internal GetType caller unknown. Public24c now proves the typed-factory registration path with the actual pinned Autofac. Source25 implements that bounded diagnostic mode; local verification and actual owned Windows154/260/159 PASS, critical source/result review PASS; commit pending. Original25 plan/runtime NOT RUN; provider/store/path and original SDK behavior remain unqualified. No automatic retry, gate advance or criterion acceptance. ADR-005 private-use/no proprietary redistribution remains in force.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source22 and owned Windows preparation verified/reviewed PASS; actual original22 FAIL2 during registration |
-| Source commit(s) | `72bca2ead9b60ca5d8742168208e40fd9dd2782f`; freeze SHA `9be524673d4cd614b5c9f35625cc1dcd7c9953e8b66eca61ab6908cd2b8c53a8`. Earlier exact source/result records retained below |
-| Tests executed | Local source22 compile3/guards/parser/preservation/mutation proof PASS; owned Windows116/195/121 PASS. One reviewed original22 attempt FAIL2; cleanup and post19+2 integrity PASS; independent saved-result audit PASS61 bindings |
-| Evidence location | [Deny-only increment and original22 result](../docs/DCA-UNDO-PROVIDER-DENIAL.md); private constructor-windows/project22-observation.json and verifier22/original-result-audit.txt |
+| Implementation / report status | In progress; source25 implemented, local verification and actual owned Windows154/260/159 PASS; critical source/result review PASS; commit pending |
+| Source commit(s) | Source25 uncommitted on `e3a08e3def46df035f0a2924fced0a6c2548c0a8`, freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
+| Tests executed | Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; original22 remains FAIL2 |
+| Evidence location | [Typed factory contract/results](../docs/DCA-UNDO-PROVIDER-FACTORY.md); private native source25 freeze and constructor-windows/owned25-observation.json (1,104 bindings) |
 | Acceptance criteria met | None asserted; all remain unchecked |
-| Technical outcome | One CLR Object.GetType denial during undo registration, exact caller unknown. No Build/Factory/Project or provider interface call; no store/path value supplied. No SDK/UI/state/device qualification |
+| Technical outcome | Typed deny-provider factory and bounded activation lifecycle verified with owned fixtures. No store/path/business values or original harness Resolve. Original25 and UI/state/hardware NOT RUN; original SDK qualification NOT_ESTABLISHED |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source22/owned Windows and original plan critical reviews PASS; actual original22 independent provenance audit and critical result/documentation review PASS, no unresolved findings; no task/gate acceptance |
+| Reviewer | Source25 independent local verification PASS; actual owned Windows-result audit PASS; critical source/result review PASS, no unresolved findings; public24c result/contract review PASS |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -118,7 +118,9 @@ the intended fixed runtime reflection bridge with unchanged real API cases
 and warnings-as-errors. Actual24c public runtime proof now PASS0 (compile and
 program), exact sameproxy/factory1/denial/ownership assertions, independent
 21-binding result audit PASS. The linked integrated source25 contract
-has critical review PASS; implementation/original25 remain NOT RUN. No GetType value,
+has critical review PASS. Source25 is now implemented with local verification
+and actual owned Windows154/260/159 PASS; final review PASS/commit pending,
+original25 remains NOT RUN. No GetType value,
 provider/path/store behavior or original retry is fabricated. All ACs unchecked.
 
 ## Actual22 original result
