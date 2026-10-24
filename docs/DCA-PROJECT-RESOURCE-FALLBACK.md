@@ -67,7 +67,10 @@ denials. No Project Dispose is invented for an unreturned constructor object.
 The synthetic get_Id proxy runs synchronously inside Project Invoke. Interpret
 the getter exclusion literally: suspend the new-mode window throughout the
 owned ProjectStoreIdProxy.Invoke callback and restore it in finally, preserving
-the aggregate count and all denial latches. Fixture ID construction/numeric
+the aggregate count and all denial latches. Apply the same suspension throughout
+ProjectDenyProxy.Invoke, so no owned service callback inherits a constructor
+window. Nested callbacks fail explicitly; prior modes remain unchanged.
+Fixture ID construction/numeric
 getter, builder/registration/Build, Project/container/trace disposal, errors and
 DCA/UI/state work receive no resolution window. Old modes remain unchanged.
 
@@ -88,8 +91,160 @@ and administrator-negative suites, independent verification and critical review.
 Retain all earlier failure/source snapshots. No original20 outcome is asserted
 until its separate reviewed committed-source plan is genuinely executed once.
 
-Status: contract prepared, implementation/tests NOT RUN for this increment.
+Status: source20 implementation is frozen with local checks PASS. Independent
+source verification/review and Windows20 owned/original execution remain pending.
+
+On resumption, the local SSH master control check returned running, but the first
+actual read-only Windows readiness request failed exit255 with a broken multiplex
+pipe followed by BatchMode authentication denial. No Windows20 build/test or
+vendor operation started. The owner has the existing connection command; local
+work continues independently. Private `owned20-resume-host-readiness-stderr.txt`
+retains the actual transport failure; this is not an SDK/runtime result.
+
 Task-009 remains In progress, all ACs unchecked, qualification NOT_ESTABLISHED.
 No DCA initialization/UI/state, intentional device operation, gate, isolation,
 network or descendant containment is qualified. The existing owner diagnostic
 exception and private-only proprietary DLL boundary remain in force.
+
+
+## Source20 local evidence checkpoint
+
+The uncommitted implementation on baseline `cf0b89b` is frozen by private
+`source-freeze-20.json` (9,435 bytes, SHA-256
+`068e73d6292d65f22b8d3302798fdf363020803823e47f973670df1a7188f082`).
+It records eight runtime/ten source hashes; `source20/evidence-manifest.json`
+(SHA-256 `b2c50e1443db61f40a37f05708f54109ce1a9b7a92b6af4f75b37ffdf7b1833c`)
+binds 55 local artifacts, including ten frozen source snapshots. The freeze-time
+contract bytes are retained separately as `source20-contract-at-freeze.md`;
+subsequent result entries do not retroactively change that contract hash.
+
+Actual local commands are in `source20/commands.json`: provisioned PowerShell
+7.6.7 runs `source20/local-sourcecheck.ps1` with the task worktree and the six
+pinned private net48 references. The third log pair records PASS for all three
+C#5/x64/warnings-as-errors compilations, both PowerShell parses and old/new source
+guards. An initial ambiguous Thread delegate compile FAIL and its correction
+remain in earlier logs. `source20/preservation.py` records PASS for all 13 input
+arrays, 13 preserved methods, both unchanged proxy cores, six other frozen
+sources and other fixture families. Coordinator `git diff --check` and
+`python3 scripts/check_project_scope.py` also PASS.
+
+Five fresh processes run `source20/pure-resource-proof.ps1` for normal,
+nested-window, nested-budget, off-thread and outside-budget cases, PASS in
+third log pairs. This proof extracts exact new method bodies and binds their
+hashes/full source, using owned adapters under .NET10.0.13 on macOS. It does
+not exercise Framework CLR resolution, RealProxy, Windows or vendor code.
+Windows owned suites include a fresh factory refusal case that invokes the
+actual owned deny proxy and observes window suspension/restoration; this
+Windows case is written but NOT RUN.
+
+Prepared Windows20 helpers are private, separately named and NOT EXECUTED.
+Static audits are in `verifier20/orchestration-audit.txt` and
+`verifier20/orchestration-refinement-audit.txt`. The refined helpers refuse an
+existing source/build destination, protect task/decoded evidence paths and
+remove dynamic legacy collector imports. Initial helper bytes, manifests and
+the corrected preparation-only AST insertion failure are retained. Future
+source/build/stage and sibling-output freshness require live preflight; these
+audits prove no Windows behavior.
+
+No original20 plan or execution is implied by this source freeze. The next
+steps are independent source verification/review, renewed Windows access and
+the complete owned suite before a separately committed-source original plan.
+Task-009 remains In progress, all ACs unchecked and qualification NOT_ESTABLISHED.
+
+
+## Source20 review finding and follow-up
+
+Independent local-source verification PASS is recorded in private
+`verifier20/source-audit.txt`, SHA-256
+`f886a7880bb998cae177f30834794769914f38af6670323067a5f44ac82ac7e4`.
+It recompiled all three targets and reran all five extracted-policy cases;
+preservation was audited without rerunning its fixed-output writer.
+
+Critical source/local review `review20/critical-source-local.txt`, SHA-256
+`4d55e363d9277fae7fbc64f7a355f234f0af9365dfbd25628acea2e0518a6468`,
+returned CHANGES_REQUESTED for one P2 coverage gap: the existing nested-callback
+refusal had no direct regression. No policy bypass was demonstrated. Source20
+freeze/evidence remain unchanged; source20a adds a fresh nested-callback case
+and an owned one-shot same-proxy reentry observation. It must assert exact named
+refusal, unchanged aggregate count, outer suspension/restoration and sticky final
+audit failure. Local proof includes a removed-guard mutation which must fail.
+Source20a checks/freeze/review and Windows execution are pending at this entry.
+
+Windows access was subsequently restored: a new master and the actual read-only
+`owned20-resume-host-readiness02` request returned PASS, 64-bit, ETS0 and owned
+processes0. `owned20a-stage-freshness01` proves the existing private stage and
+five absent new paths (source, build and three owned output directories). Its
+console count of six was a preparation-message error; the five-key result JSON
+is authoritative. No build, owned runtime or original call was made by either
+readiness check. Refined new 20a helpers remain PREPARED_NOT_EXECUTED.
+
+
+## Source20a regression and actual owned Windows results
+
+Source20a is frozen by `source-freeze-20a.json` (9,966 bytes, SHA-256
+`48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`).
+The freeze-time contract is preserved as `source20a-contract-at-freeze.md`.
+Only the main probe, launcher and test driver changed from20; the production
+nested-callback guard and fixture source remain unchanged. Nineteen fixed
+owned selector cases include one bounded same-store-proxy reentry.
+
+Local compile/parse/guards, preservation and six fresh extracted-policy cases
+PASS. Removing the exact guard only in memory produces the expected exit1
+`PROOF_NESTED_CALLBACK_STATE`; the unmodified proof passes. All58 prior source20
+files remain byte-identical. Exact commands are in `source20a/commands.json`.
+Independent verification `verifier20a/source-audit.txt`, SHA-256
+`2e6c0c7f1e77e78cb1e431fc403dab265f3e08fef7eeb02988eaa7e3dab280a0`,
+reproduced those checks. Focused critical source/local review
+`review20a/critical-source-local.txt`, SHA-256
+`d9f3af56edf043ebd65ffc822ddbf54f0be45209737e19ba07c288c804af4b88`,
+returns PASS and closes the P2 gap locally; it does not certify Windows results.
+
+Actual coordinator Windows commands, each run once against this freeze:
+
+- `python3 -B private/evidence/task009-constructor-windows/build_owned20a.py`: PASS, pinned Windows compiler, eight compiled sources and18 artifacts.
+- `python3 -B private/evidence/task009-constructor-windows/run_session0_20a.py`: PASS79 Session0 cases.
+- `python3 -B private/evidence/task009-constructor-windows/run_owned20a.py`, then terminal poll, `collect_owned20a.py` and `cleanup_owned20a.py`: PASS137 limited Session2 cases, exit0.
+- `python3 -B private/evidence/task009-constructor-windows/run_owned_admin20a.py`, then terminal poll, `collect_owned_admin20a.py` and `cleanup_owned_admin20a.py`: PASS84 administrator-negative Session2 cases, exit0.
+
+Each command was executed through an owned Python capture wrapper retaining a
+separate console file; this does not imply an uncaptured direct invocation.
+The limited suite genuinely exercised the owned RealProxy reentry once. It
+recorded named refusal while outer window0/suspended, unchanged aggregate count,
+then outer Project window2 restored; final dependency audit failed as required,
+with expected child2 confirmed by the driver. This proves the owned fixture
+path, not vendor behavior or actual Autofac/CLR resource fallback.
+
+Both scheduled jobs were terminal before removal, last result0, zero owned
+processes and no junction. All330 limited and171 administrator case files are
+retained. `record_owned20a.py` ran against saved files only: PASS, producing
+`owned20a-observation.json` (123,419 bytes, SHA-256
+`c8e648b2e9be92bfc3fd7376a20b1c03be6a07a93ff5acf3fed5f064ea6912f4`)
+with628 evidence bindings and the exact source/build/profile/cleanup checks.
+Independent Windows-result verification and critical evidence review are pending
+at this checkpoint; source commit is still pending.
+
+Original20a remains NOT RUN and has no fixed execution plan yet. Actual19b
+FAIL2 remains the latest original Project result, with underlying service failure
+UNKNOWN. DCA initialization/UI/state, actual resource fallback, manufacturer
+behavior, network and descendant containment are not qualified. Task-009 stays
+In progress, all ACs unchecked, no gate advances.
+
+
+### Source20a subsequent independent result acceptance for preparation
+
+Independent saved Windows-result audit `verifier20a/owned-result-audit.txt`
+(SHA-256 `d357a3d3e59917cac5890e2be7d41219262eb1f08c0c8250bbcf0b798ba08bd3`)
+PASS: all628 contained file bindings, current10 source hashes, build-source and
+runner pins, actual79/137/84 counts, roles, raw/decoded logs and501 cleanup files.
+Owned artifact payloads are not present locally for independent byte rehash;
+the saved executed Windows preflight reports18 size/hash checks PASS and the
+review cross-checks every artifact declaration/pin in the fixed runners.
+
+Critical owned-results/final-six-path review
+`review20a/critical-owned-results.txt` (SHA-256
+`c3a41d135c521cbbd8c9d96119f6d2ae0681c56f585cf314a95de5ede26321f1`)
+PASS, no unresolved findings. The coordinator also checked the actual source20a
+regression diff. The six preparation paths are ready for a local source commit.
+This is evidence acceptance for this preparation increment, not maintainer Task-009
+acceptance, original SDK qualification, a gate or an operation approval. A new
+original20a committed-source plan and its separate review/preflight remain next.

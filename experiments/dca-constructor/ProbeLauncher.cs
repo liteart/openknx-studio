@@ -28,10 +28,14 @@ internal static class ProbeLauncher
         Process child = null; bool started = false, confirmed = false;
         try {
             int seconds;
-            ProbeFiles.Require(args.Length == 8 && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= 30 && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
+            ProbeFiles.Require((args.Length == 8 || args.Length == 10) && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= 30 && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
             // Definite assignment is explicit for the C#5 compiler after compound validation.
             seconds = Int32.Parse(args[1]); string mode = args[3];
-            bool emptyContainer = mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || mode == "original-trace-encryptor" || mode == "owned-trace-encryptor" || mode == "original-factory-registered-trace" || mode == "owned-factory-registered-trace" || mode == "original-project-genuine-factory" || mode == "owned-project-genuine-factory";
+            string[] resourceCases = { "id-constructor", "id-getter", "getter", "builder", "registration", "external", "build", "factory", "project", "validation", "logging", "error", "project-dispose", "container-dispose", "trace-dispose", "nested-window", "nested-budget", "nested-callback", "off-thread" };
+            bool selectedResourceCase = args.Length == 10;
+            ProbeFiles.Require(!selectedResourceCase || (mode == "owned-project-genuine-factory-resources" && args[8] == "--owned-resource-case"
+                && Array.IndexOf(resourceCases, args[9]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
+            bool emptyContainer = mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || mode == "original-trace-encryptor" || mode == "owned-trace-encryptor" || mode == "original-factory-registered-trace" || mode == "owned-factory-registered-trace" || mode == "original-project-genuine-factory" || mode == "owned-project-genuine-factory" || mode == "original-project-genuine-factory-resources" || mode == "owned-project-genuine-factory-resources";
             bool factoryBinding = mode == "original-factory-bcl9" || mode == "owned-factory-bcl9";
             bool project = emptyContainer || factoryBinding || mode == "project-enum-metadata" || mode == "original-project" || mode == "owned-project" || mode == "original-project-store-id" || mode == "owned-project-store-id" || mode == "original-factory" || mode == "owned-factory";
             ProbeFiles.Require((mode != "original-project-store-id" && mode != "owned-project-store-id") || seconds <= 15, "PROJECT_FIXTURE_DEADLINE");
@@ -46,6 +50,7 @@ internal static class ProbeLauncher
             child = new Process(); child.StartInfo.FileName = exe;
             child.StartInfo.Arguments = mode == "neutral" ? "--seconds 1 --log " + ProbeFiles.Quote(log)
                 : "--mode " + ProbeFiles.Quote(mode) + " --input " + ProbeFiles.Quote(input) + " --log " + ProbeFiles.Quote(log);
+            if (selectedResourceCase) child.StartInfo.Arguments += " --owned-resource-case " + ProbeFiles.Quote(args[9]);
             child.StartInfo.WorkingDirectory = Path.GetDirectoryName(log);
             child.StartInfo.UseShellExecute = false; child.StartInfo.CreateNoWindow = false;
             child.StartInfo.RedirectStandardOutput = true; child.StartInfo.RedirectStandardError = true;

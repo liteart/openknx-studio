@@ -436,8 +436,8 @@ namespace Owned.Task009
     public sealed class ScopedIdFixture
     {
         readonly uint number;
-        public ScopedIdFixture(uint value) { ProjectScopeControl.IdConstructors++; number = value; }
-        public uint ProjectNumber { get { ProjectScopeControl.IdGetters++; return number; } }
+        public ScopedIdFixture(uint value) { ProjectScopeControl.IdConstructors++; number = value; ProjectScopeControl.Probe("id-constructor"); }
+        public uint ProjectNumber { get { ProjectScopeControl.IdGetters++; ProjectScopeControl.Probe("id-getter"); return number; } }
         public bool IsFixture { get { return number == 1; } }
     }
     public static class ProjectScopeControl
@@ -446,7 +446,9 @@ namespace Owned.Task009
         public static string Behavior;
         public static IScopedProjectStoreFixture Store;
         public static IDataDependencyFixture Provider;
-        public static void Reset(string behavior) { Constructors = Disposals = IdConstructors = IdGetters = 0; Behavior = behavior; Store = null; Provider = null; }
+        public static Action<string> ResourceProbe;
+        public static void Reset(string behavior) { Constructors = Disposals = IdConstructors = IdGetters = 0; Behavior = behavior; Store = null; Provider = null; ResourceProbe = null; }
+        public static void Probe(string phase) { if (ResourceProbe != null) ResourceProbe(phase); }
         public static void Later(string phase)
         {
             if (Behavior == phase + "-store-caught") try { Store.Save(); } catch (NotSupportedException) { }
@@ -459,15 +461,26 @@ namespace Owned.Task009
         {
             if (builder == null || instance == null) throw new InvalidOperationException("OWNED_SCOPE_REGISTRATION_ARGUMENTS");
             RegistrationControl.Registrations++; RegistrationControl.Event("register"); RegistrationControl.Instance = instance; RegistrationControl.Service = typeof(T);
+            ProjectScopeControl.Probe("registration");
+            if (ProjectScopeControl.ResourceProbe != null) return new ScopedRegistrationFixture<T>();
             return new RegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture>();
+        }
+    }
+    internal sealed class ScopedRegistrationFixture<T> : IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture>
+    {
+        public IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> ExternallyOwned()
+        {
+            RegistrationControl.ExternalCalls++; RegistrationControl.Event("external"); ProjectScopeControl.Probe("external");
+            RegistrationControl.External = true; return this;
         }
     }
     public sealed class ScopedBuilderFixture
     {
-        public ScopedBuilderFixture() { EmptyControlFixture.Constructors++; RegistrationControl.Event("builder"); }
+        public ScopedBuilderFixture() { EmptyControlFixture.Constructors++; RegistrationControl.Event("builder"); ProjectScopeControl.Probe("builder"); }
         public IRegisteredContainerFixture Build(EmptyOptionsFixture options)
         {
             EmptyControlFixture.Builds++; RegistrationControl.Event("build");
+            ProjectScopeControl.Probe("build");
             if (options != EmptyOptionsFixture.None || !RegistrationControl.External || RegistrationControl.Service != typeof(ITraceLifetimeFixture)
                 || RegistrationControl.Registrations != 1 || RegistrationControl.ExternalCalls != 1) throw new InvalidOperationException("OWNED_SCOPE_EXTERNAL_MAPPING_REQUIRED");
             return new ScopedContainerFixture();
@@ -479,6 +492,7 @@ namespace Owned.Task009
         public void Dispose()
         {
             EmptyControlFixture.Disposals++; RegistrationControl.Event("container-dispose"); ProjectScopeControl.Later("container");
+            ProjectScopeControl.Probe("container-dispose");
             if (!RegistrationControl.External) ((IDisposable)RegistrationControl.Instance).Dispose();
             if (ProjectScopeControl.Behavior == "container-dispose-throw") throw new NotSupportedException("OWNED_SCOPE_CONTAINER_DISPOSE_THROW");
         }
@@ -495,6 +509,8 @@ namespace Owned.Task009
         {
             EmptyControlFixture.Factories++; RegistrationControl.Event("factory"); ProjectScopeControl.Provider = provider;
             if (!(context is IRegisteredContainerFixture) || TraceLifetimeControl.Disposals != 0) throw new InvalidOperationException("OWNED_SCOPE_LIVE_CONTEXT_REQUIRED");
+            if (ProjectScopeControl.Behavior == "resource-provider") try { provider.Touch(); } catch (NotSupportedException) { }
+            ProjectScopeControl.Probe("factory");
         }
         public T Create<T>() { throw new NotSupportedException("OWNED_FACTORY_METHOD_UNSUPPORTED"); }
         public void Change(ref int value) { throw new NotSupportedException("OWNED_FACTORY_METHOD_UNSUPPORTED"); }
@@ -504,15 +520,18 @@ namespace Owned.Task009
         public ScopedProjectFixture(IFactoryFixture factory, string name, GroupAddressStyleFixture style, IScopedProjectStoreFixture store)
         {
             ProjectScopeControl.Constructors++; RegistrationControl.Event("project"); ProjectScopeControl.Store = store;
+            ProjectScopeControl.Probe("project");
             if (!(factory is ScopedGenuineFactoryFixture) || name != "Task009 offline constructor diagnostic" || style != GroupAddressStyleFixture.ThreeLevel
                 || TraceLifetimeControl.Disposals != 0 || EmptyControlFixture.Disposals != 0) throw new InvalidOperationException("OWNED_SCOPE_ARGUMENTS_LIFETIME");
             ScopedIdFixture first = store.Id, second = store.Id;
+            ProjectScopeControl.Probe("project-after-getter");
             if (!Object.ReferenceEquals(first, second) || !first.IsFixture) throw new InvalidOperationException("OWNED_SCOPE_STABLE_ID_REQUIRED");
             if (ProjectScopeControl.Behavior == "project-throw") throw new NotSupportedException("OWNED_SCOPE_PROJECT_THROW");
         }
         public void Dispose()
         {
             ProjectScopeControl.Disposals++; RegistrationControl.Event("project-dispose");
+            ProjectScopeControl.Probe("project-dispose");
             if (TraceLifetimeControl.Disposals != 0 || EmptyControlFixture.Disposals != 0) throw new InvalidOperationException("OWNED_SCOPE_DISPOSAL_ORDER");
             ProjectScopeControl.Later("project");
             if (ProjectScopeControl.Behavior == "project-dispose-throw") throw new NotSupportedException("OWNED_SCOPE_PROJECT_DISPOSE_THROW");

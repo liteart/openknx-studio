@@ -23,6 +23,12 @@ internal sealed class ProjectDenyProxy : RealProxy
     internal int Requests { get { lock (sync) { return requests; } } }
     public override IMessage Invoke(IMessage message)
     {
+        int suspended = ProjectConstructorProbe.SuspendProjectResourceCallback();
+        try { return InvokeCore(message); }
+        finally { ProjectConstructorProbe.RestoreProjectResourceCallback(suspended); }
+    }
+    IMessage InvokeCore(IMessage message)
+    {
         IMethodCallMessage call = message as IMethodCallMessage;
         if (call == null || call.MethodBase == null) throw new NotSupportedException("PROJECT_FIXTURE_UNSUPPORTED:INVALID_MESSAGE");
         int count;
@@ -51,6 +57,12 @@ internal sealed class ProjectStoreIdProxy : RealProxy
     internal int FixtureCalls { get { lock (sync) { return fixtureCalls; } } }
     internal int DeniedRequests { get { lock (sync) { return denied; } } }
     public override IMessage Invoke(IMessage message)
+    {
+        int suspended = ProjectConstructorProbe.SuspendProjectResourceCallback();
+        try { return InvokeCore(message); }
+        finally { ProjectConstructorProbe.RestoreProjectResourceCallback(suspended); }
+    }
+    IMessage InvokeCore(IMessage message)
     {
         lock (sync) {
             if (requests < 17) requests++;
@@ -108,6 +120,8 @@ internal static class ProjectConstructorProbe
     const string AutofacResourceEn = "Autofac.resources, Version=8.2.0.0, Culture=en, PublicKeyToken=17863af14b0044da";
     [ThreadStatic] static bool resourcePhaseActive;
     [ThreadStatic] static int resourceProbeCount;
+    [ThreadStatic] static bool projectResourceBudgetActive, projectResourceCallbackSuspended;
+    [ThreadStatic] static int projectResourceWindow, projectResourceProbeCount;
     static Assembly resourceOwner;
     static readonly string[] FactoryExtraNames = { "Autofac", "Knx.Kim.DataProvider" };
     static readonly string[] FactoryExtraHashes = { "747ee8605301b8bd4284cf16b7b8ab900356b7dd01f70800e08d2ff0286bbc12", "1158afb2d6c1bb18febcbc5e837c7248682cfafe44ecf7f38c853ecc6258671a" };
@@ -136,6 +150,8 @@ internal static class ProjectConstructorProbe
     static readonly object LogLock = new object();
     static FileStream log;
     static string stage, mode, fixture;
+    static string ownedResourceCase;
+    static readonly string[] OwnedResourceCases = { "id-constructor", "id-getter", "getter", "builder", "registration", "external", "build", "factory", "project", "validation", "logging", "error", "project-dispose", "container-dispose", "trace-dispose", "nested-window", "nested-budget", "nested-callback", "off-thread" };
     static volatile bool unexpected, rejected;
     static volatile bool enumInputsPinned;
     static volatile bool platformFacadePinned, valueTuplePinned;
@@ -153,8 +169,11 @@ internal static class ProjectConstructorProbe
     static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly || RegisteredTrace; } }
     static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
     static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
-    static bool ProjectScopeOriginal { get { return mode == "original-project-genuine-factory"; } }
-    static bool ProjectScopeOwned { get { return mode == "owned-project-genuine-factory"; } }
+    static bool ProjectResourcesOriginal { get { return mode == "original-project-genuine-factory-resources"; } }
+    static bool ProjectResourcesOwned { get { return mode == "owned-project-genuine-factory-resources"; } }
+    static bool ProjectResources { get { return ProjectResourcesOriginal || ProjectResourcesOwned; } }
+    static bool ProjectScopeOriginal { get { return mode == "original-project-genuine-factory" || ProjectResourcesOriginal; } }
+    static bool ProjectScopeOwned { get { return mode == "owned-project-genuine-factory" || ProjectResourcesOwned; } }
     static bool ProjectScope { get { return ProjectScopeOriginal || ProjectScopeOwned; } }
     static bool RegisteredOriginal { get { return mode == "original-factory-registered-trace" || ProjectScopeOriginal; } }
     static bool RegisteredOwned { get { return mode == "owned-factory-registered-trace" || ProjectScopeOwned; } }
@@ -237,7 +256,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -282,7 +301,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -290,7 +309,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -377,6 +396,7 @@ internal static class ProjectConstructorProbe
         Assembly owner = resourceOwner, requester = args.RequestingAssembly;
         bool pinned = owner != null && !owner.IsDynamic && AutofacResourceOwnerPolicy(owner.FullName, owner.Location, owner.ReflectionOnly, owner.IsDynamic);
         bool requesterNull = requester == null, matches = pinned && Object.ReferenceEquals(owner, requester);
+        if (ProjectResources) return AllowProjectResourceNull(args.Name, pinned, requesterNull, matches, requester);
         if ((mode == "original-factory-empty-container" || RegisteredOriginal) && containerInputsReady && resourcePhaseActive && pinned)
             resourceProbeCount = NextResourceProbe(resourceProbeCount);
         bool allowed = AutofacResourcePolicy(mode, containerInputsReady, resourcePhaseActive, pinned, args.Name, requesterNull, matches, resourceProbeCount);
@@ -398,6 +418,66 @@ internal static class ProjectConstructorProbe
             resourcePhaseActive = false; resourceProbeCount = 0;
             Record("AUTOFAC_RESOURCE_PHASE_END active=False probes=" + count + " resource-policy=NULL_ONLY");
         }
+    }
+    // Separate new-mode budget: old Factory-only reset behavior above is unchanged.
+    static bool ProjectResourcePolicy(string selectedMode, bool complete, bool budget, int window, bool suspended, bool pinned, string request, bool requesterNull, bool matches, int count)
+    {
+        return selectedMode == "original-project-genuine-factory-resources" && complete && budget && (window == 1 || window == 2) && !suspended && pinned
+            && (request == AutofacResourceEnGb || request == AutofacResourceEn) && (requesterNull ? !matches : matches) && count >= 1 && count <= 8;
+    }
+    static bool AllowProjectResourceNull(string request, bool pinned, bool requesterNull, bool matches, Assembly requester)
+    {
+        bool eligible = ProjectResourcePolicy(mode, containerInputsReady, projectResourceBudgetActive, projectResourceWindow, projectResourceCallbackSuspended,
+            pinned, request, requesterNull, matches, 1);
+        bool allowed = ConsumeProjectResourceProbe(eligible);
+        Record("PROJECT_AUTOFAC_RESOURCE_PROBE allowed=" + allowed + " requested=" + Text(request)
+            + " requester=" + (requesterNull ? "NULL_UNKNOWN" : Text(requester.FullName))
+            + " requester-is-pinned-owner=" + matches + " owner-proof=" + (requesterNull ? "NOT_ESTABLISHED" : matches ? "PINNED_AUTOFAC" : "FOREIGN")
+            + " profile-complete=" + containerInputsReady + " invocation-thread-window=" + projectResourceWindow + " budget-active=" + projectResourceBudgetActive
+            + " callback-suspended=" + projectResourceCallbackSuspended + " aggregate-probe=" + projectResourceProbeCount
+            + " action=" + (allowed ? "RETURN_NULL_NO_ASSEMBLY" : "CONTINUE_FATAL_DENY"));
+        return allowed;
+    }
+    static bool ConsumeProjectResourceProbe(bool eligible)
+    {
+        if (eligible) projectResourceProbeCount = NextResourceProbe(projectResourceProbeCount);
+        return eligible && projectResourceProbeCount <= 8;
+    }
+    static void ProjectResourceRequire(bool condition, string code)
+    { if (!condition) { rejected = true; throw new IOException(code); } }
+    static void WithProjectResourceBudget(Action invoke)
+    {
+        ProjectResourceRequire(ProjectResources && !projectResourceBudgetActive && projectResourceWindow == 0 && !projectResourceCallbackSuspended, "PROJECT_RESOURCE_BUDGET_CONTEXT");
+        projectResourceProbeCount = 0; projectResourceBudgetActive = true;
+        try { invoke(); }
+        finally {
+            int count = projectResourceProbeCount;
+            projectResourceWindow = 0; projectResourceCallbackSuspended = false; projectResourceBudgetActive = false; projectResourceProbeCount = 0;
+            Record("PROJECT_RESOURCE_BUDGET_END active=False aggregate-probes=" + count + " maximum=8 resource-policy=NULL_ONLY");
+        }
+    }
+    static void WithProjectResourceWindow(int window, Action invoke)
+    {
+        ProjectResourceRequire(ProjectResources && projectResourceBudgetActive && projectResourceWindow == 0 && !projectResourceCallbackSuspended
+            && (window == 1 || window == 2), "PROJECT_RESOURCE_WINDOW_CONTEXT");
+        projectResourceWindow = window;
+        try { invoke(); }
+        finally { projectResourceWindow = 0; }
+    }
+    internal static int SuspendProjectResourceCallback()
+    {
+        if (!ProjectResources) return 0;
+        ProjectResourceRequire(!projectResourceCallbackSuspended, "PROJECT_RESOURCE_NESTED_CALLBACK");
+        int previous = projectResourceWindow;
+        projectResourceWindow = 0; projectResourceCallbackSuspended = true;
+        return previous;
+    }
+    internal static void RestoreProjectResourceCallback(int previous)
+    {
+        if (!ProjectResources) return;
+        ProjectResourceRequire(projectResourceCallbackSuspended && projectResourceWindow == 0 && previous >= 0 && previous <= 2
+            && (previous == 0 || projectResourceBudgetActive), "PROJECT_RESOURCE_CALLBACK_RESTORE");
+        projectResourceCallbackSuspended = false; projectResourceWindow = previous;
     }
     static Assembly Resolve(object sender, ResolveEventArgs args)
     {
@@ -1496,12 +1576,16 @@ internal static class ProjectConstructorProbe
             check("PRE_CTOR"); bool returned = false;
             Record("PROJECT_SCOPE_CONSTRUCTOR_BEGIN token=" + api.Constructor.MetadataToken.ToString("X8") + " services=genuine-factory+fixture-id-only identity=OWNED_SYNTHETIC_NOT_REAL_OR_CLAIMED_VALID qualification=NOT_ESTABLISHED");
             try {
-                value = api.Constructor.Invoke(new object[] { factory, FixtureName, style, store.GetTransparentProxy() }); returned = true;
+                object[] arguments = new object[] { factory, FixtureName, style, store.GetTransparentProxy() };
+                Action invoke = delegate { value = api.Constructor.Invoke(arguments); };
+                if (ProjectResources) WithProjectResourceWindow(2, invoke); else invoke();
+                returned = true;
+                if (ProjectResourcesOwned) OwnedProjectResourcePoint("validation");
                 exact = value != null && value.GetType() == api.Project && value is IDisposable && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value);
                 ProbeFiles.Require(exact, "PROJECT_SCOPE_EXACT_RETURN"); check("POST_CTOR");
                 ProbeFiles.Require(store.DeniedRequests == 0, "PROJECT_SCOPE_STORE_DENIAL");
-            } catch (Exception error) { Errors(error); throw; }
-            finally { Record("PROJECT_SCOPE_CONSTRUCTOR_END returned=" + returned + " body-entry=" + (returned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
+            } catch (Exception error) { if (ProjectResourcesOwned) OwnedProjectResourcePoint("error"); Errors(error); throw; }
+            finally { if (ProjectResourcesOwned) OwnedProjectResourcePoint("logging"); Record("PROJECT_SCOPE_CONSTRUCTOR_END returned=" + returned + " body-entry=" + (returned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
         } finally {
             try {
                 if (exact) {
@@ -1526,7 +1610,10 @@ internal static class ProjectConstructorProbe
         Record("FACTORY_CONSTRUCTOR_BEGIN token=" + ctor.MetadataToken.ToString("X8") + " services=genuine-registered-trace-container+deny-all-provider project=NOT_REACHED qualification=NOT_ESTABLISHED");
         try {
             ProbeFiles.Require(ProjectScope && !unexpected && !rejected, "PROJECT_FACTORY_PRECONSTRUCTOR");
-            WithFactoryResourcePhase(delegate { factory = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true; });
+            if (ProjectResources) {
+                object[] arguments = new object[] { context, provider.GetTransparentProxy() };
+                WithProjectResourceWindow(1, delegate { factory = ctor.Invoke(arguments); }); returned = true;
+            } else WithFactoryResourcePhase(delegate { factory = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true; });
             ProbeFiles.Require(factory != null && factory.GetType() == ctor.DeclaringType && !unexpected && !rejected, "PROJECT_FACTORY_EXACT_RETURN");
             ProbeFiles.Require(provider.Requests == 0, "PROJECT_FACTORY_PROVIDER_DENIAL");
         } finally { Record("FACTORY_CONSTRUCTOR_END returned=" + returned + " provider-denied-requests=" + provider.Requests + " project=NOT_REACHED qualification=NOT_ESTABLISHED"); }
@@ -1567,8 +1654,9 @@ internal static class ProjectConstructorProbe
         object value = CreateFixtureId(id, idCtor, idGetter);
         var store = new ProjectStoreIdProxy(storeType, storeGetter, value, Record); var denied = new ProjectDenyProxy(providerType, Record);
         resourceOwner = autofac;
-        WithRegisteredTrace(trace, container, registration, factoryCtor, denied,
-            delegate(object actualFactory) { WithProjectScope(scope, actualFactory, selectedStyle, store, null); }, store);
+        Action run = delegate { WithRegisteredTrace(trace, container, registration, factoryCtor, denied,
+            delegate(object actualFactory) { WithProjectScope(scope, actualFactory, selectedStyle, store, null); }, store); };
+        if (ProjectResources) WithProjectResourceBudget(run); else run();
         GC.KeepAlive(value);
     }
     static void OwnedProjectScope()
@@ -1646,13 +1734,132 @@ internal static class ProjectConstructorProbe
             && guardedProvider.Requests == 0 && count(scopeControl, "IdConstructors") == 1 && count(scopeControl, "IdGetters") == 1, "OWNED_PROJECT_SCOPE_GROUPED_GUARDS");
         Record("OWNED_PROJECT_SCOPE_PASS cases=17 shape-negatives=7 token-negatives=4 modeled-guards=6 stable-id=True actual-factory-reference=True disposal-order=project-container-trace caught-store-provider-all-cleanup-scopes=True original=NOT_RUN qualification=NOT_ESTABLISHED");
     }
+    static void OwnedProjectResourcePoint(string point)
+    {
+        ProbeFiles.Require(ProjectResourcesOwned, "OWNED_RESOURCE_POINT_MODE");
+        int expected = point == "factory" ? 1 : (point == "project" || point == "project-after-getter") ? 2 : 0;
+        ProbeFiles.Require(projectResourceWindow == expected && ((point != "getter" && point != "provider") || projectResourceCallbackSuspended), "OWNED_RESOURCE_POINT_WINDOW:" + point);
+        Record("OWNED_RESOURCE_POINT phase=" + point + " window=" + projectResourceWindow + " callback-suspended=" + projectResourceCallbackSuspended + " aggregate=" + projectResourceProbeCount);
+        bool selected = (ownedResourceCase == point && point != "factory") || (ownedResourceCase == "factory" && point == "provider")
+            || (point == "factory" && (ownedResourceCase == "nested-window" || ownedResourceCase == "nested-budget" || ownedResourceCase == "off-thread"));
+        if (!selected) return;
+        bool refused = false;
+        if (ownedResourceCase == "off-thread") {
+            var thread = new Thread(delegate() {
+                try { WithProjectResourceWindow(2, delegate { throw new InvalidOperationException("OWNED_OFF_THREAD_ACTION_EXECUTED"); }); }
+                catch (IOException) { refused = true; }
+            });
+            thread.IsBackground = true; thread.Start(); ProbeFiles.Require(thread.Join(1000), "OWNED_RESOURCE_THREAD_TIMEOUT");
+        } else {
+            try {
+                if (ownedResourceCase == "nested-window") WithProjectResourceWindow(2, delegate { throw new InvalidOperationException("OWNED_NESTED_ACTION_EXECUTED"); });
+                else if (ownedResourceCase == "nested-budget") WithProjectResourceBudget(delegate { throw new InvalidOperationException("OWNED_NESTED_BUDGET_EXECUTED"); });
+                else Resolve(null, new ResolveEventArgs(AutofacResourceEnGb)); // Fixture owner cannot satisfy the original pin.
+            } catch (IOException) { refused = true; }
+        }
+        ProbeFiles.Require(refused && rejected, "OWNED_RESOURCE_REFUSAL_NOT_STICKY");
+        Record("OWNED_RESOURCE_REFUSAL case=" + ownedResourceCase + " caught=True sticky=True actual-owner=NOT_PROVIDED original=NOT_RUN");
+    }
+    static void OwnedProjectResourcePolicy()
+    {
+        const string selected = "original-project-genuine-factory-resources";
+        int positives = 0, negatives = 0;
+        foreach (int window in new int[] { 1, 2 }) foreach (string request in new string[] { AutofacResourceEnGb, AutofacResourceEn }) foreach (bool requesterNull in new bool[] { true, false }) {
+            foreach (int count in new int[] { 1, 8 }) { ProbeFiles.Require(ProjectResourcePolicy(selected, true, true, window, false, true, request, requesterNull, !requesterNull, count), "OWNED_PROJECT_RESOURCE_POSITIVE"); positives++; }
+            foreach (string wrong in new string[] { request.Replace("Autofac.resources", "Owned.resources"), request.Replace("8.2.0.0", "8.2.0.1"), request.Replace("17863af14b0044da", "17863af14b0044db"), request.Replace("Culture=en-GB", "Culture=en-US").Replace("Culture=en,", "Culture=neutral,"), request + ", Retargetable=Yes", request.Replace("Culture=en-GB", "Culture=en-gb").Replace("Culture=en,", "Culture=EN,") }) {
+                ProbeFiles.Require(!ProjectResourcePolicy(selected, true, true, window, false, true, wrong, requesterNull, !requesterNull, 1), "OWNED_PROJECT_RESOURCE_IDENTITY"); negatives++;
+            }
+        }
+        foreach (string other in new string[] { "original-project-genuine-factory", "owned-project-genuine-factory", "owned-project-genuine-factory-resources", "original-factory-empty-container", "original-factory-registered-trace", "original-project", "original-trace-encryptor", "" }) {
+            ProbeFiles.Require(!ProjectResourcePolicy(other, true, true, 1, false, true, AutofacResourceEn, true, false, 1), "OWNED_PROJECT_RESOURCE_MODE"); negatives++;
+        }
+        foreach (int window in new int[] { -1, 0, 3 }) { ProbeFiles.Require(!ProjectResourcePolicy(selected, true, true, window, false, true, AutofacResourceEn, true, false, 1), "OWNED_PROJECT_RESOURCE_WINDOW"); negatives++; }
+        foreach (int count in new int[] { -1, 0, 9, 10 }) { ProbeFiles.Require(!ProjectResourcePolicy(selected, true, true, 1, false, true, AutofacResourceEn, true, false, count), "OWNED_PROJECT_RESOURCE_COUNT"); negatives++; }
+        ProbeFiles.Require(!ProjectResourcePolicy(selected, false, true, 1, false, true, AutofacResourceEn, true, false, 1)
+            && !ProjectResourcePolicy(selected, true, false, 1, false, true, AutofacResourceEn, true, false, 1)
+            && !ProjectResourcePolicy(selected, true, true, 1, true, true, AutofacResourceEn, true, false, 1)
+            && !ProjectResourcePolicy(selected, true, true, 1, false, false, AutofacResourceEn, true, false, 1)
+            && !ProjectResourcePolicy(selected, true, true, 1, false, true, AutofacResourceEn, false, false, 1)
+            && !ProjectResourcePolicy(selected, true, true, 1, false, true, AutofacResourceEn, true, true, 1), "OWNED_PROJECT_RESOURCE_FACTS"); negatives += 6;
+        ProbeFiles.Require(AutofacResourcePolicy("original-project-genuine-factory", true, true, true, AutofacResourceEn, true, false, 8)
+            && !AutofacResourcePolicy(selected, true, true, true, AutofacResourceEn, true, false, 1), "OWNED_PROJECT_RESOURCE_LEGACY_POLICY");
+        WithProjectResourceBudget(delegate {
+            WithProjectResourceWindow(1, delegate { for (int i = 0; i < 3; i++) ProbeFiles.Require(ConsumeProjectResourceProbe(true), "OWNED_RESOURCE_FACTORY_CAPACITY"); });
+            ProbeFiles.Require(projectResourceWindow == 0 && projectResourceProbeCount == 3, "OWNED_RESOURCE_BETWEEN_CONSTRUCTORS");
+            WithProjectResourceWindow(2, delegate {
+                for (int i = 0; i < 5; i++) ProbeFiles.Require(ConsumeProjectResourceProbe(true), "OWNED_RESOURCE_PROJECT_CAPACITY");
+                ProbeFiles.Require(projectResourceProbeCount == 8, "OWNED_RESOURCE_EXACT_EIGHTH");
+                int prior = SuspendProjectResourceCallback();
+                try { ProbeFiles.Require(projectResourceWindow == 0 && projectResourceCallbackSuspended && projectResourceProbeCount == 8, "OWNED_RESOURCE_GETTER_SUSPENDED"); }
+                finally { RestoreProjectResourceCallback(prior); }
+                ProbeFiles.Require(projectResourceWindow == 2 && !projectResourceCallbackSuspended && projectResourceProbeCount == 8, "OWNED_RESOURCE_GETTER_RESTORED");
+                for (int i = 0; i < 3; i++) ProbeFiles.Require(!ConsumeProjectResourceProbe(true) && projectResourceProbeCount == 9, "OWNED_RESOURCE_NINTH_SATURATES");
+                ProbeFiles.Require(!AllowAutofacResourceNull(new ResolveEventArgs(AutofacResourceEn)), "OWNED_RESOURCE_ACTUAL_OWNER_NOT_FAKE");
+            });
+            bool otherBudget = true; int otherWindow = -1, otherCount = -1;
+            var thread = new Thread(delegate() { otherBudget = projectResourceBudgetActive; otherWindow = projectResourceWindow; otherCount = projectResourceProbeCount; });
+            thread.IsBackground = true; thread.Start(); ProbeFiles.Require(thread.Join(1000) && !otherBudget && otherWindow == 0 && otherCount == 0, "OWNED_RESOURCE_THREAD_LOCAL");
+        });
+        ProbeFiles.Require(!projectResourceBudgetActive && projectResourceWindow == 0 && projectResourceProbeCount == 0, "OWNED_RESOURCE_BUDGET_RETURN_CLEAR");
+        bool threw = false;
+        try { WithProjectResourceBudget(delegate { WithProjectResourceWindow(2, delegate { throw new NotSupportedException("OWNED_RESOURCE_WINDOW_THROW"); }); }); }
+        catch (NotSupportedException) { threw = true; }
+        ProbeFiles.Require(threw && !projectResourceBudgetActive && projectResourceWindow == 0 && projectResourceProbeCount == 0 && !projectResourceCallbackSuspended, "OWNED_RESOURCE_THROW_CLEAR");
+        Record("OWNED_PROJECT_RESOURCE_POLICY_PASS positives=" + positives + " negatives=" + negatives + " shared8=3+5 ninth-saturates=True thread-local=True getter-restores=True actual-owner=NOT_PROVIDED modeled=True original=NOT_RUN");
+    }
+    static void OwnedProjectResources()
+    {
+        ProbeFiles.Require(ProjectResourcesOwned, "OWNED_PROJECT_RESOURCE_MODE");
+        if (ownedResourceCase == null) OwnedProjectResourcePolicy();
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true); };
+        Type control = type("ProjectScopeControl"), traceControl = type("TraceLifetimeControl");
+        control.GetMethod("Reset").Invoke(null, new object[] { ownedResourceCase == "error" ? "project-throw" : ownedResourceCase == "factory" ? "resource-provider" : "return" });
+        type("RegistrationControl").GetMethod("Reset").Invoke(null, new object[] { "return" }); type("EmptyControlFixture").GetMethod("Reset").Invoke(null, new object[] { "return" });
+        traceControl.GetMethod("Reset").Invoke(null, new object[] { "return" });
+        control.GetField("ResourceProbe").SetValue(null, new Action<string>(OwnedProjectResourcePoint));
+        traceControl.GetField("ConstructorCallback").SetValue(null, new Action(delegate { type("RegistrationControl").GetMethod("Event").Invoke(null, new object[] { "trace-ctor" }); OwnedProjectResourcePoint("trace-constructor"); }));
+        traceControl.GetField("DisposeCallback").SetValue(null, new Action(delegate { type("RegistrationControl").GetMethod("Event").Invoke(null, new object[] { "trace-dispose" }); OwnedProjectResourcePoint("trace-dispose"); }));
+        Type factory = type("ScopedGenuineFactoryFixture"), contract = type("IFactoryFixture"), style = type("GroupAddressStyleFixture"), storeType = type("IScopedProjectStoreFixture"), id = type("ScopedIdFixture");
+        ProjectScopeApi scope = ScopedProjectApi(type("ScopedProjectFixture"), factory, contract, style, storeType);
+        EmptyContainerApi container = EmptyApi(type("ScopedBuilderFixture"), type("EmptyOptionsFixture"), type("IRegisteredContainerFixture"), type("IContainerDependencyFixture"));
+        TraceLifetimeApi trace = TraceApi(type("TraceLifetimeFixture"), type("ITraceLifetimeFixture"));
+        TraceRegistrationApi registration = RegistrationApi(container, type("ScopedRegistrationExtensionsFixture"), type("IRegistrationFixture`3"), type("RegistrationDataFixture"), type("RegistrationStyleFixture"), trace.Contract);
+        ConstructorInfo factoryCtor = FactoryCtor(factory, container.Context, type("IDataDependencyFixture")), idCtor = id.GetConstructor(new Type[] { typeof(uint) });
+        MethodInfo idGetter = id.GetMethod("get_ProjectNumber"), storeGetter = storeType.GetMethod("get_Id");
+        object selectedStyle = Enum.Parse(style, "ThreeLevel", false), value = CreateFixtureId(id, idCtor, idGetter);
+        ProjectStoreIdProxy store = null; bool callbackReentryAttempted = false;
+        store = new ProjectStoreIdProxy(storeType, storeGetter, value, delegate(string message) {
+            if (message.StartsWith("PROJECT_SERVICE_FIXTURE", StringComparison.Ordinal)) {
+                OwnedProjectResourcePoint("getter");
+                if (ownedResourceCase == "nested-callback" && !callbackReentryAttempted) {
+                    callbackReentryAttempted = true; int before = projectResourceProbeCount; bool refused = false;
+                    try { storeGetter.Invoke(store.GetTransparentProxy(), new object[0]); }
+                    catch (TargetInvocationException error) {
+                        var denial = error.InnerException as IOException;
+                        refused = denial != null && denial.Message == "PROJECT_RESOURCE_NESTED_CALLBACK";
+                        if (!refused) throw;
+                    } catch (IOException error) { refused = error.Message == "PROJECT_RESOURCE_NESTED_CALLBACK"; if (!refused) throw; }
+                    ProbeFiles.Require(refused && rejected && projectResourceWindow == 0 && projectResourceCallbackSuspended && projectResourceProbeCount == before, "OWNED_NESTED_CALLBACK_STATE");
+                    Record("OWNED_RESOURCE_REFUSAL case=nested-callback caught=True sticky=True diagnostic=PROJECT_RESOURCE_NESTED_CALLBACK outer-window=0 outer-suspended=True aggregate-unchanged=True attempts=1 original=NOT_RUN");
+                }
+            }
+            Record(message);
+        });
+        var provider = new ProjectDenyProxy(type("IDataDependencyFixture"), delegate(string message) { if (message.StartsWith("PROJECT_SERVICE_DENIED", StringComparison.Ordinal)) OwnedProjectResourcePoint("provider"); Record(message); });
+        WithProjectResourceBudget(delegate { WithRegisteredTrace(trace, container, registration, factoryCtor, provider, delegate(object actual) { WithProjectScope(scope, actual, selectedStyle, store, null); }, store); });
+        ProbeFiles.Require(ownedResourceCase == null && !rejected && !unexpected && !projectResourceBudgetActive && projectResourceWindow == 0 && projectResourceProbeCount == 0
+            && store.FixtureCalls == 2 && store.DeniedRequests == 0 && provider.Requests == 0, "OWNED_RESOURCE_LIFETIME_RESULT");
+        Record("OWNED_PROJECT_RESOURCE_LIFETIME_PASS old-modes=UNCHANGED phase=exact-invoke-only callback-suspended=True cleanup-no-window=True original=NOT_RUN qualification=NOT_ESTABLISHED");
+    }
     [STAThread]
     internal static int Main(string[] args)
     {
         int result = 2;
         try {
-            ProbeFiles.Require(args.Length == 6 && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
+            ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
+            ProbeFiles.Require(args.Length == 6 || (ProjectResourcesOwned && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
+            if (args.Length == 8) ownedResourceCase = args[7];
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -1695,7 +1902,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (ProjectScopeOriginal) OriginalProjectScope(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (ProjectScopeOriginal) OriginalProjectScope(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }

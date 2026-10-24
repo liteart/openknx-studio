@@ -81,16 +81,44 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; actual18 registered-trace Factory constructor PASS0 enables scoped Project work. Source19b owned repair PASS41/81/46 is reviewed; actual original19b FAIL exit 2 at a denied Project-constructor Autofac resource probe. Underlying Project/service failure UNKNOWN; no retry or qualification. Project/SDK-context/service qualification and all ACs remain unmet; no gate advances |
-| Source commit(s) | Actual19b runtime source `bd4855e46912441533af5ab18e0e17935097ae94`, reviewed implementation `61b39b421a8b25a5fafd25f4f971756dc4993c37`; prior source/result revisions remain in the dated history and context contract |
-| Tests executed | Source19b owned Windows suites PASS41 Session0/81 limited/46 administrator-negative; actual19b single original diagnostic FAIL2. Live19-input/18-artifact preflight, post19-input integrity and OS cleanup PASS; independent result-provenance audit PASS without rerun; scope/whitespace PASS. Earlier per-source outcomes and historical NOT RUN checkpoints remain below. |
-| Evidence location | [Project qualification](../docs/DCA-PROJECT-CONTEXT.md); latest private `task009-constructor-windows/project19b-observation.json`, plan/runner/log, source-freeze/build/owned19b records, source/plan reviews and `verifier19b/original-result-audit.txt`; earlier records remain separately retained |
+| Implementation / report status | In progress; source20a local and owned Windows preparation PASS79 Session0/137 limited/84 administrator-negative. Independent Windows-result audit/review PASS; source commit pending; actual19b FAIL2 remains latest original Project result. All ACs unmet; no gate advances |
+| Source commit(s) | Source20a uncommitted on `cf0b89baaa95c321de11bf03cf85724fe31e3de0`, freeze SHA `48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`. Actual19b runtime source `bd4855e46912441533af5ab18e0e17935097ae94`; earlier accepted source/result revisions remain in dated history |
+| Tests executed | Source20a C#5/x64 compile3, PS parse/guards, preservation, six fresh extracted proofs PASS; removed-guard mutant expected FAIL. Actual Windows build/owned suites PASS79/137/84, task cleanup PASS. Original20a NOT RUN; actual19b FAIL2 unchanged |
+| Evidence location | [Bounded fallback](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md), private source20a/ freeze/owned20a-observation (628 bindings), verifier20a/source-audit, review20a/critical-source-local. Earlier [Project qualification](../docs/DCA-PROJECT-CONTEXT.md) and original19b results retained |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Actual19b FAIL2: Project constructor invoked once with synthetic get_Id fixture, no return; Autofac.resources 8.2 en-GB requester NULL denied outside Factory-only constructor phase, underlying service failure UNKNOWN. Trace/container/Factory returned; container and trace disposal returned, final dependency audit failed. OS cleanup and post19-input hashes PASS. No Project/DCA/UI/state/device qualification; prior Actual18 Factory PASS0 remains distinct. |
+| Technical outcome | Owned Windows RealProxy nested-callback refusal/restoration/sticky final audit verified; this is not vendor/CLR resource fallback. Original20a NOT RUN; actual19b Project did not return and underlying service failure remains UNKNOWN. No Project/DCA/UI/state/device qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source19b source/owned-evidence and exact plan critical reviews PASS. Actual19b independent original-result audit PASS for provenance/consistency (`b3914e956e35d88e262ae12d19be7dcab6922b1079674547468e30355ab25c5e`); critical result-documentation review PASS, no unresolved findings (`9d75a3552a7cba78c4882ba812404ad7f9d3d02aecd5c87ff4b0f46d1fde3169`). No runtime or task qualification inferred. |
+| Reviewer | Source20a independent local verification PASS; focused critical source/local review PASS closing source20 P2 gap. Actual Windows-result independent audit and critical evidence review PASS (628 bindings, no unresolved findings). Earlier reviews retained; no runtime/task qualification inferred |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Source20a actual owned checkpoint
+
+The focused nested-callback regression closes the source20 P2 coverage gap with
+local source verification/review PASS. Actual Windows build and owned suites
+PASS79 Session0/137 limited Session2/84 administrator-negative Session2. Both
+jobs removed, owned processes0/no junction; all501 case files retained. The
+628-entry private observation binds source/build/results/cleanup. Independent
+Windows-result audit and critical review PASS; source commit pending, no original20a
+plan or call exists. Details and exact commands are in the bounded fallback contract.
+Task In progress, all ACs unchecked, qualification NOT_ESTABLISHED/no gate.
+
+## Source20 local checkpoint
+
+The separate bounded Project-resource mode pair is implemented and frozen on
+baseline `cf0b89b`; source commit and independent verification/review are pending.
+Local three-target C#5/x64/warnings-as-errors compile, PowerShell parse/source
+guards, preservation and five fresh extracted-policy/state proofs PASS. These
+are macOS/local modeled checks; Framework CLR/RealProxy/vendor behavior is not
+qualified. Windows20 owned and original execution remain NOT RUN after the
+first resumed SSH request failed with a broken multiplex pipe/authentication
+denial. Local work proceeds independently.
+
+[The bounded fallback contract](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md) records
+commands, limitations and private freeze/evidence hashes. `source-freeze-20.json`
+SHA-256 is `068e73d6292d65f22b8d3302798fdf363020803823e47f973670df1a7188f082`.
+Actual19b below remains FAIL2; the underlying Project/service failure is UNKNOWN.
+Task stays In progress, all ACs unchecked, no qualification or gate advance.
 
 ## Actual19b original result
 
