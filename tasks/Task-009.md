@@ -92,6 +92,16 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
+## Source21 provider declaration inquiry
+
+The [fixed provider metadata contract](../docs/DCA-UNDO-STORE-PROVIDER.md)
+adds a root-only declaration query for the service observed in actual20a.
+Source21 owned checks PASS370 PowerShell/24 Python, preservation/parsing/scope/
+whitespace; six source files and25 evidence bindings frozen. Independent source
+verification/review PASS; source commit pending. Original metadata extraction is
+NOT RUN and the actual provider contract remains UNKNOWN. No service, registration,
+constructor/runtime retry or criterion change is supplied by this increment.
+
 ## Actual20a original result
 
 One separately pinned original20a attempt at sourceeb3b8cf ended FAIL10.

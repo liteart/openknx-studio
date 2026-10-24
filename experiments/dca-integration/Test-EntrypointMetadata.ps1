@@ -351,5 +351,41 @@ try{
  $tpWorker=Join-Path $PSScriptRoot 'Read-ProjectTraceEncryptorParameterMetadata.ps1'
  Reject {& $tpWorker -InputPath $traceParameter -InputSha256 (Hash $traceParameter)} 'DCAENTRY_INPUT_PIN'
  Assert ((TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All previous report bytes unchanged after parameter-only profile';$passed++
+ $undoStore=Join-Path $root 'OwnedUndoStoreProvider.dll';[Task144OwnedFixtures]::CreateUndoStoreProvider($undoStore)
+ function UndoStore([string] $p=$undoStore){[Task144.EntrypointMetadata]::ReadOwnedProjectUndoStoreProvider($p,(Hash $p))}
+ $usRaw=UndoStore;$us=$usRaw|ConvertFrom-Json;$ust=$us.types[0]
+ Assert ($us.operation -eq 'static_dca_project_undo_store_provider' -and $us.runtime_execution -eq 'NOT_RUN' -and $us.inputs.Count -eq 1 -and $us.inputs[0].identity -eq 'Task009.OwnedUndoStoreProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $us.selected_root -eq 'Owned.Task009.IUndoStoreProviderFixture') 'Provider fixed unsigned owned identity/root, no original impersonation';$passed++
+ Assert ($us.declaration_scope -eq 'ROOT_ONLY' -and $us.referenced_declarations -eq 'UNRESOLVED_NOT_FOLLOWED' -and $us.qualification -eq 'DECLARATIONS_ONLY_NOT_USABLE_SERVICE' -and $us.types.Count -eq 1 -and $ust.attributes -eq 161 -and $ust.generic_arity -eq 0) 'Provider public interface flags, root-only/unresolved qualification';$passed++
+ Assert ($ust.interfaces.Count -eq 2 -and $ust.interfaces[0] -eq 'Owned.Task009.UnresolvedBase' -and $ust.interfaces[1] -eq '[Owned.ForeignContracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.External.IBase') 'Direct local/external interfaces named but never followed';$passed++
+ Assert ($ust.methods.Count -eq 3 -and $ust.methods[0].signature -eq 'instance String() generic=0' -and $ust.methods[0].signature_header -eq 32 -and $ust.methods[0].calling_convention -eq 'Default' -and $ust.methods[0].is_instance -and $ust.methods[0].return_type -eq 'String' -and $ust.methods[0].parameter_types.Count -eq 0) 'Exact public accessor signature/header/return declaration';$passed++
+ Assert ($ust.methods[1].signature -eq 'instance Void(Int32,String[]) generic=0' -and $ust.methods[1].parameter_types.Count -eq 2 -and $ust.methods[1].parameter_types[0] -eq 'Int32' -and $ust.methods[1].parameter_types[1] -eq 'String[]' -and $ust.methods[2].generic_arity -eq 1 -and $ust.methods[2].signature_header -eq 48 -and $ust.methods[2].signature -eq 'instance !!0(!!0) generic=1') 'Parameter and method generic declarations are explicit, not service semantics';$passed++
+ Assert (-not $usRaw.Contains('FIELD_MUST_NOT_BE_READ') -and -not $usRaw.Contains('PRIVATE_MALFORMED') -and -not $usRaw.Contains('INHERITED_MALFORMED') -and -not $usRaw.Contains('"fields"') -and -not $usRaw.Contains($root) -and @([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedUndoStoreProvider'}).Count -eq 0) 'No fields/private/inherited declarations, private paths or target load';$passed++
+ foreach($profile in @(1,2,3,4,5,6,8,10,11,12,13,14,15,16,17,18,19,20,21,22,24)){
+  $bad=Join-Path $root ('UndoStoreBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateUndoStoreProvider($bad,$profile)
+  $code=@{1='INPUT_IDENTITY';2='ROOT_NOT_FOUND';3='DUPLICATE_ROOT';4='ROOT_NOT_PUBLIC';5='ROOT_NOT_INTERFACE';6='METHOD_LIMIT';8='INTERFACE_LIMIT';10='UNSUPPORTED_GENERIC_ROOT';11='UNSUPPORTED_INTERFACE_BASE';12='MALFORMED_SIGNATURE';13='SIGNATURE_SHAPE';14='SIGNATURE_LIMIT';15='UNSUPPORTED_SIGNATURE';16='SIGNATURE_LIMIT';17='SIGNATURE_LIMIT';18='SIGNATURE_SHAPE';19='STRING_LIMIT';20='SIGNATURE_LIMIT';21='REPORT_LIMIT';22='ROW_LIMIT';24='ROW_LIMIT'}[$profile]
+  Reject {UndoStore $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(22,24)){
+  $rowPath=Join-Path $root ('UndoStoreBad'+$profile+'.dll');$seen=$false
+  try{$null=UndoStore $rowPath}catch{$rowException=$_.Exception;for($depth=0;$depth -lt 8 -and $null -ne $rowException;$depth++){
+   if($rowException.GetType().FullName -eq 'Task144.EntrypointMetadata+RowLimitObservationException'){$seen=$rowException.TableName -eq $(if($profile -eq 22){'TYPEDEF'}else{'METHODDEF'}) -and $rowException.RowCount -eq $(if($profile -eq 22){32769}else{65537});break};$rowException=$rowException.InnerException
+  }}
+  Assert $seen ('Provider exact diagnostic table/count '+$profile);$passed++
+ }
+ foreach($profile in @(7,9,23,25,26,28)){
+  $positive=Join-Path $root ('UndoStoreBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateUndoStoreProvider($positive,$profile)
+  $v=UndoStore $positive|ConvertFrom-Json
+  Assert ($v.types.Count -eq 1 -and ($profile -ne 7 -or $v.types[0].methods.Count -eq 256) -and ($profile -ne 9 -or $v.types[0].interfaces.Count -eq 32) -and ($profile -ne 28 -or $v.types[0].methods[0].name.Length -eq 1024)) ('Provider exact method/interface/string/table boundary '+$profile);$passed++
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectUndoStoreProvider($undoStore,('f'*63))} 'DCAENTRY_HASH_FORMAT'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectUndoStoreProvider($undoStore,('f'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectUndoStoreProvider($undo,(Hash $undo))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectUndoStoreProvider($undoStore,(Hash $undoStore))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectUndoStoreProvider($broken,'73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a')} 'DCAENTRY_INPUT_HASH'
+ $oversize=Join-Path $root 'UndoStoreOversize.dll';$stream=[IO.File]::Create($oversize);try{$stream.SetLength(16*1024*1024+1)}finally{$stream.Dispose()}
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectUndoStoreProvider($oversize,('0'*64))} 'DCAENTRY_INPUT_FILE'
+ $usWorker=Join-Path $PSScriptRoot 'Read-ProjectUndoStoreProviderMetadata.ps1'
+ Reject {& $usWorker -InputPath $undoStore -InputSha256 (Hash $undoStore)} 'DCAENTRY_INPUT_PIN'
+ Assert ((TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reports byte-identical after root-only provider metadata';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

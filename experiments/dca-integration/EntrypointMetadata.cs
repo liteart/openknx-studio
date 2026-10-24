@@ -262,6 +262,49 @@ public static class EntrypointMetadata {
    if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ const string UndoStoreProviderHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
+ const string UndoStoreProviderIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string UndoStoreProviderRoot="Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider";
+ const string OwnedUndoStoreProviderIdentity="Task009.OwnedUndoStoreProvider, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string OwnedUndoStoreProviderRoot="Owned.Task009.IUndoStoreProviderFixture";
+ const int UndoStoreProviderMethodLimit=65536;
+ public static string ReadProjectUndoStoreProvider(string path,string hash){
+  if(hash!=UndoStoreProviderHash)throw Fail("INPUT_PIN");return ReadUndoStoreProviderInternal(path,hash,false);
+ }
+ // A separate unsigned owned image; never selectable by the fixed original worker.
+ public static string ReadOwnedProjectUndoStoreProvider(string path,string hash){return ReadUndoStoreProviderInternal(path,hash,true);}
+ static string ReadUndoStoreProviderInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);if(!owned&&bytes.Length!=14204880)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);if(count>(table==TableIndex.MethodDef?UndoStoreProviderMethodLimit:RowLimit))throw new RowLimitObservationException(table,count);}
+   string identity=AssemblyIdentity(r);if(identity!=(owned?OwnedUndoStoreProviderIdentity:UndoStoreProviderIdentity))throw Fail("INPUT_IDENTITY");
+   string rootName=owned?OwnedUndoStoreProviderRoot:UndoStoreProviderRoot;TypeDefinitionHandle root=default;
+   foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)==rootName){if(!root.IsNil)throw Fail("DUPLICATE_ROOT");root=h;}
+   if(root.IsNil)throw Fail("ROOT_NOT_FOUND");var t=r.GetTypeDefinition(root);
+   if((t.Attributes&TypeAttributes.VisibilityMask)!=TypeAttributes.Public||!t.GetDeclaringType().IsNil)throw Fail("ROOT_NOT_PUBLIC");
+   if((t.Attributes&TypeAttributes.ClassSemanticsMask)!=TypeAttributes.Interface)throw Fail("ROOT_NOT_INTERFACE");
+   int arity=t.GetGenericParameters().Count;if(arity!=0)throw Fail("UNSUPPORTED_GENERIC_ROOT");
+   if(!t.BaseType.IsNil)throw Fail("UNSUPPORTED_INTERFACE_BASE");
+   var interfaces=new List<string>();foreach(var ih in t.GetInterfaceImplementations()){
+    if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");interfaces.Add(new Names(r,true).Named(r.GetInterfaceImplementation(ih).Interface));
+   }
+   var methods=new List<object>();foreach(var mh in t.GetMethods()){
+    var m=r.GetMethodDefinition(mh);if((m.Attributes&MethodAttributes.MemberAccessMask)!=MethodAttributes.Public)continue;
+    if(methods.Count>=256)throw Fail("METHOD_LIMIT");string signature;MethodSignature<string> decoded;
+    try{signature=new Names(r,true).Method(m.Signature);decoded=m.DecodeSignature(new Names(r,true),(object)null);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+    methods.Add(Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",Str(r,m.Name),"attributes",(int)m.Attributes,
+     "signature_header",decoded.Header.RawValue,"calling_convention",decoded.Header.CallingConvention.ToString(),"is_instance",decoded.Header.IsInstance,
+     "generic_arity",decoded.GenericParameterCount,"return_type",decoded.ReturnType,"parameter_types",decoded.ParameterTypes,"signature",signature));
+   }
+   var type=Obj("token",MetadataTokens.GetToken(root).ToString("X8"),"name",rootName,"attributes",(int)t.Attributes,"generic_arity",arity,"interfaces",interfaces,"methods",methods);
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_undo_store_provider","rights","UNRESOLVED","runtime_execution","NOT_RUN",
+    "inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_root",rootName,
+    "declaration_scope","ROOT_ONLY","referenced_declarations","UNRESOLVED_NOT_FOLLOWED","types",new[]{type},"qualification","DECLARATIONS_ONLY_NOT_USABLE_SERVICE",
+    "limitations",new[]{"Public nongeneric interface root and public declared methods only; direct interface references remain unresolved. No closure or implementation search.","No fields, values, method bodies, attributes, dependencies or target execution. Method generic constraints/parameter defaults and service behavior remain unexamined."}));
+   if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  const string ProjectUndoManagerHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
  const string ProjectUndoManagerIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
  const string OwnedProjectUndoManagerIdentity="Task009.OwnedUndoManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
