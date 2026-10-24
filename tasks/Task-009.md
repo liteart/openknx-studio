@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual20a executed one separately frozen reviewed original attempt: FAIL10, with four allowed null-only resource probes followed by an observed unregistered IUndoManagerStoreProvider service. Project did not return. The provider declaration is now verified by guarded original21 metadata; store/path behavior and the returned IStreamStore declaration remain UNKNOWN. Any next shim or original plan needs its own bounded contract; no speculative positive registration or retry. Cleanup and post19private+2OS input integrity PASS. Earlier actual19b FAIL2 retains its own UNKNOWN underlying failure. Task stays In progress, all ACs unmet; ADR-005 private-use/no proprietary redistribution decision remains in force.
+Actual22 at source72bca2e ended FAIL2 during undo-provider registration: one System.Object.GetType callback was denied before registration completed. Container Build and Factory/Project constructors were not reached; the exact internal caller is NOT_INSTRUMENTED_UNKNOWN. No provider interface method or resource probe occurred. Cleanup and post19private+2OS integrity PASS. Original21 verified provider declarations only; provider/store/path behavior and IStreamStore declarations remain UNKNOWN. Next: a separate bounded CLR type-introspection contract and owned regression, not an automatic original retry. Earlier20a FAIL10 and19b FAIL2 retain their own evidence. Task stays In progress, all ACs unmet; ADR-005 private-use/no proprietary redistribution decision remains in force.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source22 deny-only provider preparation has local and owned Windows PASS116/195/121, source verification/review PASS; Windows evidence verification/review PASS; source commit pending. Original20a remains SDK runtime FAIL10; no original22 attempt or positive provider |
-| Source commit(s) | Source22 uncommitted on `f5ffb140bb2c37dd43879d85885f0203b70e6e8c`, freeze SHA `9be524673d4cd614b5c9f35625cc1dcd7c9953e8b66eca61ab6908cd2b8c53a8`. Metadata21 source `55c36170a03c91709ef70e7a3220508e2514da8c`; SDK runtime20a `eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066`; prior exact source/result records retained |
-| Tests executed | Source22 local C#5/x64 compile3/guards/parser/preservation and counter-only mutation proof PASS; owned Windows116 Session0/195 limited/121 admin-negative PASS, both task cleanups PASS. Source21 owned370/24 and guarded declaration query PASS; actual SDK runtime20a FAIL10 unchanged |
-| Evidence location | [Deny-only increment](../docs/DCA-UNDO-PROVIDER-DENIAL.md), private source22 freeze/local proofs and constructor-windows owned22-observation (842 bindings). [Metadata](../docs/DCA-UNDO-STORE-PROVIDER.md) and [runtime20a result](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md) remain separately qualified |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Owned typed proxy/2 external registrations/denial and lifetime cases verified. No service value, store or path is provided; no SDK target code selected by owned tests. Provider declarations are known, behavior/IStreamStore unknown; SDK20a Project did not return, no SDK/UI/state/device qualification |
+| Implementation / report status | In progress; source22 and owned Windows preparation verified/reviewed PASS; actual original22 FAIL2 during registration |
+| Source commit(s) | `72bca2ead9b60ca5d8742168208e40fd9dd2782f`; freeze SHA `9be524673d4cd614b5c9f35625cc1dcd7c9953e8b66eca61ab6908cd2b8c53a8`. Earlier exact source/result records retained below |
+| Tests executed | Local source22 compile3/guards/parser/preservation/mutation proof PASS; owned Windows116/195/121 PASS. One reviewed original22 attempt FAIL2; cleanup and post19+2 integrity PASS; independent saved-result audit PASS61 bindings |
+| Evidence location | [Deny-only increment and original22 result](../docs/DCA-UNDO-PROVIDER-DENIAL.md); private constructor-windows/project22-observation.json and verifier22/original-result-audit.txt |
+| Acceptance criteria met | None asserted; all remain unchecked |
+| Technical outcome | One CLR Object.GetType denial during undo registration, exact caller unknown. No Build/Factory/Project or provider interface call; no store/path value supplied. No SDK/UI/state/device qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source22 independent local verification and critical source review PASS; actual Windows-owned result verification/review PASS (842 bindings, no unresolved findings). Original21 declaration and earlier SDK20a reviews retained; no task/gate acceptance |
+| Reviewer | Source22/owned Windows and original plan critical reviews PASS; actual original22 independent provenance audit and critical result/documentation review PASS, no unresolved findings; no task/gate acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -100,8 +100,21 @@ registration and bounded unsupported callbacks. It supplies no path/store/null
 success or positive provider behavior. Source22 is now frozen with local compile3/guards/preservation/mutation proof
 PASS, independent source verification/review PASS and actual owned Windows
 PASS116 Session0/195 limited/121 administrator-negative. Independent Windows
-result verification/review PASS; source commit pending, no original22 plan/runtime exists.
+result verification/review PASS; source commit72bca2e. The separately reviewed original22 plan subsequently executed once and failed during registration, as recorded below.
 All earlier SDK runtime/result qualifications remain unchanged.
+
+## Actual22 original result
+
+One reviewed fixed attempt at source72bca2e returned FAIL2. Undo registration
+intercepted one System.Object.GetType call and denied it before registration
+completed; its exact internal caller was not instrumented. Container Build,
+Factory and Project constructors, provider interface methods and resource probes
+were not reached. Trace disposal returned once; the sticky denial correctly
+failed lifetime/final audits. No container or Project existed to dispose.
+Cleanup and post19private+2OS integrity PASS. The61-binding observation and
+independent result audit PASS preserve this failure, not SDK qualification.
+Next is a separately contracted CLR type-introspection investigation; no retry
+or positive provider behavior is authorized by this result. All ACs unchecked.
 
 ## Original21 provider metadata result
 

@@ -177,3 +177,61 @@ source/evidence consistency; no SDK payload read or runtime rerun. Coordinator
 scope/whitespace checks PASS. The preparation is ready for local source commit
 and a separately frozen/reviewed original22 plan. Task-009 remains In progress;
 no operation approval, gate or working provider/Project/DCA is asserted.
+
+
+## Actual original22 result
+
+Source commit `72bca2ead9b60ca5d8742168208e40fd9dd2782f` was tested once
+with mode `original-project-undo-provider-denied`. The separately frozen plan
+`project22-plan.json` (14,372 bytes, SHA-256
+`ba7254d6dd59f91fc75a455ecf9176b162297298513c69ed31fef2339616f4dd`)
+and runner (13,782 bytes, SHA-256
+`bc3a8ca4e14b7f72381d0aad859d3650c4a1e3aae65bd960dd884f2be8d2073f`)
+retain the19 private/two OS inputs,18 artifacts,15-second/64KiB bounds and
+fresh-output guards. Static plan verification and critical review PASS; the
+PowerShell parser supplement PASS. Live preflight PASS19+2+18, x64, no ETS or
+owned processes, fresh task/output paths. This was an interactive Session2,
+non-administrator diagnostic under the existing bounded owner authorization.
+
+Actual commands were `run_project22.py` with the pinned plan-review digest,
+one terminal-status poll, `collect_project22.py`, `cleanup_project22.py`, and
+the pinned `project22-post-inputs.ps1`. Exact arguments and full stdout/stderr
+are retained in the private constructor-windows evidence. No automatic retry
+occurred. The direct child terminated normally with **FAIL, exit2**, not timeout.
+The13,517-byte log SHA-256 is
+`a8116645336d062e7bd8fe86ef4893e8a88452d11a41ca50ded466147cc1123a`.
+
+Trace constructor, builder and trace registration returned once. During undo
+registration, one `System.Object.GetType` callback was denied without argument
+inspection or a supplied value. Undo registration did not complete. The exact
+internal caller is **NOT_INSTRUMENTED_UNKNOWN**. Container Build, Factory and
+Project constructors were not reached; no provider GetStore/NewStore/RootPath
+callback and no resource probe occurred. Generic done-file ATTEMPT_SEE_LOG is
+not evidence of a Project constructor attempt. Trace disposal returned once;
+the sticky undo denial failed its lifetime and final audits. No container or
+Project existed to dispose. Final undo denials1, other provider/store denials0,
+resource probes0. This is a failure of the current deny-all registration path,
+not evidence of required provider business behavior.
+
+Cleanup PASS: exact task removed, owned processes0/scratch0. Post-run all19
+private inputs (24,278,056 bytes) and two OS hashes remain unchanged. Saved-file
+`record_project22.py` PASS produced `project22-observation.json` (11,552 bytes,
+SHA-256 `4a3cc7b77cca479156727787b608b1800ac1d8db9da9f1ebe9e8ad8e95b4e1b1`),
+binding61 files. Independent saved-result audit
+`verifier22/original-result-audit.txt` SHA-256
+`d088c6f5b5a1aca61d3f4bb677da00609233e932b0792597ca2020a5dd747a90`
+PASS for all61 bindings, committed/frozen/current source pins and bounded
+claims; runtime remains FAIL2. No SDK payload read or runtime rerun occurred
+in this audit. Critical result/documentation review PASS, no unresolved findings:
+`review22/original-result-review.txt` (6,606 bytes, SHA-256
+`b5422acd167136486f1a765627c73be42acdf113c7d8bc907092903924fd0c5f`).
+It independently checked61 bindings, current/committed/frozen10 sources, log,
+plan and bounded result claims without SDK payload reads or runtime rerun.
+
+Next work must separately specify and test genuine CLR type introspection;
+source22 modes/evidence remain unchanged. No store/path response, arbitrary
+Object-method success, new original retry or working provider is inferred.
+Task-009 stays In progress, all ACs unchecked, qualification NOT_ESTABLISHED;
+UI/state/device tests NOT RUN and no gate advances. The harness initiated no
+intentional device operation; vendor internals UNKNOWN, network/descendants
+NOT_CONTAINED. These are not sandbox or no-transitive-side-effect claims.
