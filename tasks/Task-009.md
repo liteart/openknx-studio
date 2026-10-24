@@ -106,9 +106,14 @@ All earlier SDK runtime/result qualifications remain unchanged.
 ## Next CLR type-introspection increment
 
 The [exact CLR type-introspection contract](../docs/DCA-UNDO-PROVIDER-TYPE.md)
-specifies a distinct mode, exact genuine GetType response and owned registration
-regression. All provider methods remain denied. Implementation and new Windows
-validation NOT RUN; earlier source22 modes and actual22 failure stay unchanged.
+specifies a distinct mode, genuine CLR GetType response and owned registration
+regression. A minimal owned Windows proof first FAILed the interface-equality
+assumption; a separate inspection PASS established actual MarshalByRefObject
+representation. The contract is corrected to return that actual CLR Type;
+independent result verification and revised critical review PASS. All provider
+methods remain denied.
+Implementation and integrated Source23 Windows validation NOT RUN; earlier
+source22 modes and actual22 failure stay unchanged.
 
 ## Actual22 original result
 

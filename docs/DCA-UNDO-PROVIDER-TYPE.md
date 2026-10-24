@@ -4,7 +4,9 @@ Readiness: Task008 accepted, no phase gate. Actual22 at source72bca2e FAIL2
 denied System.Object.GetType during undo registration before Build or any
 Factory/Project constructor. Exact internal caller unknown. Preserve source22
 and all earlier modes/evidence. The DCA readiness investigation supports this metadata-only adaptation.
-Implementation and Windows validation are not yet run for this increment.
+Implementation and integrated Windows validation are not yet run. The separate
+minimal CLR inquiry below disproves the initial interface-equality assumption;
+the current contract returns the actual observed CLR representation instead.
 
 Use separate fixed original/owned-project-undo-provider-type modes. Only these
 modes may return the actual RealProxy.GetProxiedType() for exact System.Object
@@ -14,7 +16,14 @@ signature metadata, nonnull empty Args and exact trusted runtime MethodInfo
 concrete kind/module/token/Equals. Reject transparent or custom MethodInfo
 without trusting its metadata getters. A same-named provider/member or malformed
 message is not eligible. Do not inspect argument values. No recursive transparentProxy.GetType.
-ReturnMessage must carry the actual Type, no out arguments, and original call.
+The declared provider service interface and CLR representation are distinct.
+On the observed Framework profile, base.GetProxiedType() returns the genuine
+System.MarshalByRefObject Type, not the interface passed to the proxy constructor.
+Validate actual reference identity to typeof(MarshalByRefObject) for this profile
+and retain the exact declared provider interface independently. ReturnMessage
+must carry that actual base.GetProxiedType() object, no out arguments, and the
+original call. Unexpected representation fails; never substitute the interface
+or manufacture a concrete provider class merely to satisfy registration.
 
 Retain separate bounded total/metadata/denial counters and sticky violation
 state. Count before inspecting any untrusted message property; exceptions while
@@ -34,9 +43,10 @@ OS input pins,18 artifacts,15s/64KiB runtime bounds and previous denial behavior
 
 Owned registration fixture must actually call ((object)instance).GetType() in
 its new mode before registration returns, to reproduce the actual22 boundary.
-Prove old deny-only proxy refuses that owned call; new mode returns exact owned
-interface Type and completes registration. Also test direct transparent proxy
-call, all provider denials, other Object methods, malformed/forged message
+Prove old deny-only proxy refuses that owned call; new mode returns the exact actual CLR
+representation (MarshalByRefObject for this profile), preserves the separate
+exact service interface registration and completes the owned registration. Also test direct transparent proxy
+call and actual represented-type reference identity, all provider denials, other Object methods, malformed/forged message
 shapes, throwing accessors/recorder, callback/nesting suspension, metadata limit,
 caught denial through all registration/construction/error/disposal paths and
 counter-only final-audit mutation. Old modes and artifacts retain their tests.
@@ -65,7 +75,7 @@ Vendor internals UNKNOWN/network and descendants NOT_CONTAINED. Owner private
 copy allowed/proprietary binary redistribution prohibited, ADR005 unchanged.
 
 
-Independent contract review PASS, no blocking findings, before implementation:
+Historical initial contract review PASS, before the minimal CLR inquiry:
 private `task009-undo-provider-type-contract-review.txt` (6,892 bytes), SHA-256
 `a9252b2766fcb4a7a6fd36f66b8ff1b221e2611dfe0cddb524153538f24f90ba`.
 Reviewed contract checkpoint SHA-256
@@ -74,3 +84,49 @@ this review-record append is later. The final guards must use denial/fault
 state rather than total callbacks; bounded successful metadata replies alone
 must not trigger the old deny-only failure. This review supplies no runtime
 qualification or operation approval.
+
+
+## Actual minimal CLR inquiry and contract correction
+
+The initial interface-equality requirement was an incorrect compatibility
+assumption despite the static review. One owned Windows proof failed with
+OWNED_TYPE_MISMATCH; actual type was not logged in that first proof. The failed
+proof is retained unchanged by private constructor-windows/
+clr-type23-failure-observation.json (2,236 bytes, SHA-256
+`9b6bb45616491fd9bd5cdc7ed75e81ceb188ddb0963cc7e38d01deb348e08d40`).
+The preliminary sandbox delivery was denied before remote access; a separate
+authorized delivery used the existing SSH master and executed the proof once.
+This is not a denied automatic approval review.
+
+A newly named and separately reviewed owned inspection then PASS: actual
+base.GetProxiedType() was System.MarshalByRefObject, mscorlib4.0.0.0, token
+b77a5c561934e089. The caller received that same actual Type object via
+ReturnMessage; the old proxy still denied GetType once, and the new proof denied
+RootPath once. Runtime CLR4.0.30319.42000, PowerShell5.1.26100.9711, x64, Session0.
+No SDK was selected and no original SDK attempt occurred. Minimal-proof PASS
+is not integrated Source23, SDK registration or provider qualification.
+
+Inspection observation: constructor-windows/clr-type23-inspect-observation.json
+(2,039 bytes), SHA-256
+`f8b49c87cc87ce8be0f3a8caee69b817a9dcf9412e68cadf9874028d5459fad7`.
+Exact fixed commands: `run_clr_type23_proof_authorized.py` (runtime FAIL1) and
+`run_clr_type23_inspect.py` (PASS0); preliminary sandbox helper delivery FAIL255
+before runtime. New source/script/output names preserve both results. These
+owned scripts contain no SDK path or vendor code, and only compile the owned
+interface/proxies through Windows PowerShell Add-Type. No scheduled task was
+created. A full cleanup/containment claim is not asserted by these captures.
+
+The current contract corrects only the representation identity requirement;
+all provider denials, malformed-message rules, callback exclusions and bounded
+sticky audit state remain required. Source23 implementation was held before
+any source edit. Independent saved-result audit PASS, all11 failure bindings
+and8 inspection bindings, private constructor-windows/
+verifier23/clr-result-audit.txt SHA-256
+`76bc94d55f9599f4e7b0f5897f8a258c6931da4739e7128d24dd6a73b79ed828`.
+Revised contract critical review PASS, no unresolved findings:
+review23/revised-type-contract-review.txt (5,953 bytes), SHA-256
+`9c633c222016e19850403ba56d1b116d881a766950398ae25bb4594554de0be6`.
+Reviewed contract checkpoint SHA-256
+`46cb6b8f23fef4740f4a5f04a80d7f2250d83c158d35def101d8555c7a2c0eff`;
+this result/review-record append is later. No audit reran Windows or read SDK
+payloads. No original retry or task/gate acceptance follows.
