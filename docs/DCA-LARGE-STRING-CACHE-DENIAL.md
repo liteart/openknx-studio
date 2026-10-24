@@ -274,3 +274,89 @@ the commit; the receipt establishes byte equality without rewriting that history
 The corrected observation and single combined source/owned critical review are
 bound explicitly. Original27 remains NOT RUN until its separate immutable plan,
 review and fresh live readiness checks; no Task-009 or gate acceptance follows.
+
+## Original27 plan, execution and result
+
+The fixed plan at planning19019940cb24466813686672e5c4d21571083dfe,
+implementation25eea43312b747a4fc245d84c9f9eeac348697b1, was generated
+once locally. Plan8b3496e4c3942046834b0277bc515749310e4c57175d2fa91f8f168993517d9c
+and runner4294bf33c07635945219e46f2277b0e07ba88ed4a33a3bc42eff24150472b2a7
+bind29 reversible changes from actual25 and the same19 private/two OS pins,
+18 artifacts,15-second/64KiB child bounds, two registrations and no dependency
+widening. No original25 retry occurred.
+
+Initial static plan audit d9a7c74ec95c39eaa6918fb8830de82d8753b5111c8af6585f429c5f17444df5
+is retained. Critical review caught a stale post-check task suffix before any
+remote operation. New corrected post script a7816832afcfc69fe4f425e3cd736dfb70d8b1803c9161b805613377608f80ee
+checks the exact plan task; corrected helper e6e982bd269a1949b6c7d000e3b9ace8530910f31a030cbc6c3ea42a3a3765e5
+asserts task equality before transfer. Initial files remain unchanged. Corrected
+active-nine-file preparation manifest acf41e3db2a158c66e05063f36ab3c46b43641acc296ecbbf498e13e5ffc3ec5,
+independent corrected audit3a964575389747bc57b364579581870c983cb097b3ca83442c01170742cc487d
+and final review c986af24d0e8478718a6fffd5dd27992dd36477659f8567db3ccafcb4a65e763
+PASS. Complete encoded commands include the host guard/prefix and remain below
+6,500 characters; the runner was transferred as a pinned file.
+
+Fresh Windows preflight PASS19+2+18/x64/ETS0/owned0. The quser inventory lists
+dev Session2 as Disc; the actual process context reports Session2,
+UserInteractive true/nonadministrator. No active desktop or GUI qualification
+is inferred. Exactly one scheduled limited original27 diagnostic executed.
+
+Actual result **FAIL, normal confirmed child exit2**, not timeout. Launcher
+captured66 child-output bytes; saved driver stdout313 bytes/stderr0, log17,632
+bytes. Genuine trace, two registrations,
+container Build and Factory returned. Project06002830 was attempted once and
+did not return; body entry remains NOT_ESTABLISHED. Synthetic Id getter1;
+provider factory entries1/successes1/faultFalse. Cache audit records entries2,
+attempt1/reply1/faultFalse and stream-denied0. This establishes the wrapper's
+single reference reply count, not SDK consumption or usable cache behavior.
+
+The next observed assembly request was:
+
+```text
+Knx.Ets.OnlineCatalog.Download, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159
+```
+
+The resolver refused it with PROJECT_DEPENDENCY_NOT_ALLOWLISTED, followed by
+PROJECT_DEPENDENCY_BLOCKER. No new dependency was admitted. There were no stream
+method callbacks, provider method callbacks, Kim/store denials or resource
+probes. Trace lifetime audit FAIL for the dependency blocker; cache count audit
+PASS. Container and trace Dispose returned once; Project Dispose was not
+attempted without a returned Project. Their disposal does not turn the failed
+dependency audit into PASS.
+
+The task ended result2 and was removed only after matching done/terminal result
+and owned processes0. Scratch files0. Corrected post check PASS19 private/two
+OS inputs unchanged,24,278,056 private bytes, exact task removed/processes0/
+scratch0. No retry or additional SDK call occurred. DCA initialize/UI/state and
+intentional device operations remain NOT RUN; vendor internals UNKNOWN and
+network/descendants NOT_CONTAINED.
+
+Private project27-observation.json,11,721 bytes, SHA-256
+6ac4a40c746a05a08d99d45644545cc60f8f017676b6327dcc69218a708760d6,
+binds59 source/plan/transport/preflight/raw/result/cleanup/provenance files.
+record_project27.py ran once, PASS saved-file consistency. Independent
+verifier27/original-result-audit.txt, SHA-256
+c8031c727d43c17ff2d1e399c8e83376d990936841dd0a947eee821931112d6a,
+PASS for provenance, actual diagnostic FAIL2. All59 bindings and source pins,
+event counts, disposal, disconnected-session nuance and corrected post checks
+were checked without SDK payload access or rerun. Critical result review is
+pending at this checkpoint.
+
+The missing candidate blocks dependency admission/new original execution.
+Private readiness d6c71b04f06bab6d687c2be0740b742a6c02f32be18678ec47634efe643514d9
+finds the exact AssemblyRef already in retained ObjectModel reports, but no
+provided candidate file/identity/hash. An accessible matching file path has
+been requested from the owner. Independently, the existing pinned ObjectModel
+can support a bounded target-reference map; that requires a separate linked
+metadata-only contract and does not admit or fake the absent assembly.
+
+### Original27 critical result review
+
+constructor-windows/review27/original-result-review.txt,3,972 bytes, SHA-256
+a137b2fb89cbaac8e2652b37ba6381be873edd3f9e911498b1077c7629b7f4af,
+PASS with no unresolved findings. It checks59 bindings, current/committed source
+pins, event counts, normal exit2, the disconnected-session distinction, cache
+counts versus unestablished SDK consumption, exact-task cleanup and post19+2
+integrity. Earlier25 FAIL10 and resolved plan P2 remain preserved. No SDK
+payload access or rerun occurred in review. Actual diagnostic remains FAIL2;
+Task-009/all ACs remain open, with no gate or device approval.
