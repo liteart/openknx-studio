@@ -81,16 +81,27 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; original20a SDK runtime FAIL10. Guarded original21 metadata PASS now supplies the exact public provider root and three method declarations; store/path behavior and IStreamStore declaration remain UNKNOWN. No positive service or gate advance |
-| Source commit(s) | Metadata inquiry source `55c36170a03c91709ef70e7a3220508e2514da8c`; SDK runtime20a `eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066`, implementation `8e640e697e223b71ed4864c0546cd83e951254ad`. Exact freezes, prior commits and observations remain in component contracts |
-| Tests executed | Source21 owned PowerShell370/Python24, parser/preservation/scope PASS; one guarded actual metadata query PASS after write/network denial probes, original input hash unchanged. Source20a owned Windows79/137/84 PASS, actual SDK runtime20a FAIL10 with pre/post/cleanup PASS |
-| Evidence location | [Provider metadata](../docs/DCA-UNDO-STORE-PROVIDER.md): private original21 report/observation/57-binding manifest and verifier21 result audit. [Runtime result](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md): original20a observation/plan/log, pre/post/cleanup, source20a/owned records retained |
+| Implementation / report status | In progress; source22 deny-only provider preparation has local and owned Windows PASS116/195/121, source verification/review PASS; Windows evidence verification/review PASS; source commit pending. Original20a remains SDK runtime FAIL10; no original22 attempt or positive provider |
+| Source commit(s) | Source22 uncommitted on `f5ffb140bb2c37dd43879d85885f0203b70e6e8c`, freeze SHA `9be524673d4cd614b5c9f35625cc1dcd7c9953e8b66eca61ab6908cd2b8c53a8`. Metadata21 source `55c36170a03c91709ef70e7a3220508e2514da8c`; SDK runtime20a `eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066`; prior exact source/result records retained |
+| Tests executed | Source22 local C#5/x64 compile3/guards/parser/preservation and counter-only mutation proof PASS; owned Windows116 Session0/195 limited/121 admin-negative PASS, both task cleanups PASS. Source21 owned370/24 and guarded declaration query PASS; actual SDK runtime20a FAIL10 unchanged |
+| Evidence location | [Deny-only increment](../docs/DCA-UNDO-PROVIDER-DENIAL.md), private source22 freeze/local proofs and constructor-windows owned22-observation (842 bindings). [Metadata](../docs/DCA-UNDO-STORE-PROVIDER.md) and [runtime20a result](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md) remain separately qualified |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Provider TypeDef02000121 public nongeneric interface, GetStore(Guid)/NewStore return referenced IStreamStore and get_RootPath returns String; declarations only. SDK Project20a did not return; no Project/DCA/UI/state/device qualification. Remaining service behavior UNKNOWN |
+| Technical outcome | Owned typed proxy/2 external registrations/denial and lifetime cases verified. No service value, store or path is provided; no SDK target code selected by owned tests. Provider declarations are known, behavior/IStreamStore unknown; SDK20a Project did not return, no SDK/UI/state/device qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source21 independent source/owned verification and critical source review PASS; original21 independent declaration/provenance audit and critical result review PASS. Source20a/actual20a reviews retained. No task acceptance or gate approval |
+| Reviewer | Source22 independent local verification and critical source review PASS; actual Windows-owned result verification/review PASS (842 bindings, no unresolved findings). Original21 declaration and earlier SDK20a reviews retained; no task/gate acceptance |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Next bounded provider-denial increment
+
+The [deny-only provider diagnostic contract](../docs/DCA-UNDO-PROVIDER-DENIAL.md)
+uses the verified original21 declaration to prepare exact externally-owned
+registration and bounded unsupported callbacks. It supplies no path/store/null
+success or positive provider behavior. Source22 is now frozen with local compile3/guards/preservation/mutation proof
+PASS, independent source verification/review PASS and actual owned Windows
+PASS116 Session0/195 limited/121 administrator-negative. Independent Windows
+result verification/review PASS; source commit pending, no original22 plan/runtime exists.
+All earlier SDK runtime/result qualifications remain unchanged.
 
 ## Original21 provider metadata result
 

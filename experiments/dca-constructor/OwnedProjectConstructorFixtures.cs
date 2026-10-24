@@ -537,6 +537,98 @@ namespace Owned.Task009
             if (ProjectScopeControl.Behavior == "project-dispose-throw") throw new NotSupportedException("OWNED_SCOPE_PROJECT_DISPOSE_THROW");
         }
     }
+    // Two fixed owned slots model registration/lifetime only; no general container or storage behavior.
+    public interface IOpaqueUndoFixture { }
+    public interface IUndoDeniedFixture { IOpaqueUndoFixture GetStore(Guid value); IOpaqueUndoFixture NewStore(); string RootPath { get; } }
+    public interface IUndoWrongGuidFixture { IOpaqueUndoFixture GetStore(object value); IOpaqueUndoFixture NewStore(); string RootPath { get; } }
+    public interface IUndoWrongReturnFixture { object GetStore(Guid value); IOpaqueUndoFixture NewStore(); string RootPath { get; } }
+    public interface IUndoExtraFixture { IOpaqueUndoFixture GetStore(Guid value); IOpaqueUndoFixture NewStore(); string RootPath { get; } void Extra(); }
+    public interface IUndoWrongNameFixture { IOpaqueUndoFixture GetStore(Guid value); IOpaqueUndoFixture FreshStore(); string RootPath { get; } }
+    public interface IUndoGenericMethodFixture { IOpaqueUndoFixture GetStore<T>(Guid value); IOpaqueUndoFixture NewStore(); string RootPath { get; } }
+    public interface IUndoWrongGetterFixture { IOpaqueUndoFixture GetStore(Guid value); IOpaqueUndoFixture NewStore(); string get_RootPath(); }
+    public interface IUndoInheritedFixture : IUndoDeniedFixture { }
+    public interface IUndoGenericFixture<T> { }
+    internal interface IUndoHiddenFixture { }
+    public static class UndoOwnedControl
+    {
+        public static object Trace, Undo;
+        public static bool TraceExternal, UndoExternal;
+        public static int Registrations, ExternalCalls, Builds, Factories, Projects, ProjectDisposals, ContainerDisposals;
+        public static string Order = "";
+        public static bool ThrowProject;
+        public static string Failure;
+        public static Action<string> Callback;
+        public static void Point(string phase) { Order += phase + ">"; if (Callback != null) Callback(phase); }
+    }
+    public sealed class UndoBuilderFixture
+    {
+        public UndoBuilderFixture() { UndoOwnedControl.Point("builder"); }
+        public IRegisteredContainerFixture Build(EmptyOptionsFixture options)
+        {
+            UndoOwnedControl.Builds++; UndoOwnedControl.Point("build");
+            if (options != EmptyOptionsFixture.None || UndoOwnedControl.Registrations != 2 || UndoOwnedControl.ExternalCalls != 2 || !UndoOwnedControl.TraceExternal || !UndoOwnedControl.UndoExternal) throw new InvalidOperationException("OWNED_UNDO_MAPPING_REQUIRED");
+            return new UndoContainerFixture();
+        }
+    }
+    public static class UndoRegistrationExtensionsFixture
+    {
+        public static IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> RegisterInstance<T>(UndoBuilderFixture builder, T instance) where T : class
+        {
+            if (builder == null || instance == null) throw new InvalidOperationException("OWNED_UNDO_REGISTRATION_ARGUMENTS");
+            int slot = ++UndoOwnedControl.Registrations;
+            if (slot == 1 && typeof(T) == typeof(ITraceLifetimeFixture)) UndoOwnedControl.Trace = instance;
+            else if (slot == 2 && typeof(T) == typeof(IUndoDeniedFixture)) UndoOwnedControl.Undo = instance;
+            else throw new InvalidOperationException("OWNED_UNDO_EXACT_TWO_SLOTS");
+            UndoOwnedControl.Point(slot == 1 ? "trace-registration" : "registration");
+            if (slot == 2 && UndoOwnedControl.Failure == "register-null") return null;
+            return new UndoRegistrationFixture<T>(slot);
+        }
+    }
+    internal sealed class UndoRegistrationFixture<T> : IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture>
+    {
+        readonly int slot;
+        internal UndoRegistrationFixture(int selected) { slot = selected; }
+        public IRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> ExternallyOwned()
+        {
+            UndoOwnedControl.ExternalCalls++;
+            if (slot == 2 && UndoOwnedControl.Failure == "external-null") return null;
+            if (slot == 1) UndoOwnedControl.TraceExternal = true; else UndoOwnedControl.UndoExternal = true;
+            UndoOwnedControl.Point(slot == 1 ? "trace-external" : "undo-external"); return this;
+        }
+    }
+    internal sealed class UndoContainerFixture : IRegisteredContainerFixture
+    {
+        public object RegisteredTrace { get { return UndoOwnedControl.Trace; } }
+        public void Dispose() { UndoOwnedControl.ContainerDisposals++; UndoOwnedControl.Point("container-dispose"); }
+        public string Name { get { throw new NotSupportedException("OWNED_UNDO_CONTEXT_UNSUPPORTED"); } }
+        public void Touch() { throw new NotSupportedException("OWNED_UNDO_CONTEXT_UNSUPPORTED"); }
+        public bool TryRead(out int value) { throw new NotSupportedException("OWNED_UNDO_CONTEXT_UNSUPPORTED"); }
+        public T Read<T>() { throw new NotSupportedException("OWNED_UNDO_CONTEXT_UNSUPPORTED"); }
+        public void Change(ref int value) { throw new NotSupportedException("OWNED_UNDO_CONTEXT_UNSUPPORTED"); }
+        public void Download() { throw new NotSupportedException("OWNED_UNDO_CONTEXT_UNSUPPORTED"); }
+    }
+    public sealed class UndoFactoryFixture : IFactoryFixture
+    {
+        public UndoFactoryFixture(IContainerDependencyFixture context, IDataDependencyFixture provider)
+        {
+            if (!(context is IRegisteredContainerFixture) || !UndoOwnedControl.TraceExternal || !UndoOwnedControl.UndoExternal) throw new InvalidOperationException("OWNED_UNDO_LIVE_CONTEXT_REQUIRED");
+            UndoOwnedControl.Factories++; UndoOwnedControl.Point("factory");
+        }
+        public T Create<T>() { throw new NotSupportedException("OWNED_UNDO_FACTORY_UNSUPPORTED"); }
+        public void Change(ref int value) { throw new NotSupportedException("OWNED_UNDO_FACTORY_UNSUPPORTED"); }
+    }
+    public sealed class UndoProjectFixture : IDisposable
+    {
+        public UndoProjectFixture(IFactoryFixture factory, string name, GroupAddressStyleFixture style, IScopedProjectStoreFixture store)
+        {
+            if (!(factory is UndoFactoryFixture) || name != "Task009 offline constructor diagnostic" || style != GroupAddressStyleFixture.ThreeLevel) throw new InvalidOperationException("OWNED_UNDO_PROJECT_ARGUMENTS");
+            UndoOwnedControl.Projects++; UndoOwnedControl.Point("project");
+            if (UndoOwnedControl.ThrowProject) throw new NotSupportedException("OWNED_UNDO_PROJECT_THROW");
+            ScopedIdFixture first = store.Id, second = store.Id;
+            if (!Object.ReferenceEquals(first, second)) throw new InvalidOperationException("OWNED_UNDO_ID_IDENTITY");
+        }
+        public void Dispose() { UndoOwnedControl.ProjectDisposals++; UndoOwnedControl.Point("project-dispose"); }
+    }
     public sealed class ScopedNoDisposeFixture
     { public ScopedNoDisposeFixture(IFactoryFixture f, string n, GroupAddressStyleFixture s, IScopedProjectStoreFixture p) { throw new InvalidOperationException("OWNED_INVALID_SCOPE_EXECUTED"); } public void Dispose() { } }
     public sealed class ScopedExplicitDisposeFixture : IDisposable
