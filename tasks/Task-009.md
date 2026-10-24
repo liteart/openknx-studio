@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual original25 at622b466 (implementation6e2a920) FAIL10: typed provider registration, container Build and genuine Factory returned; Project ctor attempted once but did not return, body entry NOT_ESTABLISHED. Factory callback1success1faultFalse; next IProjectStore.get_LargeStringCache denied1, no provider/KIM/resource callbacks. Container/trace disposal and task/process/scratch cleanup PASS; post19+2 unchanged. Existing getter declaration returns IStreamStore; its declaration/behavior remain UNKNOWN. Source25 owned573 cases and actual bounded registration progress do not establish full SDK/UI/state behavior. Next: verify the actual stream-store declaration before any new shim; no retry, gate or criterion acceptance. ADR005 unchanged.
+Actual original25 at622b466 (implementation6e2a920) FAIL10: typed provider registration, container Build and genuine Factory returned; Project ctor attempted once but did not return, body entry NOT_ESTABLISHED. Factory callback1success1faultFalse; next IProjectStore.get_LargeStringCache denied1, no provider/KIM/resource callbacks. Container/trace disposal and task/process/scratch cleanup PASS; post19+2 unchanged. Existing getter declaration returns IStreamStore; original26b now verifies its public nongeneric interface declaration and seven methods, while behavior remains UNKNOWN. Source25 owned573 cases and actual bounded registration progress do not establish full SDK/UI/state behavior. Next: separately assess a deny-only stream-store reference using the verified declarations before any new shim; no runtime retry, gate or criterion acceptance. ADR005 unchanged.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -87,21 +87,24 @@ source commit4799252731f60649dda0c94fb75f67f75cfaa1ca is recorded. Original26
 stopped at sandbox launch (FAIL restriction/exit71), declaration decoding NOT RUN.
 Separate owned-only restriction readiness PASS with unchanged inner profile;
 new fixed original26b plan review PASS49ff03c8c5d872f872dd297a1ed488fb2186b8c4fe331711e4399ceec37fe7b5,
-planning commit/execution pending. No cache behavior,
+planning commit7be86dddc4c70dbcbc53560cf69dafc05511acb0 is recorded.
+Actual original26b declarations PASS after fresh guard probes: IStreamStore
+public nongeneric interface02000061, seven declared methods, no direct interfaces.
+Saved-result audit and critical result review PASS; no method executed or cache behavior supplied. No cache behavior,
 runtime retry or acceptance follows from that contract.
 
 ## Completion Record
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source25 committed/owned Windows154/260/159 PASS; actual original25 FAIL10 on next project-store getter |
-| Source commit(s) | Source25 `6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4` (owned execution was uncommitted on e3a08e3), freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
-| Tests executed | Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; actual original25 FAIL10/get_LargeStringCache, cleanup/post19+2 PASS; original22 FAIL2 retained |
-| Evidence location | [Typed factory contract/results](../docs/DCA-UNDO-PROVIDER-FACTORY.md); private native source25 freeze and constructor-windows/owned25-observation.json (1,104 bindings) |
+| Implementation / report status | In progress; source26 declaration inquiry PASS, independent saved-result audit PASS; actual original25 runtime remains FAIL10 on next project-store getter |
+| Source commit(s) | Source26 metadata `4799252731f60649dda0c94fb75f67f75cfaa1ca`, inquiry planning `7be86dddc4c70dbcbc53560cf69dafc05511acb0`; source25 `6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4` (owned execution was uncommitted on e3a08e3), freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
+| Tests executed | Source26 owned PowerShell419/Python25 and independent reproduction PASS; original26 restriction launch FAIL71, original26b guarded declarations PASS. Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; actual original25 FAIL10/get_LargeStringCache, cleanup/post19+2 PASS; original22 FAIL2 retained |
+| Evidence location | [Stream-store declaration contract/results](../docs/DCA-PROJECT-STREAM-STORE.md), private task009-project-stream-store-metadata/original26b-evidence-manifest.json (69 bindings); [Typed factory contract/results](../docs/DCA-UNDO-PROVIDER-FACTORY.md); private native source25 freeze and constructor-windows/owned25-observation.json (1,104 bindings) |
 | Acceptance criteria met | None asserted; all remain unchecked |
-| Technical outcome | Typed deny-provider factory and bounded activation lifecycle verified with owned fixtures. No store/path/business values or original harness Resolve. Actual original25 registration/Build/Factory returned; Project did not return; IProjectStore.get_LargeStringCache denied1. UI/state/hardware NOT RUN; qualification NOT_ESTABLISHED |
+| Technical outcome | IStreamStore public nongeneric interface and seven method declarations verified, behavior UNKNOWN. Typed deny-provider factory and bounded activation lifecycle verified with owned fixtures. No store/path/business values or original harness Resolve. Actual original25 registration/Build/Factory returned; Project did not return; IProjectStore.get_LargeStringCache denied1. UI/state/hardware NOT RUN; qualification NOT_ESTABLISHED |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source25 independent local verification PASS; actual owned Windows-result audit PASS; critical source/result review PASS, no unresolved findings; public24c result/contract review PASS; actual original25 independent result audit and critical result review PASS, no unresolved findings |
+| Reviewer | Source26 source/owned verification and critical review PASS; original26b saved-result verification and critical result review PASS (226c33e019080a6a8285afb2d9449e3effc26feeb8afc8e043093aa6dcef5884). Source25 independent local verification PASS; actual owned Windows-result audit PASS; critical source/result review PASS, no unresolved findings; public24c result/contract review PASS; actual original25 independent result audit and critical result review PASS, no unresolved findings |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 

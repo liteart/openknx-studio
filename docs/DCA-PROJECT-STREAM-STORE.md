@@ -171,3 +171,77 @@ six current/committed pins, unchanged profile/limits and helper AST checked.
 The causal explanation is explicitly an inference. No original query ran in
 review. This clears only the fixed preparation; planning commit/current-pin
 checks and fresh child denial probes still precede original26b decoding.
+
+## Original26b guarded declaration result
+
+At planning commit7be86dddc4c70dbcbc53560cf69dafc05511acb0, source26
+implementation4799252731f60649dda0c94fb75f67f75cfaa1ca, the new fixed
+inquiry executed once with reviewed outer escalation. All six current/committed
+source pins matched freeze26 and the worktree was clean beforehand. The first
+child freshly reported PowerShell7.6.7/write_denied true/network_denied true,
+exit0/stderr0; only then did the second child decode declarations, exit0/stderr0.
+The inner profile,30-second/2MiB bounds and input pins were unchanged. Original26
+remains the separate failed restriction-launch attempt, without a report.
+
+Result **PASS for declarations only**. Actual root IStreamStore is
+TypeDef02000061, attributes1048737, Public, Interface/class-semantics32,
+generic arity0, no base and no direct interfaces. Its public declared methods:
+
+| Token | Name | Return | Parameters | Attributes |
+|---|---|---|---|---|
+| 06000366 | get_Id | String | None | 3526 |
+| 06000367 | get_Exists | Boolean | None | 3526 |
+| 06000368 | AsStream | System.IO.Stream | Boolean | 1478 |
+| 06000369 | AsMultiWriteWithinOneTransactionStream | System.IO.Stream | None | 1478 |
+| 0600036A | Delete | Void | None | 1478 |
+| 0600036B | GetUtcFileTime | Int64 | None | 1478 |
+| 0600036C | set_Mask | Void | UInt16 | 3526 |
+
+All are instance/default calling convention, raw signature header32, generic
+arity0. Stream references are qualified mscorlib4.0.0.0/b77a5c561934e089 in
+the raw report. No referenced declarations or implementations were followed.
+No method was invoked, no cache/store value or stream bytes were supplied,
+and no SDK target entered a CLR load context. Parent input hash remained
+unchanged; Windows/vendor runtime, original25 retry and hardware NOT RUN.
+
+Private original26b-report.json is3,359 bytes, SHA-256
+734cc04300ee84a8a2de29a4cbef9b489cc948bad7e3184d29041174faa61b07;
+original26b-observation.json SHA-256
+25397661a026d46aaa278ad006eda023023e3f056576c98a8c70b95a8ba246c3.
+original26b-evidence-manifest.json SHA-256
+f8f1f60b0eb83dcfd9c11ef3af2f6cbcf3fff4f65abf12149c74473761b7b4ee
+binds69 source/owned/failed26/readiness/plan/raw-result artifacts and the exact
+command. Saved raw metadata equals the report's metadata object. Independent
+saved-result verification and critical result review are pending at this entry.
+
+Declaration knowledge permits a separate readiness assessment only: whether
+the observed getter can return an explicitly labeled deny-only reference to
+observe the first actual callback. No positive Id/Exists/path/stream/time/Mask,
+deletion, transaction or persistence behavior is authorized or inferred.
+Task-009 remains In progress/all ACs unchecked; SDK/DCA usability is unqualified.
+
+### Original26b independent saved-result verification
+
+verifier26b/original-result-audit-corrected.txt SHA-256
+82086f90fa48636497dfa7d1b612c71aabca2314770b11807097b0b8b2b29c18
+PASS: all69 manifest bindings, six frozen/current/committed source pins, raw
+guard/report equivalence and every root/method token/flag/signature/order.
+The verifier used saved files, without SDK payload access or query rerun.
+
+The original audit efde1d4c471ac6d0d715ddbe0bbc01fdc7cb710c5f952da1246a75b528476f36
+is retained. Its final rights sentence incorrectly treated the legacy parser
+marker as a current rights conclusion. The corrected copy changes only that
+clause; correction provenance21b0afea7ea428fce5e9b8a29e10e13229fc82ad675a39654ceb50b9ea3a773a
+preserves both hashes. ADR-005 private-copy permission/no proprietary DLL
+redistribution stays unchanged, not reopened. Declaration PASS is unchanged.
+Critical result/documentation review is pending.
+
+### Original26b critical result review
+
+review26b/original-result-review.txt,3,933 bytes, SHA-256
+226c33e019080a6a8285afb2d9449e3effc26feeb8afc8e043093aa6dcef5884,
+PASS with no unresolved findings. It independently checks69 evidence bindings,
+six current/committed source pins, raw guard/report equivalence, all seven exact
+method declarations and corrected-audit provenance. The task's stale next step
+was corrected to deny-only-reference readiness. No SDK payload access, query
+rerun or runtime occurred in review. Task-009 and its criteria remain open.
