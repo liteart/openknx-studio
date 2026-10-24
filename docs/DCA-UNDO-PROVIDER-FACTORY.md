@@ -1,7 +1,8 @@
 # Task-009 typed provider factory investigation
 
 Status: source25 implemented with owned Windows tests PASS; source/result
-critical review PASS; source commit6e2a920. Original25 NOT RUN. Task008 is
+critical review PASS; source commit6e2a920. Actual original25 FAIL10;
+typed registration succeeded, next IProjectStore.LargeStringCache request denied. Task008 is
 accepted and no phase gate applies. The [superseded type-only investigation](DCA-UNDO-PROVIDER-TYPE.md)
 records why RegisterInstance cannot provide this interface proxy faithfully.
 Original22 remains FAIL2 before container Build/Factory/Project; no original
@@ -325,3 +326,60 @@ records all10 current/Git-show/frozen source bindings PASS, the exact owned
 observation and combined critical review. Freeze-time UNCOMMITTED markers
 remain historical and unchanged. This later documentation record adds no code,
 SDK execution or task/gate acceptance. Original25 remains NOT RUN.
+
+
+## Actual original25 result
+
+The fixed reviewed original25 plan executed once at planning revision
+`622b46602504a363e072ff763dbcca234ef8dcb1`, implementation
+`6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4`. Actual **FAIL10**, normal direct-child
+exit confirmed, not timeout. Session2 was interactive/non-administrator. The
+plan SHA-256 is `d80b31d1069a13c2a6cb520d6fe056a12dbf6ba55147ba5b3d76db17e5b9c69c`;
+critical plan review SHA-256
+`6d8d655ad11df0e29f99750dce631ad2097ae4ac8b89645e2cef347771389eab`.
+Live preflight PASS19 private/two OS/eighteen artifacts/x64/ETS0/owned0/fresh
+paths. Exact fixed commands: run_project25.py with that review digest;
+poll_project25.py01; collect_project25.py; cleanup_project25.py;
+run_project25_post.py. No automatic retry or new SDK call during collection.
+
+Genuine trace creation/registration, typed provider registration, container Build
+and genuine Factory construction returned once. Project06002830 was invoked
+once, synthetic get_Id once; its body entry remains NOT_ESTABLISHED and it
+did not return. The factory callback returned the same provider proxy once,
+entries1/successes1/faultedFalse. Next, the ID-only project-store fixture denied
+`Knx.Ets.ObjectModel.IProjectStore.get_LargeStringCache` once. No Undo provider
+interface/GetType callback, KIM denial or resource probe occurred. This proves
+the bounded factory-registration step in this SDK invocation, not full SDK,
+Project or DCA initialization.
+
+No Project Dispose was attempted because no Project returned. Container and
+trace disposal each returned once; trace lifetime audit PASS. Factory final
+audit entries1/successes1/faultedFalse and provider final denied0, then the other
+lifetime audit failed with store-denied1/UNDO_FACTORY_OTHER_LIFETIME_DENIAL.
+The16,610-byte log is within65,536 bytes; driver stderr empty.
+
+Cleanup PASS: task removed, owned processes0, scratch files0. Post-run all19
+private inputs (24,278,056 bytes) plus two OS hashes unchanged PASS. Network/
+descendants NOT_CONTAINED, vendor internals UNKNOWN; no no-transitive-effect
+or sandbox claim. UI/state/hardware NOT RUN, no gate advances.
+
+Private constructor-windows/project25-observation.json (10,485 bytes), SHA-256
+`69245d2cfaa9d0c94ba11739f4a0d2b5128e255f5b717a45dec223c43f8299e6`,
+binds54 source/plan/review/helper/raw/cleanup files. Independent saved-result
+audit PASS, all54 bindings/current+committed+frozen10 and bounded runtime claims:
+verifier25/original-result-audit.txt SHA-256
+`4e35b40e72a19e9409cc51fba61b7f067b84770be30b62c8e274ecfaa6648405`.
+No SDK payload read or runtime rerun occurred in that audit. Critical result
+review PASS, no unresolved findings: review25/original-result-review.txt
+(3,588 bytes), SHA-256
+`b187fd64a65dc6405a06da4c40a55f6b9c1d0f1c26406d3dbb3ce9a3b55eb4df`.
+It independently checked all54 bindings/current+committed10/event counts and
+cleanup/integrity claims without SDK payload reads or rerun. Task009 remains In progress/all ACs unchecked.
+
+Next is the actual stream-store contract, not a retry or guessed cache data.
+Existing guarded project-services-report-task009.json already declares
+IProjectStore.get_LargeStringCache06000313 attributes3526/header32, zero args,
+return ObjectModel.IStreamStore. IStreamStore kind/members/behavior remain
+UNKNOWN until existing evidence or a separately bounded declaration query
+proves them. Never supply a guessed cache layout, path, null success or stream
+contents merely to progress construction. ADR005 rights decision is unchanged.

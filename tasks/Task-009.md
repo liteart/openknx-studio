@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual22 at source72bca2e remains FAIL2 before container Build/Factory/Project, exact internal GetType caller unknown. Public24c now proves the typed-factory registration path with the actual pinned Autofac. Source25 implements that bounded diagnostic mode; local verification and actual owned Windows154/260/159 PASS, critical source/result review PASS; source committed at6e2a920. Original25 plan/runtime NOT RUN; provider/store/path and original SDK behavior remain unqualified. No automatic retry, gate advance or criterion acceptance. ADR-005 private-use/no proprietary redistribution remains in force.
+Actual original25 at622b466 (implementation6e2a920) FAIL10: typed provider registration, container Build and genuine Factory returned; Project ctor attempted once but did not return, body entry NOT_ESTABLISHED. Factory callback1success1faultFalse; next IProjectStore.get_LargeStringCache denied1, no provider/KIM/resource callbacks. Container/trace disposal and task/process/scratch cleanup PASS; post19+2 unchanged. Existing getter declaration returns IStreamStore; its declaration/behavior remain UNKNOWN. Source25 owned573 cases and actual bounded registration progress do not establish full SDK/UI/state behavior. Next: verify the actual stream-store declaration before any new shim; no retry, gate or criterion acceptance. ADR005 unchanged.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source25 implemented, local verification and actual owned Windows154/260/159 PASS; critical source/result review PASS; source committed at6e2a920 |
+| Implementation / report status | In progress; source25 committed/owned Windows154/260/159 PASS; actual original25 FAIL10 on next project-store getter |
 | Source commit(s) | Source25 `6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4` (owned execution was uncommitted on e3a08e3), freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
-| Tests executed | Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; original22 remains FAIL2 |
+| Tests executed | Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; actual original25 FAIL10/get_LargeStringCache, cleanup/post19+2 PASS; original22 FAIL2 retained |
 | Evidence location | [Typed factory contract/results](../docs/DCA-UNDO-PROVIDER-FACTORY.md); private native source25 freeze and constructor-windows/owned25-observation.json (1,104 bindings) |
 | Acceptance criteria met | None asserted; all remain unchecked |
-| Technical outcome | Typed deny-provider factory and bounded activation lifecycle verified with owned fixtures. No store/path/business values or original harness Resolve. Original25 and UI/state/hardware NOT RUN; original SDK qualification NOT_ESTABLISHED |
+| Technical outcome | Typed deny-provider factory and bounded activation lifecycle verified with owned fixtures. No store/path/business values or original harness Resolve. Actual original25 registration/Build/Factory returned; Project did not return; IProjectStore.get_LargeStringCache denied1. UI/state/hardware NOT RUN; qualification NOT_ESTABLISHED |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source25 independent local verification PASS; actual owned Windows-result audit PASS; critical source/result review PASS, no unresolved findings; public24c result/contract review PASS |
+| Reviewer | Source25 independent local verification PASS; actual owned Windows-result audit PASS; critical source/result review PASS, no unresolved findings; public24c result/contract review PASS; actual original25 independent result audit and critical result review PASS, no unresolved findings |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -120,8 +120,20 @@ program), exact sameproxy/factory1/denial/ownership assertions, independent
 21-binding result audit PASS. The linked integrated source25 contract
 has critical review PASS. Source25 is now implemented with local verification
 and actual owned Windows154/260/159 PASS; final review PASS/source commit6e2a920,
-original25 remains NOT RUN. No GetType value,
+actual original25 FAIL10 as recorded below. No GetType value,
 provider/path/store behavior or original retry is fabricated. All ACs unchecked.
+
+## Actual25 original result
+
+One fixed reviewed original25 attempt at622b466/code6e2a920: FAIL10. The
+typed provider registration, container Build and genuine Factory returned;
+Project attempted once/get_Idfixtureonce/factorycallback1success1faultFalse,
+then IProjectStore.get_LargeStringCache was denied1. No Project return/body
+entry established; no Project Dispose. Container/trace disposal, cleanup and
+post19private+2OS pins PASS. Provider/KIM/resource callbacks0. Independent
+54-binding result audit and critical result review PASS. The factory
+contract records exact commands, revisions and bounds. Next stream-store
+declaration inquiry only; all criteria unchecked/no gate advance.
 
 ## Actual22 original result
 
