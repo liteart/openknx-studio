@@ -387,5 +387,57 @@ try{
  $usWorker=Join-Path $PSScriptRoot 'Read-ProjectUndoStoreProviderMetadata.ps1'
  Reject {& $usWorker -InputPath $undoStore -InputSha256 (Hash $undoStore)} 'DCAENTRY_INPUT_PIN'
  Assert ((TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reports byte-identical after root-only provider metadata';$passed++
+ $streamStore=Join-Path $root 'OwnedProjectStreamStore.dll';[Task144OwnedFixtures]::CreateProjectStreamStore($streamStore)
+ function StreamStore([string] $p=$streamStore){[Task144.EntrypointMetadata]::ReadOwnedProjectStreamStore($p,(Hash $p))}
+ $ssRaw=StreamStore;$ss=$ssRaw|ConvertFrom-Json;$sst=$ss.types[0]
+ Assert ($ss.operation -eq 'static_dca_project_stream_store' -and $ss.runtime_execution -eq 'NOT_RUN' -and $ss.inputs.Count -eq 1 -and $ss.inputs[0].identity -eq 'Task009.OwnedProjectStreamStore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null' -and $ss.selected_root -eq 'Owned.Task009.IProjectStreamStoreFixture') 'Stream-store fixed unsigned owned identity/root, no original impersonation';$passed++
+ Assert ($ss.declaration_scope -eq 'ROOT_ONLY' -and $ss.referenced_declarations -eq 'UNRESOLVED_NOT_FOLLOWED' -and $ss.qualification -eq 'DECLARATIONS_ONLY_NOT_USABLE_SERVICE' -and $ss.types.Count -eq 1 -and $sst.attributes -eq 161 -and $sst.generic_arity -eq 0 -and $sst.visibility -eq 'Public' -and $sst.class_semantics_raw -eq 32 -and $sst.class_semantics -eq 'Interface' -and $sst.is_interface -and $null -eq $sst.base_type) 'Provider public interface flags, root-only/unresolved qualification';$passed++
+ Assert ($sst.interfaces.Count -eq 2 -and $sst.interfaces[0] -eq 'Owned.Task009.UnresolvedBase' -and $sst.interfaces[1] -eq '[Owned.ForeignContracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.External.IBase') 'Direct local/external interfaces named but never followed';$passed++
+ Assert ($sst.methods.Count -eq 3 -and $sst.methods[0].signature -eq 'instance String() generic=0' -and $sst.methods[0].signature_header -eq 32 -and $sst.methods[0].calling_convention -eq 'Default' -and $sst.methods[0].is_instance -and $sst.methods[0].return_type -eq 'String' -and $sst.methods[0].parameter_types.Count -eq 0) 'Exact public accessor signature/header/return declaration';$passed++
+ Assert ($sst.methods[1].signature -eq 'instance Void(Int32,String[]) generic=0' -and $sst.methods[1].parameter_types.Count -eq 2 -and $sst.methods[1].parameter_types[0] -eq 'Int32' -and $sst.methods[1].parameter_types[1] -eq 'String[]' -and $sst.methods[2].generic_arity -eq 1 -and $sst.methods[2].signature_header -eq 48 -and $sst.methods[2].signature -eq 'instance !!0(!!0) generic=1') 'Parameter and method generic declarations are explicit, not service semantics';$passed++
+ Assert (-not $ssRaw.Contains('FIELD_MUST_NOT_BE_READ') -and -not $ssRaw.Contains('PRIVATE_MALFORMED') -and -not $ssRaw.Contains('INHERITED_MALFORMED') -and -not $ssRaw.Contains('"fields"') -and -not $ssRaw.Contains($root) -and @([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedProjectStreamStore'}).Count -eq 0) 'No fields/private/inherited declarations, private paths or target load';$passed++
+ foreach($profile in @(1,2,3,4,6,8,10,12,13,14,15,16,17,18,19,20,21,22,24)){
+  $bad=Join-Path $root ('StreamStoreBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectStreamStore($bad,$profile)
+  $code=@{1='INPUT_IDENTITY';2='ROOT_NOT_FOUND';3='DUPLICATE_ROOT';4='ROOT_NOT_PUBLIC';6='METHOD_LIMIT';8='INTERFACE_LIMIT';10='UNSUPPORTED_GENERIC_ROOT';12='MALFORMED_SIGNATURE';13='SIGNATURE_SHAPE';14='SIGNATURE_LIMIT';15='UNSUPPORTED_SIGNATURE';16='SIGNATURE_LIMIT';17='SIGNATURE_LIMIT';18='SIGNATURE_SHAPE';19='STRING_LIMIT';20='SIGNATURE_LIMIT';21='REPORT_LIMIT';22='ROW_LIMIT';24='ROW_LIMIT'}[$profile]
+  Reject {StreamStore $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(22,24)){
+  $rowPath=Join-Path $root ('StreamStoreBad'+$profile+'.dll');$seen=$false
+  try{$null=StreamStore $rowPath}catch{$rowException=$_.Exception;for($depth=0;$depth -lt 8 -and $null -ne $rowException;$depth++){
+   if($rowException.GetType().FullName -eq 'Task144.EntrypointMetadata+RowLimitObservationException'){$seen=$rowException.TableName -eq $(if($profile -eq 22){'TYPEDEF'}else{'METHODDEF'}) -and $rowException.RowCount -eq $(if($profile -eq 22){32769}else{65537});break};$rowException=$rowException.InnerException
+  }}
+  Assert $seen ('Provider exact diagnostic table/count '+$profile);$passed++
+ }
+ foreach($profile in @(7,9,23,25,26,28)){
+  $positive=Join-Path $root ('StreamStoreBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectStreamStore($positive,$profile)
+  $v=StreamStore $positive|ConvertFrom-Json
+  Assert ($v.types.Count -eq 1 -and ($profile -ne 7 -or $v.types[0].methods.Count -eq 256) -and ($profile -ne 9 -or $v.types[0].interfaces.Count -eq 32) -and ($profile -ne 28 -or $v.types[0].methods[0].name.Length -eq 1024)) ('Provider exact method/interface/string/table boundary '+$profile);$passed++
+ }
+ foreach($profile in @(5,11,29)){
+  $kindPath=Join-Path $root ('StreamStoreKind'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectStreamStore($kindPath,$profile)
+  $kind=StreamStore $kindPath|ConvertFrom-Json;$kt=$kind.types[0]
+  Assert ($kind.types.Count -eq 1 -and $kind.referenced_declarations -eq 'UNRESOLVED_NOT_FOLLOWED' -and $kt.name -eq 'Owned.Task009.IProjectStreamStoreFixture' -and $kt.visibility -eq 'Public' -and $kt.generic_arity -eq 0) ('Root-only actual kind/name/visibility '+$profile);$passed++
+  if($profile -eq 11){Assert ($kt.is_interface -and $kt.class_semantics_raw -eq 32 -and $kt.base_type -eq '[Owned.ForeignContracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.External.IBase') 'Non-nil metadata base recorded as unresolved even on interface flag';$passed++}
+  else{Assert (-not $kt.is_interface -and $kt.class_semantics -eq 'Class' -and $kt.class_semantics_raw -eq 0 -and $kt.attributes -eq 1 -and $kt.base_type -eq '[Owned.ForeignContracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.External.BaseType') 'I-prefixed class observed honestly with unresolved base';$passed++}
+  if($profile -eq 29){Assert ($kt.methods[0].name -eq '.ctor' -and $kt.methods[0].signature -eq 'instance Void() generic=0' -and $kt.methods[0].attributes -eq 6150 -and $kt.methods[1].signature_header -eq 0 -and -not $kt.methods[1].is_instance -and $kt.methods[1].attributes -eq 22 -and $kt.methods[1].signature -eq 'static Void(Int32,String[]) generic=0') 'Constructor/static declarations only, no invocation';$passed++}
+ }
+ $streamMalformed=$false
+ try{[Task144.EntrypointMetadata]::ReadOwnedProjectStreamStore($broken,(Hash $broken))}catch{
+  $metadataFailure=$_.Exception
+  for($depth=0;$depth -lt 8 -and $null -ne $metadataFailure;$depth++){
+   if($metadataFailure -is [BadImageFormatException]){$streamMalformed=$true;break};$metadataFailure=$metadataFailure.InnerException
+  }
+ }
+ Assert $streamMalformed 'Malformed owned PE rejected before root declarations';$passed++
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectStreamStore($streamStore,('f'*63))} 'DCAENTRY_HASH_FORMAT'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectStreamStore($streamStore,('f'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectStreamStore($undo,(Hash $undo))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectStreamStore($streamStore,(Hash $streamStore))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectStreamStore($broken,'73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a')} 'DCAENTRY_INPUT_HASH'
+ $oversize=Join-Path $root 'StreamStoreOversize.dll';$stream=[IO.File]::Create($oversize);try{$stream.SetLength(16*1024*1024+1)}finally{$stream.Dispose()}
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectStreamStore($oversize,('0'*64))} 'DCAENTRY_INPUT_FILE'
+ $ssWorker=Join-Path $PSScriptRoot 'Read-ProjectStreamStoreMetadata.ps1'
+ Reject {& $ssWorker -InputPath $streamStore -InputSha256 (Hash $streamStore)} 'DCAENTRY_INPUT_PIN'
+ Assert ((UndoStore) -ceq $usRaw -and (TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reports byte-identical after stream-store kind/root-only inquiry';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

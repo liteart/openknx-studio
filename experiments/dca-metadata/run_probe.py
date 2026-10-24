@@ -37,6 +37,8 @@ PROJECT_UNDO_MANAGER_PIN = ("Knx.Ets.ObjectModel.dll", 14204880, "73ffaaa97640a4
 PROJECT_UNDO_MANAGER_IDENTITY = "Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
 PROJECT_UNDO_STORE_PROVIDER_PIN = ("Knx.Ets.ObjectModel.dll", 14204880, "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a")
 PROJECT_UNDO_STORE_PROVIDER_IDENTITY = "Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
+PROJECT_STREAM_STORE_PIN = ("Knx.Ets.ObjectModel.dll", 14204880, "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a")
+PROJECT_STREAM_STORE_IDENTITY = "Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
 PROJECT_TRACE_ENCRYPTOR_PIN = ("Knx.Ets.Common.dll", 503248, "4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd")
 PROJECT_TRACE_ENCRYPTOR_IDENTITY = "Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
 PROBE_COMMAND = r"""
@@ -216,7 +218,7 @@ def private_output(path, data):
 
 
 def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map"):
-    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"):
+    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-stream-store", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"):
         raise ProbeError("DCAPROBE_EXPERIMENT")
     if sys.platform != "darwin":
         raise ProbeError("DCAPROBE_MACOS_REQUIRED")
@@ -243,6 +245,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         "project-id": worker_base.parent / "dca-integration" / "Read-ProjectIdMetadata.ps1",
         "project-undo-manager": worker_base.parent / "dca-integration" / "Read-ProjectUndoManagerMetadata.ps1",
         "project-undo-store-provider": worker_base.parent / "dca-integration" / "Read-ProjectUndoStoreProviderMetadata.ps1",
+        "project-stream-store": worker_base.parent / "dca-integration" / "Read-ProjectStreamStoreMetadata.ps1",
         "project-trace-encryptor": worker_base.parent / "dca-integration" / "Read-ProjectTraceEncryptorMetadata.ps1",
         "project-trace-encryptor-construction": worker_base.parent / "dca-integration" / "Read-ProjectTraceEncryptorConstructionMetadata.ps1",
         "project-trace-encryptor-parameter": worker_base.parent / "dca-integration" / "Read-ProjectTraceEncryptorParameterMetadata.ps1",
@@ -256,6 +259,8 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         selected_pins = (PROJECT_UNDO_MANAGER_PIN,)
     if experiment == "project-undo-store-provider":
         selected_pins = (PROJECT_UNDO_STORE_PROVIDER_PIN,)
+    if experiment == "project-stream-store":
+        selected_pins = (PROJECT_STREAM_STORE_PIN,)
     if experiment == "project-trace-encryptor":
         selected_pins = (PROJECT_TRACE_ENCRYPTOR_PIN,)
     if experiment == "project-trace-encryptor-construction":
@@ -287,6 +292,8 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         command = PROJECT_ID_COMMAND
     if experiment == "project-undo-store-provider":
         command = PROJECT_ID_COMMAND
+    if experiment == "project-stream-store":
+        command = PROJECT_ID_COMMAND
     if experiment == "project-trace-encryptor":
         command = PROJECT_ID_COMMAND
     if experiment == "project-trace-encryptor-construction":
@@ -308,6 +315,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
                 "project-id": "static_dca_project_id",
                 "project-undo-manager": "static_dca_project_undo_manager",
                 "project-undo-store-provider": "static_dca_project_undo_store_provider",
+                "project-stream-store": "static_dca_project_stream_store",
                 "project-trace-encryptor": "static_dca_project_trace_encryptor",
                 "project-trace-encryptor-construction": "static_dca_project_trace_encryptor_construction",
                 "project-trace-encryptor-parameter": "static_dca_project_trace_encryptor_parameter",
@@ -332,6 +340,10 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     if experiment == "project-undo-store-provider" and observed[0].get("identity") != PROJECT_UNDO_STORE_PROVIDER_IDENTITY:
         raise ProbeError("DCAPROBE_REPORT_IDENTITY")
     if experiment == "project-undo-store-provider" and report.get("selected_root") != "Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider":
+        raise ProbeError("DCAPROBE_REPORT_SHAPE")
+    if experiment == "project-stream-store" and observed[0].get("identity") != PROJECT_STREAM_STORE_IDENTITY:
+        raise ProbeError("DCAPROBE_REPORT_IDENTITY")
+    if experiment == "project-stream-store" and report.get("selected_root") != "Knx.Ets.ObjectModel.IStreamStore":
         raise ProbeError("DCAPROBE_REPORT_SHAPE")
     if experiment == "project-trace-encryptor" and observed[0].get("identity") != PROJECT_TRACE_ENCRYPTOR_IDENTITY:
         raise ProbeError("DCAPROBE_REPORT_IDENTITY")
@@ -360,7 +372,7 @@ def main():
     parser.add_argument("--stage", required=True)
     parser.add_argument("--pwsh", required=True)
     parser.add_argument("--output", help="New private report path immediately inside stage")
-    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"), default="reference-map",
+    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-stream-store", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"), default="reference-map",
                         help="Fixed owned experiment; Task-140 default is unchanged")
     args = parser.parse_args()
     try:

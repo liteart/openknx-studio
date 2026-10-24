@@ -49,6 +49,50 @@ public static class Task144OwnedFixtures {
   if(profile==28||profile==29){m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"),valueType,MetadataTokens.FieldDefinitionHandle(fieldStart),MetadataTokens.MethodDefinitionHandle(methodStart));for(int j=4;j<(profile==28?32769:32768);j++)Method(m,"Padding",MethodAttributes.Public,new byte[]{0x20,1});}
   var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
  }
+ // Declaration-only unsigned images for the fixed stream-store reader; no vendor bytes or method bodies.
+ public static void CreateProjectStreamStore(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProjectStreamStore.dll"),m.GetOrAddGuid(new Guid("009c0000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(profile==1?"Task009.ForeignProjectStreamStore":"Task009.OwnedProjectStreamStore"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var foreign=m.AddAssemblyReference(m.GetOrAddString("Owned.ForeignContracts"),new Version(1,0,0,0),default,default,0,default);
+  var external=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString("IBase"));
+  var externalBase=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString("BaseType"));
+  var longType=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString(new string('T',1000)));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  var flags=TypeAttributes.Public|TypeAttributes.Interface|TypeAttributes.Abstract;if(profile==4)flags=TypeAttributes.NotPublic|TypeAttributes.Interface|TypeAttributes.Abstract;if(profile==5||profile==29)flags=TypeAttributes.Public;
+  var root=m.AddTypeDefinition(flags,m.GetOrAddString("Owned.Task009"),m.GetOrAddString(profile==2?"Other":"IProjectStreamStoreFixture"),profile==5||profile==29?externalBase:profile==11?external:default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  if(profile==10)m.AddGenericParameter(root,GenericParameterAttributes.None,m.GetOrAddString("T"),0);
+  // This malformed field must stay unread by the root-method-only query.
+  m.AddFieldDefinition(FieldAttributes.Public,m.GetOrAddString("FIELD_MUST_NOT_BE_READ"),m.GetOrAddBlob(new byte[]{6}));
+  int count=profile==6?257:profile==7||profile==21?256:3;
+  for(int j=0;j<count;j++){
+   string name=j==0?"get_Store":j==1?"Record":j==2?"Transform":"Method"+j;
+   if(profile==19||profile==28||profile==21)name=new string('L',profile==19?1025:profile==28?1024:1000);
+   byte[] sig=j==0?new byte[]{0x20,0,0x0e}:j==1?new byte[]{0x20,2,1,8,0x1d,0x0e}:j==2?new byte[]{0x30,1,1,0x1e,0,0x1e,0}:new byte[]{0x20,0,1};
+   if(j==0){
+    if(profile==12)sig=new byte[]{0x20};if(profile==13)sig=new byte[]{0x20,0,1,8};if(profile==14)sig=new byte[129];
+    if(profile==15)sig=new byte[]{0x20,0,0x1b,0,0,1};
+    if(profile==16){sig=new byte[21];sig[0]=0x20;sig[1]=0;for(int k=2;k<20;k++)sig[k]=0x1d;sig[20]=8;}
+    if(profile==17){sig=new byte[36];sig[0]=0x20;sig[1]=33;sig[2]=1;for(int k=3;k<36;k++)sig[k]=8;}
+    if(profile==18)sig=new byte[]{0x25,0,1};
+   }
+   if(profile==20&&j==0||profile==21){var b=new BlobBuilder();b.WriteByte(0x20);b.WriteByte((byte)(profile==20?4:1));for(int k=0;k<(profile==20?5:2);k++){b.WriteByte(0x12);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(longType)<<2)|1);}sig=b.ToArray();}
+   var attributes=MethodAttributes.Public|MethodAttributes.Abstract|MethodAttributes.Virtual|MethodAttributes.NewSlot;
+   if(profile==29&&j==0){name=".ctor";sig=new byte[]{0x20,0,1};attributes=MethodAttributes.Public|MethodAttributes.SpecialName|MethodAttributes.RTSpecialName;}
+   if(profile==29&&j==1){sig=new byte[]{0,2,1,8,0x1d,0x0e};attributes=MethodAttributes.Public|MethodAttributes.Static;}
+   Method(m,name,attributes,sig);
+   if(j==2&&profile!=21)m.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(j+1),GenericParameterAttributes.None,m.GetOrAddString("TMethod"),0);
+  }
+  Method(m,"PRIVATE_MALFORMED_MUST_NOT_BE_READ",MethodAttributes.Private,new byte[]{0x20});
+  var local=m.AddTypeDefinition(TypeAttributes.Public|TypeAttributes.Interface|TypeAttributes.Abstract,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("UnresolvedBase"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(count+2));
+  Method(m,"INHERITED_MALFORMED_MUST_NOT_BE_READ",MethodAttributes.Public,new byte[]{0x20});
+  m.AddInterfaceImplementation(root,local);
+  int interfaces=profile==8?33:profile==9?32:2;for(int i=1;i<interfaces;i++)m.AddInterfaceImplementation(root,external);
+  m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("UnselectedPadding"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(count+3));
+  if(profile==3)m.AddTypeDefinition(flags,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("IProjectStreamStoreFixture"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(count+3));
+  if(profile==22||profile==23)for(int i=4;i<(profile==22?32769:32768);i++)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"+i),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(count+3));
+  if(profile==24||profile==25||profile==26)for(int i=count+2;i<(profile==24?65537:profile==25?65536:38472);i++)Method(m,"UNSELECTED_MALFORMED",MethodAttributes.Public,new byte[]{0x20});
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  // Declaration-only unsigned images for the fixed provider reader; no vendor bytes or method bodies.
  public static void CreateUndoStoreProvider(string path,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedUndoStoreProvider.dll"),m.GetOrAddGuid(new Guid("009b0000-1111-1111-1111-111111111111")),default,default);
