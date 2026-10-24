@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual19b reached one original Project constructor attempt but failed at an exact Autofac resource request denied outside the Factory-only phase. The underlying Project/service failure remains UNKNOWN. Existing inputs and verified framework fallback documentation support a bounded constructor-only follow-up; source/owned tests, review and a new fixed plan must precede any new original attempt. Task remains In progress; earlier Blocked snapshots are historical. ADR-005 governs owner-authorized private use; no legal-document gate is reopened or guessed SDK service supplied.
+Actual20a executed one separately frozen reviewed original attempt: FAIL10, with four allowed null-only resource probes followed by an observed unregistered IUndoManagerStoreProvider service. Project did not return. Its remaining public service contract must be established from verified metadata before any new shim or original plan; no speculative registration or retry. Cleanup and post19private+2OS input integrity PASS. Earlier actual19b FAIL2 retains its own UNKNOWN underlying failure. Task stays In progress, all ACs unmet; ADR-005 private-use/no proprietary redistribution decision remains in force.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,16 +81,33 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source20a local and owned Windows preparation PASS79 Session0/137 limited/84 administrator-negative. Independent Windows-result audit/review PASS; source implementation committed as `8e640e697e223b71ed4864c0546cd83e951254ad`; actual19b FAIL2 remains latest original Project result. All ACs unmet; no gate advances |
-| Source commit(s) | Source20a implementation `8e640e697e223b71ed4864c0546cd83e951254ad` on baseline `cf0b89baaa95c321de11bf03cf85724fe31e3de0`, freeze SHA `48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`. Actual19b runtime source `bd4855e46912441533af5ab18e0e17935097ae94`; earlier accepted source/result revisions remain in dated history |
-| Tests executed | Source20a C#5/x64 compile3, PS parse/guards, preservation, six fresh extracted proofs PASS; removed-guard mutant expected FAIL. Actual Windows build/owned suites PASS79/137/84, task cleanup PASS. Original20a NOT RUN; actual19b FAIL2 unchanged |
-| Evidence location | [Bounded fallback](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md), private source20a/ freeze/owned20a-observation (628 bindings), verifier20a/source-audit, review20a/critical-source-local. Earlier [Project qualification](../docs/DCA-PROJECT-CONTEXT.md) and original19b results retained |
+| Implementation / report status | In progress; actual original20a FAIL10 after four null-only resource probes, now reporting unregistered IUndoManagerStoreProvider. Project not returned; next metadata inquiry only. Source20a local/owned Windows preparation PASS79/137/84; no gate advances |
+| Source commit(s) | Actual20a runtime `eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066`, implementation `8e640e697e223b71ed4864c0546cd83e951254ad`, freeze SHA `48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`. Earlier actual19b source/result remain separately recorded |
+| Tests executed | Source20a local/owned Windows PASS79/137/84. Fixed original20a single actual FAIL10; live19private+2OS+18artifact preflight PASS, post19private+2OS integrity and exact task cleanup PASS. Two owned invalid-plan helper regressions PASS; earlier rejected helper versions retained |
+| Evidence location | [Bounded fallback/result](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md), private project20a-observation (73 bindings), fixed plan/runner, raw log/done/context, pre/post/cleanup, review20a/plan-review-v2; source20a/owned20a and earlier Project context records retained |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Owned Windows RealProxy nested-callback refusal/restoration/sticky final audit verified; this is not vendor/CLR resource fallback. Original20a NOT RUN; actual19b Project did not return and underlying service failure remains UNKNOWN. No Project/DCA/UI/state/device qualification |
+| Technical outcome | Factory returned; Project attempted once/get_Id fixture once, four allowed null resource results, then ComponentNotRegisteredException for IUndoManagerStoreProvider. No Project return/disposal; container/trace disposal returned once. Cleanup/post hashes PASS; remaining service contract UNKNOWN. No DCA/UI/state/device qualification |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source20a independent local verification PASS; focused critical source/local review PASS closing source20 P2 gap. Actual Windows-result independent audit and critical evidence review PASS (628 bindings, no unresolved findings). Earlier reviews retained; no runtime/task qualification inferred |
+| Reviewer | Source20a source/owned verification/review PASS. Fixed plan final review PASS after two P2 helper fixes. Actual20a independent result audit PASS for provenance/consistency (754363ec...), critical result review PASS (75cae1c8...), no unresolved findings; runtime FAIL10 is not task acceptance or gate approval |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Actual20a original result
+
+One separately pinned original20a attempt at sourceeb3b8cf ended FAIL10.
+Four exact Autofac.resources probes returned only null within Project window2,
+aggregate1..4; requester remained NULL_UNKNOWN. Factory returned; Project
+attempted once/get_Id fixture once, then the SDK reported unregistered
+`Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider`. No Project returned
+or disposed; body entry remains uninstrumented. Container/trace disposal returned
+once and trace lifetime audit PASS, with final provider/store denials0.
+
+Exact task removed/last10/proc0/scratch0. Post19private hashes/24,278,056 bytes
+and2OS pins unchanged PASS. The private73-binding observation and reviewed
+plan/helpers are recorded in the bounded fallback contract. Independent result
+audit and critical review PASS for provenance/claim accuracy. Remaining service contract UNKNOWN; inspect
+existing public metadata before any new shim, no automatic retry. Task In progress,
+all ACs unchecked, qualification NOT_ESTABLISHED/no gate advance.
 
 ## Source20a actual owned checkpoint
 

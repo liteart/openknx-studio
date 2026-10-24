@@ -260,3 +260,105 @@ pre-owned-run commit provenance. The freeze correctly retains its uncommitted
 source checkpoint, while the original plan must pin a committed revision.
 Original20a is still NOT RUN; no original execution plan or retry was created
 by this source record.
+
+
+## Actual20a original result
+
+The separate fixed original20a plan executed once at committed source
+`eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066` (implementation `8e640e6`).
+Actual **FAIL exit10**, direct child exit confirmed normally by the launcher.
+The 15-second/65,536-byte bounds were retained; the diagnostic log is18,848 bytes.
+The limited interactive context is Session2, administrator-role false.
+
+Trace/registration/container/Factory returned. Project constructor06002830
+attempted once and requested the single labeled synthetic get_Id fixture.
+Four exact Autofac.resources probes were allowed in Project window2, aggregate
+1..4: two en-GB and two en. Each handler result supplied only null, no assembly
+or service. Requester remained NULL_UNKNOWN and owner proof NOT_ESTABLISHED;
+these events do not identify the requesting vendor caller or prove universal
+resource fallback. No denied-resource retry or extra DLL was added.
+
+The observed failure is now explicit for this attempt:
+`Autofac.Core.Registration.ComponentNotRegisteredException` reports
+`Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider` unregistered during
+Project construction. The same exception is logged twice by nested error
+reporting, not two constructor attempts. No interface behavior, implementation
+or successful service registration follows from that name. Earlier actual19b
+FAIL2 retains its own UNKNOWN underlying failure; it is not retroactively
+reclassified. Remaining service requirements are UNKNOWN.
+
+Project did not return; body entry remains NOT_ESTABLISHED because it was not
+instrumented, and no Project Dispose was attempted. Container and trace Dispose
+each returned once. Trace lifetime audit explicitly PASS; final audit points
+were reached after both lifetimes with provider-denied0/store-denied0/fixture1.
+These observations do not establish Project or SDK-context qualification.
+The aggregate budget ended inactive with4 probes, maximum8.
+
+Cleanup PASS: exact task removed, last result10 matches done10, zero owned
+processes and scratch files. Post-run all19 private input hashes/24,278,056 bytes
+and both existing OS pins remain unchanged, PASS. No new original call was made
+by collection, cleanup or the post-input audit. Harness DCA initialization, UI,
+state and intentional device operations remain NOT RUN; vendor internals remain
+UNKNOWN and network/descendants NOT_CONTAINED.
+
+### Fixed plan, helper findings and execution evidence
+
+Private plan `project20a-plan.json` (13,239 bytes, SHA-256
+`c1749fc43637468a0b8eca55f6e02f27ee3e1b2a0d0e82233ad0c446715cfcdd`)
+and runner (13,822 bytes, SHA-256
+`7e0a0e746c18dabdd298979bc18354f22c6bd0944cfe8b1c872e66f84e649b87`)
+bind10 source hashes,19 private inputs,2 fixed OS pins and18 build20a artifacts.
+All29 derivation steps from the retained19b runner reverse byte-exactly; a new
+seven-path refusal precedes catch/finally so stale evidence is never overwritten.
+
+Initial critical plan review CHANGES_REQUESTED identified two P2 helper issues:
+a relative input-stage path and absent plan checksum in collector/cleanup.
+Their old versions remain unchanged. Active preflightv3 joins the fixed stage;
+collector/cleanupv2 verify the immutable plan before adapter import. Two owned
+invalid-plan tests with a trap adapter PASS; executable harness, fixture hashes
+and raw transcripts are retained under `plan-pin-negative-proof20a/`. No real
+remote adapter was loaded by those negative tests.
+
+Independent plan/refinement audits PASS (`verifier20a/plan-audit.txt` and
+`plan-refinement-audit.txt`). Final critical `review20a/plan-review-v2.txt` PASS,
+SHA-256 `6eb7629c27d8c80b8672d932e700b924e2652b88fe5c69bf0bad60e6415e3fe4`,
+closes both findings. This is development evidence review, not human device
+operation approval. Initial rejected review and every helper version are retained.
+
+Actual execution commands used owned capture wrappers (all once):
+
+- The reviewed `project20a-live-preflight-v3.ps1` was transferred by hash and invoked through a short SSH command: actual PASS19private+2OS+18artifacts, x64, ETS0/owned0 and fresh paths/task.
+- `run_project20a_v2.py` with the exact saved final review digest: the one fixed original task started. `project20a-poll01` recorded terminal Ready/10/done.
+- `collect_project20a_v2.py` and `cleanup_project20a_v2.py`: actual evidence collected and exact terminal task removed.
+- Reviewed `project20a-post-inputs.ps1`: actual post-input/cleanup PASS, no new original call.
+- `python3 -B private/evidence/task009-constructor-windows/record_project20a.py`: saved-file/source audit PASS, producing `project20a-observation.json` (13,945 bytes, SHA-256 `72a128da69fff87b14b5d2754003b47d9d11f9c82530d24ccb5bd838467ae0aa`) with73 evidence bindings.
+
+`project20a-execution-bindings.json` pins the pre-execution helpers/review and
+clean committed source; immutable plan fields still describe their preparation
+checkpoint. Runtime results are in the separate observation, not rewritten into
+the plan. Source10 current/committed hashes still match. Independent original
+result audit and critical result review are pending at this entry.
+
+Next unblocked work is a bounded investigation of existing public metadata for
+the observed UndoManager store-provider requirement before defining any new
+shim. No speculative registration, success/null stub or automatic original retry.
+Task-009 remains In progress, all ACs unchecked, qualification NOT_ESTABLISHED;
+no gate advances.
+
+
+### Actual20a independent result review
+
+Independent original-result audit `verifier20a/original-result-audit.txt`
+(4,566 bytes, SHA-256 `754363ec851d66d1cd397020a95ba92339aa821d76abc3877d938ebe0544e24f`)
+PASS for provenance/result consistency: all73 bindings,10 current/committed
+sources, source/plan/review pins, event counts/order, actual preflight, terminal
+FAIL10, cleanup and post-input integrity match. No SDK/runtime rerun or binary
+read was used by this audit.
+
+Critical result/documentation review `review20a/critical-original-result.txt`,
+SHA-256 `75cae1c8dfbe765cab41594328733ede03196610bf7026b522486ccbceda680c`,
+PASS, no unresolved findings. It confirms the constructor failure and unknown
+provider contract remain distinct from cleanup/hash PASS; earlier19b evidence
+and its UNKNOWN underlying failure are preserved. Coordinator scope/whitespace
+checks PASS. This accepts the result documentation, not Task-009, vendor
+qualification, an operation or a gate. Next is the public-contract inquiry.
