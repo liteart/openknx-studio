@@ -19,6 +19,7 @@ The objective is not a pixel-for-pixel ETS clone and not an immediate promise of
 | Supported platforms | Core builds and runs on Windows, macOS, and Linux without .NET; original DCA execution may be Windows-only |
 | Primary interface | MCP-first, headless-first, with a thin non-AI CLI for diagnostics and trusted human approvals |
 | Product configuration | Import `.knxprod`, interpret supported parameter semantics, expose effective objects, and compile supported configurations |
+| Product file acquisition | In v1, users obtain files directly from manufacturers and supply local files to the editor; an owned online catalog is deferred to a later v2/v3 decision |
 | Programming | Individual addressing, application/configuration download, parameters, and group associations for qualified devices |
 | DCA priority | Run original manufacturer DCAs unchanged first; Windows-only is acceptable; native replacements are secondary |
 | Initial DCA examples | MDT DALI gateway configuration and MDT device firmware update DCAs; the latter package/device is not yet supplied |
@@ -30,6 +31,8 @@ The objective is not a pixel-for-pixel ETS clone and not an immediate promise of
 Retain upstream and third-party notices rather than relabeling other people's work. Apache-2.0 for our source does not give redistribution rights over manufacturer DCAs, firmware, product data, or proprietary SDK components. Third-party original DCAs are user-provided add-ons, not relicensed project source.
 
 ## Explicit non-goals for version 1
+
+Version 1 does not implement an online product catalog or catalog download service. A possible owned catalog in v2 or v3 requires a later explicit scope decision. An assembly requested by an original ETS-SDK constructor does not establish a catalog feature requirement. DCA compatibility work must first investigate the minimum offline project context and justify any catalog-related SDK dependency separately.
 
 KNX IP Secure, KNX Data Secure, Secure commissioning, key management, secure keyring support and cryptographic interoperability tests are out of scope for v1. Preserve inherited upstream Secure source, including unused type and wire-codec definitions; their presence in the library is not a blocker or a Secure support claim. Keep optional Secure features disabled and do not initiate or use Secure operations in v1. Reject a request requiring Secure explicitly; do not silently downgrade it to plaintext. Any future Secure use requires a separate version/scope decision. Ordinary IPC access control and safe local execution are still necessary and are not KNX Secure.
 

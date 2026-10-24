@@ -152,6 +152,8 @@ Test original DCA hosting, fork device management, and a minimum KNXPROD-to-down
 
 Normal operation needs no cloud, online catalog, user account, LLM, Git remote, or online license service owned by this product.
 
+Version 1 imports locally supplied manufacturer files; users obtain them directly from manufacturers. An owned online catalog/download service is outside v1. A possible v2/v3 catalog requires a later explicit decision. Catalog-related original SDK dependency requests require separate offline DCA necessity evidence and do not authorize a product catalog feature.
+
 ## R-026: Open extension direction
 
 **Authority:** Confirmed direction.
