@@ -248,3 +248,15 @@ regression diff. The six preparation paths are ready for a local source commit.
 This is evidence acceptance for this preparation increment, not maintainer Task-009
 acceptance, original SDK qualification, a gate or an operation approval. A new
 original20a committed-source plan and its separate review/preflight remain next.
+
+
+### Reviewed implementation source commit
+
+Implementation commit `8e640e697e223b71ed4864c0546cd83e951254ad` contains the six reviewed
+preparation paths. Private `source-commit20a.json` records the post-owned-execution,
+pre-original-execution audit: every one of ten `git show COMMIT:experiments/PATH`
+blobs and current source files matches freeze20a, PASS. It is not retroactive
+pre-owned-run commit provenance. The freeze correctly retains its uncommitted
+source checkpoint, while the original plan must pin a committed revision.
+Original20a is still NOT RUN; no original execution plan or retry was created
+by this source record.

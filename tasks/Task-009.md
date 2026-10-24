@@ -81,8 +81,8 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source20a local and owned Windows preparation PASS79 Session0/137 limited/84 administrator-negative. Independent Windows-result audit/review PASS; source commit pending; actual19b FAIL2 remains latest original Project result. All ACs unmet; no gate advances |
-| Source commit(s) | Source20a uncommitted on `cf0b89baaa95c321de11bf03cf85724fe31e3de0`, freeze SHA `48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`. Actual19b runtime source `bd4855e46912441533af5ab18e0e17935097ae94`; earlier accepted source/result revisions remain in dated history |
+| Implementation / report status | In progress; source20a local and owned Windows preparation PASS79 Session0/137 limited/84 administrator-negative. Independent Windows-result audit/review PASS; source implementation committed as `8e640e697e223b71ed4864c0546cd83e951254ad`; actual19b FAIL2 remains latest original Project result. All ACs unmet; no gate advances |
+| Source commit(s) | Source20a implementation `8e640e697e223b71ed4864c0546cd83e951254ad` on baseline `cf0b89baaa95c321de11bf03cf85724fe31e3de0`, freeze SHA `48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`. Actual19b runtime source `bd4855e46912441533af5ab18e0e17935097ae94`; earlier accepted source/result revisions remain in dated history |
 | Tests executed | Source20a C#5/x64 compile3, PS parse/guards, preservation, six fresh extracted proofs PASS; removed-guard mutant expected FAIL. Actual Windows build/owned suites PASS79/137/84, task cleanup PASS. Original20a NOT RUN; actual19b FAIL2 unchanged |
 | Evidence location | [Bounded fallback](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md), private source20a/ freeze/owned20a-observation (628 bindings), verifier20a/source-audit, review20a/critical-source-local. Earlier [Project qualification](../docs/DCA-PROJECT-CONTEXT.md) and original19b results retained |
 | Acceptance criteria met | None asserted |
@@ -99,7 +99,7 @@ local source verification/review PASS. Actual Windows build and owned suites
 PASS79 Session0/137 limited Session2/84 administrator-negative Session2. Both
 jobs removed, owned processes0/no junction; all501 case files retained. The
 628-entry private observation binds source/build/results/cleanup. Independent
-Windows-result audit and critical review PASS; source commit pending, no original20a
+Windows-result audit and critical review PASS; implementation `8e640e697e223b71ed4864c0546cd83e951254ad`, no original20a
 plan or call exists. Details and exact commands are in the bounded fallback contract.
 Task In progress, all ACs unchecked, qualification NOT_ESTABLISHED/no gate.
 
