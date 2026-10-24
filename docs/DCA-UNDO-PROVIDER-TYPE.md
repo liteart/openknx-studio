@@ -1,5 +1,10 @@
 # Task-009 exact CLR type introspection
 
+**Status: superseded compatibility investigation. Do not implement the
+RegisterInstance/type-only approach below.** The pinned Autofac source check
+below establishes a second incompatibility at container Build. No original
+SDK retry or Source23 implementation is justified by this historical contract.
+
 Readiness: Task008 accepted, no phase gate. Actual22 at source72bca2e FAIL2
 denied System.Object.GetType during undo registration before Build or any
 Factory/Project constructor. Exact internal caller unknown. Preserve source22
@@ -130,3 +135,58 @@ Reviewed contract checkpoint SHA-256
 `46cb6b8f23fef4740f4a5f04a80d7f2250d83c158d35def101d8555c7a2c0eff`;
 this result/review-record append is later. No audit reran Windows or read SDK
 payloads. No original retry or task/gate acceptance follows.
+
+
+## Pinned Autofac assignability finding
+
+After the genuine CLR representation was established, one additional pinned
+public source query exposed the next failure before an original SDK attempt.
+Autofac commit07cac9047f4059de2d72834042c9649cbd228085:
+
+- ProvidedInstanceActivator passes instance.GetType() to its base constructor.
+- InstanceActivator stores that constructor argument as LimitType.
+- RegistrationBuilder.CreateRegistration checks each typed service with
+  ServiceType.IsAssignableFrom(LimitType), except when LimitType is Object.
+- The observed MarshalByRefObject representation does not implement the
+  declared provider interface. Therefore a type-only RegisterInstance shim
+  cannot complete this registration's container Build on this source contract.
+
+Private task009-autofac-type-assignability preserves original MIT notices and
+immutable public source bytes: RegistrationBuilder.cs11,500 bytes SHA-256
+`757f24738a3cb57db1f811170822ff5041b2d1077885b6775612207d9121427e`,
+InstanceActivator.cs1,726 bytes SHA-256
+`b9fa63deca86201825d3bf7cc8153d2580b2a8795f1c86993dde52d28534f1eb`,
+and DelegateActivator.cs2,553 bytes SHA-256
+`2436fc49abc07b05b716bc5993ec39c4901cc6dfa74f01609a503a17508c4ed6`.
+Source URLs, pinned commit,20-second/262,144-byte bounds and refused redirects
+are recorded in source-record.json and activator-source-record.json. This is
+source compatibility evidence, not an executed actual-binary Build failure.
+
+The incomplete three-file Source23 patch was archived exactly and restored by
+its owner before compilation. Private task009-undo-provider-type/source23/held-type-only-patch (under
+private/evidence/) preserves
+baseline/current bytes and diff (SHA-256
+`d66b35adee934f7b7f307363e072fd9dc8a7605feae4724ee7e5f97a245ba273`).
+The restore proof SHA-256 is
+`c99e270c3d8080050d8b1affa4dd67781d9a44cfc08d37241c80a55f010de09d`;
+all10 constructor sources match HEAD1ad7428 and freeze22 again. No source23
+build, integrated owned run, freeze, source commit or original attempt occurred.
+
+The next candidate is the existing public typed Register<T>(Func<context,T>)
+API: its delegate activator uses the truthful declared T as LimitType and can
+return the same already-created deny-only interface proxy. No GetType value
+needs to be fabricated. This API's actual binary shape, relaxed delegate
+binding and owned registration behavior require a separate minimal Windows
+proof before a new integrated implementation contract. Readiness evidence:
+private task009-undo-provider-delegate-readiness/readiness.md SHA-256
+`2a1f15c2ed630d7b751eb9f1e6d21db03716b778f076d322c92e491f87ebe34e`.
+All provider business methods remain unsupported; no SDK qualification follows.
+
+
+Independent finding/documentation review PASS, no blocking findings:
+private constructor-windows/review24/assignability-finding-review.txt
+(7,189 bytes), SHA-256
+`a95c4914c16d88ad7b851c0928f13231449dc264e8d29ad2e5e4a7f9813dcf57`.
+It checked the three public source pins, archived patch/restore and current/
+committed/frozen source10 without SDK payload reads or runtime. The requested
+archive-path clarification is included above. No gate or qualification follows.

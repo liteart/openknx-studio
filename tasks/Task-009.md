@@ -103,17 +103,17 @@ PASS116 Session0/195 limited/121 administrator-negative. Independent Windows
 result verification/review PASS; source commit72bca2e. The separately reviewed original22 plan subsequently executed once and failed during registration, as recorded below.
 All earlier SDK runtime/result qualifications remain unchanged.
 
-## Next CLR type-introspection increment
+## Next provider registration investigation
 
-The [exact CLR type-introspection contract](../docs/DCA-UNDO-PROVIDER-TYPE.md)
-specifies a distinct mode, genuine CLR GetType response and owned registration
-regression. A minimal owned Windows proof first FAILed the interface-equality
-assumption; a separate inspection PASS established actual MarshalByRefObject
-representation. The contract is corrected to return that actual CLR Type;
-independent result verification and revised critical review PASS. All provider
-methods remain denied.
-Implementation and integrated Source23 Windows validation NOT RUN; earlier
-source22 modes and actual22 failure stay unchanged.
+The [CLR investigation](../docs/DCA-UNDO-PROVIDER-TYPE.md) is superseded as an
+implementation plan. Actual owned inspection established MarshalByRefObject;
+further pinned Autofac source shows RegisterInstance's typed-service check
+would reject that representation at Build. The incomplete Source23 patch was
+archived/restored without compilation; all10 sources remain exact source22.
+Next: a minimal owned proof of the existing public typed delegate registration,
+with the same deny-only proxy and truthful interface LimitType. Actual binary
+shape/delegate binding and integrated Source24 remain NOT RUN. No GetType value,
+provider/path/store behavior or original retry is fabricated. All ACs unchecked.
 
 ## Actual22 original result
 
