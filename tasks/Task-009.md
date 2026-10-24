@@ -110,9 +110,11 @@ implementation plan. Actual owned inspection established MarshalByRefObject;
 further pinned Autofac source shows RegisterInstance's typed-service check
 would reject that representation at Build. The incomplete Source23 patch was
 archived/restored without compilation; all10 sources remain exact source22.
-Next: a minimal owned proof of the existing public typed delegate registration,
-with the same deny-only proxy and truthful interface LimitType. Actual binary
-shape/delegate binding and integrated Source24 remain NOT RUN. No GetType value,
+The [typed factory investigation](../docs/DCA-UNDO-PROVIDER-FACTORY.md) records
+one actual owned proof attempt: compileFAIL1, programNOTRUN; postpinsPASS.
+The corrected24b proof is being prepared with a qualified type owner, compile-
+only System.Core and explicit existing binding configuration. Actual binary
+shape/delegate binding and integrated implementation remain NOT RUN. No GetType value,
 provider/path/store behavior or original retry is fabricated. All ACs unchecked.
 
 ## Actual22 original result
