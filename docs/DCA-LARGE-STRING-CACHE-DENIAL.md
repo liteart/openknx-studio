@@ -262,3 +262,15 @@ non-file result fields are unchanged. No tests/SDK runtime were rerun and no
 compiled payload bytes were independently downloaded or rehashed by review.
 This accepts the bounded owned increment only. The exact source commit must
 precede preparation/review of a separate immutable original27 runtime plan.
+
+### Source27 committed bytes
+
+Source commit25eea43312b747a4fc245d84c9f9eeac348697b1 contains the reviewed
+six-path increment. Private constructor-windows/source-commit27.json, SHA-256
+5dd3180fbf31d52ecea394576735fa7d8befa5edc25cb45cffabbb2175deec0c,
+confirms all10 current/committed source pins match freeze27 and the worktree
+was clean before this documentation update. Owned execution happened before
+the commit; the receipt establishes byte equality without rewriting that history.
+The corrected observation and single combined source/owned critical review are
+bound explicitly. Original27 remains NOT RUN until its separate immutable plan,
+review and fresh live readiness checks; no Task-009 or gate acceptance follows.
