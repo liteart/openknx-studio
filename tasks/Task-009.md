@@ -112,9 +112,13 @@ would reject that representation at Build. The incomplete Source23 patch was
 archived/restored without compilation; all10 sources remain exact source22.
 The [typed factory investigation](../docs/DCA-UNDO-PROVIDER-FACTORY.md) records
 one actual owned proof attempt: compileFAIL1, programNOTRUN; postpinsPASS.
-The corrected24b proof is being prepared with a qualified type owner, compile-
-only System.Core and explicit existing binding configuration. Actual binary
-shape/delegate binding and integrated implementation remain NOT RUN. No GetType value,
+Corrected24b resolved the namespace/Core errors but still compileFAIL1 on
+three version warnings; programNOTRUN/postpinsPASS. The next24c proof uses
+the intended fixed runtime reflection bridge with unchanged real API cases
+and warnings-as-errors. Actual24c public runtime proof now PASS0 (compile and
+program), exact sameproxy/factory1/denial/ownership assertions, independent
+21-binding result audit PASS. The linked integrated source25 contract
+has critical review PASS; implementation/original25 remain NOT RUN. No GetType value,
 provider/path/store behavior or original retry is fabricated. All ACs unchecked.
 
 ## Actual22 original result
