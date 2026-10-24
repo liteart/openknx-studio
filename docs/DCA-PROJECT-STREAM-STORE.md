@@ -122,3 +122,52 @@ current/snapshot pins, all24 manifest bindings, frozen contract, independent
 audit and prepared helper hashes, wrapper AST and whitespace. No SDK reads,
 query or test rerun occurred by the reviewer. The source commit and its exact
 committed-pin check must precede the single original declaration inquiry.
+
+## Committed source and restriction-launch failure
+
+Source26 is committed as4799252731f60649dda0c94fb75f67f75cfaa1ca.
+source-commit26.json, SHA-256
+e2bea0087ccdfa7fabc20166edce282a2d8589f71a04d1d4010b3018bba12d93,
+confirms six current/committed pins and a clean worktree before original26.
+
+The fixed original26 helper ran once and stopped during the FIRST restriction
+probe child: exit71, empty stdout,53-byte stderr reporting
+`sandbox-exec: sandbox_apply: Operation not permitted`. Result is
+FAIL/DCAPROBE_RESTRICTION; original declaration decoding NOT RUN, report absent.
+Parent hashing/copying occurred and the input hash remained unchanged; no target
+load, SDK runtime, Windows execution or hardware operation occurred. Observation
+SHA-256b0c1c4cb738c9e5e7c1f25b6b4e5e46edd17a39400fe33e2997a1237494b9b55
+and the persistent attempt marker preserve this terminal attempt. Do not rerun it.
+
+The context comparison indicates an inner macOS sandbox launch conflict with
+the enclosing tool sandbox; this cause is inferred, not an OS policy audit.
+A separate owned-only readiness command used the tool's reviewed outer
+execution escalation with the EXACT SAME deny-default inner profile. It accessed
+no SDK input, returned exit0/stderr0 and observed PowerShell7.6.7, write_denied
+true/network_denied true. Its observation SHA-256 is
+2212682c4fa03d2dd48aa09c3af6bb79c80f750e3227be788174dd989fad50fc.
+This is restriction readiness, not a metadata result or relaxed fallback.
+
+A new separately frozen original26b plan635397c6cdd89c4659db03ec8a33273e5132a2a95dc91a9566a8842c981715a8
+permits one inquiry using that outer execution context, with fresh restriction
+probes and unchanged source/inner profile/limits. Fixed helper SHA-256
+731abc453168d53caa427a40c772769d4ef7c8509a8b318206f98cd2e9bdab28
+requires the saved26 failure/readiness hashes, committed/current source pins,
+source review and a separate plan review digest. It uses new exclusive output
+names and attempt marker. Plan review, planning commit and original26b execution
+are pending. A second restriction failure stops this new inquiry too; no
+unguarded decoding is authorized. Original26 remains FAIL; declarations UNKNOWN.
+
+Independent saved-result audit verifier26/original-result-audit.txt, SHA-256
+bce81decb0c54e36e09858bafc50007ef023b4ffdf4e710ec5604bb959e19fa4,
+PASS for original26 provenance, with restriction setup FAIL/declarations NOT RUN.
+It confirms six source pins, committed receipt, attempt marker and child output
+bindings without reading SDK payloads or rerunning the failed inquiry.
+
+New-plan critical review26b/plan-review.txt,3,619 bytes, SHA-256
+49ff03c8c5d872f872dd297a1ed488fb2186b8c4fe331711e4399ceec37fe7b5,
+PASS: fixed helper/plan, prior failure, owned restriction readiness, raw outputs,
+six current/committed pins, unchanged profile/limits and helper AST checked.
+The causal explanation is explicitly an inference. No original query ran in
+review. This clears only the fixed preparation; planning commit/current-pin
+checks and fresh child denial probes still precede original26b decoding.

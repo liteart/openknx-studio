@@ -83,7 +83,11 @@ Source26 is implemented with419 owned PowerShell and25 Python tests PASS;
 independent verification PASS. Freeze SHA1f4c80edf982ddb118633e8992ef1edb5fc99f6f15e1281de89d3ba2b6ed0118
 binds six source snapshots and24 evidence artifacts. Critical source/helper
 review PASS (9b645bb20989aa97ee6bad5b0d9127d28501d8ed21793822ca3f12f8ee629169);
-source commit and the separately guarded original inquiry are pending. No cache behavior,
+source commit4799252731f60649dda0c94fb75f67f75cfaa1ca is recorded. Original26
+stopped at sandbox launch (FAIL restriction/exit71), declaration decoding NOT RUN.
+Separate owned-only restriction readiness PASS with unchanged inner profile;
+new fixed original26b plan review PASS49ff03c8c5d872f872dd297a1ed488fb2186b8c4fe331711e4399ceec37fe7b5,
+planning commit/execution pending. No cache behavior,
 runtime retry or acceptance follows from that contract.
 
 ## Completion Record
