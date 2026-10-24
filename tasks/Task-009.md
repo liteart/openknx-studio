@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual20a executed one separately frozen reviewed original attempt: FAIL10, with four allowed null-only resource probes followed by an observed unregistered IUndoManagerStoreProvider service. Project did not return. Its remaining public service contract must be established from verified metadata before any new shim or original plan; no speculative registration or retry. Cleanup and post19private+2OS input integrity PASS. Earlier actual19b FAIL2 retains its own UNKNOWN underlying failure. Task stays In progress, all ACs unmet; ADR-005 private-use/no proprietary redistribution decision remains in force.
+Actual20a executed one separately frozen reviewed original attempt: FAIL10, with four allowed null-only resource probes followed by an observed unregistered IUndoManagerStoreProvider service. Project did not return. The provider declaration is now verified by guarded original21 metadata; store/path behavior and the returned IStreamStore declaration remain UNKNOWN. Any next shim or original plan needs its own bounded contract; no speculative positive registration or retry. Cleanup and post19private+2OS input integrity PASS. Earlier actual19b FAIL2 retains its own UNKNOWN underlying failure. Task stays In progress, all ACs unmet; ADR-005 private-use/no proprietary redistribution decision remains in force.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,16 +81,28 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; actual original20a FAIL10 after four null-only resource probes, now reporting unregistered IUndoManagerStoreProvider. Project not returned; next metadata inquiry only. Source20a local/owned Windows preparation PASS79/137/84; no gate advances |
-| Source commit(s) | Actual20a runtime `eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066`, implementation `8e640e697e223b71ed4864c0546cd83e951254ad`, freeze SHA `48bd6125064df399b82d85db98ae168e4fbe815f651754f347f9212367285ea2`. Earlier actual19b source/result remain separately recorded |
-| Tests executed | Source20a local/owned Windows PASS79/137/84. Fixed original20a single actual FAIL10; live19private+2OS+18artifact preflight PASS, post19private+2OS integrity and exact task cleanup PASS. Two owned invalid-plan helper regressions PASS; earlier rejected helper versions retained |
-| Evidence location | [Bounded fallback/result](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md), private project20a-observation (73 bindings), fixed plan/runner, raw log/done/context, pre/post/cleanup, review20a/plan-review-v2; source20a/owned20a and earlier Project context records retained |
+| Implementation / report status | In progress; original20a SDK runtime FAIL10. Guarded original21 metadata PASS now supplies the exact public provider root and three method declarations; store/path behavior and IStreamStore declaration remain UNKNOWN. No positive service or gate advance |
+| Source commit(s) | Metadata inquiry source `55c36170a03c91709ef70e7a3220508e2514da8c`; SDK runtime20a `eb3b8cfe23950f1bd94e4bdc0f9ca54f647fc066`, implementation `8e640e697e223b71ed4864c0546cd83e951254ad`. Exact freezes, prior commits and observations remain in component contracts |
+| Tests executed | Source21 owned PowerShell370/Python24, parser/preservation/scope PASS; one guarded actual metadata query PASS after write/network denial probes, original input hash unchanged. Source20a owned Windows79/137/84 PASS, actual SDK runtime20a FAIL10 with pre/post/cleanup PASS |
+| Evidence location | [Provider metadata](../docs/DCA-UNDO-STORE-PROVIDER.md): private original21 report/observation/57-binding manifest and verifier21 result audit. [Runtime result](../docs/DCA-PROJECT-RESOURCE-FALLBACK.md): original20a observation/plan/log, pre/post/cleanup, source20a/owned records retained |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Factory returned; Project attempted once/get_Id fixture once, four allowed null resource results, then ComponentNotRegisteredException for IUndoManagerStoreProvider. No Project return/disposal; container/trace disposal returned once. Cleanup/post hashes PASS; remaining service contract UNKNOWN. No DCA/UI/state/device qualification |
+| Technical outcome | Provider TypeDef02000121 public nongeneric interface, GetStore(Guid)/NewStore return referenced IStreamStore and get_RootPath returns String; declarations only. SDK Project20a did not return; no Project/DCA/UI/state/device qualification. Remaining service behavior UNKNOWN |
 | Gate outcome, when applicable | No gate applies or advances |
-| Reviewer | Source20a source/owned verification/review PASS. Fixed plan final review PASS after two P2 helper fixes. Actual20a independent result audit PASS for provenance/consistency (754363ec...), critical result review PASS (75cae1c8...), no unresolved findings; runtime FAIL10 is not task acceptance or gate approval |
+| Reviewer | Source21 independent source/owned verification and critical source review PASS; original21 independent declaration/provenance audit and critical result review PASS. Source20a/actual20a reviews retained. No task acceptance or gate approval |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Original21 provider metadata result
+
+One fixed guarded metadata query at source55c3617 PASS, with fresh write/network
+denial probes and no target SDK execution. The actual provider is public,
+nongeneric TypeDef02000121, no direct inherited interfaces. Three methods:
+GetStore(Guid)->IStreamStore06000AF3, NewStore()->IStreamStore06000AF4,
+get_RootPath()->String06000AF5. Referenced IStreamStore declarations and all
+provider/store/path behavior remain UNKNOWN. Independent57-binding result
+audit PASS; critical result review PASS. See the provider contract for exact
+input/signatures/commands/hashes and limits. No registration/fixture/runtime
+retry occurred; actual20aFAIL10 remains latest SDK runtime result, ACs unchecked.
 
 ## Source21 provider declaration inquiry
 
@@ -98,8 +110,9 @@ The [fixed provider metadata contract](../docs/DCA-UNDO-STORE-PROVIDER.md)
 adds a root-only declaration query for the service observed in actual20a.
 Source21 owned checks PASS370 PowerShell/24 Python, preservation/parsing/scope/
 whitespace; six source files and25 evidence bindings frozen. Independent source
-verification/review PASS; source commit pending. Original metadata extraction is
-NOT RUN and the actual provider contract remains UNKNOWN. No service, registration,
+verification/review PASS; source commit55c3617. The one guarded original metadata
+query PASS supplies root02000121 and three method declarations only; store/path
+behavior and IStreamStore declaration remain UNKNOWN. No service, registration,
 constructor/runtime retry or criterion change is supplied by this increment.
 
 ## Actual20a original result

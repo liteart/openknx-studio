@@ -137,3 +137,72 @@ child after fresh denial probes. Source commit precedes that single inquiry.
 
 These reviews accept the preparation increment only. Provider declarations
 remain UNKNOWN and the original metadata query remains NOT RUN at this entry.
+
+
+## Original21 guarded declaration result
+
+Source commit `55c36170a03c91709ef70e7a3220508e2514da8c` was clean and all
+six current/committed blobs matched freeze21 before the fixed inquiry. Private
+`source-commit21.json` records this post-owned-test/pre-original-query audit;
+the freeze correctly retains its earlier uncommitted checkpoint.
+
+Actual command, once:
+
+```text
+python3 -B private/evidence/task009-undo-store-provider-metadata/run_original21.py --source-commit 55c36170a03c91709ef70e7a3220508e2514da8c --review-sha256 f2d938c58da914f04718fff8d8dbdd34fb4536ad61f0f8267dbc700102257afe
+```
+
+Result **PASS for declarations only**. The first bounded child recorded
+PowerShell7.6.7/write_denied true/network_denied true, exit0/stderr0. Only then
+did the second bounded child decode the exact SDK image, exit0/stderr0. No target
+assembly was loaded or invoked. The source input hash remains unchanged.
+The deny-default profile and30-second/2MiB bounds were unchanged.
+
+Actual root: `Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider`,
+TypeDef02000121, attributes1048737, public interface, generic arity0, no direct
+inherited interfaces. Its three public declared methods are:
+
+| Token | Name | Return type | Parameters | Method attributes |
+|---|---|---|---|---|
+| 06000AF3 | GetStore | Knx.Ets.ObjectModel.IStreamStore | System.Guid, mscorlib4.0.0.0/b77a5c561934e089 | 1478 |
+| 06000AF4 | NewStore | Knx.Ets.ObjectModel.IStreamStore | None | 1478 |
+| 06000AF5 | get_RootPath | String | None | 3526 |
+
+Each method is instance/default calling convention, raw signature header32 and
+generic arity0. The report records exact qualified signatures. IStreamStore is
+a referenced return-type name here, not an inspected declaration or usable
+returned service. RootPath meaning, store ownership, persistence and behavior
+remain UNKNOWN. No provider registration, returned fixture, path value or SDK
+constructor/runtime retry was supplied by this inquiry.
+
+Private result bindings:
+
+- `original21-report.json`: 2,175 bytes, SHA-256 `fe67edd07a92917d4b5d059379b6083876f4c82cf22e9026c9f3afea09d1f9ed`.
+- `original21-observation.json`: 1,871 bytes, SHA-256 `6be36451e793bccd349385f6cf445a42a003776c2d7b4712ed4f44d46ab439a0`, including both raw child-output bindings, source/review/helper digests and unchanged input hash.
+- `original21-evidence-manifest.json`: 10,232 bytes, SHA-256 `6fcab3cf6e247049d713c2d8e400a97e0d6fc382b8e720a504a64275144b35a8`, binding57 source/owned/guard/result artifacts with the exact command.
+
+Independent `verifier21/original-result-audit.txt` (4,296 bytes, SHA-256
+`07069bc4001360d3b6ac8a4da69e0cfba09ab58409ff6905c9d77d232887f41f`)
+PASS: all57 bindings, six committed/current source pins, raw guard output, exact
+raw metadata/report equivalence and every root/method declaration. The verifier
+did not rerun the inquiry or independently read SDK payload bytes. Critical
+result/documentation review remains pending at this entry.
+
+Next compatibility work must use a separately bounded contract. A read-only
+readiness inquiry is evaluating whether the verified declaration is sufficient
+for an externally-owned deny-only provider registration to observe the actual
+first callback. No positive service or IStreamStore behavior is inferred.
+Actual20a FAIL10 remains the latest original SDK runtime result. Task-009 remains
+In progress, all ACs unchecked, qualification NOT_ESTABLISHED; no gate advances.
+
+
+### Original21 critical result review
+
+Critical result/two-document review `review21/critical-result.txt` (6,935 bytes,
+SHA-256 `7fb8b6b7fa77c92b8463690801fc225fb3e2a741233d928648b7a828c7b202a1`)
+PASS, no unresolved findings. It independently cross-checks all57 contained
+evidence bindings, six current/committed sources, both raw child results and
+every root/method field. No SDK payload read or query/runtime rerun occurred
+by this reviewer. Scope and whitespace checks PASS. This accepts declaration
+evidence and its documentation only; provider behavior, IStreamStore and
+RootPath semantics remain unknown, Task-009 stays In progress with ACs unchecked.
