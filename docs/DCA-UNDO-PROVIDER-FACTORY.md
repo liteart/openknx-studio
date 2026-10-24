@@ -1,7 +1,7 @@
 # Task-009 typed provider factory investigation
 
 Status: source25 implemented with owned Windows tests PASS; source/result
-critical review PASS; source commit pending. Original25 NOT RUN. Task008 is
+critical review PASS; source commit6e2a920. Original25 NOT RUN. Task008 is
 accepted and no phase gate applies. The [superseded type-only investigation](DCA-UNDO-PROVIDER-TYPE.md)
 records why RegisterInstance cannot provide this interface proxy faithfully.
 Original22 remains FAIL2 before container Build/Factory/Project; no original
@@ -315,3 +315,13 @@ Task009. It checked source/freeze/snapshots/copy58,1,104 result bindings and
 154/260/159 role/cleanup/lifecycle cases. Coordinator scope/whitespace checks
 PASS. Local source commit is next; no original25 plan/runtime, SDK qualification,
 Task009 acceptance or gate advance is asserted.
+
+
+Reviewed implementation commit:
+`6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4`. Private constructor-windows/
+source-commit25.json SHA-256
+`a94db77784301310349bd96462f36acf55e81786a948b4ead94b1e382abbe3f6`
+records all10 current/Git-show/frozen source bindings PASS, the exact owned
+observation and combined critical review. Freeze-time UNCOMMITTED markers
+remain historical and unchanged. This later documentation record adds no code,
+SDK execution or task/gate acceptance. Original25 remains NOT RUN.

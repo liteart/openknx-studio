@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual22 at source72bca2e remains FAIL2 before container Build/Factory/Project, exact internal GetType caller unknown. Public24c now proves the typed-factory registration path with the actual pinned Autofac. Source25 implements that bounded diagnostic mode; local verification and actual owned Windows154/260/159 PASS, critical source/result review PASS; commit pending. Original25 plan/runtime NOT RUN; provider/store/path and original SDK behavior remain unqualified. No automatic retry, gate advance or criterion acceptance. ADR-005 private-use/no proprietary redistribution remains in force.
+Actual22 at source72bca2e remains FAIL2 before container Build/Factory/Project, exact internal GetType caller unknown. Public24c now proves the typed-factory registration path with the actual pinned Autofac. Source25 implements that bounded diagnostic mode; local verification and actual owned Windows154/260/159 PASS, critical source/result review PASS; source committed at6e2a920. Original25 plan/runtime NOT RUN; provider/store/path and original SDK behavior remain unqualified. No automatic retry, gate advance or criterion acceptance. ADR-005 private-use/no proprietary redistribution remains in force.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,8 +81,8 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; source25 implemented, local verification and actual owned Windows154/260/159 PASS; critical source/result review PASS; commit pending |
-| Source commit(s) | Source25 uncommitted on `e3a08e3def46df035f0a2924fced0a6c2548c0a8`, freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
+| Implementation / report status | In progress; source25 implemented, local verification and actual owned Windows154/260/159 PASS; critical source/result review PASS; source committed at6e2a920 |
+| Source commit(s) | Source25 `6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4` (owned execution was uncommitted on e3a08e3), freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
 | Tests executed | Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; original22 remains FAIL2 |
 | Evidence location | [Typed factory contract/results](../docs/DCA-UNDO-PROVIDER-FACTORY.md); private native source25 freeze and constructor-windows/owned25-observation.json (1,104 bindings) |
 | Acceptance criteria met | None asserted; all remain unchecked |
@@ -119,7 +119,7 @@ and warnings-as-errors. Actual24c public runtime proof now PASS0 (compile and
 program), exact sameproxy/factory1/denial/ownership assertions, independent
 21-binding result audit PASS. The linked integrated source25 contract
 has critical review PASS. Source25 is now implemented with local verification
-and actual owned Windows154/260/159 PASS; final review PASS/commit pending,
+and actual owned Windows154/260/159 PASS; final review PASS/source commit6e2a920,
 original25 remains NOT RUN. No GetType value,
 provider/path/store behavior or original retry is fabricated. All ACs unchecked.
 
