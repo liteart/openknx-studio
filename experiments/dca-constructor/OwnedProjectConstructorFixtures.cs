@@ -706,6 +706,82 @@ namespace Owned.Task009
     { public static IUndoFactoryRegistrationFixture<T, RegistrationDataFixture, RegistrationStyleFixture> Register<T>(UndoBuilderFixture builder, Func<IContainerDependencyFixture, T> callback) where T : class { throw new InvalidOperationException("OWNED_INVALID_FACTORY_API_INVOKED"); } }
     public static class UndoFactoryWrongReturnFixture
     { public static object Register<T>(UndoBuilderFixture builder, Func<IContainerDependencyFixture, T> callback) { throw new InvalidOperationException("OWNED_INVALID_FACTORY_API_INVOKED"); } }
+    // Source27 uses new owned contracts; it implements no stream/cache business operation.
+    public interface ICacheStreamFixture
+    {
+        string Id { get; } bool Exists { get; }
+        System.IO.Stream AsStream(bool value); System.IO.Stream AsMultiWriteWithinOneTransactionStream();
+        void Delete(); long GetUtcFileTime(); ushort Mask { set; }
+    }
+    public interface ICacheProjectStoreFixture { ScopedIdFixture Id { get; } ICacheStreamFixture LargeStringCache { get; } }
+    public interface ICacheWrongStreamFixture
+    {
+        string Id { get; } int Exists { get; }
+        System.IO.Stream AsStream(bool value); System.IO.Stream AsMultiWriteWithinOneTransactionStream();
+        void Delete(); long GetUtcFileTime(); ushort Mask { set; }
+    }
+    public interface ICacheInheritedStreamFixture : ICacheStreamFixture { }
+    public interface ICacheGenericStreamFixture<T> { }
+    public static class CacheOwnedControl
+    { public static int IdCalls = 2, Caught; public static bool SkipCache, ThrowProject; public static object Reference; }
+    public sealed class CacheProjectFixture : IDisposable
+    {
+        public CacheProjectFixture(IFactoryFixture factory, string name, GroupAddressStyleFixture style, ICacheProjectStoreFixture store)
+        {
+            if (!(factory is UndoFactoryDeliveryFixture) || name != "Task009 offline constructor diagnostic" || style != GroupAddressStyleFixture.ThreeLevel) throw new InvalidOperationException("OWNED_CACHE_PROJECT_ARGUMENTS");
+            UndoOwnedControl.Projects++; UndoOwnedControl.Point("project");
+            ScopedIdFixture first = null;
+            for (int i = 0; i < CacheOwnedControl.IdCalls; i++) { ScopedIdFixture value = store.Id; if (i == 0) first = value; else if (!Object.ReferenceEquals(first, value)) throw new InvalidOperationException("OWNED_CACHE_ID_IDENTITY"); }
+            UndoOwnedControl.Point("before-cache");
+            if (!CacheOwnedControl.SkipCache) {
+                try { CacheOwnedControl.Reference = store.LargeStringCache; }
+                catch (Exception) { CacheOwnedControl.Caught++; }
+            }
+            UndoOwnedControl.Point("after-cache");
+            if (CacheOwnedControl.ThrowProject) throw new NotSupportedException("OWNED_CACHE_PROJECT_THROW");
+        }
+        public void Dispose() { UndoOwnedControl.ProjectDisposals++; UndoOwnedControl.Point("project-dispose"); }
+    }
+    public sealed class CacheMessageFixture : IMethodCallMessage
+    {
+        public MethodBase Method; public string Name = "get_LargeStringCache", Failure;
+        public int Count, Incoming, MethodReads, ArgsReads, ContextReads; public bool SingleRead;
+        public object[] Arguments = new object[0]; public Action ContextCallback;
+        void Check(string field, int reads) { if (Failure == field || (SingleRead && reads > 1)) throw new InvalidOperationException("OWNED_ORIGINAL_MESSAGE_GETTER:" + field); }
+        public MethodBase MethodBase { get { MethodReads++; Check("method", MethodReads); return Method; } }
+        public string MethodName { get { return Name; } }
+        public int ArgCount { get { return Count; } } public int InArgCount { get { return Incoming; } }
+        public object[] Args { get { ArgsReads++; Check("args", ArgsReads); return Arguments; } }
+        public LogicalCallContext LogicalCallContext { get { ContextReads++; Check("context", ContextReads); if (ContextCallback != null) ContextCallback(); return null; } }
+        public bool HasVarArgs { get { throw new InvalidOperationException("OWNED_MESSAGE_UNUSED_PROPERTY"); } }
+        public object MethodSignature { get { throw new InvalidOperationException("OWNED_MESSAGE_UNUSED_PROPERTY"); } }
+        public string TypeName { get { throw new InvalidOperationException("OWNED_MESSAGE_UNUSED_PROPERTY"); } }
+        public string Uri { get { return null; } set { throw new InvalidOperationException("OWNED_MESSAGE_UNUSED_PROPERTY"); } }
+        public IDictionary Properties { get { throw new InvalidOperationException("OWNED_MESSAGE_UNUSED_PROPERTY"); } }
+        public object GetArg(int index) { throw new InvalidOperationException("OWNED_MESSAGE_ARGUMENT_VALUE_INSPECTED"); }
+        public string GetArgName(int index) { throw new InvalidOperationException("OWNED_MESSAGE_ARGUMENT_VALUE_INSPECTED"); }
+        public object[] InArgs { get { throw new InvalidOperationException("OWNED_MESSAGE_ARGUMENT_VALUE_INSPECTED"); } }
+        public object GetInArg(int index) { throw new InvalidOperationException("OWNED_MESSAGE_ARGUMENT_VALUE_INSPECTED"); }
+        public string GetInArgName(int index) { throw new InvalidOperationException("OWNED_MESSAGE_ARGUMENT_VALUE_INSPECTED"); }
+    }
+    public sealed class CacheCustomMethodFixture : MethodInfo
+    {
+        static Exception Unsupported() { return new InvalidOperationException("OWNED_CUSTOM_METHOD_METADATA_INSPECTED"); }
+        public override MethodAttributes Attributes { get { throw Unsupported(); } }
+        public override RuntimeMethodHandle MethodHandle { get { throw Unsupported(); } }
+        public override Type DeclaringType { get { throw Unsupported(); } }
+        public override string Name { get { throw Unsupported(); } }
+        public override Type ReflectedType { get { throw Unsupported(); } }
+        public override Type ReturnType { get { throw Unsupported(); } }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw Unsupported(); } }
+        public override MethodInfo GetBaseDefinition() { throw Unsupported(); }
+        public override MethodImplAttributes GetMethodImplementationFlags() { throw Unsupported(); }
+        public override ParameterInfo[] GetParameters() { throw Unsupported(); }
+        public override object Invoke(object obj, BindingFlags flags, Binder binder, object[] arguments, System.Globalization.CultureInfo culture) { throw Unsupported(); }
+        public override object[] GetCustomAttributes(bool inherit) { throw Unsupported(); }
+        public override object[] GetCustomAttributes(Type attribute, bool inherit) { throw Unsupported(); }
+        public override bool IsDefined(Type attribute, bool inherit) { throw Unsupported(); }
+    }
     public sealed class ScopedNoDisposeFixture
     { public ScopedNoDisposeFixture(IFactoryFixture f, string n, GroupAddressStyleFixture s, IScopedProjectStoreFixture p) { throw new InvalidOperationException("OWNED_INVALID_SCOPE_EXECUTED"); } public void Dispose() { } }
     public sealed class ScopedExplicitDisposeFixture : IDisposable
