@@ -103,6 +103,13 @@ PASS116 Session0/195 limited/121 administrator-negative. Independent Windows
 result verification/review PASS; source commit72bca2e. The separately reviewed original22 plan subsequently executed once and failed during registration, as recorded below.
 All earlier SDK runtime/result qualifications remain unchanged.
 
+## Next CLR type-introspection increment
+
+The [exact CLR type-introspection contract](../docs/DCA-UNDO-PROVIDER-TYPE.md)
+specifies a distinct mode, exact genuine GetType response and owned registration
+regression. All provider methods remain denied. Implementation and new Windows
+validation NOT RUN; earlier source22 modes and actual22 failure stay unchanged.
+
 ## Actual22 original result
 
 One reviewed fixed attempt at source72bca2e returned FAIL2. Undo registration
