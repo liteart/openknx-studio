@@ -287,3 +287,70 @@ Independent saved-result audit PASS:
 All1740 observation bindings match; independent raw-log checks confirm the
 three profiles,49 context outcomes, both focused regressions and cleanup.
 This audit did not rerun Windows or execute original SDK code.
+
+
+## Actual Original32 explicit context attempt
+
+Source commit `21e30df8da1902e89b74a788fb4a4e0dc46f6acc` exactly matches the
+owned execution's frozen source bytes. The separately fixed original plan
+`project32-plan.json` SHA-256
+`c526a570f59272c4bf0e6a302334588ff8858b84c5dd14719f5d4b27e5805e26`
+passed static audit `915c393f2c0255e3bb782bb0eb54813f2fe3cd9a3b415eac434f40b5e6977e63`
+and critical review `9978e8a65c68b5e6e662cf55d40323b60cb2a9c08023d155004cdaf5023f893f`.
+Live preflight verified19 private inputs, two OS pins and18 build artifacts.
+
+The one actual Windows attempt **FAIL**, normal confirmed child exit2, with no
+retry or timeout. Original trace construction, exactly two external
+registrations, Build and Factory construction returned. Collection constructor
+`0600298E` began in window0 and did not return; body entry is NOT_ESTABLISHED.
+The resolver refused this previously unallowlisted identity:
+
+```text
+Knx.Ets.Xml.RegistrationRelevanceInformation, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159
+```
+
+Project constructor `06002831` was not reached. Parent/context/importer callback
+counters and fault latches stayed zero/false, cache/provider callbacks and
+resource probes were zero. Container and trace disposal each returned once.
+The trace lifetime audit reportsFalse because the dependency was refused; this
+is a failed attempt, not qualified construction. The online-catalog dependency
+observed in the distinct Original27 route was not requested in this attempt.
+
+Cleanup confirmed task removal, zero owned processes and empty scratch.
+Post-check verified all19 private inputs and two OS pins unchanged, total
+private input bytes24278056. Limited interactive Session2 was nonadministrator;
+quser reported it disconnected, so no active desktop qualification is claimed.
+The runtime still reports UserInteractive=true. Vendor internals remain UNKNOWN;
+network and descendants NOT_CONTAINED. The harness invoked no DCA
+initialization/UI/state or intentional hardware operation.
+
+`private/evidence/task009-constructor-windows/project32-observation.json`
+(19721 bytes, SHA-256
+`9f8cf9af3b7c21c8977e0302abd13d4083145c26303cb7ad5cd6f5a707aa5f95`)
+binds44 local files plus the native source/owned review.
+
+Coordinator commands actually run from the repository root, each once:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/preparation32/prepare_project32.py --receipt-sha256 c9f3c2abdd0f542707d4fc81c37ed18e020395af71bad9eda9cc5c6c1fa880c9
+python3 -B private/evidence/task009-constructor-windows/run_project32_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project32.py 9978e8a65c68b5e6e662cf55d40323b60cb2a9c08023d155004cdaf5023f893f
+python3 -B private/evidence/task009-constructor-windows/poll_project32.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project32.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project32.py
+python3 -B private/evidence/task009-constructor-windows/run_project32_post_corrected.py
+python3 -B private/evidence/task009-constructor-windows/record_project32.py --plan-review-sha256 9978e8a65c68b5e6e662cf55d40323b60cb2a9c08023d155004cdaf5023f893f --plan-audit-sha256 915c393f2c0255e3bb782bb0eb54813f2fe3cd9a3b415eac434f40b5e6977e63
+```
+
+Next bounded work is to examine the specific observed XML dependency using
+existing private input provenance, then define a separate immutable diagnostic
+profile if justified. The existing Original32 profile and failure stay fixed.
+A dependency name does not establish a feature's necessity or behavior. Task-009
+remains In progress/all criteria unchecked; genuine SDK.Project adaptation and
+get_Project success are still outstanding.
+
+Independent saved-result audit PASS for provenance and result consistency:
+`task009-constructor-windows/verifier32/original-result-audit.txt`, SHA-256
+`ec6cb2b523cd264b0fa1a8f69a501e3d4837cecd9fc8c616c990c04dbd82cf8b`.
+The audit verified44 local observation bindings and the linked native review.
+The constructor diagnostic itself remains FAIL2, with no Project returned.
