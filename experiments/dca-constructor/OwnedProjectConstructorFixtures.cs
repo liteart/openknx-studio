@@ -954,3 +954,44 @@ namespace Owned.Task009
         public static object ReadRefused(IStoreRequestFixture store) { return store.Unprovided; }
     }
 }
+
+// Source35 separate typed ABI declarations; no actual SDK namespace or store values.
+namespace Owned.Task009
+{
+    public interface IContentStoreFixture : IDisposable { string Unknown { get; } }
+    public interface IContentProjectStoreFixture { ScopedIdFixture Id { get; } ICacheStreamFixture LargeStringCache { get; } IContentStoreFixture Project { get; } }
+    public sealed class ContentClassFixture { }
+    public interface IContentClassStoreFixture { ContentClassFixture Project { get; } }
+    public interface IContentGenericFixture<T> { }
+    public interface IContentGenericStoreFixture { IContentGenericFixture<string> Project { get; } }
+    public class ContentNestedFixture { public interface IStore { } }
+    public interface IContentNestedStoreFixture { ContentNestedFixture.IStore Project { get; } }
+    public static class ContentTypedFixture
+    {
+        public static object Id(IContentProjectStoreFixture store) { return store.Id; }
+        public static object Cache(IContentProjectStoreFixture store) { return store.LargeStringCache; }
+        public static object Reference(IContentProjectStoreFixture store) { return store.Project; }
+        public static void Callback(object value) { GC.KeepAlive(((IContentStoreFixture)value).Unknown); }
+        public static void ObjectType(object value) { GC.KeepAlive(value.GetType()); }
+        public static void Dispose(object value) { ((IDisposable)value).Dispose(); }
+    }
+    public sealed class ContentContextCollectionFixture
+    {
+        public ContentContextCollectionFixture(IContextParentFixture parent, IFactoryFixture factory, Func<IContentProjectStoreFixture, ContentContextProjectFixture, IContextKeyFixture, Func<string,string>, Func<System.Collections.Generic.IEnumerable<ContextBaggageFixture>,bool>, Action<IContextImportInformationFixture>, Predicate<IContextImportInformationFixture>, ContextImporterFixture> importer)
+        {
+            if (parent == null || !(factory is UndoFactoryDeliveryFixture) || importer == null) throw new InvalidOperationException("OWNED_CONTENT_COLLECTION_ARGUMENTS");
+            ContextOwnedControl.Parent = parent; ContextOwnedControl.Factory = factory; ContextOwnedControl.Collections++; ContextOwnedControl.Point("collection"); ContextOwnedControl.Collection = this;
+        }
+    }
+    public sealed class ContentContextProjectFixture : IDisposable
+    {
+        public ContentContextProjectFixture(ContentContextCollectionFixture collection, IContentProjectStoreFixture store, IFactoryFixture factory, IContextArgumentFixture context)
+        {
+            if (collection == null || store == null || context == null || !Object.ReferenceEquals(collection, ContextOwnedControl.Collection) || !Object.ReferenceEquals(factory, ContextOwnedControl.Factory)) throw new InvalidOperationException("OWNED_CONTENT_PROJECT_ARGUMENTS");
+            ContextOwnedControl.Context = context; ContextOwnedControl.Projects++; ContextOwnedControl.Point("project");
+            ScopedIdFixture id = store.Id; IContentStoreFixture reference = store.Project;
+            if (!Object.ReferenceEquals(id, store.Id) || reference == null || store.LargeStringCache == null) throw new InvalidOperationException("OWNED_CONTENT_TYPED_PROGRESS");
+        }
+        public void Dispose() { ContextOwnedControl.Disposals++; UndoOwnedControl.ProjectDisposals++; ContextOwnedControl.Point("project-dispose"); }
+    }
+}

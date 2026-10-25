@@ -73,7 +73,19 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual original27 at planning19019940/implementation25eea43 ended FAIL2 with a normal confirmed child exit. Trace/two registrations/Build/Factory returned; Project06002830 did not return, body entry NOT_ESTABLISHED. Cache wrapper entries2/attempt1/reply1/faultFalse, no stream callbacks; SDK consumption is not established. Next requested assembly Knx.Ets.OnlineCatalog.Download6.4.8718.0/token61439873ec5e1159 was refused as not allowlisted; trace dependency audit FAIL, cache count audit PASS. Container/trace disposal, task cleanup and post19+2 integrity PASS. No provided candidate DLL/hash/identity is available. The owner clarified that v1 uses locally supplied manufacturer files and excludes an online catalog; an owned catalog is only a possible later v2/v3 decision. The earlier acquisition request is deferred pending evidence that this SDK dependency is necessary for the minimum offline DCA project context. The existing-ObjectModel reference map investigates that coupling without acquiring/admitting/loading the catalog assembly. Source27 owned743 cases and metadata26b do not qualify SDK/UI/state/hardware. No retries, gate or acceptance; ADR005 unchanged.
+Latest actual Original34 ended FAIL2 with a normal confirmed child exit. Genuine
+Collection0600298E returned; Project06002831 did not return, body entry
+NOT_ESTABLISHED. Trusted diagnostics identify IProjectStore.get_Project060002F9
+at MESSAGE_SHAPE entry2; the saved declaration returns ObjectModel.IStore.
+No IStore behavior or public interface shape has yet been qualified. Cleanup
+and post20+2 input integrity PASS. Source35 is the bounded single deny-only
+reference increment; it adds no DLL or catalog behavior and requires separate
+reviewed owned Windows/original execution. Historical Original27 requested
+OnlineCatalog.Download on the older constructor route; its acquisition/admission
+remains deferred under the owner's offline-v1 decision. Manufacturer files are
+supplied locally/directly from manufacturers; no online catalog feature in v1.
+Task009 remains In progress/all ACs unchecked; no qualification/gate acceptance.
+ADR005 private-copy/no-redistribution boundaries remain unchanged.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -232,7 +244,7 @@ values or file semantics are inferred.
 |---|---|
 | Implementation / report status | Actual Original34 FAIL2 with exact store getter060002F9/get_Project returning IStore identified; Collection returned/Project not returned; cleanup/post20+2 PASS. Source34 failure-only trusted store diagnostics implemented; local and focused actual Windows79 PASS, combined review PASS8375c1c2916b1866f772f49d26ba634bf1b11a269bf4f0f897cfdad3af88a1be; source commit4f0c4d97c2d96f07926ebd7388bf6d764d691fa0; no new getter values. Original33 actual20-input diagnostic FAIL2; original Collection returned, Project not returned, cache refusal member unknown; private provisioning/cleanup/post20+2 PASS, no transport blocker remains. Source33 exact XML dependency profile implemented; local independent verification/source review and actual focused owned Windows22/27/22 PASS; combined source/owned-result review PASSac869dc12b48a44d6d448f31c060a1d335bd0b0f6ab5dac4e803e1fdd4809cf6; source commit31676d37a0b3e66f2cbc9adf3b0e26a485eeeed8; original XML/provisioning were NOT RUN at that owned checkpoint; see actual Original33 above. Source32 Fix01 actual owned Windows212/418/217 PASS, including49 context cases and both focused regressions; independent saved-result audit PASS5e1d1c97e071b65e8a72fa6e249b630fee3328760aed596a97e0e7018875bed4; source commit21e30df8da1902e89b74a788fb4a4e0dc46f6acc; actual Original32 FAIL2 on unallowlisted XML dependency, Project not reached; cleanup/post19+2 PASS. In progress; source31 owned638 PowerShell/29 Python and independent verification/source review PASS; guarded parent-interface shape/saved-result audit PASS and critical result review PASS; source30 owned596 PowerShell/28 Python, independent verification/source review PASS; guarded SDK direct-static-return selection PASS/zero matches /saved-result audit PASS and critical result review PASS; source29 owned534 PowerShell/27 Python, independent verification/source review PASS; actual guarded collection declarations/saved-result audit PASS and critical result review PASS; source28 reference declarations/source and result reviews PASS (478 PowerShell/26 Python; guarded15 types/65 members); source27 frozen/local and owned Windows194/350/199 PASS, corrected saved-result audit PASS; critical source/owned review PASSd386775be84f4c9a53f858226e2f65148d2c19dc309f8f4e408f5932a93f8e03; source commit25eea43312b747a4fc245d84c9f9eeac348697b1 recorded; source26 declarations PASS; actual original27 runtime FAIL2 on unallowlisted OnlineCatalog.Download, result audit PASS/critical result review PASSa137b2fb89cbaac8e2652b37ba6381be873edd3f9e911498b1077c7629b7f4af |
 | Source commit(s) | Source34 `4f0c4d97c2d96f07926ebd7388bf6d764d691fa0`, private source-commit34.json SHA2565da58e4a8e9ca839282cead5b35139900b91ee7999907e0a95b53873fbf15df7 verifies source10/metadata6 committed equality; Source33 `31676d37a0b3e66f2cbc9adf3b0e26a485eeeed8`, private source-commit33.json SHA2568abfcadeced5eeedeb9c7e7f61e6516edca371df8b2021b921da02e529bf74f6 verifies10 source/six metadata hashes against committed bytes; Source32 `21e30df8da1902e89b74a788fb4a4e0dc46f6acc` (UNCOMMITTED_AT_OWNED_EXECUTION; committed bytes match freezeb2af); Source31 `5c3da7565fd31b42ca0a1c0898ddce661c34a7cf`, freeze988569ee3e05731d7164866fa75a3585be0966f7b364f362722a6a9850b64a1b; Source30 `d011a8404511263d6882bc102f5fc27edf699ec6`, freeze96497670fa67e0c8ba6b3e9b3187658184698824687d94415e84d05d9cf0a952; Source29 `baded77c87f7468b73611ebd5773c1da540bf02e`, freeze95883cb982a35828b187b65f3527e21f08d6ba86644f989b65f8b132b64f3d34; Source28 `cc7ae2614b9aebe0a8fe34bc33c736cdda2badbf`, freeze5711dc3e394a7a71bb95396b5adecc085013a8576bfe2ca1fb0fb2c57c43b0e6; source27 `25eea43312b747a4fc245d84c9f9eeac348697b1` (UNCOMMITTED_AT_OWNED_EXECUTION), freeze722bc379ff25041a5cadc6ee3f1f994d384c1c408ab439f719c909ebc953b505; source26 metadata `4799252731f60649dda0c94fb75f67f75cfaa1ca`, inquiry planning `7be86dddc4c70dbcbc53560cf69dafc05511acb0`; source25 `6e2a9201cfc6e4b4deeb1aa4ef32ea4760eb80f4` (owned execution was uncommitted on e3a08e3), freeze SHA `7320891a08a774651d4dfad976a9c0a66abc8ab63dc72233218bf9e91a1c853b`; original22 source `72bca2ead9b60ca5d8742168208e40fd9dd2782f` retained |
-| Tests executed | Original33 one normal confirmed exit2; Collection returned, cache final denial, post20+2/cleanup PASS. Source33 actual Windows build and focused owned71 PASS;26/11 logs/cleanup verified. Actual Original32 normal exit2/Collection not returned, cleanups and post19+2 integrity PASS. Source32 three local CSharp5/x64/Werror builds and focused local proofs PASS; actual Windows owned847 PASS with both task cleanups. Source31 owned638 PowerShell/29 Python/compile/parser/preservation and independent reproduction PASS; guarded parent-shape extraction/saved-result audit and critical review PASS (no SDK runtime). Source30 owned596 PowerShell/28 Python and guarded zero-match selection PASS; Source29 owned534 PowerShell/27 Python and guarded collection declarations PASS; Source28 owned478 PowerShell/26 Python and independent reproduction PASS; guarded reference extraction/result audit PASS, no target runtime. Actual original27 FAIL2 normal child exit; cleanup and post19+2 PASS. Source27 three local compiles/12 state+three audit outcomes, owned Windows194/350/199 and both cleanups PASS. Source26 owned PowerShell419/Python25 and independent reproduction PASS; original26 restriction launch FAIL71, original26b guarded declarations PASS. Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; actual original25 FAIL10/get_LargeStringCache, cleanup/post19+2 PASS; original22 FAIL2 retained |
+| Tests executed | Latest Original34 one normal confirmed exit2; Collection returned, Project not returned, trusted get_Project060002F9 refusal recorded; cleanup/post20+2 PASS. Source34 focused owned79 PASS. Source35 local checks and actual focused owned90 PASS recorded below; Original35 NOT RUN. Historical Original33 one normal confirmed exit2; Collection returned, cache final denial, post20+2/cleanup PASS. Source33 actual Windows build and focused owned71 PASS;26/11 logs/cleanup verified. Actual Original32 normal exit2/Collection not returned, cleanups and post19+2 integrity PASS. Source32 three local CSharp5/x64/Werror builds and focused local proofs PASS; actual Windows owned847 PASS with both task cleanups. Source31 owned638 PowerShell/29 Python/compile/parser/preservation and independent reproduction PASS; guarded parent-shape extraction/saved-result audit and critical review PASS (no SDK runtime). Source30 owned596 PowerShell/28 Python and guarded zero-match selection PASS; Source29 owned534 PowerShell/27 Python and guarded collection declarations PASS; Source28 owned478 PowerShell/26 Python and independent reproduction PASS; guarded reference extraction/result audit PASS, no target runtime. Actual original27 FAIL2 normal child exit; cleanup and post19+2 PASS. Source27 three local compiles/12 state+three audit outcomes, owned Windows194/350/199 and both cleanups PASS. Source26 owned PowerShell419/Python25 and independent reproduction PASS; original26 restriction launch FAIL71, original26b guarded declarations PASS. Source25 local compile3/13 extracted state cases/normal+expected mutant failure/preservation PASS; actual Windows build and owned154/260/159 PASS, both cleanups PASS. Standalone public24c PASS separately; actual original25 FAIL10/get_LargeStringCache, cleanup/post19+2 PASS; original22 FAIL2 retained |
 | Evidence location | Private project34-observation.json SHA2567017b39b6e900800c007c35a82b7f15be4341670c1050268cd677058b9780e36 (42 files), [actual store request](../docs/DCA-STORE-REQUEST-DIAGNOSTICS.md). [Store request diagnostics](../docs/DCA-STORE-REQUEST-DIAGNOSTICS.md), private owned34-observation-corrected.json SHA256cba3079e336dce7790a357de1827a51f091187415afde911329b560df6741264 (165/four native). Private project33-observation.json SHA256e4858a1f63faeb26b8dec2c4cf1977bc104716fe0dea4aab79750623919af897 (53 files), [actual XML/context result](../docs/DCA-REGISTRATION-RELEVANCE-DEPENDENCY.md). [Registration dependency](../docs/DCA-REGISTRATION-RELEVANCE-DEPENDENCY.md), private owned33-observation.json SHA25693a39be8d0c2d0e5b49548f6631787aa9f6aca5674072918f5df1318e21e3094 (143 files/four native pins). Original32 private project32-observation.json SHA2569f8cf9af3b7c21c8977e0302abd13d4083145c26303cb7ad5cd6f5a707aa5f95 (44 bindings); [Explicit context construction](../docs/DCA-EXPLICIT-PROJECT-CONTEXT.md), private task009-constructor-windows/owned32-observation.json SHA25629f0b9140ede2b17e5d27a969b0fe4ac72fa8b04d1fa6cbdd00b87bca4f8a4c7 (1658 local bindings,82 native). [Parent interface shape](../docs/DCA-PROJECT-CONTEXT-PARENT.md), private original31-evidence-manifest.json (54 bindings); [SDK direct-static-return inquiry](../docs/DCA-SDK-STATIC-FACTORIES.md), private original30-evidence-manifest.json (53 bindings); [ProjectCollection declarations](../docs/DCA-PROJECT-COLLECTION.md), private original29-evidence-manifest.json (48 bindings); [Offline reference inquiry](../docs/DCA-ONLINE-CATALOG-REFERENCES.md), private original28-evidence-manifest.json (60 bindings); [Deny-only cache-reference contract/results](../docs/DCA-LARGE-STRING-CACHE-DENIAL.md), private owned27-observation-corrected.json (1,421 bindings) and project27-observation.json (59 bindings); [Stream-store declaration contract/results](../docs/DCA-PROJECT-STREAM-STORE.md), private task009-project-stream-store-metadata/original26b-evidence-manifest.json (69 bindings); [Typed factory contract/results](../docs/DCA-UNDO-PROVIDER-FACTORY.md); private native source25 freeze and constructor-windows/owned25-observation.json (1,104 bindings) |
 | Acceptance criteria met | None asserted; all remain unchecked |
 | Technical outcome | New-mode one-reference proxy and independent stream/wrapper audits proven with owned .NET Framework fixtures; original27 FAIL2 on new refused dependency, no stream calls. IStreamStore public nongeneric interface and seven method declarations verified, behavior UNKNOWN. Typed deny-provider factory and bounded activation lifecycle verified with owned fixtures. No store/path/business values or original harness Resolve. Actual original25 registration/Build/Factory returned; Project did not return; IProjectStore.get_LargeStringCache denied1. UI/state/hardware NOT RUN; qualification NOT_ESTABLISHED |
@@ -2394,3 +2406,65 @@ remains a distinct historical result; Actual18 is the latest Factory-constructor
 diagnostic. Task-009 remains **In progress**, acceptance criteria unchecked,
 qualification **NOT_ESTABLISHED**, and no gate advances. The source-freeze
 NOT RUN statement is a historical pre-execution checkpoint. Critical Actual18 result-documentation review PASS (private review18/critical-review-result.txt), for provenance and bounded diagnostic-result consistency only; qualification NOT_ESTABLISHED, Task In progress/ACs unchecked/no gate.
+
+## Source35 bounded content-store reference increment
+
+The next source increment follows
+[DCA-PROJECT-CONTENT-STORE-REFERENCE.md](../docs/DCA-PROJECT-CONTENT-STORE-REFERENCE.md):
+validate the observed get_Project060002F9 return shape before effects and permit
+one explicitly controlled, deny-only IStore reference. No IStore operation values,
+new DLL, catalog, initialization/UI/state or hardware behavior are implemented.
+Original34 FAIL2 remains the latest actual runtime; Source35 Windows/original
+execution NOT RUN. Task009 remains In progress/all ACs unchecked/no gate.
+
+Source35 local checkpoint: three C#5/x64/Werror compile targets and PS
+parser/source guards PASS;14 controlled modern cases PASS and seven deliberate
+guard mutants fail the expected assertions. These are not Net48/RealProxy/SDK
+runtime evidence. Initial stale guard/parser and controlled adapter compilation
+failures are retained privately. Exact legacy source/fixture projection,
+metadata6/other constructor6 pins, scope and diff checks PASS. Source/evidence
+freeze is private task009-project-content-store-reference/source-freeze35.json;
+independent verification/review and focused actual Windows remain next. No
+source commit, original attempt, qualification or acceptance is claimed.
+
+Source35 critical source review requested one narrow completion-count correction.
+The original freeze/evidence remain preserved. The new-mode reference completion
+now snapshots shared fault/commits accepted count under the shared state lock;
+legacy State.Exit is unchanged. The existing owned audit case tests before/after
+completion faults without adding selectors or profile cases. Corrected local
+verification/freeze precede rereview; Windows/original remain NOT RUN.
+Corrected Source35 local checkpoint: exact old completion regression FAIL as
+expected; corrected completion and positive/legacy/audit controls PASS; deliberate
+shared-fault mutant FAIL at the same assertion. Three C#5/x64/Werror compiles,
+parsers/guards, narrow exact-source projection, original-evidence immutability,
+scope/diff PASS. This is controlled modern state injection, not a thread race
+or Net48 typed-ABI claim. Corrected freeze source-freeze35-corrected.json is a
+separate private artifact; initial cf8 freeze/manifest/logs are unchanged.
+
+## Actual Source35 owned Windows checkpoint
+
+Corrected freeze a17f4cf15de1460edcac4b3fe9c5bc7a337fdf63e73092c884343d54a897231a
+was executed UNCOMMITTED on base349abf79285948192e833d3523016941127ce3db;
+runtime10/metadata6 remain byte-identical. Local corrected verification11946d59
+and critical source reviewec49349e PASS. Initial cf8 freeze and its one-P2 review
+remain preserved. Actual Windows build/eight sources/18 artifacts PASS. Focused
+profiles25Session0/40Limited/25AdminNegative PASS,90 total; all11 helpers ran once
+and both jobs cleaned up with task removed/owned0/junctionFalse. Case files58/13
+were collected and checked. Actual typed owned reference/interface/GetType/Dispose
+and before0/later1 completion-state controls passed; direct Invoke negatives and
+controlled state injection do not imply universal CLR interception or a race proof.
+
+Saved-only record_owned35.py ran once; private owned35-observation.json37614 bytes,
+SHA256c4ca426649748e8530eb7bef0bc27433a7b22bb8962a0c479aecf40da1adecc3,
+binds176files/native4. Exact commands, compiler/policy pins and limits are in the
+linked content-store contract. Transport CLIXML progress is retained separately
+from empty decoded driver/case stderr. Independent saved-result audit/review and
+source commit remain next. Original34 FAIL2 is still latest original runtime;
+actual original IStore shape/Original35/hardware/DCA initialization remain NOT RUN.
+Task009 In progress/all ACs unchecked/no gate or qualification advance.
+Independent owned35 saved-result audit PASS:
+verifier35/owned-result-audit.txt SHA256
+ddacc53cfe7e1767578fe6d43f932154790f9d98df8f50d13f978589990346ca,
+confirming176 bindings/source10+metadata6/build8/artifact18 declarations/90PASS,
+58+13 case files and cleanups/control markers. No SDK/hardware or independent
+payload download. Combined critical review/source commit remain pending.
