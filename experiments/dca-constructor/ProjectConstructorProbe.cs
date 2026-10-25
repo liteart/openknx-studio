@@ -255,17 +255,49 @@ internal sealed class ProjectContentDenyProxy : RealProxy
     internal readonly ContextDenialState State = new ContextDenialState(16);
     readonly Action<string> record;
     internal ProjectContentDenyProxy(Type contract, Action<string> recorder) : base(contract) { record = recorder; }
+    readonly bool firstDiagnostic; readonly Type diagnosticOwner;
+    internal ProjectContentDenyProxy(Type contract, Action<string> recorder, bool diagnoseFirst) : this(contract, recorder)
+    {
+        ProbeFiles.Require(diagnoseFirst && ProjectConstructorProbe.ContentDiagnosticsMode && contract != null && contract.GetType() == typeof(object).GetType()
+            && contract.IsPublic && contract.IsInterface && !contract.IsGenericType && !contract.ContainsGenericParameters, "CONTENT_DIAGNOSTIC_OPT_IN");
+        firstDiagnostic = true; diagnosticOwner = contract;
+    }
     public override IMessage Invoke(IMessage message)
     {
         int count = State.Deny(); bool suspended = false; int previous = 0;
         try {
             if (!ProjectConstructorProbe.UndoFactoryCallbackExcluded()) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
             if (count > 16) throw new NotSupportedException("PROJECT_CONTENT_STORE_BUDGET");
-            record("PROJECT_CONTENT_STORE_DENIED entry=" + count + " values=NOT_INSPECTED message=NOT_INSPECTED");
+            if (firstDiagnostic && count == 1)
+                record("PROJECT_CONTENT_REFUSAL entry=1 " + ContentMessageDescriptor(message, diagnosticOwner) + " values=NOT_INSPECTED caller-origin=UNKNOWN");
+            record("PROJECT_CONTENT_STORE_DENIED entry=" + count + " values=NOT_INSPECTED message=" + (firstDiagnostic && count == 1 ? "FIRST_METHOD_METADATA_ONLY" : "NOT_INSPECTED"));
             throw new NotSupportedException("PROJECT_CONTENT_STORE_UNSUPPORTED");
         } catch { State.Fail(); throw; }
         finally { try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); } catch { State.Fail(); throw; } }
     }
+    internal static string ContentMessageDescriptor(IMessage message, Type owner)
+    {
+        if (message == null || System.Runtime.Remoting.RemotingServices.IsTransparentProxy(message)) return "category=UNTRUSTED_MESSAGE";
+        Type kind = message.GetType();
+        if (kind.Module != typeof(IMethodCallMessage).Module || kind.Assembly != typeof(IMethodCallMessage).Assembly) return "category=UNTRUSTED_MESSAGE_TYPE";
+        var call = message as IMethodCallMessage; if (call == null) return "category=UNTRUSTED_MESSAGE";
+        MethodInfo method;
+        try { method = call.MethodBase as MethodInfo; }
+        catch { return "category=METHOD_READ_FAILED"; }
+        return ContentMethodDescriptor(method, owner);
+    }
+    internal static string ContentMethodDescriptor(MethodInfo method, Type owner)
+    {
+        if (method == null) return "category=MEMBER_UNAVAILABLE";
+        if (System.Runtime.Remoting.RemotingServices.IsTransparentProxy(method) || method.GetType() != typeof(object).GetMethod("GetType").GetType()) return "category=UNTRUSTED_METHOD_KIND";
+        foreach (MethodInfo expected in new MethodInfo[] { typeof(object).GetMethod("GetType"), typeof(object).GetMethod("ToString"), typeof(object).GetMethod("GetHashCode"), typeof(object).GetMethod("Equals", new Type[] { typeof(object) }), typeof(IDisposable).GetMethod("Dispose") })
+            if (ProjectConstructorProbe.ExactRuntimeMethod(method, expected)) return "category=TRUSTED_CORE_MEMBER owner=" + ProjectConstructorProbe.Text(expected.DeclaringType.FullName) + " token=" + expected.MetadataToken.ToString("X8") + " name=" + ProjectConstructorProbe.Text(expected.Name);
+        if (method.Module != owner.Module || method.DeclaringType != owner) return "category=FOREIGN_OWNER";
+        int token = method.MetadataToken;
+        if ((token & unchecked((int)0xff000000)) != 0x06000000 || (token & 0x00ffffff) == 0) return "category=UNSUPPORTED_TOKEN";
+        return "category=TRUSTED_CONTENT_MEMBER owner=" + ProjectConstructorProbe.Text(owner.FullName) + " token=" + token.ToString("X8") + " name=" + ProjectConstructorProbe.Text(method.Name);
+    }
+
 }
 internal sealed class ProjectContentReference
 {
@@ -274,6 +306,8 @@ internal sealed class ProjectContentReference
     internal readonly MethodInfo Getter; internal readonly ProjectContentDenyProxy Proxy; internal readonly object Reference;
     internal ProjectContentReference(MethodInfo getter, Type contract, Action<string> record)
     { Getter = getter; Proxy = new ProjectContentDenyProxy(contract, record); Reference = Proxy.GetTransparentProxy(); }
+    internal ProjectContentReference(MethodInfo getter, Type contract, Action<string> record, bool diagnoseFirst)
+    { Getter = getter; Proxy = new ProjectContentDenyProxy(contract, record, diagnoseFirst); Reference = Proxy.GetTransparentProxy(); }
     internal int Attempts { get { lock (sync) { return attempts; } } } internal int Replies { get { lock (sync) { return replies; } } }
     internal int Lifetime { get { lock (sync) { return lifetime; } } } internal bool Faulted { get { lock (sync) { return faulted; } } }
     internal void Fail() { lock (sync) { faulted = true; } }
@@ -538,8 +572,11 @@ internal static class ProjectConstructorProbe
     static string ownedXmlPinCase;
     static string ownedStoreDiagnosticCase;
     static readonly string[] OwnedStoreDiagnosticCases = { "positive", "declared", "forged", "custom", "foreign", "method-throw", "args", "recorder", "reentry", "saturated" };
-    static bool ContentOriginal { get { return mode == "original-project-content-store-reference"; } }
-    static bool ContentOwned { get { return mode == "owned-project-content-store-reference"; } }
+    static bool ContentDiagnosticsOriginal { get { return mode == "original-project-content-store-diagnostics"; } }
+    static bool ContentDiagnosticsOwned { get { return mode == "owned-project-content-store-diagnostics"; } }
+    internal static bool ContentDiagnosticsMode { get { return ContentDiagnosticsOriginal || ContentDiagnosticsOwned; } }
+    static bool ContentOriginal { get { return mode == "original-project-content-store-reference" || ContentDiagnosticsOriginal; } }
+    static bool ContentOwned { get { return mode == "owned-project-content-store-reference" || ContentDiagnosticsOwned; } }
     internal static bool ContentMode { get { return ContentOriginal || ContentOwned; } }
     static bool XmlRegistrationOriginal { get { return mode == "original-project-context-xml-registration" || ContentOriginal; } }
     internal static bool StoreRequestDiagnostics { get { return XmlRegistrationOriginal || XmlRegistrationOwned; } }
@@ -647,7 +684,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -705,10 +742,10 @@ internal static class ProjectConstructorProbe
         Record("XML_REGISTRATION_PIN bytes=" + stream.Length + " sha256=" + XmlRegistrationHash);
     }
     static bool XmlRegistrationResolvePolicy(string selectedMode, bool complete, string requested, string policy)
-    { return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference") && complete && requested == XmlRegistrationIdentity && policy == XmlRegistrationIdentity; }
+    { return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics") && complete && requested == XmlRegistrationIdentity && policy == XmlRegistrationIdentity; }
     static bool XmlRegistrationReferencePolicy(string selectedMode, bool complete, string identity, string location, bool gac, bool reflectionOnly, bool dynamicAssembly, string directory)
     {
-        return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference") && complete && identity == XmlRegistrationIdentity && !gac && !reflectionOnly && !dynamicAssembly
+        return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics") && complete && identity == XmlRegistrationIdentity && !gac && !reflectionOnly && !dynamicAssembly
             && !String.IsNullOrEmpty(location) && !String.IsNullOrEmpty(directory) && ProbeFiles.Same(location, Path.Combine(directory, XmlRegistrationName + ".dll"));
     }
     static Assembly ResolveXmlRegistration(string requested, string policy)
@@ -780,7 +817,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference" && selectedMode != "original-project-content-store-diagnostics") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -788,7 +825,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference" && selectedMode != "original-project-content-store-diagnostics") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -908,7 +945,7 @@ internal static class ProjectConstructorProbe
     // Separate new-mode budget: old Factory-only reset behavior above is unchanged.
     static bool ProjectResourcePolicy(string selectedMode, bool complete, bool budget, int window, bool suspended, bool pinned, string request, bool requesterNull, bool matches, int count)
     {
-        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
+        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
             && (request == AutofacResourceEnGb || request == AutofacResourceEn) && (requesterNull ? !matches : matches) && count >= 1 && count <= 8;
     }
     static bool AllowProjectResourceNull(string request, bool pinned, bool requesterNull, bool matches, Assembly requester)
@@ -2105,6 +2142,51 @@ internal static class ProjectConstructorProbe
         else { int repeats = selected.EndsWith("-saturation", StringComparison.Ordinal) ? 20 : 1; for (int i = 0; i < repeats; i++) ContextOwnedDeny(target, raw); }
     }
     // Source34 owned-only diagnostics; each sticky case runs in a fresh child.
+    static string ownedContentDiagnosticCase;
+    static readonly string[] OwnedContentDiagnosticCases = { "stored", "object", "dispose", "first-only", "reentry", "recorder", "cap", "trust", "legacy" };
+    static void OwnedContentDiagnostics()
+    {
+        ProbeFiles.Require(ContentDiagnosticsOwned, "OWNED_CONTENT_DIAGNOSTIC_MODE");
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true); };
+        Type owner = type("IContentProjectStoreFixture"), typed = type("ContentTypedFixture"); MethodInfo getter = owner.GetMethod("get_Project");
+        Type contract = ContentStoreContract(owner, getter, false); string selected = ownedContentDiagnosticCase;
+        if (selected == "trust") {
+            ProbeFiles.Require(ProjectContentDenyProxy.ContentMethodDescriptor((MethodInfo)Activator.CreateInstance(type("CacheCustomMethodFixture")), contract) == "category=UNTRUSTED_METHOD_KIND"
+                && ProjectContentDenyProxy.ContentMethodDescriptor(null, contract) == "category=MEMBER_UNAVAILABLE"
+                && ProjectContentDenyProxy.ContentMethodDescriptor(typeof(string).GetMethod("ToString", Type.EmptyTypes), contract) == "category=FOREIGN_OWNER"
+                && ProjectContentDenyProxy.ContentMethodDescriptor(contract.GetMethod("get_Unknown"), contract).Contains("name=get_Unknown"), "OWNED_CONTENT_DIAGNOSTIC_TRUST");
+            foreach (MethodInfo core in new MethodInfo[] { typeof(object).GetMethod("GetType"), typeof(object).GetMethod("ToString"), typeof(object).GetMethod("GetHashCode"), typeof(object).GetMethod("Equals", new Type[] { typeof(object) }), typeof(IDisposable).GetMethod("Dispose") })
+                ProbeFiles.Require(ProjectContentDenyProxy.ContentMethodDescriptor(core, contract).Contains("category=TRUSTED_CORE_MEMBER") && ProjectContentDenyProxy.ContentMethodDescriptor(core, contract).Contains("name=" + core.Name), "OWNED_CONTENT_DIAGNOSTIC_CORE");
+            Record("OWNED_CONTENT_DIAGNOSTIC_PASS case=trust descriptor-only=9 no-runtime-caller-proof=True"); return;
+        }
+        int attempts = 0, emitted = 0; string descriptor = null; bool nested = false;
+        Type poisonType = type("ContextReentryMessageFixture"); object poison = Activator.CreateInstance(poisonType);
+        Action<string> recorder = delegate(string line) {
+            if (line.StartsWith("PROJECT_CONTENT_REFUSAL ", StringComparison.Ordinal)) {
+                attempts++; descriptor = line; ProbeFiles.Require(activeContent.Proxy.State.Faulted && UndoFactoryCallbackExcluded(), "OWNED_CONTENT_DIAGNOSTIC_DENY_FIRST");
+                if (selected == "recorder") throw new IOException("OWNED_CONTENT_DIAGNOSTIC_RECORDER");
+                if (selected == "reentry" && !nested) { nested = true; try { activeContent.Proxy.Invoke((IMessage)poison); } catch (NotSupportedException) { } ProbeFiles.Require(UndoFactoryCallbackExcluded(), "OWNED_CONTENT_DIAGNOSTIC_OUTER_EXCLUSION"); }
+                emitted++;
+            }
+            Record(line);
+        };
+        activeContent = selected == "legacy" ? new ProjectContentReference(getter, contract, recorder) : new ProjectContentReference(getter, contract, recorder, true);
+        WithContentLifetime(delegate { WithProjectResourceBudget(delegate { WithProjectResourceWindow(2, delegate {
+            Action typedCall = delegate { typed.GetMethod(selected == "object" ? "ObjectType" : selected == "dispose" ? "Dispose" : "Callback").Invoke(null, new object[] { activeContent.Reference }); };
+            int calls = selected == "cap" ? 20 : selected == "legacy" ? 3 : selected == "first-only" ? 2 : 1;
+            for (int i = 0; i < calls; i++) { bool refused = false; try { if (selected == "cap" || selected == "legacy") activeContent.Proxy.Invoke((IMessage)poison); else typedCall(); } catch (Exception) { refused = true; } ProbeFiles.Require(refused, "OWNED_CONTENT_DIAGNOSTIC_REFUSAL_REQUIRED"); }
+            int entries = selected == "cap" ? 17 : selected == "legacy" ? 3 : selected == "first-only" || selected == "reentry" ? 2 : 1;
+            ProbeFiles.Require(activeContent.Proxy.State.Entries == entries && activeContent.Proxy.State.Faulted && activeContent.Attempts == 0 && activeContent.Replies == 0
+                && attempts == (selected == "legacy" ? 0 : 1) && emitted == (selected == "legacy" || selected == "recorder" ? 0 : 1)
+                && (int)poisonType.GetField("Reads").GetValue(poison) == 0 && !UndoFactoryCallbackExcluded(), "OWNED_CONTENT_DIAGNOSTIC_BOUNDS");
+            if (selected != "legacy") {
+                string expected = selected == "cap" ? "category=UNTRUSTED_MESSAGE_TYPE" : selected == "object" ? "name=GetType" : selected == "dispose" ? "name=Dispose" : "name=get_Unknown";
+                ProbeFiles.Require(descriptor != null && descriptor.Contains(expected), "OWNED_CONTENT_DIAGNOSTIC_IDENTITY");
+            }
+            Record("OWNED_CONTENT_DIAGNOSTIC_PASS case=" + selected + " metadata-attempts=" + attempts + " emitted=" + emitted + " denied=" + entries + " message-getter-reads=0 typed-call=" + (selected != "cap" && selected != "legacy") + " caller-origin=UNKNOWN");
+        }); }); });
+    }
+
     static ProjectContentReference activeContent;
     static string ownedContentCase;
     static readonly string[] OwnedContentCases = { "positive", "shape", "second", "outside", "off-thread", "nested", "late", "callback", "object", "dispose", "saturated", "malformed", "recorder", "restore", "audit" };
@@ -2127,7 +2209,9 @@ internal static class ProjectConstructorProbe
     {
         Type contract = ContentStoreContract(owner, method, original);
         ProbeFiles.Require(activeContent == null, "CONTENT_PREPARE_ONCE");
-        activeContent = new ProjectContentReference(method, contract, recorder);
+        if (ContentDiagnosticsOriginal) ProbeFiles.Require(contract.MetadataToken == 0x0200005e && (int)contract.Attributes == 1048737, "CONTENT_DIAGNOSTIC_OBSERVED_ROOT");
+        if (ContentDiagnosticsMode) activeContent = new ProjectContentReference(method, contract, recorder, true);
+        else activeContent = new ProjectContentReference(method, contract, recorder);
         Record("PROJECT_CONTENT_SHAPE_READY owner=" + Text(owner.FullName) + " getter=" + method.MetadataToken.ToString("X8") + " return=" + Text(contract.FullName)
             + " return-token=" + contract.MetadataToken.ToString("X8") + " return-flags=" + (int)contract.Attributes + " public-interface=True generic=False behavior=DENY_ONLY");
     }
@@ -3483,10 +3567,11 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
                 || ((mode == "owned-project-context-denied" || mode == "owned-project-context-xml-registration") && args[6] == "--owned-context-case" && Array.IndexOf(OwnedContextCases, args[7]) >= 0)
-                || (ContentOwned && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
+                || (ContentDiagnosticsOwned && args[6] == "--owned-content-diagnostic-case" && Array.IndexOf(OwnedContentDiagnosticCases, args[7]) >= 0)
+                || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -3531,7 +3616,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (ContentOwned) { if (ownedContentCase == null) OwnedContentContextConstruction(); else OwnedContentCasesRun(); } else if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (ContentDiagnosticsOwned && ownedContentDiagnosticCase != null) OwnedContentDiagnostics(); else if (ContentOwned) { if (ownedContentCase == null) OwnedContentContextConstruction(); else OwnedContentCasesRun(); } else if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }

@@ -2544,3 +2544,53 @@ private verifier35/original-result-audit-clarification.txt, SHA256
 Host reply preparation/commit precedes CLR typed-return completion; caller
 receipt/consumption and proxy-call origin/member remain UNKNOWN. This changes
 no counter, normal FAIL2 outcome or cleanup/integrity result.
+
+## Source36 first-denial metadata increment
+
+The next bounded diagnostic follows
+[DCA-PROJECT-CONTENT-STORE-DIAGNOSTICS.md](../docs/DCA-PROJECT-CONTENT-STORE-DIAGNOSTICS.md).
+Actual35 host reply commitment/proxy invocation do not prove caller receipt or
+origin; the member stays UNKNOWN. A distinct opt-in mode will identify at most
+the first trusted IStore/core member without values or successful operations.
+Source35's zero-message-read profile and corrected completion remain unchanged.
+Source36 original/Windows/hardware NOT RUN; Task009 In progress/ACs unchecked.
+Source36 local checkpoint: three C#5/x64/Werror compile targets, PS parsers/guards,
+exact legacy projection, scope/diff PASS. Five controlled modern model cases PASS;
+first-only/method-kind guard mutants fail expected runtime assertions. Initial
+controlled adapter unused-field Werror failure is retained separately; host
+compilation passed. Models do not establish actual core-message ownership or
+Net48 typed dispatch. Source36 changes three runtime files; prior owned fixtures,
+corrected completion and other runtime/metadata pins are unchanged. Independent
+verification/review and focused Windows remain next; Original36 NOT RUN.
+
+## Actual Source36 owned Windows checkpoint
+
+Frozen source3b6919231c37ed3924ed3bf9e4c7f506ee4546055e036c3deb3b1ad55ce952c1
+executed UNCOMMITTED at baseecea5302cee3b6df525860f9689a5fbf6dad7f2c; runtime10/
+metadata6 unchanged. Independent local/source reviews PASSdbc6f2ab/7fd35fd6.
+Actual Windows build8sources/18artifacts PASS; focused87 cases PASS26/35/26,
+not Source35's90. All11 exact dispatcher helpers ran once, both jobs removed,
+owned0/junctionFalse;40limited/13admin case-file lengths checked.
+
+Typed owned descriptors name get_Unknown0600018F, Object.GetType06000230 and
+IDisposable.Dispose06000EFE while denying calls. First/reentry/recorder/cap/trust/
+legacy checks PASS. Framework filter acceptance is fixture-specific, not caller
+origin or universal CLR proof. Legacy zero-read marker concerns the poisoned
+synthetic message, not actual CLR MethodBase instrumentation. The preparation
+switch predicate was corrected before outputs/runtime; canonical85e generator,
+root1770fca correction and failed check remain retained without suite retry.
+
+Saved-only record_owned36.py ran once PASS; owned36-observation.json34804 bytes,
+SHA2564577eb9418fd7767f205e602210b42cc654d4c08c1a07f31d1a53236c869186e,
+binds158files/native4. Exact commands, orchestration132303audit and compiler/policy
+pins are in the linked contract. Independent saved-result audit/combined critical
+review and source commit remain next. Original35 FAIL2 is latest original result;
+IStore shape already verified there, but Original36/new member/receipt/origin
+NOT RUN/UNKNOWN. No bus/DCA UI/state/hardware/production qualification or gate
+advance; Task009 In progress/all ACs unchecked.
+Independent saved-owned36-result audit PASSc8ced8c44a3e2f8c2d69c9b9f5574751316bc663ce33adf0e9ef01a7c5ce6196
+(verifier36/owned-result-audit.txt):158/158files/native4/current10+metadata6,
+11dispatches/87profiles/40+13case files/descriptors/cleanup verified. Session0 SSH
+stderr616B CLIXML progress is retained; no blanket empty-stderr claim. No helper,
+SDK/hardware operation or compiled-payload redownload by this audit. Combined
+critical review and source commit remain next; Original36 NOT RUN.
