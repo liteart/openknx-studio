@@ -841,3 +841,86 @@ namespace Owned.Task009
         }
     }
 }
+
+// Distinct Source32 owned contracts; no proprietary SDK namespaces or values.
+namespace Owned.Task009
+{
+    public interface IContextParentBaseFixture { string DisplayName { get; } }
+    public interface IContextParentFixture : IContextParentBaseFixture { string Name { get; } void Unsupported(); T Read<T>(); }
+    public interface IContextArgumentFixture { object Project { get; } void Unsupported(); }
+    public interface IContextKeyFixture { }
+    public sealed class ContextBaggageFixture { }
+    public interface IContextImportInformationFixture { }
+    public sealed class ContextImporterFixture { }
+    public static class ContextOwnedControl
+    {
+        public static int Collections, Projects, Disposals, Caught;
+        public static object Parent, Context, Collection, Factory; public static Action<string> Callback;
+        public static bool ThrowCollection, ThrowProject;
+        public static void Point(string phase) { if (Callback != null) Callback(phase); }
+        public static void ParentName() { try { GC.KeepAlive(((IContextParentFixture)Parent).Name); } catch (Exception) { Caught++; } }
+        public static void ContextProject() { try { GC.KeepAlive(((IContextArgumentFixture)Context).Project); } catch (Exception) { Caught++; } }
+        public static void ParentInherited() { try { GC.KeepAlive(((IContextParentFixture)Parent).DisplayName); } catch (Exception) { Caught++; } }
+        public static void ParentGeneric() { try { GC.KeepAlive(((IContextParentFixture)Parent).Read<string>()); } catch (Exception) { Caught++; } }
+        public static void ParentVoid() { try { ((IContextParentFixture)Parent).Unsupported(); } catch (Exception) { Caught++; } }
+        public static void ParentObject() { try { GC.KeepAlive(Parent.GetType()); } catch (Exception) { Caught++; } }
+        public static void ContextObject() { try { GC.KeepAlive(Context.ToString()); } catch (Exception) { Caught++; } }
+        public static void Importer(Delegate value)
+        {
+            var callback = (Func<ICacheProjectStoreFixture, ContextProjectFixture, IContextKeyFixture, Func<string,string>, Func<System.Collections.Generic.IEnumerable<ContextBaggageFixture>,bool>, Action<IContextImportInformationFixture>, Predicate<IContextImportInformationFixture>, ContextImporterFixture>)value;
+            try { callback(null, null, null, null, null, null, null); }
+            catch (NotSupportedException error) { if (error.Message != "CONTEXT_IMPORTER_UNSUPPORTED") throw; Caught++; return; }
+            throw new InvalidOperationException("OWNED_CONTEXT_IMPORTER_NO_SUCCESS");
+        }
+    }
+    public sealed class ContextCollectionFixture
+    {
+        public ContextCollectionFixture(IContextParentFixture parent, IFactoryFixture factory, Func<ICacheProjectStoreFixture, ContextProjectFixture, IContextKeyFixture, Func<string,string>, Func<System.Collections.Generic.IEnumerable<ContextBaggageFixture>,bool>, Action<IContextImportInformationFixture>, Predicate<IContextImportInformationFixture>, ContextImporterFixture> importer)
+        {
+            if (parent == null || !(factory is UndoFactoryDeliveryFixture) || importer == null) throw new InvalidOperationException("OWNED_CONTEXT_COLLECTION_ARGUMENTS");
+            ContextOwnedControl.Parent = parent; ContextOwnedControl.Factory = factory; ContextOwnedControl.Collections++;
+            ContextOwnedControl.Point("collection"); if (ContextOwnedControl.ThrowCollection) throw new NotSupportedException("OWNED_CONTEXT_COLLECTION_THROW");
+            ContextOwnedControl.Collection = this;
+        }
+    }
+    public sealed class ContextProjectFixture : IDisposable
+    {
+        public ContextProjectFixture(ContextCollectionFixture collection, ICacheProjectStoreFixture store, IFactoryFixture factory, IContextArgumentFixture context)
+        {
+            if (collection == null || store == null || context == null || !Object.ReferenceEquals(collection, ContextOwnedControl.Collection) || !Object.ReferenceEquals(factory, ContextOwnedControl.Factory)) throw new InvalidOperationException("OWNED_CONTEXT_PROJECT_ARGUMENTS");
+            ContextOwnedControl.Context = context; ContextOwnedControl.Projects++; ContextOwnedControl.Point("project");
+            if (ContextOwnedControl.ThrowProject) throw new NotSupportedException("OWNED_CONTEXT_PROJECT_THROW");
+            ScopedIdFixture id = store.Id; if (!Object.ReferenceEquals(id, store.Id) || store.LargeStringCache == null) throw new InvalidOperationException("OWNED_CONTEXT_STORE_PROGRESS");
+        }
+        public void Dispose() { ContextOwnedControl.Disposals++; UndoOwnedControl.ProjectDisposals++; ContextOwnedControl.Point("project-dispose"); }
+    }
+    public sealed class ContextWrongCollectionFixture { public ContextWrongCollectionFixture(object parent, IFactoryFixture factory, Delegate importer) { throw new InvalidOperationException("OWNED_INVALID_CONTEXT_API_EFFECT"); } }
+    public sealed class ContextWrongProjectFixture : IDisposable { public ContextWrongProjectFixture(object collection, ICacheProjectStoreFixture store, IFactoryFixture factory, IContextArgumentFixture context) { throw new InvalidOperationException("OWNED_INVALID_CONTEXT_API_EFFECT"); } public void Dispose() { } }
+}
+
+namespace Owned.Task009
+{
+    // Every possible message property takes the same finite recursive refusal path.
+    public sealed class ContextReentryMessageFixture : System.Runtime.Remoting.Messaging.IMethodCallMessage
+    {
+        public Action Callback; public int Reads, Cutoffs; public bool Sentinel;
+        object Touch()
+        {
+            Reads++;
+            if (Reads > 16) { Sentinel = true; throw new NotSupportedException("OWNED_CONTEXT_REENTRY_SENTINEL"); }
+            try { Callback(); }
+            catch (NotSupportedException error) { if (error.Message == "CONTEXT_ARGUMENT_BUDGET:parent") Cutoffs++; }
+            throw new NotSupportedException("OWNED_CONTEXT_REENTRY_UNWIND");
+        }
+        public System.Reflection.MethodBase MethodBase { get { return (System.Reflection.MethodBase)Touch(); } }
+        public string MethodName { get { return (string)Touch(); } } public int ArgCount { get { return (int)Touch(); } }
+        public object[] Args { get { return (object[])Touch(); } } public int InArgCount { get { return (int)Touch(); } }
+        public object[] InArgs { get { return (object[])Touch(); } } public bool HasVarArgs { get { return (bool)Touch(); } }
+        public System.Runtime.Remoting.Messaging.LogicalCallContext LogicalCallContext { get { return (System.Runtime.Remoting.Messaging.LogicalCallContext)Touch(); } }
+        public object MethodSignature { get { return Touch(); } } public string TypeName { get { return (string)Touch(); } }
+        public string Uri { get { return (string)Touch(); } set { Touch(); } }
+        public System.Collections.IDictionary Properties { get { return (System.Collections.IDictionary)Touch(); } }
+        public object GetArg(int index) { return Touch(); } public string GetArgName(int index) { return (string)Touch(); }
+        public object GetInArg(int index) { return Touch(); } public string GetInArgName(int index) { return (string)Touch(); }
+    }
+}

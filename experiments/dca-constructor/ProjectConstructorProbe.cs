@@ -277,6 +277,65 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
     }
 }
 
+
+// Source32 state is retained independently from every earlier provider/store audit.
+internal sealed class ContextDenialState
+{
+    readonly object sync = new object(); readonly int limit; int entries; bool faulted;
+    internal ContextDenialState(int cap) { limit = cap; }
+    internal int Entries { get { lock (sync) { return entries; } } }
+    internal bool Faulted { get { lock (sync) { return faulted; } } }
+    internal int Deny() { lock (sync) { if (entries < limit + 1) entries++; faulted = true; return entries; } }
+    internal void Fail() { lock (sync) { faulted = true; } }
+}
+internal sealed class ContextArgumentDenyProxy : RealProxy
+{
+    internal readonly ContextDenialState State = new ContextDenialState(16);
+    readonly string name; readonly Action<string> record;
+    internal ContextArgumentDenyProxy(Type type, string label, Action<string> recorder) : base(type) { name = label; record = recorder; }
+    public override IMessage Invoke(IMessage message)
+    {
+        int count = State.Deny(); bool suspended = false; int previous = 0;
+        try {
+            if (!ProjectConstructorProbe.UndoFactoryCallbackExcluded()) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
+            if (count > 16) throw new NotSupportedException("CONTEXT_ARGUMENT_BUDGET:" + name);
+            record("CONTEXT_ARGUMENT_DENIED argument=" + name + " entry=" + count + " values=NOT_INSPECTED");
+            var error = new NotSupportedException("CONTEXT_ARGUMENT_UNSUPPORTED:" + name);
+            IMethodCallMessage call = message as IMethodCallMessage;
+            if (call == null) throw error;
+            return new ReturnMessage(error, call);
+        } catch { State.Fail(); throw; }
+        finally { try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); } catch { State.Fail(); throw; } }
+    }
+}
+internal sealed class ContextImporterDenyHolder
+{
+    internal readonly ContextDenialState State = new ContextDenialState(1);
+    internal readonly Delegate Callback; readonly Action<string> record;
+    internal ContextImporterDenyHolder(Type callbackType, Type result, Action<string> recorder)
+    {
+        record = recorder;
+        MethodInfo definition = typeof(ContextImporterDenyHolder).GetMethod("Deny", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(definition != null && definition.IsGenericMethodDefinition && definition.GetGenericArguments().Length == 1
+            && definition.GetParameters().Length == 7, "CONTEXT_IMPORTER_OWNED_METHOD");
+        foreach (ParameterInfo parameter in definition.GetParameters()) ProbeFiles.Require(parameter.ParameterType == typeof(object), "CONTEXT_IMPORTER_OBJECT_PARAMETERS");
+        MethodInfo method = definition.MakeGenericMethod(new Type[] { result });
+        Callback = Delegate.CreateDelegate(callbackType, this, method, true);
+        ProbeFiles.Require(Callback.GetType() == callbackType && Callback.GetInvocationList().Length == 1 && Object.ReferenceEquals(Callback.Target, this)
+            && Callback.Method.Equals(method) && method.ReturnType == result, "CONTEXT_IMPORTER_EXACT_DELEGATE");
+    }
+    public T Deny<T>(object a1, object a2, object a3, object a4, object a5, object a6, object a7)
+    {
+        int count = State.Deny(); bool suspended = false; int previous = 0;
+        try {
+            if (!ProjectConstructorProbe.UndoFactoryCallbackExcluded()) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
+            if (count <= 1) record("CONTEXT_IMPORTER_DENIED entry=" + count + " values=NOT_INSPECTED");
+            throw new NotSupportedException("CONTEXT_IMPORTER_UNSUPPORTED");
+        } catch { State.Fail(); throw; }
+        finally { try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); } catch { State.Fail(); throw; } }
+    }
+}
+
 internal static class ProjectConstructorProbe
 {
     // Observed enum02 metadata, independently verified/reviewed before this freeze.
@@ -367,8 +426,11 @@ internal static class ProjectConstructorProbe
     static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly || RegisteredTrace; } }
     static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
     static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
-    static bool CacheOriginal { get { return mode == "original-project-large-string-cache-denied"; } }
-    static bool CacheOwned { get { return mode == "owned-project-large-string-cache-denied"; } }
+    static bool ContextOriginal { get { return mode == "original-project-context-denied"; } }
+    static bool ContextOwned { get { return mode == "owned-project-context-denied"; } }
+    static bool ContextMode { get { return ContextOriginal || ContextOwned; } }
+    static bool CacheOriginal { get { return mode == "original-project-large-string-cache-denied" || ContextOriginal; } }
+    static bool CacheOwned { get { return mode == "owned-project-large-string-cache-denied" || ContextOwned; } }
     internal static bool CacheMode { get { return CacheOriginal || CacheOwned; } }
     internal static bool CacheWindowEligible() { return CacheMode && projectResourceBudgetActive && !projectResourceCallbackSuspended && projectResourceWindow == 2; }
     static bool UndoFactoryOriginal { get { return mode == "original-project-undo-provider-factory" || CacheOriginal; } }
@@ -467,7 +529,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -512,7 +574,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -520,7 +582,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -633,7 +695,7 @@ internal static class ProjectConstructorProbe
     // Separate new-mode budget: old Factory-only reset behavior above is unchanged.
     static bool ProjectResourcePolicy(string selectedMode, bool complete, bool budget, int window, bool suspended, bool pinned, string request, bool requesterNull, bool matches, int count)
     {
-        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
+        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
             && (request == AutofacResourceEnGb || request == AutofacResourceEn) && (requesterNull ? !matches : matches) && count >= 1 && count <= 8;
     }
     static bool AllowProjectResourceNull(string request, bool pinned, bool requesterNull, bool matches, Assembly requester)
@@ -1161,7 +1223,7 @@ internal static class ProjectConstructorProbe
             "EMPTY_CONTAINER_GENUINE_RETURN");
     }
     static void CheckBuilderDependencies(bool hasUnexpected, bool hasRejected)
-    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "EMPTY_CONTAINER_BUILDER_DEPENDENCY"); CheckUndoProvider("BUILDER"); CheckUndoFactory("BUILDER"); CheckCache("BUILDER"); }
+    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "EMPTY_CONTAINER_BUILDER_DEPENDENCY"); CheckUndoProvider("BUILDER"); CheckUndoFactory("BUILDER"); CheckCache("BUILDER"); CheckContextArguments("BUILDER"); }
     static void WithEmptyContainer(EmptyContainerApi api, Action<object> use)
     { WithEmptyContainerCore(api, use, null); }
     // Additional guard control exists only for finite owned fixtures. Actual latches are never bypassed/reset.
@@ -1185,7 +1247,7 @@ internal static class ProjectConstructorProbe
             Record("EMPTY_CONTAINER_BUILD_BEGIN token=" + api.Build.MetadataToken.ToString("X8") + " options=None raw=0 application-registrations=" + (register == null ? 0 : UndoDeniedMode ? 2 : 1) + " defaults=RETAINED");
             try { container = api.Build.Invoke(builder, new object[] { Enum.ToObject(api.Options, 0) }); built = true; }
             finally { Record("EMPTY_CONTAINER_BUILD_END returned=" + built + " nonnull=" + (container != null)); }
-            EmptyContainerReturn(api, container); CheckUndoProvider("POST_BUILD"); CheckUndoFactory("POST_BUILD"); CheckCache("POST_BUILD");
+            EmptyContainerReturn(api, container); CheckUndoProvider("POST_BUILD"); CheckUndoFactory("POST_BUILD"); CheckCache("POST_BUILD"); CheckContextArguments("POST_BUILD");
             ProbeFiles.Require(!unexpected && !rejected, "EMPTY_CONTAINER_BUILD_DEPENDENCY");
             Record("EMPTY_CONTAINER_READY genuine-context=true context-requests=NOT_INTERCEPTED application-registrations=" + (register == null ? 0 : UndoDeniedMode ? 2 : 1) + " defaults=RETAINED qualification=NOT_ESTABLISHED");
             use(container);
@@ -1434,7 +1496,7 @@ internal static class ProjectConstructorProbe
     static bool ReviewedTraceTokens(int type, int ctor, int parameter, int contract)
     { return type == 0x0200007e && ctor == 0x06000364 && parameter == 0x080001e4 && contract == 0x02000077; }
     static void TraceDependencyGuard(bool hasUnexpected, bool hasRejected, string phase)
-    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "TRACE_DEPENDENCY_" + phase); CheckUndoProvider(phase); CheckUndoFactory(phase); CheckCache(phase); }
+    { ProbeFiles.Require(!hasUnexpected && !hasRejected, "TRACE_DEPENDENCY_" + phase); CheckUndoProvider(phase); CheckUndoFactory(phase); CheckCache(phase); CheckContextArguments(phase); }
     static void WithTraceLifetime(TraceLifetimeApi api) { WithTraceLifetimeCore(api, null); }
     // Finite owned refusal controls cannot reset latches or activate the original route.
     static void WithTraceLifetimeCore(TraceLifetimeApi api, Action<string> ownedGuard)
@@ -1744,6 +1806,269 @@ internal static class ProjectConstructorProbe
         }
         Record("OWNED_TRACE_LIFETIME_PASS ctor-dispose-once=true ctor-failure-no-return=true disposal-failure-fails=true phase-guards=6 caught-guards=2 production-latches-never-reset=true other-use=0 original=NOT_RUN");
     }
+
+    // Source32 never selects the old new-project constructor.
+
+    static readonly string[] OwnedContextCases = { "collection-parent", "collection-importer", "collection-throw", "project-context", "parent-inherited", "parent-generic", "parent-void", "parent-object", "context-object", "parent-null", "context-null", "parent-custom", "parent-mutable", "parent-throw", "parent-saturation", "context-saturation", "importer-saturation", "importer-null", "nested-parent", "nested-context", "nested-importer", "off-thread-parent", "off-thread-context", "off-thread-importer", "early-parent", "early-context", "early-importer", "late-parent", "late-context", "late-importer", "parent-recorder", "context-recorder", "importer-recorder", "parent-restore", "context-restore", "importer-restore", "project-dispose-parent", "container-dispose-context", "trace-dispose-importer", "error-context", "parent-count-only", "context-count-only", "importer-count-only", "parent-fault-only", "context-fault-only", "importer-fault-only", "process-final-parent", "parent-getter-reentry", "dispose-begin-log-fault" };
+    static string ownedContextCase; static Assembly contextOwnedAssembly; static bool contextCaseFired, contextRecordEntered;
+    static Type ContextOwnedType(string name) { return contextOwnedAssembly.GetType("Owned.Task009." + name, true); }
+    static void ContextOwnedCall(string method, object[] arguments)
+    { ContextOwnedType("ContextOwnedControl").GetMethod(method, BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly).Invoke(null, arguments); }
+    static void ContextArgumentRecord(string message)
+    {
+        if (ContextOwned) {
+            ProbeFiles.Require(projectResourceWindow == 0 && projectResourceCallbackSuspended, "OWNED_CONTEXT_CALLBACK_EXCLUDED");
+            Record("OWNED_CONTEXT_CALLBACK_EXCLUDED window=0 suspended=True values=NOT_INSPECTED");
+            string target = message.IndexOf("argument=parent", StringComparison.Ordinal) >= 0 ? "parent" : message.IndexOf("argument=context", StringComparison.Ordinal) >= 0 ? "context" : "importer";
+            if (ownedContextCase == target + "-recorder") throw new IOException("OWNED_CONTEXT_RECORDER_FAULT");
+            if (ownedContextCase == target + "-restore") projectResourceCallbackSuspended = false;
+            if (ownedContextCase == "nested-" + target && !contextRecordEntered) {
+                contextRecordEntered = true; int before = projectResourceProbeCount;
+                ContextOwnedDeny(target, false);
+                ProbeFiles.Require(projectResourceWindow == 0 && projectResourceCallbackSuspended && projectResourceProbeCount == before, "OWNED_CONTEXT_NESTED_EXCLUSION");
+                Record("OWNED_CONTEXT_NESTED_PASS outer-exclusion-preserved=True aggregate-unchanged=True");
+            }
+        }
+        Record(message);
+    }
+    static void ContextOwnedDeny(string target, bool raw)
+    {
+        try {
+            if (target == "importer") ContextOwnedCall("Importer", new object[] { contextImporter.Callback });
+            else if (raw) { ContextArgumentDenyProxy proxy = target == "parent" ? contextParent : contextObject; proxy.Invoke(null); }
+            else ContextOwnedCall(target == "parent" ? "ParentName" : "ContextProject", new object[0]);
+        } catch (Exception error) { Record("OWNED_CONTEXT_CAUGHT type=" + error.GetType().FullName); }
+    }
+    static void OwnedContextPoint(string phase)
+    {
+        ProbeFiles.Require(ContextOwned, "OWNED_CONTEXT_POINT_MODE");
+        if (phase == "collection") ProbeFiles.Require(projectResourceWindow == 0 && !projectResourceCallbackSuspended, "OWNED_CONTEXT_COLLECTION_WINDOW");
+        if (phase == "project") ProbeFiles.Require(projectResourceWindow == 2 && !projectResourceCallbackSuspended, "OWNED_CONTEXT_PROJECT_WINDOW");
+        if (ownedContextCase == null || contextCaseFired || ownedContextCase == "dispose-begin-log-fault") return;
+        string selected = ownedContextCase; string target = selected.IndexOf("context", StringComparison.Ordinal) >= 0 ? "context" : selected.IndexOf("importer", StringComparison.Ordinal) >= 0 ? "importer" : "parent";
+        string trigger = selected.StartsWith("early-", StringComparison.Ordinal) ? "trace-ctor" : selected.StartsWith("late-", StringComparison.Ordinal) || selected.EndsWith("-only", StringComparison.Ordinal) ? "late"
+            : selected == "process-final-parent" ? "process-final" : (selected == "project-context" || selected == "parent-getter-reentry") ? "project" : selected == "project-dispose-parent" ? "project-dispose"
+            : selected == "container-dispose-context" ? "container-dispose" : selected == "trace-dispose-importer" ? "trace-dispose" : selected == "error-context" ? "error" : "collection";
+        if (phase != trigger || selected == "collection-throw") return;
+        contextCaseFired = true;
+        Record("OWNED_CONTEXT_REFUSAL case=" + selected + " phase=" + phase);
+        if (selected.EndsWith("-only", StringComparison.Ordinal)) {
+            ContextDenialState state = target == "parent" ? contextParent.State : target == "context" ? contextObject.State : contextImporter.State;
+            string field = selected.EndsWith("-count-only", StringComparison.Ordinal) ? "entries" : "faulted";
+            typeof(ContextDenialState).GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(state, field == "entries" ? (object)1 : true);
+            Record("OWNED_CONTEXT_AUDIT_MUTANT state=" + target + " count=" + state.Entries + " fault=" + state.Faulted + " other-states-clean=True"); return;
+        }
+        if (selected == "parent-getter-reentry") {
+            Type messageType = ContextOwnedType("ContextReentryMessageFixture"); object message = Activator.CreateInstance(messageType);
+            int window = projectResourceWindow, probes = projectResourceProbeCount;
+            messageType.GetField("Callback").SetValue(message, new Action(delegate {
+                ProbeFiles.Require(projectResourceWindow == 0 && projectResourceCallbackSuspended, "OWNED_CONTEXT_GETTER_EXCLUSION");
+                contextParent.Invoke((IMessage)message);
+            }));
+            try { contextParent.Invoke((IMessage)message); } catch (NotSupportedException) { }
+            ProbeFiles.Require((int)messageType.GetField("Reads").GetValue(message) == 16 && (int)messageType.GetField("Cutoffs").GetValue(message) == 1
+                && !(bool)messageType.GetField("Sentinel").GetValue(message) && contextParent.State.Entries == 17 && contextParent.State.Faulted
+                && projectResourceWindow == window && !projectResourceCallbackSuspended && projectResourceProbeCount == probes, "OWNED_CONTEXT_GETTER_HARD_CUTOFF");
+            Record("OWNED_CONTEXT_GETTER_REENTRY_PASS reads=16 entries=17 hard-cutoff=1 sentinel=False outer-restored=True aggregate-unchanged=True"); return;
+        }
+        if (selected == "parent-inherited" || selected == "parent-generic" || selected == "parent-void" || selected == "parent-object" || selected == "context-object") {
+            string member = selected == "parent-inherited" ? "ParentInherited" : selected == "parent-generic" ? "ParentGeneric" : selected == "parent-void" ? "ParentVoid" : selected == "parent-object" ? "ParentObject" : "ContextObject";
+            ContextOwnedCall(member, new object[0]); return;
+        }
+        if (selected == "parent-custom" || selected == "parent-mutable" || selected == "parent-throw") {
+            Type messageType = ContextOwnedType("CacheMessageFixture"); object message = Activator.CreateInstance(messageType);
+            if (selected == "parent-custom") messageType.GetField("Method").SetValue(message, Activator.CreateInstance(ContextOwnedType("CacheCustomMethodFixture")));
+            if (selected == "parent-throw") messageType.GetField("Failure").SetValue(message, "context");
+            if (selected == "parent-mutable") messageType.GetField("SingleRead").SetValue(message, true);
+            try { contextParent.Invoke((IMessage)message); } catch { }
+            Record("OWNED_CONTEXT_MESSAGE_REFUSED values=NOT_INSPECTED"); return;
+        }
+        bool raw = selected.EndsWith("-null", StringComparison.Ordinal);
+        if (selected.StartsWith("off-thread-", StringComparison.Ordinal)) { var thread = new Thread(delegate() { ContextOwnedDeny(target, raw); }); thread.IsBackground = true; thread.Start(); ProbeFiles.Require(thread.Join(2000), "OWNED_CONTEXT_THREAD_BOUND"); }
+        else { int repeats = selected.EndsWith("-saturation", StringComparison.Ordinal) ? 20 : 1; for (int i = 0; i < repeats; i++) ContextOwnedDeny(target, raw); }
+    }
+    static void OwnedContextConstruction()
+    {
+        contextOwnedAssembly = Assembly.LoadFrom(fixture); Func<string,Type> type = ContextOwnedType;
+        Type project = type("ContextProjectFixture"), collection = type("ContextCollectionFixture"), parent = type("IContextParentFixture"), argument = type("IContextArgumentFixture"), factoryType = type("UndoFactoryDeliveryFixture"), contract = type("IFactoryFixture"), storeType = type("ICacheProjectStoreFixture");
+        Type[] importerTypes = new Type[] { storeType, project, type("IContextKeyFixture"), typeof(Func<string,string>), typeof(Func<,>).MakeGenericType(new Type[] { typeof(System.Collections.Generic.IEnumerable<>).MakeGenericType(new Type[] { type("ContextBaggageFixture") }), typeof(bool) }), typeof(Action<>).MakeGenericType(new Type[] { type("IContextImportInformationFixture") }), typeof(Predicate<>).MakeGenericType(new Type[] { type("IContextImportInformationFixture") }), type("ContextImporterFixture") };
+        ContextConstructionApi api = ContextApi(project, collection, parent, argument, factoryType, contract, storeType, importerTypes, false);
+        if (ownedContextCase == null) {
+            int refused = 0;
+            for (int i = 0; i < 4; i++) {
+                Type[] bad = (Type[])importerTypes.Clone(); if (i == 0) bad[2] = typeof(int); if (i == 1) bad[2] = typeof(System.Collections.Generic.List<>);
+                try { ContextApi(i == 2 ? type("ContextWrongProjectFixture") : project, i == 3 ? type("ContextWrongCollectionFixture") : collection, parent, argument, factoryType, contract, storeType, bad, false); }
+                catch (IOException) { refused++; }
+            }
+            try { new ContextImporterDenyHolder(typeof(Func<object>), importerTypes[7], Record); } catch (ArgumentException) { refused++; }
+            try { new ContextImporterDenyHolder(api.Callback, typeof(string), Record); } catch (ArgumentException) { refused++; }
+            try { ContextReference(new TypeDelegator(typeof(object))); } catch (IOException) { refused++; }
+            try { ContextReference(typeof(string).MakeByRefType()); } catch (IOException) { refused++; }
+            ProbeFiles.Require(refused == 8, "OWNED_CONTEXT_API_NEGATIVES"); Record("OWNED_CONTEXT_API_PASS negatives=8 before-effects=True");
+        }
+        PrepareContextArguments(api);
+        Type control = type("ContextOwnedControl"), undoControl = type("UndoOwnedControl"), traceControl = type("TraceLifetimeControl");
+        control.GetField("Parent").SetValue(null, contextRetained[3]); control.GetField("Context").SetValue(null, contextRetained[4]);
+        control.GetField("Callback").SetValue(null, new Action<string>(OwnedContextPoint));
+        control.GetField("ThrowCollection").SetValue(null, ownedContextCase == "collection-throw"); control.GetField("ThrowProject").SetValue(null, ownedContextCase == "error-context");
+        undoControl.GetField("Callback").SetValue(null, new Action<string>(OwnedContextPoint));
+        traceControl.GetMethod("Reset").Invoke(null, new object[] { "return" });
+        traceControl.GetField("ConstructorCallback").SetValue(null, new Action(delegate { OwnedContextPoint("trace-ctor"); }));
+        traceControl.GetField("DisposeCallback").SetValue(null, new Action(delegate { OwnedContextPoint("trace-dispose"); }));
+        EmptyContainerApi container = EmptyApi(type("UndoBuilderFixture"), type("EmptyOptionsFixture"), type("IRegisteredContainerFixture"), type("IContainerDependencyFixture"));
+        TraceLifetimeApi trace = TraceApi(type("TraceLifetimeFixture"), type("ITraceLifetimeFixture")); Type extension = type("UndoFactoryRegistrationExtensionsFixture");
+        TraceRegistrationApi traceRegistration = RegistrationApi(container, extension, type("IRegistrationFixture`3"), type("RegistrationDataFixture"), type("RegistrationStyleFixture"), trace.Contract);
+        Type undoType = type("IUndoDeniedFixture"); UndoContract(undoType, type("IOpaqueUndoFixture"));
+        UndoFactoryRegistrationApi registration = FactoryRegistrationApi(container, extension, type("IUndoFactoryRegistrationFixture`3"), type("RegistrationDataFixture"), type("RegistrationStyleFixture"), undoType);
+        ConstructorInfo factory = FactoryCtor(factoryType, container.Context, type("IDataDependencyFixture"));
+        Type streamType = type("ICacheStreamFixture"), id = type("ScopedIdFixture");
+        var stream = new StreamStoreDenyProxy(streamType, StreamContract(streamType, false), Record);
+        object idValue = CreateFixtureId(id, id.GetConstructor(new Type[] { typeof(uint) }), id.GetMethod("get_ProjectNumber"));
+        var store = new LargeStringCacheStoreProxy(storeType, storeType.GetMethod("get_Id"), idValue, storeType.GetMethod("get_LargeStringCache"), streamType, stream.GetTransparentProxy(), Record);
+        var kim = new ProjectDenyProxy(type("IDataDependencyFixture"), Record); var undo = new UndoProviderDenyProxy(undoType, Record);
+        var holder = new UndoProviderFactoryHolder(undoType, undo.GetTransparentProxy(), registration.CallbackType, Record);
+        WithContextLifetime(delegate { WithCacheLifetime(store, stream, delegate { WithProjectResourceBudget(delegate { WithUndoFactoryProvider(trace, container, traceRegistration, registration, factory, kim, store, undo, holder,
+            delegate(object actual) { WithContextConstruction(api, actual, store); }); }); }); });
+        ProbeFiles.Require(ownedContextCase == null && (int)control.GetField("Collections").GetValue(null) == 1 && (int)control.GetField("Projects").GetValue(null) == 1 && (int)control.GetField("Disposals").GetValue(null) == 1
+            && store.State.Replies == 1 && store.State.Attempts == 1 && store.State.Entries == 3 && !store.State.Faulted && stream.Requests == 0 && store.DeniedRequests == 0 && holder.Entries == 1 && holder.Successes == 1 && !holder.Faulted
+            && (int)undoControl.GetField("Registrations").GetValue(null) == 2 && (int)undoControl.GetField("ContainerDisposals").GetValue(null) == 1 && (int)traceControl.GetField("Disposals").GetValue(null) == 1, "OWNED_CONTEXT_LIFETIME");
+        Record("OWNED_CONTEXT_LIFETIME_PASS collection=1 project=1 project-dispose=1 collection-dispose=NOT_PROVIDED typed-arguments=True cache-reference=1 factory-success=1");
+    }
+
+    sealed class ContextConstructionApi
+    {
+        internal Type Project, Collection, Parent, Context, Factory, Contract, Store, Callback;
+        internal ConstructorInfo CollectionConstructor, ProjectConstructor; internal MethodInfo Dispose;
+    }
+    static void ContextReference(Type type)
+    { ProbeFiles.Require(type != null && type.GetType() == typeof(object).GetType() && !type.ContainsGenericParameters && !type.IsValueType && !type.IsByRef && !type.IsPointer, "CONTEXT_REFERENCE_TYPE"); }
+    static ContextConstructionApi ContextApi(Type project, Type collection, Type parent, Type context, Type factory, Type contract, Type store, Type[] importerTypes, bool original)
+    {
+        foreach (Type type in new Type[] { project, collection, parent, context, factory, contract, store }) { ContextReference(type); ProbeFiles.Require(type.Assembly == project.Assembly && !type.Assembly.ReflectionOnly, "CONTEXT_SAME_OWNER"); }
+        ProbeFiles.Require(project.IsPublic && project.IsClass && !project.IsAbstract && !project.IsGenericType && collection.IsPublic && collection.IsClass && !collection.IsAbstract && !collection.IsGenericType
+            && factory.IsPublic && factory.IsClass && contract.IsAssignableFrom(factory) && PublicInterface(parent) && PublicInterface(context) && PublicInterface(contract) && PublicInterface(store)
+            && !parent.IsGenericType && !context.IsGenericType && parent.DeclaringType == null && parent.BaseType == null, "CONTEXT_API_PUBLIC_SHAPES");
+        if (original) {
+            Assembly om = project.Assembly; Assembly common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.dll"));
+            ProbeFiles.Require(ContextOriginal && om.FullName == OmIdentity && ProbeFiles.Same(om.Location, Path.Combine(stage, "Knx.Ets.ObjectModel.dll"))
+                && common.FullName == Identities[10] && ProbeFiles.Same(common.Location, Path.Combine(stage, "Knx.Ets.Common.dll")), "CONTEXT_PINNED_OWNERS");
+            Type baggage = om.GetType("Knx.Ets.ObjectModel.Import.BaggageInfo", true), information = om.GetType("Knx.Ets.ObjectModel.Import.IImportInformationCollector", true);
+            importerTypes = new Type[] { store, project, common.GetType("Knx.Ets.Common.Security.IKeyProvider", true), typeof(Func<string,string>),
+                typeof(Func<,>).MakeGenericType(new Type[] { typeof(System.Collections.Generic.IEnumerable<>).MakeGenericType(new Type[] { baggage }), typeof(bool) }),
+                typeof(Action<>).MakeGenericType(new Type[] { information }), typeof(Predicate<>).MakeGenericType(new Type[] { information }), om.GetType("Knx.Ets.ObjectModel.Import.ProjectImporter", true) };
+            ProbeFiles.Require(project.MetadataToken == 0x020003a5 && (int)project.Attributes == 1048577 && collection.MetadataToken == 0x020003bd && (int)collection.Attributes == 1048577
+                && parent.MetadataToken == 0x02000c99 && (int)parent.Attributes == 1048737 && context.MetadataToken == 0x02000044 && (int)context.Attributes == 1048737
+                && contract.MetadataToken == 0x02000037 && store.MetadataToken == 0x02000057, "CONTEXT_ORIGINAL_TYPE_TOKENS");
+        }
+        ProbeFiles.Require(importerTypes != null && importerTypes.Length == 8 && importerTypes[0] == store && importerTypes[1] == project, "CONTEXT_IMPORTER_VECTOR");
+        foreach (Type type in importerTypes) ContextReference(type);
+        ProbeFiles.Require(importerTypes[3] == typeof(Func<string,string>) && importerTypes[4].IsGenericType && importerTypes[4].GetGenericTypeDefinition() == typeof(Func<,>)
+            && importerTypes[4].GetGenericArguments()[1] == typeof(bool) && importerTypes[4].GetGenericArguments()[0].IsGenericType
+            && importerTypes[4].GetGenericArguments()[0].GetGenericTypeDefinition() == typeof(System.Collections.Generic.IEnumerable<>)
+            && importerTypes[5].IsGenericType && importerTypes[5].GetGenericTypeDefinition() == typeof(Action<>) && importerTypes[6].IsGenericType
+            && importerTypes[6].GetGenericTypeDefinition() == typeof(Predicate<>) && importerTypes[5].GetGenericArguments()[0] == importerTypes[6].GetGenericArguments()[0], "CONTEXT_IMPORTER_NESTED_BCL");
+        Type callback = typeof(Func<,,,,,,,>).MakeGenericType(importerTypes); MethodInfo invoke = callback.GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        ParameterInfo[] args = invoke.GetParameters();
+        ProbeFiles.Require(callback.Assembly == typeof(object).Assembly && invoke.ReturnType == importerTypes[7] && !invoke.IsGenericMethod && args.Length == 7
+            && invoke.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "CONTEXT_IMPORTER_INVOKE");
+        for (int i = 0; i < 7; i++) ProbeFiles.Require(args[i].ParameterType == importerTypes[i], "CONTEXT_IMPORTER_INVOKE_ORDER");
+        Type[][] vectors = new Type[][] { new Type[] { parent, contract, callback }, new Type[] { collection, store, contract, context } };
+        ConstructorInfo[] constructors = new ConstructorInfo[] { collection.GetConstructor(vectors[0]), project.GetConstructor(vectors[1]) };
+        for (int i = 0; i < 2; i++) {
+            ConstructorInfo ctor = constructors[i]; ProbeFiles.Require(ctor != null && ctor.GetType() == typeof(object).GetConstructor(Type.EmptyTypes).GetType() && ctor.DeclaringType == (i == 0 ? collection : project)
+                && ctor.IsPublic && !ctor.IsStatic && !ctor.ContainsGenericParameters && ctor.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "CONTEXT_EXACT_CONSTRUCTOR");
+            ParameterInfo[] actual = ctor.GetParameters(); ProbeFiles.Require(actual.Length == vectors[i].Length, "CONTEXT_CONSTRUCTOR_ARITY");
+            for (int j = 0; j < actual.Length; j++) ProbeFiles.Require(actual[j].ParameterType == vectors[i][j], "CONTEXT_CONSTRUCTOR_VECTOR");
+        }
+        MethodInfo dispose = project.GetMethod("Dispose", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+        ProbeFiles.Require(typeof(IDisposable).IsAssignableFrom(project) && dispose != null && dispose.DeclaringType == project && dispose.ReturnType == typeof(void) && !dispose.IsGenericMethod
+            && dispose.CallingConvention == (CallingConventions.Standard | CallingConventions.HasThis), "CONTEXT_PROJECT_DISPOSE");
+        InterfaceMapping map = project.GetInterfaceMap(typeof(IDisposable));
+        ProbeFiles.Require(map.TargetMethods.Length == 1 && map.InterfaceMethods.Length == 1 && map.InterfaceMethods[0].Equals(typeof(IDisposable).GetMethod("Dispose"))
+            && map.TargetMethods[0].Equals(dispose), "CONTEXT_PROJECT_DISPOSE_MAP");
+        if (original) ProbeFiles.Require(constructors[0].MetadataToken == 0x0600298e && constructors[1].MetadataToken == 0x06002831 && dispose.MetadataToken == 0x060028bd
+            && (int)constructors[0].Attributes == 6278 && (int)constructors[1].Attributes == 6278 && (int)dispose.Attributes == 486, "CONTEXT_ORIGINAL_MEMBER_TOKENS");
+        return new ContextConstructionApi { Project = project, Collection = collection, Parent = parent, Context = context, Factory = factory, Contract = contract, Store = store, Callback = callback,
+            CollectionConstructor = constructors[0], ProjectConstructor = constructors[1], Dispose = dispose };
+    }
+    static ContextArgumentDenyProxy contextParent, contextObject; static ContextImporterDenyHolder contextImporter;
+    static object[] contextRetained; static bool contextLifetime;
+    static void PrepareContextArguments(ContextConstructionApi api)
+    {
+        ProbeFiles.Require(ContextMode && contextParent == null && contextObject == null && contextImporter == null, "CONTEXT_PREPARE_ONCE");
+        contextParent = new ContextArgumentDenyProxy(api.Parent, "parent", ContextArgumentRecord);
+        contextObject = new ContextArgumentDenyProxy(api.Context, "context", ContextArgumentRecord);
+        contextImporter = new ContextImporterDenyHolder(api.Callback, api.Callback.GetGenericArguments()[7], ContextArgumentRecord);
+        contextRetained = new object[] { contextParent, contextObject, contextImporter, contextParent.GetTransparentProxy(), contextObject.GetTransparentProxy(), contextImporter.Callback, null };
+    }
+    static void ContextFinalAudit(int parentCount, bool parentFault, int objectCount, bool objectFault, int importerCount, bool importerFault, string phase)
+    {
+        bool denied = parentCount != 0 || parentFault || objectCount != 0 || objectFault || importerCount != 0 || importerFault;
+        try { Record("CONTEXT_FINAL_AUDIT phase=" + phase + " parent=" + parentCount + "/" + parentFault + " context=" + objectCount + "/" + objectFault + " importer=" + importerCount + "/" + importerFault + " after-managed-cleanup=" + !contextLifetime); }
+        finally { if (denied) throw new NotSupportedException("CONTEXT_ARGUMENT_FINAL_DENIAL"); }
+    }
+    static void CheckContextArguments(string phase)
+    {
+        if (!ContextMode || (contextParent == null && contextObject == null && contextImporter == null)) return;
+        ContextFinalAudit(contextParent == null ? 0 : contextParent.State.Entries, contextParent != null && contextParent.State.Faulted,
+            contextObject == null ? 0 : contextObject.State.Entries, contextObject != null && contextObject.State.Faulted,
+            contextImporter == null ? 0 : contextImporter.State.Entries, contextImporter != null && contextImporter.State.Faulted, phase);
+    }
+    static void WithContextLifetime(Action run)
+    {
+        ProbeFiles.Require(ContextMode && !contextLifetime, "CONTEXT_LIFETIME_ONCE"); contextLifetime = true;
+        try { run(); }
+        finally {
+            contextLifetime = false;
+            try { if (ContextOwned) { if (ownedContextCase == "dispose-begin-log-fault") OwnedContextDisposeLogProof(); OwnedContextPoint("late"); } }
+            finally { try { CheckContextArguments("AFTER_ALL_MANAGED_CLEANUP"); } finally { GC.KeepAlive(contextRetained); } }
+        }
+    }
+    static void ContextConstructionRecord(string message)
+    {
+        if (ContextOwned && ownedContextCase == "dispose-begin-log-fault" && message == "CONTEXT_PROJECT_DISPOSE_BEGIN attempts=1") {
+            Record("OWNED_CONTEXT_DISPOSE_BEGIN_LOG_FAULT injected=True");
+            throw new IOException("OWNED_CONTEXT_DISPOSE_BEGIN_LOG_FAULT");
+        }
+        Record(message);
+    }
+    static void OwnedContextDisposeLogProof()
+    {
+        Type control = ContextOwnedType("ContextOwnedControl"), undo = ContextOwnedType("UndoOwnedControl"), trace = ContextOwnedType("TraceLifetimeControl");
+        ProbeFiles.Require((int)control.GetField("Projects").GetValue(null) == 1 && (int)control.GetField("Disposals").GetValue(null) == 1
+            && (int)undo.GetField("ProjectDisposals").GetValue(null) == 1 && (int)undo.GetField("ContainerDisposals").GetValue(null) == 1
+            && (int)trace.GetField("Disposals").GetValue(null) == 1, "OWNED_CONTEXT_DISPOSE_LOG_GUARANTEE");
+        Record("OWNED_CONTEXT_DISPOSE_LOG_PASS project=1 dispose=1 container-dispose=1 trace-dispose=1 after-all-managed-cleanup=True");
+    }
+    static void WithContextConstruction(ContextConstructionApi api, object factory, ProjectStoreIdProxy store)
+    {
+        object collection = null, project = null; bool exact = false, collectionReturned = false, projectReturned = false;
+        ProbeFiles.Require(ContextMode && contextLifetime && factory != null && factory.GetType() == api.Factory && api.Contract.IsInstanceOfType(factory)
+            && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(factory), "CONTEXT_GENUINE_FACTORY");
+        try {
+            TraceDependencyGuard(unexpected, rejected, "CONTEXT_PRE_COLLECTION");
+            ProbeFiles.Require(projectResourceWindow == 0 && !projectResourceCallbackSuspended, "CONTEXT_COLLECTION_WINDOW_ZERO");
+            Record("CONTEXT_COLLECTION_BEGIN token=" + api.CollectionConstructor.MetadataToken.ToString("X8") + " window=0 explicit-attempts=1");
+            try { collection = api.CollectionConstructor.Invoke(new object[] { contextRetained[3], factory, contextImporter.Callback }); collectionReturned = true; }
+            finally { Record("CONTEXT_COLLECTION_END returned=" + collectionReturned + " body-entry=" + (collectionReturned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
+            contextRetained[6] = collection;
+            ProbeFiles.Require(collection != null && collection.GetType() == api.Collection && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(collection), "CONTEXT_EXACT_COLLECTION");
+            TraceDependencyGuard(unexpected, rejected, "CONTEXT_POST_COLLECTION"); ProbeFiles.Require(store.DeniedRequests == 0, "CONTEXT_COLLECTION_STORE_DENIAL");
+            Record("CONTEXT_PROJECT_BEGIN token=" + api.ProjectConstructor.MetadataToken.ToString("X8") + " window=2 explicit-attempts=1");
+            try {
+                WithProjectResourceWindow(2, delegate { project = api.ProjectConstructor.Invoke(new object[] { collection, store.GetTransparentProxy(), factory, contextRetained[4] }); }); projectReturned = true;
+                exact = project != null && project.GetType() == api.Project && project is IDisposable && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(project);
+                ProbeFiles.Require(exact, "CONTEXT_EXACT_PROJECT"); TraceDependencyGuard(unexpected, rejected, "CONTEXT_POST_PROJECT"); ProbeFiles.Require(store.DeniedRequests == 0, "CONTEXT_PROJECT_STORE_DENIAL");
+            } finally { Record("CONTEXT_PROJECT_END returned=" + projectReturned + " body-entry=" + (projectReturned ? "NOT_INSTRUMENTED" : "NOT_ESTABLISHED")); }
+        } catch { if (ContextOwned) OwnedContextPoint("error"); throw; } finally {
+            try { if (exact) {
+                try { ContextConstructionRecord("CONTEXT_PROJECT_DISPOSE_BEGIN attempts=1"); }
+                finally { try { ((IDisposable)project).Dispose(); } finally { Record("CONTEXT_PROJECT_DISPOSE_END attempts=1"); } }
+            } }
+            finally { try { TraceDependencyGuard(unexpected, rejected, "CONTEXT_POST_PROJECT_DISPOSAL"); } finally { GC.KeepAlive(project); GC.KeepAlive(collection); GC.KeepAlive(contextRetained); } }
+        }
+    }
+
     sealed class ProjectScopeApi
     {
         internal Type Project, FactoryType, FactoryContract;
@@ -1820,16 +2145,67 @@ internal static class ProjectConstructorProbe
         object factory = null; bool returned = false;
         Record("FACTORY_CONSTRUCTOR_BEGIN token=" + ctor.MetadataToken.ToString("X8") + " services=genuine-registered-trace-container+deny-all-provider project=NOT_REACHED qualification=NOT_ESTABLISHED");
         try {
-            ProbeFiles.Require(ProjectScope && !unexpected && !rejected, "PROJECT_FACTORY_PRECONSTRUCTOR"); CheckUndoProvider("FACTORY_PRE_CTOR"); CheckUndoFactory("FACTORY_PRE_CTOR"); CheckCache("FACTORY_PRE_CTOR");
+            ProbeFiles.Require(ProjectScope && !unexpected && !rejected, "PROJECT_FACTORY_PRECONSTRUCTOR"); CheckUndoProvider("FACTORY_PRE_CTOR"); CheckUndoFactory("FACTORY_PRE_CTOR"); CheckCache("FACTORY_PRE_CTOR"); CheckContextArguments("FACTORY_PRE_CTOR");
             if (ProjectResources) {
                 object[] arguments = new object[] { context, provider.GetTransparentProxy() };
-                WithProjectResourceWindow(1, delegate { factory = ctor.Invoke(arguments); }); returned = true; CheckUndoProvider("FACTORY_POST_CTOR"); CheckUndoFactory("FACTORY_POST_CTOR"); CheckCache("FACTORY_POST_CTOR");
+                WithProjectResourceWindow(1, delegate { factory = ctor.Invoke(arguments); }); returned = true; CheckUndoProvider("FACTORY_POST_CTOR"); CheckUndoFactory("FACTORY_POST_CTOR"); CheckCache("FACTORY_POST_CTOR"); CheckContextArguments("FACTORY_POST_CTOR");
             } else WithFactoryResourcePhase(delegate { factory = ctor.Invoke(new object[] { context, provider.GetTransparentProxy() }); returned = true; });
             ProbeFiles.Require(factory != null && factory.GetType() == ctor.DeclaringType && !unexpected && !rejected, "PROJECT_FACTORY_EXACT_RETURN");
             ProbeFiles.Require(provider.Requests == 0, "PROJECT_FACTORY_PROVIDER_DENIAL");
         } finally { Record("FACTORY_CONSTRUCTOR_END returned=" + returned + " provider-denied-requests=" + provider.Requests + " project=NOT_REACHED qualification=NOT_ESTABLISHED"); }
         // Local ownership survives Project cleanup; it never depends on the global diagnostic field.
         try { use(factory); } finally { GC.KeepAlive(factory); }
+    }
+    static void OriginalContextConstruction()
+    {
+        ProbeFiles.Require(ProjectScopeOriginal && containerInputsReady, "PROJECT_SCOPE_COMPLETE_PROFILE");
+        Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll")), common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.dll"));
+        Assembly autofac = Assembly.LoadFrom(Path.Combine(stage, "Autofac.dll")), kim = Assembly.LoadFrom(Path.Combine(stage, "Knx.Kim.DataProvider.dll"));
+        Assembly ids = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Ids.dll"));
+        ProbeFiles.Require(common.FullName == Identities[10] && autofac.FullName == FactoryExtraIdentities[0] && !common.ReflectionOnly && !autofac.ReflectionOnly
+            && ProbeFiles.Same(common.Location, Path.Combine(stage, "Knx.Ets.Common.dll")) && ProbeFiles.Same(autofac.Location, Path.Combine(stage, "Autofac.dll")), "PROJECT_SCOPE_PINNED_OWNERS");
+        Type traceType = common.GetType("Knx.Ets.Common.Security.ProjectTraceEncryptor", true), traceContract = common.GetType("Knx.Ets.Common.Security.IProjectTraceEncryptor", true);
+        TraceLifetimeApi trace = TraceApi(traceType, traceContract);
+        ProbeFiles.Require((int)traceType.Attributes == 1048833 && ReviewedTraceTokens(traceType.MetadataToken, trace.Constructor.MetadataToken, trace.Parameter.MetadataToken, traceContract.MetadataToken), "TRACE_ORIGINAL_TOKENS");
+        Type context = autofac.GetType("Autofac.IComponentContext", true), providerType = kim.GetType("Knx.Kim.DataProvider.IKimDataProvider", true), factory = om.GetType("Knx.Ets.ObjectModel.Factory", true);
+        ConstructorInfo factoryCtor = FactoryCtor(factory, context, providerType); OriginalFactoryTokens(factory, factoryCtor, context, providerType);
+        EmptyContainerApi container = EmptyApi(autofac.GetType("Autofac.ContainerBuilder", true), autofac.GetType("Autofac.Builder.ContainerBuildOptions", true), autofac.GetType("Autofac.IContainer", true), context);
+        TraceRegistrationApi registration = RegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), traceContract);
+        Type project = om.GetType("Knx.Ets.ObjectModel.Project.Project", true), factoryContract = om.GetType("Knx.Ets.ObjectModel.IFactory", true), storeType = om.GetType("Knx.Ets.ObjectModel.IProjectStore", true);
+        Type id = ids.GetType("Knx.Ets.Ids.Project.ProjectId", true);
+        Type collection = om.GetType("Knx.Ets.ObjectModel.Project.ProjectCollection", true), parent = om.GetType("Knx.Ets.ObjectModel.Interfaces.INamedDomObject", true), objectContext = om.GetType("Knx.Ets.ObjectModel.IObjectContext", true);
+        ContextConstructionApi scope = ContextApi(project, collection, parent, objectContext, factory, factoryContract, storeType, null, true);
+        ConstructorInfo idCtor = id.GetConstructor(new Type[] { typeof(uint) }); MethodInfo idGetter = id.GetMethod("get_ProjectNumber"), storeGetter = storeType.GetMethod("get_Id");
+        OriginalIdTokens(id, idCtor, idGetter, storeType, storeGetter);
+        TraceDependencyGuard(unexpected, rejected, "CONTEXT_SHAPES");
+        TraceRegistrationApi undoRegistration = null; UndoProviderDenyProxy undo = null;
+        UndoFactoryRegistrationApi factoryRegistration = null; UndoProviderFactoryHolder holder = null;
+        if (UndoDeniedOriginal) {
+            Type undoType = om.GetType("Knx.Ets.ObjectModel.UndoRedo.IUndoManagerStoreProvider", true), opaque = om.GetType("Knx.Ets.ObjectModel.IStreamStore", true);
+            UndoContract(undoType, opaque); OriginalUndoTokens(undoType);
+            if (UndoFactoryOriginal) factoryRegistration = FactoryRegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), undoType);
+            else undoRegistration = RegistrationApi(container, autofac.GetType("Autofac.RegistrationExtensions", true), autofac.GetType("Autofac.Builder.IRegistrationBuilder`3", true), autofac.GetType("Autofac.Builder.SimpleActivatorData", true), autofac.GetType("Autofac.Builder.SingleRegistrationStyle", true), undoType);
+            undo = new UndoProviderDenyProxy(undoType, Record);
+            if (UndoFactoryOriginal) holder = new UndoProviderFactoryHolder(undoType, undo.GetTransparentProxy(), factoryRegistration.CallbackType, Record);
+        }
+        StreamStoreDenyProxy stream = null; Type streamType = null; MethodInfo cacheGetter = null;
+        if (CacheOriginal) { streamType = om.GetType("Knx.Ets.ObjectModel.IStreamStore", true); MethodInfo[] declarations = StreamContract(streamType, true); cacheGetter = storeType.GetMethod("get_LargeStringCache", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly); CacheGetterSignature(storeType, cacheGetter, streamType); stream = new StreamStoreDenyProxy(streamType, declarations, Record); }
+        object value = CreateFixtureId(id, idCtor, idGetter); ProjectStoreIdProxy store;
+        if (CacheOriginal) store = new LargeStringCacheStoreProxy(storeType, storeGetter, value, cacheGetter, streamType, stream.GetTransparentProxy(), Record);
+        else store = new ProjectStoreIdProxy(storeType, storeGetter, value, Record);
+        var denied = new ProjectDenyProxy(providerType, Record);
+        resourceOwner = autofac;
+        PrepareContextArguments(scope);
+        Action run = delegate {
+            if (UndoFactoryOriginal) WithUndoFactoryProvider(trace, container, registration, factoryRegistration, factoryCtor, denied, store, undo, holder,
+                delegate(object actualFactory) { WithContextConstruction(scope, actualFactory, store); });
+            else if (UndoDeniedOriginal) WithUndoProvider(trace, container, registration, undoRegistration, factoryCtor, denied, store, undo,
+                delegate(object actualFactory) { WithContextConstruction(scope, actualFactory, store); });
+            else WithRegisteredTrace(trace, container, registration, factoryCtor, denied,
+                delegate(object actualFactory) { WithContextConstruction(scope, actualFactory, store); }, store);
+        };
+        WithContextLifetime(delegate { WithCacheLifetime((LargeStringCacheStoreProxy)store, stream, delegate { WithProjectResourceBudget(run); }); });
+        GC.KeepAlive(value);
     }
     static void OriginalProjectScope()
     {
@@ -2634,6 +3010,17 @@ internal static class ProjectConstructorProbe
     [STAThread]
     internal static int Main(string[] args)
     {
+        int outcome = 2;
+        try { outcome = MainCore(args); }
+        finally {
+            try { if (ContextOwned && contextRetained != null) OwnedContextPoint("process-final"); CheckContextArguments("PROCESS_FINAL"); }
+            catch (Exception error) { outcome = 2; try { if (log != null) Errors(error); } catch { } }
+            finally { GC.KeepAlive(contextRetained); }
+        }
+        return outcome;
+    }
+    static int MainCore(string[] args)
+    {
         int result = 2;
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
@@ -2641,8 +3028,9 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(args.Length == 6 || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
-                || (CacheOwned && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+                || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
+                || (ContextOwned && args[6] == "--owned-context-case" && Array.IndexOf(OwnedContextCases, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
+            if (args.Length == 8) { if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -2685,7 +3073,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
@@ -2698,7 +3086,7 @@ internal static class ProjectConstructorProbe
                 }));
                 app.Run();
             }
-            CheckUndoProvider("PROCESS_FINAL"); CheckUndoFactory("PROCESS_FINAL"); CheckCache("PROCESS_FINAL");
+            CheckUndoProvider("PROCESS_FINAL"); CheckUndoFactory("PROCESS_FINAL"); CheckCache("PROCESS_FINAL"); CheckContextArguments("PROCESS_FINAL");
             ProbeFiles.Require(!unexpected && !rejected, "PROJECT_DEPENDENCY_BLOCKER");
             Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui=NOT_RUN state=NOT_RUN hardware=NOT_RUN");
             return result;
