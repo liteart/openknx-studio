@@ -439,5 +439,37 @@ try{
  $ssWorker=Join-Path $PSScriptRoot 'Read-ProjectStreamStoreMetadata.ps1'
  Reject {& $ssWorker -InputPath $streamStore -InputSha256 (Hash $streamStore)} 'DCAENTRY_INPUT_PIN'
  Assert ((UndoStore) -ceq $usRaw -and (TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reports byte-identical after stream-store kind/root-only inquiry';$passed++
+ $catalog=Join-Path $root 'OwnedOnlineCatalog.dll';[Task144OwnedFixtures]::CreateOnlineCatalogReferences($catalog)
+ function Catalog([string] $p=$catalog){[Task144.EntrypointMetadata]::ReadOwnedProjectOnlineCatalogReferences($p,(Hash $p))}
+ $catalogRaw=Catalog;$cm=$catalogRaw|ConvertFrom-Json
+ Assert ($cm.operation -ceq 'static_dca_project_online_catalog_references' -and $cm.runtime_execution -ceq 'NOT_RUN' -and $cm.selected_assembly_reference -ceq 'Owned.OnlineCatalog.Download, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null') 'Catalog fixed unsigned input/target declaration report';$passed++
+ Assert ($cm.assembly_reference.token -ceq '23000001' -and $cm.assembly_reference.flags -eq 0 -and $cm.type_references.Count -eq 2 -and $cm.member_references.Count -eq 2) 'Catalog actual token/direct and nested TypeRef/MemberRef selection';$passed++
+ Assert ($cm.type_references[1].namespace -ceq '' -and $cm.type_references[1].scope_kind -ceq 'TypeReference' -and $cm.type_references[1].scope_chain.Count -eq 3 -and $cm.type_references[1].qualified_name.EndsWith('Owned.Catalog.Api+Nested')) 'Catalog token-proven nested chain';$passed++
+ Assert ($cm.member_references[0].kind -ceq 'Method' -and $cm.member_references[0].signature -ceq 'instance String(Boolean) generic=0' -and $cm.member_references[0].signature_header -eq 32 -and $cm.member_references[1].kind -ceq 'Field' -and $cm.member_references[1].field_type -ceq 'String') 'Catalog method and field signatures without values';$passed++
+ Assert ($cm.counts.global_unexamined_typespec_parent_members -eq 2 -and $cm.counts.non_selected_typeref_parent_members -eq 1 -and $cm.counts.other_unresolved_parent_kinds.ModuleReference -eq 1 -and $cm.typespec_parent_scope -ceq 'GLOBAL_NOT_TARGET_SPECIFIC_UNEXAMINED_TYPESPEC_PARENT') 'Global generic omission/other parent counts; no return-type ownership';$passed++
+ Assert (-not $catalogRaw.Contains($root) -and -not $catalogRaw.Contains('NotTargetDespiteReturnType') -and -not $catalogRaw.Contains('OmittedGeneric') -and $cm.referenced_declarations -ceq 'UNRESOLVED_NOT_FOLLOWED') 'Catalog no paths/candidate/closure or omitted member details';$passed++
+ foreach($profile in @(1,2,3,4,5,6,7,8,9,11,14,15,16,17,18,19,20,21,22,23,24,26,27,28,33,37,38,39,40,41)){
+  $bad=Join-Path $root ('CatalogBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateOnlineCatalogReferences($bad,$profile)
+  $code=@{1='ASSEMBLY_REFERENCE_NOT_FOUND';2='DUPLICATE_ASSEMBLY_REFERENCE';3='INPUT_IDENTITY';4='ASSEMBLY_REFERENCE_NOT_FOUND';5='ASSEMBLY_REFERENCE_NOT_FOUND';6='ASSEMBLY_REFERENCE_NOT_FOUND';7='ASSEMBLY_REFERENCE_NOT_FOUND';8='TYPE_SCOPE_CYCLE';9='SCOPE_LIMIT';11='TYPE_SCOPE_NAMESPACE';14='TYPE_SCOPE_INVALID';15='MALFORMED_SIGNATURE';16='SIGNATURE_SHAPE';17='SIGNATURE_LIMIT';18='SIGNATURE_SHAPE';19='SIGNATURE_SHAPE';20='STRING_LIMIT';21='TYPE_IDENTIFIER';22='TYPE_REFERENCE_LIMIT';23='MEMBER_REFERENCE_LIMIT';24='REFERENCE_LIMIT';26='ROW_LIMIT';27='ROW_LIMIT';28='REPORT_LIMIT';33='TYPE_SCOPE_CYCLE';37='SIGNATURE_LIMIT';38='SIGNATURE_LIMIT';39='SIGNATURE_LIMIT';40='SIGNATURE_LIMIT';41='UNSUPPORTED_SIGNATURE'}[$profile]
+  Reject {Catalog $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(10,12,13,25,29,30,31,32,36)){
+  $valid=Join-Path $root ('CatalogBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateOnlineCatalogReferences($valid,$profile);$cr=Catalog $valid|ConvertFrom-Json
+  Assert ($cr.runtime_execution -ceq 'NOT_RUN' -and $cr.selected_assembly_reference -ceq $cm.selected_assembly_reference) ('Catalog accepted bounded profile '+$profile);$passed++
+  if($profile -eq 10){Assert ($cr.type_references.Count -eq 18) 'Catalog sixteen nested TypeRef nodes accepted';$passed++}
+  if($profile -in @(12,13)){Assert ($cr.type_references.Count -eq 0 -and $cr.member_references.Count -eq 0 -and @($cr.counts.unresolved_type_scopes.psobject.Properties).Count -gt 0) 'Nil/module uncertainty explicit without false target selection';$passed++}
+  if($profile -eq 30){Assert ($cr.type_references.Count -eq 256) 'Catalog exact256 selected types';$passed++}
+  if($profile -eq 31){Assert ($cr.member_references.Count -eq 256) 'Catalog exact256 selected members';$passed++}
+  if($profile -eq 32){Assert ($cr.counts.assembly_references -eq 256) 'Catalog exact256 assembly refs';$passed++}
+  if($profile -eq 36){Assert ($cr.member_references[0].parameter_types.Count -eq 31) 'Catalog valid128-byte signature';$passed++}
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectOnlineCatalogReferences($catalog,('f'*63))} 'DCAENTRY_HASH_FORMAT'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectOnlineCatalogReferences($catalog,('f'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectOnlineCatalogReferences($streamStore,(Hash $streamStore))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectOnlineCatalogReferences($catalog,(Hash $catalog))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectOnlineCatalogReferences($broken,'73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a')} 'DCAENTRY_INPUT_HASH'
+ $catalogWorker=Join-Path $PSScriptRoot 'Read-ProjectOnlineCatalogReferences.ps1'
+ Reject {& $catalogWorker -InputPath $catalog -InputSha256 (Hash $catalog)} 'DCAENTRY_INPUT_PIN'
+ Assert ((StreamStore) -ceq $ssRaw -and (Catalog) -ceq $catalogRaw -and (UndoStore) -ceq $usRaw -and (TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All old reports byte-identical after catalog reference map';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

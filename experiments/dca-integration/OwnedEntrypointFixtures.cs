@@ -6,6 +6,37 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ // Unsigned catalog reference images, no candidate definitions or executable method bodies.
+ public static void CreateOnlineCatalogReferences(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedCatalog.dll"),m.GetOrAddGuid(new Guid("009d0000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(profile==3?"Owned.ForeignCatalogInput":"Task009.OwnedOnlineCatalogReferences"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var target=m.AddAssemblyReference(m.GetOrAddString(profile==1?"Owned.Missing":profile==7?"Owned.OnlineCatalog.DownloadExtra":"Owned.OnlineCatalog.Download"),new Version(profile==4?2:1,0,0,0),profile==6?m.GetOrAddString("en"):default,profile==5?m.GetOrAddBlob(new byte[8]):default,0,default);
+  if(profile==2)m.AddAssemblyReference(m.GetOrAddString("Owned.OnlineCatalog.Download"),new Version(1,0,0,0),default,default,0,default);
+  var runtime=m.AddAssemblyReference(m.GetOrAddString("mscorlib"),new Version(4,0,0,0),default,default,0,default);
+  var foreign=m.AddAssemblyReference(m.GetOrAddString("Owned.OnlineCatalog.DownloadExtra"),new Version(1,0,0,0),default,default,0,default);
+  if(profile==24||profile==32)for(int i=3;i<(profile==24?257:256);i++)m.AddAssemblyReference(m.GetOrAddString("Owned.Padding"+i),new Version(1,0,0,0),default,default,0,default);
+  EntityHandle rootScope=profile==8?MetadataTokens.TypeReferenceHandle(2):profile==33?MetadataTokens.TypeReferenceHandle(1):profile==12?default(EntityHandle):profile==13?m.AddModuleReference(m.GetOrAddString("OwnedModule")):profile==14?MetadataTokens.TypeReferenceHandle(9999):(EntityHandle)target;
+  var root=m.AddTypeReference(rootScope,m.GetOrAddString(profile==8||profile==33||profile==14?"":"Owned.Catalog"),m.GetOrAddString(profile==21?"Bad[Name]":"Api"));
+  var nested=m.AddTypeReference(root,profile==11?m.GetOrAddString("Invalid.Nested"):default,m.GetOrAddString("Nested"));
+  var collision=m.AddTypeReference(foreign,m.GetOrAddString("Owned.Catalog"),m.GetOrAddString("Api"));
+  if(profile==9||profile==10){EntityHandle scope=target;for(int i=0;i<(profile==9?17:16);i++)scope=m.AddTypeReference(scope,i==0?m.GetOrAddString("Owned.Depth"):default,m.GetOrAddString("Level"+i));}
+  if(profile==22||profile==28||profile==30)for(int i=2;i<(profile==22?257:256);i++)m.AddTypeReference(target,m.GetOrAddString("Owned.Catalog"),m.GetOrAddString((profile==28?new string('T',1000):"Type")+i));
+  TypeReferenceHandle modifier=default;if(profile==36||profile==37)for(int i=0;i<33;i++)modifier=m.AddTypeReference(runtime,m.GetOrAddString("Owned.Modifier"),m.GetOrAddString("M"+i));
+  byte[] method=profile==15?new byte[]{0x20,1}:profile==16?new byte[]{0x25,0,1}:profile==17?new byte[129]:profile==19?new byte[]{0x20,0,1,1}:profile==39?new byte[]{0x20,33,1}:profile==40?new byte[]{0x30,33,0,1}:profile==41?new byte[]{0x20,0,0x1b}:new byte[]{0x20,1,0x0e,2};
+  if(profile==36||profile==37){var b=new BlobBuilder();b.WriteByte(0x20);b.WriteByte(31);b.WriteByte(1);for(int i=0;i<31;i++){if(i==0){b.WriteByte(0x0f);if(profile==37)b.WriteByte(0x0f);}b.WriteByte(0x1f);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(modifier)<<2)|1);b.WriteByte(2);}method=b.ToArray();}
+  if(profile==38){var b=new BlobBuilder();b.WriteByte(0x20);b.WriteByte(10);b.WriteByte(1);var longModifier=m.AddTypeReference(runtime,m.GetOrAddString("Owned.Modifier"),m.GetOrAddString(new string('L',1000)));for(int i=0;i<10;i++){b.WriteByte(0x1f);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(longModifier)<<2)|1);b.WriteByte(2);}method=b.ToArray();}
+  m.AddMemberReference(root,m.GetOrAddString(profile==20?new string('N',1025):"Read"),m.GetOrAddBlob(method));
+  m.AddMemberReference(nested,m.GetOrAddString("Field"),m.GetOrAddBlob(profile==18?new byte[]{6,1}:new byte[]{6,0x0e}));
+  var foreignSignature=new BlobBuilder();foreignSignature.WriteByte(0x20);foreignSignature.WriteByte(0);foreignSignature.WriteByte(0x12);foreignSignature.WriteCompressedInteger((MetadataTokens.GetRowNumber(root)<<2)|1);
+  m.AddMemberReference(collision,m.GetOrAddString("NotTargetDespiteReturnType"),m.GetOrAddBlob(foreignSignature));
+  foreach(var h in new[]{root,collision}){var b=new BlobBuilder();b.WriteByte(0x15);b.WriteByte(0x12);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(h)<<2)|1);b.WriteByte(1);b.WriteByte(0x0e);var spec=m.AddTypeSpecification(m.GetOrAddBlob(b));m.AddMemberReference(spec,m.GetOrAddString("OmittedGeneric"),m.GetOrAddBlob(new byte[]{0x20,0,1}));}
+  m.AddMemberReference(m.AddModuleReference(m.GetOrAddString("OtherModule")),m.GetOrAddString("Unresolved"),m.GetOrAddBlob(new byte[]{0x20,0,1}));
+  if(profile==23||profile==29||profile==31)for(int i=2;i<(profile==23?257:256);i++)m.AddMemberReference(root,m.GetOrAddString((profile==29?new string('N',1000):"Member")+i),m.GetOrAddBlob(new byte[]{0x20,0,1}));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  if(profile==25||profile==26)for(int i=0;i<(profile==25?65536:65537);i++)Method(m,"UNSELECTED",MethodAttributes.Public,new byte[]{0x20});
+  if(profile==27)for(int i=1;i<32769;i++)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"+i),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  // Unsigned owned identity, deliberately distinct from the fixed original Ids pin.
  public static void CreateProjectId(string path,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProjectId.dll"),m.GetOrAddGuid(new Guid("00990000-1111-1111-1111-111111111111")),default,default);

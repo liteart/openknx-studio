@@ -501,6 +501,68 @@ class PolicyTests(unittest.TestCase):
                         run_probe.run(str(stage), str(pwsh), str(owned), experiment="project-stream-store")
                     child.assert_not_called()
 
+    def test_project_online_catalog_references_fixed_single_input_route(self):
+        self.assertEqual(run_probe.PROJECT_ONLINE_CATALOG_REFERENCES_PIN, ("Knx.Ets.ObjectModel.dll", 14204880,
+                         "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a"))
+        self.assertEqual(len(run_probe.PINS), 3)
+        self.assertNotIn(run_probe.PROJECT_ONLINE_CATALOG_REFERENCES_PIN, run_probe.PINS)
+        worker = Path(run_probe.__file__).resolve().parent.parent / "dca-integration" / "Read-ProjectOnlineCatalogReferences.ps1"
+        source = worker.read_text()
+        self.assertIn("::ReadProjectOnlineCatalogReferences($InputPath,$InputSha256)", source)
+        self.assertNotIn("ReadOwnedProjectOnlineCatalogReferences", source)
+        self.assertNotIn("[switch]", source)
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory).resolve()
+            stage.chmod(0o700)
+            pwsh = stage / "owned-pwsh"
+            pwsh.write_bytes(b"never executed")
+            pwsh.chmod(0o700)
+            pin = ("OwnedProjectOnlineCatalogReferences.dll", 1, "a" * 64)
+            owned = stage / pin[0]
+            owned.write_bytes(b"x")
+            owned.chmod(0o600)
+            report = {"schema_version": 1, "operation": "static_dca_project_online_catalog_references",
+                      "runtime_execution": "NOT_RUN", "rights": "UNRESOLVED",
+                      "selected_assembly_reference": run_probe.PROJECT_ONLINE_CATALOG_REFERENCE, "inputs": [
+                          {"filename": pin[0], "bytes": pin[1], "sha256": pin[2],
+                           "identity": run_probe.PROJECT_ONLINE_CATALOG_REFERENCES_IDENTITY}]}
+            with mock.patch.object(run_probe.sys, "platform", "darwin"), \
+                    mock.patch.object(run_probe, "PROJECT_ONLINE_CATALOG_REFERENCES_PIN", pin):
+                with mock.patch.object(run_probe, "negative_probes", side_effect=run_probe.ProbeError("DCAPROBE_RESTRICTION")), \
+                        mock.patch.object(run_probe, "bounded_child") as child:
+                    with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_RESTRICTION$"):
+                        run_probe.run(str(stage), str(pwsh), experiment="project-online-catalog-references")
+                    child.assert_not_called()
+                with mock.patch.object(run_probe, "negative_probes", return_value={"owned": True}):
+                    with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(report).encode(), b"")) as child:
+                        run_probe.run(str(stage), str(pwsh), str(stage / "report.json"), experiment="project-online-catalog-references")
+                        command = base64.b64decode(child.call_args.args[0][-1]).decode("utf-16le")
+                        self.assertEqual(command, run_probe.PROJECT_ID_COMMAND)
+                        self.assertIn("$pins.Count -ne 1", command)
+                        self.assertNotIn("ReferencePath", command)
+                        environment = child.call_args.args[1]
+                        self.assertEqual(Path(environment["DCAMETA_WORKER"]), worker)
+                        self.assertEqual(len(json.loads(environment["DCAMETA_INPUTS_JSON"])), 1)
+                        self.assertEqual(child.call_args.args[0][2], run_probe.PROFILE)
+                    for field, value, code in (("identity", "Owned.Wrong", "REPORT_IDENTITY"),
+                                               ("sha256", "f" * 64, "REPORT_PINS")):
+                        changed = json.loads(json.dumps(report))
+                        changed["inputs"][0][field] = value
+                        with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(changed).encode(), b"")):
+                            with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_" + code + "$"):
+                                run_probe.run(str(stage), str(pwsh), experiment="project-online-catalog-references")
+                    for changed in (dict(report, selected_assembly_reference="Owned.Other"),
+                                    dict(report, operation="static_dca_project_constructors"),
+                                    dict(report, inputs=[]),
+                                    dict(report, inputs=report["inputs"] * 2)):
+                        with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(changed).encode(), b"")):
+                            with self.assertRaises(run_probe.ProbeError):
+                                run_probe.run(str(stage), str(pwsh), experiment="project-online-catalog-references")
+                with mock.patch.object(run_probe, "bounded_child") as child:
+                    with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_OUTPUT_PATH$"):
+                        run_probe.run(str(stage), str(pwsh), str(owned), experiment="project-online-catalog-references")
+                    child.assert_not_called()
+
     def test_project_trace_encryptor_fixed_single_input_route(self):
         self.assertEqual(run_probe.PROJECT_TRACE_ENCRYPTOR_PIN, ("Knx.Ets.Common.dll", 503248,
                          "4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd"))

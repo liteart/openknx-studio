@@ -73,7 +73,7 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Actual original27 at planning19019940/implementation25eea43 ended FAIL2 with a normal confirmed child exit. Trace/two registrations/Build/Factory returned; Project06002830 did not return, body entry NOT_ESTABLISHED. Cache wrapper entries2/attempt1/reply1/faultFalse, no stream callbacks; SDK consumption is not established. Next requested assembly Knx.Ets.OnlineCatalog.Download6.4.8718.0/token61439873ec5e1159 was refused as not allowlisted; trace dependency audit FAIL, cache count audit PASS. Container/trace disposal, task cleanup and post19+2 integrity PASS. No provided candidate DLL/hash/identity is available; owner asked for an accessible path. Admission/new original execution waits for that input and static verification. A separate bounded reference map can use existing ObjectModel while that input is missing. Source27 owned743 cases and metadata26b do not qualify SDK/UI/state/hardware. No retries, gate or acceptance; ADR005 unchanged.
+Actual original27 at planning19019940/implementation25eea43 ended FAIL2 with a normal confirmed child exit. Trace/two registrations/Build/Factory returned; Project06002830 did not return, body entry NOT_ESTABLISHED. Cache wrapper entries2/attempt1/reply1/faultFalse, no stream callbacks; SDK consumption is not established. Next requested assembly Knx.Ets.OnlineCatalog.Download6.4.8718.0/token61439873ec5e1159 was refused as not allowlisted; trace dependency audit FAIL, cache count audit PASS. Container/trace disposal, task cleanup and post19+2 integrity PASS. No provided candidate DLL/hash/identity is available. The owner clarified that v1 uses locally supplied manufacturer files and excludes an online catalog; an owned catalog is only a possible later v2/v3 decision. The earlier acquisition request is deferred pending evidence that this SDK dependency is necessary for the minimum offline DCA project context. The existing-ObjectModel reference map investigates that coupling without acquiring/admitting/loading the catalog assembly. Source27 owned743 cases and metadata26b do not qualify SDK/UI/state/hardware. No retries, gate or acceptance; ADR005 unchanged.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -104,7 +104,17 @@ cleanups PASS; corrected owned27-observation-corrected.json
 7ed37fba6aa0afbbbfc89bbd0359d65de0aafcc43d5d181158d0c7ac9ed2edf1 binds1,421 files.
 The first recorder's prior25 filename filter is corrected with original evidence
 preserved, no source/test rerun. Corrected saved-result audit PASS5c53e388c37b63e6194b49d80343eb418b6f11fb0f00c25330576411b45cc446; critical source/owned review PASSd386775be84f4c9a53f858226e2f65148d2c19dc309f8f4e408f5932a93f8e03; source commit25eea43312b747a4fc245d84c9f9eeac348697b1 recorded.
-Source27 original27 actual FAIL2: missing OnlineCatalog.Download refused, no stream call; corrected cleanup/post integrity PASS. Independent result audit PASSc8031c727d43c17ff2d1e399c8e83376d990936841dd0a947eee821931112d6a; critical result review PASSa137b2fb89cbaac8e2652b37ba6381be873edd3f9e911498b1077c7629b7f4af. Missing DLL blocks admission/new runtime, not the proposed existing-ObjectModel reference inquiry. No cache values, device operations or task/gate acceptance follow.
+Source27 original27 actual FAIL2: missing OnlineCatalog.Download refused, no stream call; corrected cleanup/post integrity PASS. Independent result audit PASSc8031c727d43c17ff2d1e399c8e83376d990936841dd0a947eee821931112d6a; critical result review PASSa137b2fb89cbaac8e2652b37ba6381be873edd3f9e911498b1077c7629b7f4af. Catalog-related dependency acquisition/admission/new runtime is deferred while offline necessity or an alternative minimal DCA context is assessed; the existing-ObjectModel reference inquiry remains metadata-only. No cache values, device operations or task/gate acceptance follow.
+
+The next independent metadata-only increment follows
+[DCA-ONLINE-CATALOG-REFERENCES.md](../docs/DCA-ONLINE-CATALOG-REFERENCES.md):
+fixed ObjectModel target AssemblyRef/TypeRef/direct MemberRef mapping, with
+explicit TypeSpec omissions. Source28 implementation and owned478 PowerShell/26
+Python tests PASS, independent verification PASS22900697b967313a620af27e54e9cfe7b858b62a1866eb3162dbaf8e8723ee2c.
+Freeze5711dc3e394a7a71bb95396b5adecc085013a8576bfe2ca1fb0fb2c57c43b0e6;
+critical source/helper review PASS891b8dd879f4c75e60aac04f951b139db72d9add7446d44aee50994baf864d8c,
+commit pending, extraction NOT RUN;
+no missing DLL substitution/admission or original runtime is authorized by it. The owner's v1 catalog exclusion is recorded in GOALS.md and R-025; names in SDK references do not imply product scope.
 
 ## Completion Record
 

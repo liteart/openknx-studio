@@ -262,6 +262,72 @@ public static class EntrypointMetadata {
    if(report.Length>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ // Fixed declaration-only assembly-reference map; no candidate assembly is required or resolved.
+ const string OnlineCatalogInputHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
+ const string OnlineCatalogInputIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string OnlineCatalogTarget="Knx.Ets.OnlineCatalog.Download, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string OwnedOnlineCatalogInput="Task009.OwnedOnlineCatalogReferences, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string OwnedOnlineCatalogTarget="Owned.OnlineCatalog.Download, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ public static string ReadProjectOnlineCatalogReferences(string path,string hash){
+  if(hash!=OnlineCatalogInputHash)throw Fail("INPUT_PIN");return ReadOnlineCatalogReferences(path,hash,false);
+ }
+ public static string ReadOwnedProjectOnlineCatalogReferences(string path,string hash){return ReadOnlineCatalogReferences(path,hash,true);}
+ static AssemblyReferenceHandle OnlineCatalogScope(MetadataReader r,TypeReferenceHandle start,out List<string> chain,out string uncertainty){
+  chain=new List<string>();uncertainty=null;var seen=new HashSet<TypeReferenceHandle>();var current=start;
+  while(true){
+   if(current.IsNil||MetadataTokens.GetRowNumber(current)>r.TypeReferences.Count)throw Fail("TYPE_SCOPE_INVALID");if(!seen.Add(current))throw Fail("TYPE_SCOPE_CYCLE");
+   if(chain.Count>=16)throw Fail("SCOPE_LIMIT");chain.Add(MetadataTokens.GetToken(current).ToString("X8"));
+   TypeReference t;try{t=r.GetTypeReference(current);}catch(BadImageFormatException){throw Fail("TYPE_SCOPE_INVALID");}
+   var scope=t.ResolutionScope;if(scope.IsNil){uncertainty="NIL_SCOPE_UNRESOLVED";return default;}
+   if(scope.Kind==HandleKind.AssemblyReference){if(MetadataTokens.GetRowNumber(scope)>r.AssemblyReferences.Count)throw Fail("TYPE_SCOPE_INVALID");chain.Add(MetadataTokens.GetToken(scope).ToString("X8"));return (AssemblyReferenceHandle)scope;}
+   if(scope.Kind==HandleKind.TypeReference){if(Str(r,t.Namespace).Length!=0)throw Fail("TYPE_SCOPE_NAMESPACE");current=(TypeReferenceHandle)scope;continue;}
+   uncertainty=scope.Kind.ToString()+"_UNRESOLVED_NOT_FOLLOWED";return default;
+  }
+ }
+ static string ReadOnlineCatalogReferences(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);if(!owned&&bytes.Length!=14204880)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);if(count>(table==TableIndex.MethodDef?65536:RowLimit))throw new RowLimitObservationException(table,count);}
+   string identity=AssemblyIdentity(r);if(identity!=(owned?OwnedOnlineCatalogInput:OnlineCatalogInputIdentity))throw Fail("INPUT_IDENTITY");
+   if(r.AssemblyReferences.Count>256)throw Fail("REFERENCE_LIMIT");string target=owned?OwnedOnlineCatalogTarget:OnlineCatalogTarget;AssemblyReferenceHandle selected=default;
+   foreach(var h in r.AssemblyReferences)if(ReferenceIdentity(r,h)==target){if(!selected.IsNil)throw Fail("DUPLICATE_ASSEMBLY_REFERENCE");selected=h;}
+   if(selected.IsNil)throw Fail("ASSEMBLY_REFERENCE_NOT_FOUND");
+   var selectedTypes=new HashSet<TypeReferenceHandle>();var types=new List<object>();var uncertainties=new Dictionary<string,int>();int nonTarget=0;
+   foreach(var h in r.TypeReferences){
+    List<string> chain;string uncertainty;var owner=OnlineCatalogScope(r,h,out chain,out uncertainty);
+    if(uncertainty!=null){if(!uncertainties.ContainsKey(uncertainty))uncertainties.Add(uncertainty,0);uncertainties[uncertainty]++;continue;}
+    if(owner!=selected){nonTarget++;continue;}if(types.Count>=256)throw Fail("TYPE_REFERENCE_LIMIT");
+    var t=r.GetTypeReference(h);string display=new Names(r,true).Named(h);selectedTypes.Add(h);
+    types.Add(Obj("token",MetadataTokens.GetToken(h).ToString("X8"),"namespace",Str(r,t.Namespace),"name",Str(r,t.Name),"scope_kind",t.ResolutionScope.Kind.ToString(),"scope_token",MetadataTokens.GetToken(t.ResolutionScope).ToString("X8"),"scope_chain",chain,"qualified_name",display));
+   }
+   var members=new List<object>();var otherParents=new Dictionary<string,int>();int typeSpecParents=0,nonTargetMembers=0;
+   foreach(var h in r.MemberReferences){
+    var m=r.GetMemberReference(h);
+    if(m.Parent.Kind==HandleKind.TypeSpecification){typeSpecParents++;continue;}
+    if(m.Parent.Kind!=HandleKind.TypeReference){string kind=m.Parent.Kind.ToString();if(!otherParents.ContainsKey(kind))otherParents.Add(kind,0);otherParents[kind]++;continue;}
+    if(!selectedTypes.Contains((TypeReferenceHandle)m.Parent)){nonTargetMembers++;continue;}
+    if(members.Count>=256)throw Fail("MEMBER_REFERENCE_LIMIT");string name=Str(r,m.Name),signature;var item=Obj("token",MetadataTokens.GetToken(h).ToString("X8"),"parent_kind",m.Parent.Kind.ToString(),"parent_token",MetadataTokens.GetToken(m.Parent).ToString("X8"),"name",name);
+    try{
+     var kind=m.GetKind();item.Add("kind",kind.ToString());
+     if(kind==MemberReferenceKind.Method){
+      signature=new Names(r,true).Method(m.Signature);var decoded=m.DecodeMethodSignature(new Names(r,true),(object)null);
+      item.Add("signature_header",decoded.Header.RawValue);item.Add("calling_convention",decoded.Header.CallingConvention.ToString());item.Add("is_instance",decoded.Header.IsInstance);item.Add("generic_arity",decoded.GenericParameterCount);item.Add("return_type",decoded.ReturnType);item.Add("parameter_types",decoded.ParameterTypes);
+     }else if(kind==MemberReferenceKind.Field){signature=new Names(r,true).Field(m.Signature);item.Add("field_type",signature);}else throw Fail("UNSUPPORTED_SIGNATURE");
+    }catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+    item.Add("signature",signature);members.Add(item);
+   }
+   var assembly=r.GetAssemblyReference(selected);
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_online_catalog_references","rights","UNRESOLVED","runtime_execution","NOT_RUN",
+    "inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},
+    "selected_assembly_reference",target,"assembly_reference",Obj("token",MetadataTokens.GetToken(selected).ToString("X8"),"identity",target,"flags",(int)assembly.Flags),
+    "type_references",types,"member_references",members,"counts",Obj("assembly_references",r.AssemblyReferences.Count,"type_references_scanned",r.TypeReferences.Count,"selected_type_references",types.Count,"non_target_type_references",nonTarget,"unresolved_type_scopes",uncertainties,"member_references_scanned",r.MemberReferences.Count,"selected_member_references",members.Count,"non_selected_typeref_parent_members",nonTargetMembers,"global_unexamined_typespec_parent_members",typeSpecParents,"other_unresolved_parent_kinds",otherParents),
+    "limits",Obj("file_bytes",FileLimit,"total_bytes",TotalLimit,"methoddef_rows",65536,"other_table_rows",RowLimit,"assembly_references",256,"selected_type_references",256,"selected_member_references",256,"string_chars",1024,"signature_blob_bytes",128,"signature_chars",4096,"signature_nodes",128,"depth",16,"parameters",32,"generic_count",32,"report_utf8_bytes",512*1024),
+    "declaration_scope","GLOBAL_OBJECTMODEL_DIRECT_TYPEREF_PARENT_REFERENCES_ONLY","referenced_declarations","UNRESOLVED_NOT_FOLLOWED","typespec_parent_scope","GLOBAL_NOT_TARGET_SPECIFIC_UNEXAMINED_TYPESPEC_PARENT","qualification","DECLARATIONS_ONLY_NOT_CALLSITE_OR_COMPLETENESS_PROOF",
+    "limitations",new[]{"Global module references only, not a Project constructor call map. Empty selections do not prove absence; TypeSpec-parent omission counts are global, not target-specific.","Only token-proven TypeRef scope and immediate selected TypeRef MemberRef parents. Other parents, forwarding, MethodSpec use, external declarations, inheritance and call sites remain unexamined.","Signatures only, including any constructor reference name; no constructor definitions, IL, attributes, resources, values, candidate DLL, dependency resolution, target execution or dependency admission."}));
+   if(System.Text.Encoding.UTF8.GetByteCount(report)>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  const string ProjectStreamStoreHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
  const string ProjectStreamStoreIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
  const string ProjectStreamStoreRoot="Knx.Ets.ObjectModel.IStreamStore";
