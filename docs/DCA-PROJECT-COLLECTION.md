@@ -129,3 +129,68 @@ The separate final extraction helper is prepared but NOT RUN. Original metadata
 extraction, SDK activation, Windows/vendor runtime and hardware remain NOT RUN.
 Critical frozen source/helper review and source commit precede any extraction.
 Task-009 remains In progress, all ACs unchecked, no gate advances.
+
+
+## Original29 declaration result
+
+Frozen source/helper critical review PASS, no unresolved findings:
+review29/critical-source.txt SHA-256
+cb6763e495bdef4b3b10dbe84d87dfb37882a39fd5ef7b4a8df234c7c59d3202.
+Source commit baded77c87f7468b73611ebd5773c1da540bf02e was clean and all six
+current/Git source pins matched before the one fixed extraction. Private
+source-commit29.json SHA-256
+e48edaffa98a4cf051a42291d99c41f7edc53adf558047e3127642994651f42b
+records that checkpoint. From the repository root, the coordinator ran once:
+
+```text
+python3 -B private/evidence/task009-project-collection-metadata/run_original29.py --source-commit baded77c87f7468b73611ebd5773c1da540bf02e --review-sha256 cb6763e495bdef4b3b10dbe84d87dfb37882a39fd5ef7b4a8df234c7c59d3202
+```
+
+Result PASS for declarations only, terminal exit0. Fresh PowerShell7.6.7 probes
+confirmed write_denied=true and network_denied=true before decoding under the
+unchanged inner deny-default profile. Both children exited0, stderr empty;
+metadata stdout14,638 bytes. Exact original input remained unchanged. No retry.
+The outer execution context permitted that unchanged inner sandbox; it did not
+relax its restrictions. The final helper differs from the preserved pending
+checkpoint only by substituting the frozen hash.
+
+original29-report.json13,950 bytes SHA-256
+d7488b3043f9b4d1b89297dae2371f4b82c8c6f667dc030bffa60649a5803479;
+original29-observation.json SHA-256
+2915e2e15f2799b54d5299f2e3931a2788cb1c13919869b72911779b19dfc5eb;
+original29-evidence-manifest.json SHA-256
+5f65bfba238e21793f784ecfd0a0ecd7fa157cf8e5f6eb911ac6f81f6a20987b
+binds48 artifacts and the exact command.
+
+The selected ObjectModel ProjectCollection root is020003BD, flags1048577,
+public nongeneric Class, with unresolved base ObjectModel.DomCollection and10
+direct interface declarations. It has two declared constructors: public instance
+.ctor0600298E(flags6278/header32) and private static .cctor0600299C
+(flags6289/header0). public_constructor_count=1. The public constructor takes
+ObjectModel.Interfaces.INamedDomObject, ObjectModel.IFactory and a Func8
+importer delegate returning ObjectModel.Import.ProjectImporter. That delegate's
+parameter declarations include IProjectStore, Project, Common.Security.IKeyProvider,
+a String transform and baggage/import-information callbacks. These are type
+references, not Secure activation or approved service implementations.
+
+Five other public declared methods are all instance methods: get_Item06002990,
+ImportAsync06002991, Import06002992, GetEnumerator06002998 and
+Synchronize0600299A. There is no public static factory declared on this root.
+Base/inherited/external declarations remain unexamined. The constructor's
+legitimate argument values, callback/lifetime behavior, context bootstrap and
+catalog independence remain UNKNOWN. No SDK/vendor method or constructor,
+Windows runtime, UI/state, import operation or hardware was executed. Catalog
+acquisition/admission remains deferred; Task-009 ACs unchecked, no gate advances.
+Saved-result independent audit PASS, verifier29/original-result-audit.txt
+SHA-256 e4f91653818cb46f3bd99548a93b1a81eca22a1a0d43d4cdfbab348b20dc7387.
+It checked all48 bindings, committed source pins, raw-report equality and flags/
+counts without reading SDK payloads or repeating the query. Critical result
+review is pending at this checkpoint.
+
+
+Critical saved-result/two-document review PASS, no unresolved findings:
+review29/original-result-review.txt SHA-256
+42b83c97480bcd3794ad2e434ff118c225b6ba0491eb0f0f4086d2ec7239033d.
+It checked48 bindings, six source pins/current Git contents, raw JSON and
+constructor/method flags without SDK payload access or query repetition.
+This closes the preceding review-pending checkpoint for this result only.
