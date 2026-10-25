@@ -183,4 +183,71 @@ source/owned-result review PASS, private review35/source-owned-critical-review.t
 SHA256 `8bdda113ab7898346c664ea87bb8749671e111da3b51b02158c090c41142db73`.
 All10 runtime/six metadata hashes matched current files and committed blobs.
 The owned execution preceded commit and used those same bytes. Original35
-remains NOT RUN; the next step is its separate immutable plan/review.
+was NOT RUN at that source-commit checkpoint; the actual result follows below.
+
+## Actual Original35 content-store reference diagnostic
+
+At planning088e8dc77bf83de0782d6bcfa30dc26134bf8d61/codee2c38fff56220d0dc405ef4e8d1b175358ca8c3c,
+planb9f2ef031115ff92684add5f743efdf3197a55ed4f71a9800e2e69d730b7ddbd
+passed static audit4e616b3173b35c4045c2bbb285abb53b083038a661217d63f38dcac612317639
+and critical reviewf205dc2f8d14a95bbee969009c9eca464af263e0f93ce44b3f4e758d94b29373.
+Full local preparation check validated12 outputs/seven Python ASTs/three PS
+parses before one emission. Initial local schema/review-path assertion failures
+were retained and corrected before any output or remote attempt; no runtime retry.
+
+Fresh preflight verified20 private+two OS inputs and18 build35 artifacts.
+No provisioning or new DLL. One attempt FAIL, normal confirmed child exit2,
+not timeout. The exact get_Project060002F9 runtime return shape passed:
+IStore0200005E, flags1048737, public top-level nongeneric interface in the same
+pinned ObjectModel. Genuine Collection0600298E returned. During Project06002831,
+the synthetic Id fixture replied once. The host prepared and committed one
+controlled-reference reply; a proxy invocation was then refused. The reply counter
+precedes completion of CLR typed-return/marshaling. Thus SDK caller receipt or
+consumption, proxy invocation origin, member and semantics remain UNKNOWN; the
+call may be a CLR operation during that boundary. Message/member/values were
+NOT_INSPECTED. Project did not return. Do not infer an IStore method call or the
+refused operation from the getter name or counter.
+
+Final content state:attempt1/reply1/policy faultFalse/denied1/deny faultTrue,
+lifetime2, fatal after managed cleanup and PROCESS_FINAL. Cache remained clean:
+entries2/attempt0/reply0/faultFalse/stream0. Parent/context/importer, provider,
+factory callback and resource counters stayed0. Container/trace Dispose each
+returned once; trace lifetime audit remainedFalse. No Project disposal is
+claimed. Cleanup removed the task with
+owned0/scratch0. Post-check20+2 input integrity PASS,24466936 private bytes.
+
+Coordinator commands, each once from repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/run_project35_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project35.py f205dc2f8d14a95bbee969009c9eca464af263e0f93ce44b3f4e758d94b29373
+python3 -B private/evidence/task009-constructor-windows/poll_project35.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project35.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project35.py
+python3 -B private/evidence/task009-constructor-windows/run_project35_post_corrected.py
+python3 -B private/evidence/task009-constructor-windows/record_project35.py
+```
+
+Private project35-observation.json12761B/SHA256
+23990bcf1986c03328c6fa9eca0c0b5d40d6750e33c276ad9885fdd6112b50a2
+binds44 local files/six native pins. This is a coordinator saved-result record;
+independent result audit/review remain separate. The next bounded increment is
+identification of the refused proxy member, without any new operation/value.
+No DCA initialization/UI/state or intentional device operation was invoked.
+Vendor internals UNKNOWN; network/descendants NOT_CONTAINED. Task009 remains
+In progress/all ACs unchecked; qualification NOT_ESTABLISHED, no gate advances.
+
+Independent Original35 saved-result audit PASS for provenance/consistency,
+with runtime FAIL2 unchanged: private verifier35/original-result-audit.txt,
+SHA256 `47c0d9b31358a03c3bc72460890c74fc74a239268d5fa6be251c3dd1343badd6`.
+It checked44 files/six native pins, committed source16, exact return shape,
+reference/denial ordering, confirmed exit and cleanup/post20+2 integrity.
+No Windows, SDK or hardware operation was rerun. Result documentation review
+remains separate; no task/gate acceptance follows.
+
+The preserved audit's caller-return inference is corrected by the separate
+private verifier35/original-result-audit-clarification.txt, SHA256
+`662abcdaa7e13ccc5b9c4ebe427288e7523bc3a58bc45cc6696ee9e43f1457bb`.
+Host reply preparation/commit precedes CLR typed-return completion; caller
+receipt/consumption and proxy-call origin/member remain UNKNOWN. This changes
+no counter, normal FAIL2 outcome or cleanup/integrity result.
