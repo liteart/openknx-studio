@@ -167,3 +167,66 @@ The wording clarification preserves frozen code/test behavior and the historical
 contract checkpoint. Wrapper AST and diff checks PASS. No SDK metadata or
 runtime was executed by review. Source commit/current-pin verification still
 precedes the one fixed guarded extraction; no catalog feature/admission follows.
+
+## Original28 guarded reference result
+
+Source28 commitcc7ae2614b9aebe0a8fe34bc33c736cdda2badbf matched all six
+current/committed source pins and a clean worktree before the one fixed inquiry.
+Private source-commit28.json SHA-256
+8862c4373c00523b81a115742d480ccc0f53ece293e9ad53a4794e713cbe43cb
+records that checkpoint. Fresh child1 restriction probes reported exact
+PowerShell7.6.7, write_denied true/network_denied true, exit0/stderr0. Only then
+did child2 decode the existing ObjectModel, exit0/stderr0. The inner profile and
+30-second/2MiB bounds were unchanged. Parent input hash remained unchanged.
+
+Result **PASS for reference declarations only**:
+
+| Item | Observed count |
+|---|---|
+| AssemblyRefs scanned | 39 |
+| Exact selected AssemblyRef | 2300000E, flags0 |
+| TypeRefs scanned / selected | 898 / 15 |
+| MemberRefs scanned / selected direct parents | 8299 / 65 |
+| Nonselected TypeRef-parent MemberRefs | 2175 |
+| Globally unexamined TypeSpec-parent MemberRefs | 6059 |
+
+All65 selected entries are method MemberRefs; field support is exercised by
+owned fixtures only. Selected references include serialization/data types and
+a Downloader type with constructor/download-related signatures. Those global
+names do not establish which reference Project06002830 needs or invokes,
+whether any network operation occurs, or that a catalog feature is necessary.
+The6059 omissions are GLOBAL, not catalog-specific; no target completeness is
+claimed. Referenced definitions remain unresolved and no SDK method body or
+constructor definition was inspected/invoked.
+
+Private original28-report.json,42,038 bytes, SHA-256
+c3e6ade4a05da07995ba759468de7af709cb086228a6476c1349cff04ef0cfd3;
+original28-observation.json SHA-256
+994d5e6f2f209530876424430cfe7164cba9b4d10cb6a6fc43b62e4b899b78a9.
+original28-evidence-manifest.json SHA-256
+6efd7ee93ff300554476002f0e5b2e46b9904aed1391303e30c3f583e37f714f
+binds60 source/owned/guard/raw/result/provenance artifacts and exact command.
+Independent verifier28/original-result-audit.txt, SHA-256
+8005f29d7e71ff9ebecd14c6e4dd55e0d8c42cdb09db2d7b3147114dbe46e7cf,
+PASS: all60 bindings, six source pins, both raw child outputs, ordered selection,
+token ownership/direct-parent invariants and reconciled counts. No query rerun
+or SDK payload access occurred by the verifier. Critical result review pending.
+
+The target catalog DLL was not acquired, loaded or admitted. Vendor runtime,
+Windows/hardware and catalog implementation NOT RUN. v1 remains locally supplied
+manufacturer files. The next question concerns legitimate creation routes for
+the concrete SDK Project required by the context getter. Saved metadata already
+shows it is sealed and ultimately derives from System.Object; a normal interface
+or MarshalByRefObject proxy cannot stand in for it. A public bootstrap route
+remains unestablished. The chosen ObjectModel constructor route is not proven
+necessary by this map. Task-009/all ACs remain open, no gate advances.
+
+### Original28 critical result review
+
+review28/original-result-review.txt,4,119 bytes, SHA-256
+5ed5c8c94659c28a94cc7a633411cf5905fd802de9ed00e65ae6b2153e82a96c,
+PASS with no unresolved findings. It checks60 bindings, source/Git pins, raw
+child/report equivalence, every selected token scope/direct parent and count
+partition, plus the saved SDK sealed/Object hierarchy. Claims exclude call-site,
+completeness, necessity and network behavior inference. No SDK payload access,
+query rerun or runtime occurred. Catalog acquisition/admission remains deferred.
