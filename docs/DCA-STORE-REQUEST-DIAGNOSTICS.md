@@ -132,7 +132,7 @@ poll_owned_admin34_01.py,collect_owned_admin34.py,cleanup_owned_admin34.py.
 All handles reached terminal state. The initial dispatcher and saved checker
 failures are separately retained and are not additional test attempts.
 
-Actual Original34 remains NOT RUN. Source34 owned execution selected no
+At the owned checkpoint Original34 was NOT RUN. Source34 owned execution selected no
 original SDK/XML input. Task009 remains In progress/all ACs unchecked; no
 qualification or gate advances. The next unblocked step is the separately
 reviewed single Original34 diagnostic using the unchanged validated20 inputs.
@@ -145,3 +145,75 @@ results, diagnostic phases/categories and52 case-file lengths. No helper,
 recorder, original SDK or hardware operation was executed by this audit.
 The contract at execution/freeze is preserved separately; this live document
 now adds actual results after that checkpoint.
+
+## Actual Original34 refused-member evidence
+
+The separately reviewed plan d10b0d98a62a482d71434c891df581be6994af35cd7c6c623e12c26b737553d1
+used planning HEAD67f5a37088f861b5473238215ba7f0ed697ab86b and reviewed code
+4f0c4d97c2d96f07926ebd7388bf6d764d691fa0. Root static audit
+6a11cc53ebc483220081d7bc4181b79bf0670de7354940977dbe2c56253d7518 and
+independent plan review7bed2207e881fa4e03ad036435b56afcd050ae8d9eecfb49070c87ba69e3f19c
+PASS. Full local generator check-only validated the corrected complete derivation
+before any plan output or remote attempt; no earlier draft ran a target.
+
+Fresh preflight verified unchanged20 private inputs, two OS pins and18 build34
+artifacts. Reused inputs-context-xml33; no new file or provisioning. One original
+attempt **FAIL**, normal confirmed child exit2, no timeout or retry. Genuine
+Collection0600298E returned; Project06002831 did not return. The new line is:
+
+```text
+STORE_REQUEST_DIAGNOSTIC phase=MESSAGE_SHAPE entry=2 category=TRUSTED_STORE_MEMBER owner=Knx.Ets.ObjectModel.IProjectStore token=060002F9 name=get_Project values=NOT_INSPECTED
+```
+
+The existing saved services report SHA256
+19194b3a2c0b4faf91ef412045291f2c3ea7dc155a72842079566ed174899cdd
+declares060002F9 as `instance Knx.Ets.ObjectModel.IStore() generic=0`,
+attributes3526/header32. This is the project-content store reference, distinct
+from the DCA initialization getter returning concrete SDK.Project. Its name
+does not establish IStore behavior or allow any store method success.
+
+The cache final state remained entries2/attempts0/replies0/faultedTrue/stream0.
+Parent/context/importer states remained0/False; provider/resource counters0.
+Container and trace disposal returned once, trace lifetime auditFalse. Final
+errors still include CACHE_STREAM_FINAL_DENIAL and
+CACHE_WRAPPER_DENIED_PROCESS_FINAL; the diagnostic now preserves the observed
+member/validation phase before those final failures. No Project disposal is
+claimed. Cleanup removed the task with owned0/scratch0. Post-check verified
+20 private+two OS inputs unchanged,24466936 private bytes.
+
+Private project34-observation.json (11200 bytes, SHA256
+`7017b39b6e900800c007c35a82b7f15be4341670c1050268cd677058b9780e36`)
+binds42 files. Root recorded it through standard-library JSON/hash/regex
+assertions over the saved raw logs, including the exact diagnostic tuple,
+constructor results, confirmed exit and cleanup/integrity. This is a coordinator
+record, not an independently authored execution result. Independent audit and
+review are recorded separately. No vendor DLL bytes were modified.
+
+Coordinator commands executed once from repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/preparation-original34/prepare_original34.py --source-planning-receipt-sha256 bb26ca6ecdcec9bec6ace086be7deb54f6a1656918c37fa3802747c662872e7e --critical-owned-review-sha256 8375c1c2916b1866f772f49d26ba634bf1b11a269bf4f0f897cfdad3af88a1be
+python3 -B private/evidence/task009-constructor-windows/run_project34_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project34.py 7bed2207e881fa4e03ad036435b56afcd050ae8d9eecfb49070c87ba69e3f19c
+python3 -B private/evidence/task009-constructor-windows/poll_project34.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project34.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project34.py
+python3 -B private/evidence/task009-constructor-windows/run_project34_post_corrected.py
+```
+
+All handles reached terminal state. The next bounded increment may supply one
+explicitly controlled, deny-only IStore reference through this exact getter
+after its return-type shape and lifetime/budget contract are validated. No
+IStore method values, cache format, file path or manufacturer semantics may be
+inferred from this observation. Original Project and SDK.Project/get_Project
+success remain unestablished. Task009 In progress, all ACs unchecked; no gate
+advances. Vendor internals UNKNOWN; network/descendants NOT_CONTAINED. The
+harness invoked no DCA initialization/UI/state or intentional device operation.
+
+Independent saved-result audit PASS for provenance/result consistency:
+`task009-constructor-windows/verifier34/original-result-audit.txt`, SHA256
+`9e8048bff290ffd112d1b7bdadc61a3ff191433bd79c2b43fc398ce5975d6af4`.
+It checked42 bindings,10 source/six metadata hashes, exact20+2 plan pins and
+limits, the single observed method/phase, saved declaration, confirmed exit and
+cleanup/post-integrity. No original runtime or hardware operation was rerun.
+Runtime outcome remains FAIL2 and qualification NOT_ESTABLISHED.
