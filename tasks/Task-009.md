@@ -2467,4 +2467,11 @@ verifier35/owned-result-audit.txt SHA256
 ddacc53cfe7e1767578fe6d43f932154790f9d98df8f50d13f978589990346ca,
 confirming176 bindings/source10+metadata6/build8/artifact18 declarations/90PASS,
 58+13 case files and cleanups/control markers. No SDK/hardware or independent
-payload download. Combined critical review/source commit remain pending.
+payload download. At that checkpoint, combined review and commit were pending.
+
+Source35 implementation committed as `e2c38fff56220d0dc405ef4e8d1b175358ca8c3c`. Combined critical
+source/owned-result review PASS, private review35/source-owned-critical-review.txt
+SHA256 `8bdda113ab7898346c664ea87bb8749671e111da3b51b02158c090c41142db73`.
+All10 runtime/six metadata hashes matched current files and committed blobs.
+The owned execution preceded commit and used those same bytes. Original35
+remains NOT RUN; the next step is its separate immutable plan/review.

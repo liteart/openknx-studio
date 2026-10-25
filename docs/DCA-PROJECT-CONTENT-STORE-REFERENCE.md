@@ -176,4 +176,11 @@ SHA256ddacc53cfe7e1767578fe6d43f932154790f9d98df8f50d13f978589990346ca.
 It verified176 bindings, source10/metadata6, build8/artifact18 declarations,
 90 results,58+13 case-file lengths, raw/decoded logs, cleanup and before0/later1
 controls. It did not redownload compiled payloads or execute SDK/hardware.
-Combined critical result/source review and commit remain pending.
+At that owned-result checkpoint, combined critical review and commit were pending.
+
+Source35 implementation committed as `e2c38fff56220d0dc405ef4e8d1b175358ca8c3c`. Combined critical
+source/owned-result review PASS, private review35/source-owned-critical-review.txt
+SHA256 `8bdda113ab7898346c664ea87bb8749671e111da3b51b02158c090c41142db73`.
+All10 runtime/six metadata hashes matched current files and committed blobs.
+The owned execution preceded commit and used those same bytes. Original35
+remains NOT RUN; the next step is its separate immutable plan/review.
