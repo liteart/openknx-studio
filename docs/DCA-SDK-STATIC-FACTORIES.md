@@ -167,3 +167,76 @@ review and local source commit must precede one fixed original extraction.
 Factory availability, legitimate arguments, bootstrap and catalog independence
 remain UNKNOWN. No SDK activation, Windows runtime, UI/state or hardware proof;
 Task-009 remains In progress/all ACs unchecked, no gate advances.
+
+
+## Original30 static-return declaration result
+
+Critical frozen source/owned/helper review PASS, no unresolved findings:
+review30/critical-source.txt SHA-256
+6b91359e5e90188f958d92a5feeb1dcf42c51b524873388bf3b76a58fe4949c7.
+Source commit d011a8404511263d6882bc102f5fc27edf699ec6 was clean; all six
+current/Git source pins matched before execution. source-commit30.json SHA-256
+e23eaf1245f7986a547f15fd260403f51eef373b60b5b62ea8c9dea36f886db9
+records that checkpoint. From the repository root, the coordinator ran once:
+
+```text
+python3 -B private/evidence/task009-sdk-static-factories/run_original30.py --source-commit d011a8404511263d6882bc102f5fc27edf699ec6 --review-sha256 6b91359e5e90188f958d92a5feeb1dcf42c51b524873388bf3b76a58fe4949c7
+```
+
+Result PASS for the exact declaration selection, terminal exit0 confirmed after
+polling the same live handle. Fresh PowerShell7.6.7 probes confirmed write_denied
+and network_denied true before decoding under the unchanged deny-default inner
+profile. Both children exit0, stderr empty; metadata stdout2,924 bytes. Exact
+SDK input remained unchanged. No retry or target runtime execution occurred.
+The outer execution context enabled the unchanged inner sandbox, not a relaxed
+fallback. The final helper differed from its retained pending checkpoint only by
+one frozen-hash substitution.
+
+original30-report.json3,031 bytes SHA-256
+1ce8e1928f4ec5df0d350309535de532c369a4af26f2634649be21475581bd26;
+original30-observation.json SHA-256
+9dc516276b407b7233134b55ce00fe02a5e1b00000983919ad12f590c01ed4ea;
+original30-evidence-manifest.json SHA-256
+551cee575e38ceaa529dff970ca60d4b7d9ba3070393bd7aa8648afd674eb5de
+binds53 artifacts and the exact command.
+
+Actual target tokens020001D1/0200002F/020001D4 each have flags1048833,
+Public visibility and zero generic arity. The report records793 TypeDef rows,
+348 externally public owners and8,188 MethodDef rows, all8,188 declared methods
+scanned. Exclusive exclusions are3,472 nonpublic-owner methods,779 constructors,
+1,430 nonpublic methods and2,476 instance methods, leaving31 public static
+return prefixes. Maximum prefix bytes read5. Direct target matches0, methods[].
+Nonselected prefix counts are3 CLASS_TYPEREF_UNRESOLVED,
+1 VALUETYPE_PREFIX_NOT_SELECTED,7 OTHER_CLASS_TYPEDEF and20 PRIMITIVE_PREFIX.
+Counts balance without silently treating excluded signatures as validated.
+
+This finds no direct exact-target public static return declaration on the
+examined externally public SDK owners. It does not rule out instance/nonpublic/
+wrapped/external routes or establish that the catalog dependency is unavoidable.
+No constructor/method/import callback, SDK/vendor runtime, Windows UI/state,
+Secure or hardware operation was executed. Catalog acquisition/admission stays
+deferred. Task-009 remains In progress/all ACs unchecked, no gate advances.
+Saved-result independent audit PASS, verifier30/original-result-audit.txt
+SHA-256 9272be7a55cd1350c84e397ef1588808ee4acf3a6b030600c7b255df9a249094.
+It checked53 bindings, committed source pins, fresh probe record, raw-report
+identity and counter partitions without SDK payload access or query repetition.
+Critical result review pending at this checkpoint.
+
+
+The saved-result audit's scope sentence was clarified in a separate corrected
+copy; original audit9272be7a55cd1350c84e397ef1588808ee4acf3a6b030600c7b255df9a249094
+is preserved unchanged. Current verifier30/original-result-audit-corrected.txt
+SHA-2566030ecb9397b6221da3ad289e671ee130f1e86687b2e3b39983e8c768f4acd73
+retains the numerical/provenance PASS and specifies that target TypeDef/MethodDef
+declarations and bounded prefixes were scanned, while referenced/external
+definitions, constructor signatures, IL/bodies and activation were unexamined.
+This was a text correction only, with no query/test repetition or outcome change.
+
+
+Critical original30 saved-result/two-document review PASS, no unresolved findings:
+review30/original-result-review.txt SHA-256
+6c9fc923b06f0891007b26e2f91d5b45d1d793a84534ee590cc3000c6b2f9194.
+It checked all53 bindings, committed six-source pins, raw-report equality,
+actual target flags and scan partitions plus the preserved/corrected audit scope.
+No SDK payload access or rerun by reviewer. This closes the preceding pending
+review checkpoint for the declaration result only; Task-009 remains In progress.
