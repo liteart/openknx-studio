@@ -167,4 +167,64 @@ source/owned-result review PASS, private review36/source-owned-critical-review.t
 SHA256 `4fd93b403428496b5a8cd64f224a043e27980ff58b3774328d9ca0cccc8fe75c`.
 All10 runtime/six metadata hashes matched current files and committed blobs.
 Owned execution preceded commit and used those same bytes. At this checkpoint
-Original36 remains NOT RUN; a separate immutable original plan/review follows.
+Original36 was NOT RUN at that source-commit checkpoint; its actual result follows.
+
+## Actual Original36 first-refusal diagnostic
+
+At planning0a77df7850a4b10ad03b6dfc62795bd531ef5b68/code399658a8e7bcbb2fba27b02488fe7e60d3c44aa8,
+plan8e192540c6feecd429f9c7c5b58b1a6c0b0d1ab665bc94bc2eb29b83e89fe231
+passed static audit79af1eee8a43d382599efbafd67af2e4306ecffbc24a1bb9f7c6fb47f9517988
+and critical review0f098af0f32d82f0df68f5218446344956945b2fde47ef2f67d5abc25adc0a1d.
+Full preparation check validated12 outputs/seven ASTs/three PS parses before
+one emission; no preparation correction or runtime retry was needed.
+
+Fresh preflight checked unchanged20 private+two OS inputs and18 build36 artifacts.
+One original attempt FAIL, normal confirmed exit2, not timeout. Collection
+returned; Project did not. Host reference attempt1/reply-commit1/policy faultFalse,
+then proxy count1/faultTrue. The only new metadata diagnostic was:
+
+```text
+PROJECT_CONTENT_REFUSAL entry=1 category=FOREIGN_OWNER values=NOT_INSPECTED caller-origin=UNKNOWN
+```
+
+The method-kind filter passed, but its owner/module did not match the validated
+IStore owner or the fixed core-method whitelist. No exact declaring owner,
+method name/token, inheritance, contract membership, caller receipt/consumption
+or invocation origin is established. No signature, arguments or values were
+inspected and no operation was allowed. This does not yet identify the required
+SDK contract. Exact IStore return shape0200005E remains the prior verified fact.
+
+Cache final entries2/attempt0/reply0/faultFalse/stream0; contexts/importer,
+provider/factory/resource counters0. Content after-cleanup/PROCESS_FINAL audits
+remain fatal at attempt1/reply1/policy faultFalse/denied1/deny faultTrue/lifetime2.
+Container and trace Dispose returned once each, trace lifetime auditFalse; no
+Project disposal claimed. Cleanup removed the task, owned0/scratch0. Post-check
+20+2 integrity PASS,24466936 private bytes. No new DLL/provisioning/catalog scope.
+
+Coordinator commands, each once from repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/run_project36_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project36.py 0f098af0f32d82f0df68f5218446344956945b2fde47ef2f67d5abc25adc0a1d
+python3 -B private/evidence/task009-constructor-windows/poll_project36.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project36.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project36.py
+python3 -B private/evidence/task009-constructor-windows/run_project36_post_corrected.py
+python3 -B private/evidence/task009-constructor-windows/record_project36.py
+```
+
+Private project36-observation.json/SHA256
+edaee8d65a06774eb32a32a1170f0bfa3ee5bf620eb2a6f8532d959e8c38bd5c
+binds44 local files/six native pins. This is the coordinator saved-result record;
+independent audit/review are separate. No DCA initialization/UI/state or intentional
+device operation invoked; vendor internals UNKNOWN/network+descendants
+NOT_CONTAINED. Task009 remains In progress/all ACs unchecked; qualification
+NOT_ESTABLISHED/no gate advance. Next: observe the foreign method's genuine
+metadata identity without adding any successful service response.
+
+Independent saved-result audit PASS for provenance/consistency, runtime FAIL2
+unchanged: private verifier36/original-result-audit.txt, SHA256
+`d166111c3762769c0c231654077a1a1c3636ae1458acceb3a82f904134bff550`.
+It checked44 files/six native pins, committed source16, exact refusal category,
+confirmed exit/counters/disposal/cleanup and20+2 input integrity. No runtime
+was rerun and no caller/receipt/member identity was inferred.
