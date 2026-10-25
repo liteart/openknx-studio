@@ -148,3 +148,11 @@ review and source commit remain next. Original37/new original member identity,
 receipt and origin remain NOT RUN/UNKNOWN; Original36 FAIL2 is latest original
 runtime. No SDK/UI/state/bus/hardware/production qualification or gate advancement;
 Task009 remains In progress/all ACs unchecked.
+
+Source37 implementation committed as `d986fe35e54ec0f3b1119e1429362cf54742c4ad`. Combined critical
+source/owned-result review PASS, private review37/source-owned-critical-review.txt
+SHA256 `b860e333adea0b84e033b57f4ea4cc6500c120620dbcb815936e2d9d125cf9e3`.
+All10 runtime/six metadata hashes matched current files and committed blobs.
+The corrected owned run preceded commit and used those same bytes. Original37
+was NOT RUN at this checkpoint; its separate plan must use build37c and the
+corrected immutable freeze rather than the historical failed build37 records.
