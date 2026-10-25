@@ -120,6 +120,17 @@ Independent result audit PASS8005f29d7e71ff9ebecd14c6e4dd55e0d8c42cdb09db2d7b314
 critical result review PASS5ed5c8c94659c28a94cc7a633411cf5905fd802de9ed00e65ae6b2153e82a96c;
 no missing DLL substitution/admission or original runtime is authorized by it. The owner's v1 catalog exclusion is recorded in GOALS.md and R-025; names in SDK references do not imply product scope.
 
+The next minimum offline-context inquiry follows
+[DCA-PROJECT-COLLECTION.md](../docs/DCA-PROJECT-COLLECTION.md): exact ObjectModel
+ProjectCollection declarations for assessing already-known context-injected
+Project overloads. SDK and ObjectModel collections are distinct. Source29
+implementation and owned534 PowerShell/27 Python checks PASS; independent
+verification PASSc15d373bca402544c267ec1df7384396682af61dd47c1d18ca71993511e20f9f.
+Freeze95883cb982a35828b187b65f3527e21f08d6ba86644f989b65f8b132b64f3d34
+binds six sources; original extraction NOT RUN, frozen critical review/commit
+pending. Overload behavior, bootstrap feasibility and avoidance of the catalog
+dependency remain UNKNOWN.
+
 ## Completion Record
 
 | Field | Initial value |

@@ -328,6 +328,50 @@ public static class EntrypointMetadata {
    if(System.Text.Encoding.UTF8.GetByteCount(report)>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ // Fixed ProjectCollection declarations only; no activation or ancestry/factory graph traversal.
+ const string ProjectCollectionHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
+ const string ProjectCollectionIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string ProjectCollectionRoot="Knx.Ets.ObjectModel.Project.ProjectCollection";
+ const string OwnedProjectCollectionIdentity="Task009.OwnedProjectCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string OwnedProjectCollectionRoot="Owned.Task009.ProjectCollectionFixture";
+ public static string ReadProjectCollection(string path,string hash){
+  if(hash!=ProjectCollectionHash)throw Fail("INPUT_PIN");return ReadProjectCollectionInternal(path,hash,false);
+ }
+ public static string ReadOwnedProjectCollection(string path,string hash){return ReadProjectCollectionInternal(path,hash,true);}
+ static string ReadProjectCollectionInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);if(!owned&&bytes.Length!=14204880)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);if(count>(table==TableIndex.MethodDef?65536:RowLimit))throw new RowLimitObservationException(table,count);}
+   string identity=AssemblyIdentity(r);if(identity!=(owned?OwnedProjectCollectionIdentity:ProjectCollectionIdentity))throw Fail("INPUT_IDENTITY");
+   string rootName=owned?OwnedProjectCollectionRoot:ProjectCollectionRoot;TypeDefinitionHandle root=default;
+   foreach(var h in r.TypeDefinitions)if(new Names(r).Named(h)==rootName){if(!root.IsNil)throw Fail("DUPLICATE_ROOT");root=h;}
+   if(root.IsNil)throw Fail("ROOT_NOT_FOUND");var t=r.GetTypeDefinition(root);
+   if((t.Attributes&TypeAttributes.VisibilityMask)!=TypeAttributes.Public||!t.GetDeclaringType().IsNil)throw Fail("ROOT_NOT_PUBLIC");
+   int arity=t.GetGenericParameters().Count;if(arity!=0)throw Fail("UNSUPPORTED_GENERIC_ROOT");
+   var interfaces=new List<string>();foreach(var ih in t.GetInterfaceImplementations()){
+    if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");interfaces.Add(new Names(r,true).Named(r.GetInterfaceImplementation(ih).Interface));
+   }
+   var constructors=new List<object>();var methods=new List<object>();int publicConstructors=0;
+   foreach(var mh in t.GetMethods()){
+    var m=r.GetMethodDefinition(mh);bool constructor=r.StringComparer.Equals(m.Name,".ctor")||r.StringComparer.Equals(m.Name,".cctor");
+    var access=m.Attributes&MethodAttributes.MemberAccessMask;if(!constructor&&access!=MethodAttributes.Public)continue;
+    if(constructor?constructors.Count>=32:methods.Count>=256)throw Fail(constructor?"CONSTRUCTOR_LIMIT":"METHOD_LIMIT");
+    string name=Str(r,m.Name),signature;MethodSignature<string> decoded;
+    try{signature=new Names(r,true).Method(m.Signature);decoded=m.DecodeSignature(new Names(r,true),(object)null);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+    bool isStatic=(m.Attributes&MethodAttributes.Static)!=0;
+    var declaration=Obj("token",MetadataTokens.GetToken(mh).ToString("X8"),"name",name,"attributes",(int)m.Attributes,"accessibility",access.ToString(),"is_static",isStatic,
+     "signature_header",decoded.Header.RawValue,"calling_convention",decoded.Header.CallingConvention.ToString(),"is_instance",decoded.Header.IsInstance,"generic_arity",decoded.GenericParameterCount,"return_type",decoded.ReturnType,"parameter_types",decoded.ParameterTypes,"signature",signature);
+    if(constructor){constructors.Add(declaration);if(name==".ctor"&&access==MethodAttributes.Public&&!isStatic)publicConstructors++;}else methods.Add(declaration);
+   }
+   var type=Obj("token",MetadataTokens.GetToken(root).ToString("X8"),"name",rootName,"attributes",(int)t.Attributes,"visibility",(t.Attributes&TypeAttributes.VisibilityMask).ToString(),"class_semantics_raw",(int)(t.Attributes&TypeAttributes.ClassSemanticsMask),"class_semantics",(t.Attributes&TypeAttributes.ClassSemanticsMask)==TypeAttributes.Interface?"Interface":"Class","is_interface",(t.Attributes&TypeAttributes.ClassSemanticsMask)==TypeAttributes.Interface,"generic_arity",arity,"base_type",new Names(r,true).Named(t.BaseType),"interfaces",interfaces,"constructor_count",constructors.Count,"public_constructor_count",publicConstructors,"constructors",constructors,"methods",methods);
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_collection","rights","UNRESOLVED","runtime_execution","NOT_RUN",
+    "inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_root",rootName,"declaration_scope","ROOT_ONLY","referenced_declarations","UNRESOLVED_NOT_FOLLOWED","types",new[]{type},"qualification","DECLARATIONS_ONLY_NOT_CONSTRUCTION_OR_OFFLINE_BEHAVIOR_PROOF",
+    "limits",Obj("file_bytes",FileLimit,"aggregate_bytes",TotalLimit,"methoddef_rows",65536,"other_table_rows",RowLimit,"string_chars",1024,"signature_blob_bytes",128,"signature_chars",4096,"signature_nodes",128,"depth",16,"parameters",32,"generic_count",32,"interfaces",32,"constructors",32,"other_public_methods",256,"report_utf8_bytes",512*1024),
+    "limitations",new[]{"Root declarations only. Base/interfaces, inherited members, external declarations and factories on other owners are not followed. Return shapes and constructor access are not creation/argument/behavior qualification.","public_constructor_count counts declared public nonstatic .ctor methods only; .cctor and all other constructor access/static flags remain explicit. Class semantics alone does not establish class/value-type/enum usability.","No IL, fields/values/layout, custom attributes, activation, SDK/candidate loads, dependency resolution, graph or implementation search. No inference of catalog independence from overload signatures."}));
+   if(System.Text.Encoding.UTF8.GetByteCount(report)>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  const string ProjectStreamStoreHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
  const string ProjectStreamStoreIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
  const string ProjectStreamStoreRoot="Knx.Ets.ObjectModel.IStreamStore";

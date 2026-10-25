@@ -471,5 +471,40 @@ try{
  $catalogWorker=Join-Path $PSScriptRoot 'Read-ProjectOnlineCatalogReferences.ps1'
  Reject {& $catalogWorker -InputPath $catalog -InputSha256 (Hash $catalog)} 'DCAENTRY_INPUT_PIN'
  Assert ((StreamStore) -ceq $ssRaw -and (Catalog) -ceq $catalogRaw -and (UndoStore) -ceq $usRaw -and (TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All old reports byte-identical after catalog reference map';$passed++
+ $collection=Join-Path $root 'OwnedProjectCollection.dll';[Task144OwnedFixtures]::CreateProjectCollection($collection)
+ function ProjectCollection([string] $p=$collection){[Task144.EntrypointMetadata]::ReadOwnedProjectCollection($p,(Hash $p))}
+ $collectionRaw=ProjectCollection;$pc=$collectionRaw|ConvertFrom-Json;$pct=$pc.types[0]
+ Assert ($pc.operation -ceq 'static_dca_project_collection' -and $pc.runtime_execution -ceq 'NOT_RUN' -and $pc.selected_root -ceq 'Owned.Task009.ProjectCollectionFixture' -and $pc.inputs[0].identity -ceq 'Task009.OwnedProjectCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null') 'Collection fixed unsigned identity/root; not SDK collection';$passed++
+ Assert ($pc.types.Count -eq 1 -and $pct.token -ceq '02000003' -and $pct.attributes -eq 257 -and $pct.visibility -ceq 'Public' -and $pct.generic_arity -eq 0 -and -not $pct.is_interface -and $pct.class_semantics -ceq 'Class' -and $pct.base_type -ceq 'Owned.Task009.UnresolvedBase') 'Collection actual kind/flags/unresolved base, no ancestry traversal';$passed++
+ Assert ($pct.interfaces.Count -eq 2 -and $pct.interfaces[0] -ceq 'Owned.Task009.UnresolvedInterface' -and $pct.interfaces[1] -ceq '[Owned.ForeignContracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.External.IBase') 'Collection local/external interface references not followed';$passed++
+ Assert ($pct.constructor_count -eq 4 -and $pct.public_constructor_count -eq 1 -and $pct.constructors.Count -eq 4 -and $pct.constructors[0].accessibility -ceq 'Public' -and $pct.constructors[1].accessibility -ceq 'Assembly' -and $pct.constructors[2].accessibility -ceq 'Private' -and $pct.constructors[3].name -ceq '.cctor') 'All public/internal/private/static constructor declarations and public-instance count';$passed++
+ Assert ($pct.constructors[3].is_static -and -not $pct.constructors[3].is_instance -and $pct.constructors[3].signature_header -eq 0 -and $pct.constructors[1].signature -ceq 'instance Void(String) generic=0') 'Raw static versus signature-instance flags/constructor arguments';$passed++
+ Assert ($pct.methods.Count -eq 3 -and $pct.methods[0].is_static -and -not $pct.methods[0].is_instance -and $pct.methods[0].return_type -ceq 'Owned.Task009.ProjectCollectionFixture' -and $pct.methods[1].signature -ceq 'instance String() generic=0' -and $pct.methods[2].signature -ceq 'instance !!0(!!0) generic=1') 'Public static root-return/getter/generic signatures are declarations only';$passed++
+ Assert (-not $collectionRaw.Contains('MALFORMED_MUST_NOT_BE_READ') -and -not $collectionRaw.Contains('FIELD_VALUE_MUST_NOT_BE_READ') -and -not $collectionRaw.Contains('OWNED_CONSTANT_VALUE_MUST_NOT_BE_READ') -and -not $collectionRaw.Contains($root) -and @([AppDomain]::CurrentDomain.GetAssemblies()|Where-Object {$_.GetName().Name -eq 'Task009.OwnedProjectCollection'}).Count -eq 0) 'Collection no private nonconstructor/inherited/fields/values/paths or target load';$passed++
+ foreach($profile in @(1,2,3,4,6,7,9,11,13,14,15,16,17,18,19,20,22,24,28,31,32,37)){
+  $bad=Join-Path $root ('CollectionBad'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectCollection($bad,$profile)
+  $code=@{1='INPUT_IDENTITY';2='ROOT_NOT_FOUND';3='DUPLICATE_ROOT';4='ROOT_NOT_PUBLIC';6='UNSUPPORTED_GENERIC_ROOT';7='CONSTRUCTOR_LIMIT';9='METHOD_LIMIT';11='INTERFACE_LIMIT';13='MALFORMED_SIGNATURE';14='MALFORMED_SIGNATURE';15='UNSUPPORTED_SIGNATURE';16='SIGNATURE_LIMIT';17='SIGNATURE_SHAPE';18='SIGNATURE_SHAPE';19='STRING_LIMIT';20='SIGNATURE_LIMIT';22='ROW_LIMIT';24='ROW_LIMIT';28='REPORT_LIMIT';31='SIGNATURE_LIMIT';32='SIGNATURE_LIMIT';37='SIGNATURE_LIMIT'}[$profile]
+  Reject {ProjectCollection $bad} ('DCAENTRY_'+$code)
+ }
+ foreach($profile in @(5,8,10,12,23,25,27,29,36,38)){
+  $valid=Join-Path $root ('CollectionBoundary'+$profile+'.dll');[Task144OwnedFixtures]::CreateProjectCollection($valid,$profile);$v=ProjectCollection $valid|ConvertFrom-Json;$vt=$v.types[0]
+  Assert ($v.types.Count -eq 1 -and $v.runtime_execution -ceq 'NOT_RUN' -and $v.declaration_scope -ceq 'ROOT_ONLY' -and $v.referenced_declarations -ceq 'UNRESOLVED_NOT_FOLLOWED') ('Collection exact boundary/root-only profile '+$profile);$passed++
+  if($profile -eq 5){Assert ($vt.is_interface -and $vt.attributes -eq 161 -and $null -eq $vt.base_type -and $vt.constructor_count -eq 0 -and $vt.public_constructor_count -eq 0) 'Collection interface kind recorded without class assumption';$passed++}
+  if($profile -in @(8,38)){Assert ($vt.constructor_count -eq 32 -and $vt.public_constructor_count -eq 1) 'Collection32 constructor declarations';$passed++}
+  if($profile -in @(10,38)){Assert ($vt.methods.Count -eq 256) 'Collection256 public methods independent of constructor budget';$passed++}
+  if($profile -eq 12){Assert ($vt.interfaces.Count -eq 32) 'Collection32 interfaces';$passed++}
+  if($profile -eq 27){Assert ($vt.base_type -ceq '[Owned.ForeignContracts, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]Owned.External.BaseType') 'Collection external base unresolved';$passed++}
+  if($profile -eq 29){Assert ($vt.methods[1].name.Length -eq 1024) 'Collection1024-character name boundary';$passed++}
+  if($profile -eq 36){Assert ($vt.methods[0].parameter_types.Count -eq 31) 'Collection valid128-byte signature boundary';$passed++}
+ }
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectCollection($collection,('f'*63))} 'DCAENTRY_HASH_FORMAT'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectCollection($collection,('f'*64))} 'DCAENTRY_INPUT_HASH'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectCollection($streamStore,(Hash $streamStore))} 'DCAENTRY_INPUT_IDENTITY'
+ Reject {[Task144.EntrypointMetadata]::ReadOwnedProjectCollection($oversize,('0'*64))} 'DCAENTRY_INPUT_FILE'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectCollection($collection,(Hash $collection))} 'DCAENTRY_INPUT_PIN'
+ Reject {[Task144.EntrypointMetadata]::ReadProjectCollection($broken,'73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a')} 'DCAENTRY_INPUT_HASH'
+ $collectionWorker=Join-Path $PSScriptRoot 'Read-ProjectCollectionMetadata.ps1'
+ Reject {& $collectionWorker -InputPath $collection -InputSha256 (Hash $collection)} 'DCAENTRY_INPUT_PIN'
+ Assert ((ProjectCollection) -ceq $collectionRaw -and (StreamStore) -ceq $ssRaw -and (Catalog) -ceq $catalogRaw -and (UndoStore) -ceq $usRaw -and (TraceParameter) -ceq $tpRaw -and (TraceConstruction) -ceq $tcRaw -and (Trace) -ceq $traceRaw -and (UndoManager) -ceq $undoRaw -and (ProjectId) -ceq $idRaw -and (Constructors) -ceq $constructorRaw -and (Providers) -ceq $providerRaw -and (Services) -ceq $serviceRaw -and (Construction) -ceq $constructionRaw -and (Project $sdk) -ceq $projectRaw -and (Read $dca) -ceq $raw) 'All prior reports byte-identical after collection root inquiry';$passed++
  Write-Output ('PASS '+$passed+' / FAIL 0')
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

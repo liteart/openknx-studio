@@ -6,6 +6,52 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ // Unsigned ProjectCollection root declarations, no vendor identities/bodies or construction behavior.
+ public static void CreateProjectCollection(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProjectCollection.dll"),m.GetOrAddGuid(new Guid("009e0000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(profile==1?"Task009.ForeignProjectCollection":"Task009.OwnedProjectCollection"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var foreign=m.AddAssemblyReference(m.GetOrAddString("Owned.ForeignContracts"),new Version(1,0,0,0),default,default,0,default);
+  var external=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString("IBase"));
+  var externalBase=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString("BaseType"));
+  var longType=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString(new string('T',1000)));
+  TypeReferenceHandle modifier=default;if(profile==36||profile==37)for(int i=0;i<33;i++)modifier=m.AddTypeReference(foreign,m.GetOrAddString("Owned.Modifier"),m.GetOrAddString("M"+i));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  var parent=m.AddTypeDefinition(TypeAttributes.Public|TypeAttributes.Abstract,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("UnresolvedBase"),externalBase,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  Method(m,"INHERITED_MALFORMED_MUST_NOT_BE_READ",MethodAttributes.Public,new byte[]{0x20});
+  var flags=profile==4?TypeAttributes.NotPublic:profile==5?TypeAttributes.Public|TypeAttributes.Interface|TypeAttributes.Abstract:TypeAttributes.Public|TypeAttributes.Sealed;
+  var root=m.AddTypeDefinition(flags,m.GetOrAddString("Owned.Task009"),m.GetOrAddString(profile==2?"Other":"ProjectCollectionFixture"),profile==5?default(EntityHandle):profile==27?(EntityHandle)externalBase:parent,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(2));
+  if(profile==6)m.AddGenericParameter(root,GenericParameterAttributes.None,m.GetOrAddString("T"),0);
+  var field=m.AddFieldDefinition(FieldAttributes.Public|FieldAttributes.Static|FieldAttributes.Literal,m.GetOrAddString("FIELD_VALUE_MUST_NOT_BE_READ"),m.GetOrAddBlob(new byte[]{6,0x0e}));m.AddConstant(field,"OWNED_CONSTANT_VALUE_MUST_NOT_BE_READ");
+  int constructorCount=profile==5?0:profile==7?33:profile==8||profile==38?32:4;
+  for(int j=0;j<constructorCount;j++){
+   string name=j==3?".cctor":".ctor";var access=j==0?MethodAttributes.Public:j==1?MethodAttributes.Assembly:j==2||j==3?MethodAttributes.Private:MethodAttributes.Family;
+   var attributes=access|MethodAttributes.SpecialName|MethodAttributes.RTSpecialName;if(j==3)attributes|=MethodAttributes.Static;
+   byte[] sig=j==3?new byte[]{0,0,1}:j==1?new byte[]{0x20,1,1,0x0e}:new byte[]{0x20,0,1};
+   if(profile==14&&j==2)sig=new byte[]{0x20};Method(m,name,attributes,sig);
+  }
+  int count=profile==9?257:profile==10||profile==28||profile==38?256:3;
+  for(int j=0;j<count;j++){
+   string name=j==0?"Create":j==1?"get_Name":j==2?"Echo":"Method"+j;var attributes=MethodAttributes.Public;if(j==0)attributes|=MethodAttributes.Static;
+   byte[] sig=j==0?new byte[]{0,0,0x12,(byte)(MetadataTokens.GetRowNumber(root)<<2)}:j==1?new byte[]{0x20,0,0x0e}:j==2?new byte[]{0x30,1,1,0x1e,0,0x1e,0}:new byte[]{0x20,0,1};
+   if(j==0){
+    if(profile==13)sig=new byte[]{0};if(profile==15)sig=new byte[]{0,0,0x1b};if(profile==16)sig=new byte[129];if(profile==17)sig=new byte[]{0,1,1,1};if(profile==18)sig=new byte[]{0,0,1,1};if(profile==31)sig=new byte[]{0,33,1};if(profile==32)sig=new byte[]{0x10,33,0,1};
+    if(profile==20){var b=new BlobBuilder();b.WriteByte(0);b.WriteByte(32);b.WriteByte(1);for(int k=0;k<32;k++){b.WriteByte(0x12);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(longType)<<2)|1);}sig=b.ToArray();}
+    if(profile==36||profile==37){var b=new BlobBuilder();b.WriteByte(0);b.WriteByte(31);b.WriteByte(1);for(int k=0;k<31;k++){if(k==0){b.WriteByte(0x0f);if(profile==37)b.WriteByte(0x0f);}b.WriteByte(0x1f);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(modifier)<<2)|1);b.WriteByte(2);}sig=b.ToArray();}
+   }
+   if(profile==19&&j==1)name=new string('N',1025);if(profile==29&&j==1)name=new string('N',1024);
+   if(profile==28){name=new string('N',1000)+j;var b=new BlobBuilder();b.WriteByte(0);b.WriteByte(0);b.WriteByte(0x12);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(longType)<<2)|1);sig=b.ToArray();attributes=MethodAttributes.Public|MethodAttributes.Static;}
+   Method(m,name,attributes,sig);if(j==2&&profile!=28)m.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(2+constructorCount+j),GenericParameterAttributes.None,m.GetOrAddString("TMethod"),0);
+  }
+  Method(m,"PRIVATE_MALFORMED_MUST_NOT_BE_READ",MethodAttributes.Private,new byte[]{0x20});
+  var local=m.AddTypeDefinition(TypeAttributes.Public|TypeAttributes.Interface|TypeAttributes.Abstract,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("UnresolvedInterface"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(3+constructorCount+count));
+  Method(m,"INTERFACE_MALFORMED_MUST_NOT_BE_READ",MethodAttributes.Public,new byte[]{0x20});
+  m.AddInterfaceImplementation(root,local);int interfaces=profile==11?33:profile==12?32:2;for(int i=1;i<interfaces;i++)m.AddInterfaceImplementation(root,external);
+  int methodTotal=constructorCount+count+3;
+  if(profile==3)m.AddTypeDefinition(flags,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("ProjectCollectionFixture"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(methodTotal+1));
+  if(profile==24||profile==25)for(int i=4;i<(profile==24?32769:32768);i++)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"+i),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(methodTotal+1));
+  if(profile==22||profile==23)for(int i=methodTotal;i<(profile==22?65537:65536);i++)Method(m,"UNSELECTED_MALFORMED",MethodAttributes.Public,new byte[]{0x20});
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  // Unsigned catalog reference images, no candidate definitions or executable method bodies.
  public static void CreateOnlineCatalogReferences(string path,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedCatalog.dll"),m.GetOrAddGuid(new Guid("009d0000-1111-1111-1111-111111111111")),default,default);
