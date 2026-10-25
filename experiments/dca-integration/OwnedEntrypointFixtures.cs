@@ -6,6 +6,54 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ // Unsigned SDK-like declarations; targets/owners are fixtures, never substitute SDK assemblies.
+ public static void CreateSdkStaticFactories(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedStaticFactories.dll"),m.GetOrAddGuid(new Guid("009f0000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(profile==1?"Owned.ForeignStaticFactories":"Task009.OwnedSdkStaticFactories"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var foreign=m.AddAssemblyReference(m.GetOrAddString("Owned.ForeignSdk"),new Version(1,0,0,0),default,default,0,default);
+  var external=m.AddTypeReference(foreign,m.GetOrAddString("Owned.StaticFactories"),m.GetOrAddString("Project"));
+  var wrapper=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString("Wrapper`1"));
+  var longType=m.AddTypeReference(foreign,m.GetOrAddString("Owned.External"),m.GetOrAddString(new string('T',1000)));
+  int next=1;
+  TypeDefinitionHandle Type(string ns,string name,TypeAttributes flags,TypeDefinitionHandle parent=default){var h=m.AddTypeDefinition(flags,m.GetOrAddString(ns),m.GetOrAddString(name),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(next));if(!parent.IsNil)m.AddNestedType(h,parent);return h;}
+  void Add(string name,MethodAttributes flags,byte[] sig){Method(m,name,flags,sig);next++;}
+  byte[] Direct(int row,byte header=0,int count=0){var b=new BlobBuilder();b.WriteByte(header);if((header&16)!=0)b.WriteByte(1);b.WriteByte((byte)count);b.WriteByte(0x12);b.WriteCompressedInteger(row<<2);for(int i=0;i<count;i++)b.WriteByte(0x0e);return b.ToArray();}
+  Type("","<Module>",TypeAttributes.NotPublic);if(profile==4)Type("Owned","TokenPadding",TypeAttributes.NotPublic);
+  var project=Type("Owned.StaticFactories",profile==2?"MissingProject":"Project",TypeAttributes.Public|TypeAttributes.Sealed);
+  var root=Type("Owned.StaticFactories","Root",TypeAttributes.Public|TypeAttributes.Sealed);var collection=Type("Owned.StaticFactories","ProjectCollection",TypeAttributes.Public|TypeAttributes.Sealed);
+  if(profile==3)Type("Owned.StaticFactories","Project",TypeAttributes.Public);
+  var owner=Type("Owned.StaticFactories",profile==29?new string('O',1000)+"`1":"Factories`1",profile==37?TypeAttributes.NestedPublic:TypeAttributes.Public);
+  int count=profile==27?64:profile==28||profile==29?63:3;
+  for(int j=0;j<count;j++){
+   int row=MetadataTokens.GetRowNumber(j%3==0?project:j%3==1?root:collection);byte[] sig=Direct(row,j==1?(byte)0x10:(byte)0,j<2?1:0);string name=j==0?"CreateProject":j==1?"CreateRoot":j==2?"CreateCollection":"Create"+j;
+   if(j==0){
+    if(profile==5)sig=new byte[]{6,0,0x12,8};if(profile==6)sig=new byte[]{0x80,0,0x12,8};if(profile==7)sig=new byte[]{0x15,1,0,0x12,8};if(profile==8)sig=new byte[]{0x10,0,0,0x12,8};if(profile==9)sig=Array.Empty<byte>();if(profile==10)sig=new byte[]{0,0,0x12};
+    if(profile==11)sig=new byte[]{0,0,0x12,11};if(profile==12)sig=new byte[]{0,0,0x12,0};if(profile==13)sig=Direct(9999);if(profile==14)sig=Direct(row,0x20);if(profile==15)sig=Direct(row,0x60);if(profile==16)sig=Direct(row,0x40);if(profile==17)sig=Direct(row,5);if(profile==18)sig=new byte[]{5,0,1,0xff};
+    if(profile==19){sig=new byte[129];sig[2]=0x12;sig[3]=8;}if(profile==20)sig=new byte[]{0,1,0x12,8};if(profile==21)sig=new byte[]{0,33,0x12,8};if(profile==22)sig=new byte[]{0,1,0x12,8,0x1b};if(profile==23)sig=new byte[]{0,0,0xff};if(profile==24)sig=new byte[]{0,0xe0};if(profile==25)sig=new byte[]{0,0x80,0,1};if(profile==26)sig=Direct(row,1);
+    if(profile==36)name=new string('N',1025);if(profile==41)sig=new byte[]{0,0,0x11,11};if(profile==42)sig=new byte[]{0,0,0x15,0xff};if(profile==43)sig=new byte[]{0,0,0x12,0x80,0};
+    if(profile==44){var b=new BlobBuilder();b.WriteByte(0x10);b.WriteCompressedInteger(0x1fffffff);b.WriteCompressedInteger(0x1fffffff);b.WriteByte(0x15);b.WriteByte(0x12);b.WriteCompressedInteger(32768<<2);sig=b.ToArray();}
+   }
+   if(profile==29){name=new string('N',1000)+j;var b=new BlobBuilder();b.WriteByte(j==1?(byte)0x10:(byte)0);if(j==1)b.WriteByte(1);b.WriteByte(3);b.WriteByte(0x12);b.WriteCompressedInteger(row<<2);for(int i=0;i<3;i++){b.WriteByte(0x12);b.WriteCompressedInteger((MetadataTokens.GetRowNumber(longType)<<2)|1);}sig=b.ToArray();}
+   Add(name,MethodAttributes.Public|MethodAttributes.Static,sig);if(j==1)m.AddGenericParameter(MetadataTokens.MethodDefinitionHandle(next-1),GenericParameterAttributes.None,m.GetOrAddString("TMethod"),0);
+  }
+  m.AddGenericParameter(owner,GenericParameterAttributes.None,m.GetOrAddString("TOwner"),0);
+  Add("HiddenMalformed",MethodAttributes.Private|MethodAttributes.Static,Array.Empty<byte>());Add("InstanceMalformed",MethodAttributes.Public,Array.Empty<byte>());Add(".ctor",MethodAttributes.Public|MethodAttributes.Static,Array.Empty<byte>());
+  var huge=new byte[2*1024*1024];huge[2]=1;huge[huge.Length-1]=0xff;Add(new string('X',1025),MethodAttributes.Public|MethodAttributes.Static,huge);
+  Add("OtherOwner",MethodAttributes.Public|MethodAttributes.Static,Direct(MetadataTokens.GetRowNumber(owner)));
+  var bRef=new BlobBuilder();bRef.WriteByte(0);bRef.WriteByte(0);bRef.WriteByte(0x12);bRef.WriteCompressedInteger((MetadataTokens.GetRowNumber(external)<<2)|1);Add("ExternalSameName",MethodAttributes.Public|MethodAttributes.Static,bRef.ToArray());
+  var spec=m.AddTypeSpecification(m.GetOrAddBlob(new byte[]{0xff}));var bSpec=new BlobBuilder();bSpec.WriteByte(0);bSpec.WriteByte(0);bSpec.WriteByte(0x12);bSpec.WriteCompressedInteger((MetadataTokens.GetRowNumber(spec)<<2)|2);Add("UnexaminedTypeSpec",MethodAttributes.Public|MethodAttributes.Static,bSpec.ToArray());
+  var wrapped=new BlobBuilder();wrapped.WriteByte(0);wrapped.WriteByte(0);wrapped.WriteByte(0x15);wrapped.WriteByte(0x12);wrapped.WriteCompressedInteger((MetadataTokens.GetRowNumber(wrapper)<<2)|1);wrapped.WriteByte(1);wrapped.WriteByte(0x12);wrapped.WriteCompressedInteger(MetadataTokens.GetRowNumber(project)<<2);Add("Wrapped",MethodAttributes.Public|MethodAttributes.Static,wrapped.ToArray());
+  foreach(byte kind in new byte[]{0x1d,0x10,0x0f})Add("WrappedKind"+kind,MethodAttributes.Public|MethodAttributes.Static,new byte[]{0,0,kind,0x12,8});
+  var nestedParent=owner;int depth=profile==30?16:profile==31?15:1;for(int i=0;i<depth;i++)nestedParent=Type("","Nested"+i,TypeAttributes.NestedPublic,nestedParent);
+  Add("CreateNested",MethodAttributes.Public|MethodAttributes.Static,Direct(MetadataTokens.GetRowNumber(project)));
+  var hidden=Type("Owned","Hidden",TypeAttributes.NotPublic);Add("NeverRead",MethodAttributes.Public|MethodAttributes.Static,Array.Empty<byte>());
+  Type("","PublicUnderHidden",TypeAttributes.NestedPublic,hidden);Add("NeverReadChild",MethodAttributes.Public|MethodAttributes.Static,Array.Empty<byte>());
+  Type("","PrivateNested",TypeAttributes.NestedPrivate,owner);Add("NeverReadPrivateNested",MethodAttributes.Public|MethodAttributes.Static,Array.Empty<byte>());
+  if(profile==32){var a=Type("","CycleA",TypeAttributes.NestedPublic);var b=Type("","CycleB",TypeAttributes.NestedPublic);m.AddNestedType(a,b);m.AddNestedType(b,a);}
+  if(profile==34||profile==35||profile==44){int desired=profile==34?32769:32768;int existing=5+depth+3;for(int i=existing;i<desired;i++)Type("Owned","Padding"+i,TypeAttributes.NotPublic);}
+  if(profile==38||profile==39){Type("Owned","MethodPadding",TypeAttributes.NotPublic);int desired=profile==38?32769:32768;while(next<=desired)Add("NeverDecoded",MethodAttributes.Public|MethodAttributes.Static,Array.Empty<byte>());}
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  // Unsigned ProjectCollection root declarations, no vendor identities/bodies or construction behavior.
  public static void CreateProjectCollection(string path,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedProjectCollection.dll"),m.GetOrAddGuid(new Guid("009e0000-1111-1111-1111-111111111111")),default,default);

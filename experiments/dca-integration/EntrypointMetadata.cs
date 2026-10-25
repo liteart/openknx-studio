@@ -328,6 +328,106 @@ public static class EntrypointMetadata {
    if(System.Text.Encoding.UTF8.GetByteCount(report)>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ // Fixed SDK static-return declarations. New helpers do not change legacy readers.
+ const string SdkStaticHash="7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989";
+ const string SdkStaticIdentity="Knx.Ets.Sdk, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string OwnedSdkStaticIdentity="Task009.OwnedSdkStaticFactories, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ static readonly string[] SdkStaticTargets={"Knx.Ets.Sdk.Project.Project","Knx.Ets.Sdk.Root","Knx.Ets.Sdk.Project.ProjectCollection"};
+ static readonly string[] OwnedSdkStaticTargets={"Owned.StaticFactories.Project","Owned.StaticFactories.Root","Owned.StaticFactories.ProjectCollection"};
+ static TypeDefinitionHandle[] StaticFactoryTargets(MetadataReader r,bool owned){
+  var names=owned?OwnedSdkStaticTargets:SdkStaticTargets;int[] rows=owned?new[]{2,3,4}:new[]{0x1D1,0x2F,0x1D4};var result=new TypeDefinitionHandle[3];
+  foreach(var h in r.TypeDefinitions){var t=r.GetTypeDefinition(h);for(int i=0;i<names.Length;i++){
+   int dot=names[i].LastIndexOf('.');if(!r.StringComparer.Equals(t.Namespace,names[i].Substring(0,dot))||!r.StringComparer.Equals(t.Name,names[i].Substring(dot+1))||!t.GetDeclaringType().IsNil)continue;
+   if(!result[i].IsNil)throw Fail("DUPLICATE_TARGET");result[i]=h;
+  }}
+  for(int i=0;i<result.Length;i++){if(result[i].IsNil)throw Fail("TARGET_NOT_FOUND");if(MetadataTokens.GetRowNumber(result[i])!=rows[i])throw Fail("TARGET_TOKEN");}return result;
+ }
+ static bool StaticOwnerVisible(MetadataReader r,TypeDefinitionHandle start,out List<string> chain){
+  chain=new List<string>();var seen=new HashSet<TypeDefinitionHandle>();var current=start;bool visible=true;
+  while(!current.IsNil){
+   if(MetadataTokens.GetRowNumber(current)>r.TypeDefinitions.Count)throw Fail("OWNER_CHAIN_SHAPE");if(!seen.Add(current))throw Fail("OWNER_CHAIN_CYCLE");if(chain.Count>=16)throw Fail("OWNER_CHAIN_LIMIT");
+   chain.Add(MetadataTokens.GetToken(current).ToString("X8"));var t=r.GetTypeDefinition(current);var parent=t.GetDeclaringType();var v=t.Attributes&TypeAttributes.VisibilityMask;
+   bool nested=v!=TypeAttributes.Public&&v!=TypeAttributes.NotPublic;if(nested==parent.IsNil)throw Fail("OWNER_CHAIN_SHAPE");
+   if(v!=(parent.IsNil?TypeAttributes.Public:TypeAttributes.NestedPublic))visible=false;current=parent;
+  }return visible;
+ }
+ struct StaticReturnPrefix {public byte Header;public EntityHandle Direct;public string Category;public int Bytes;}
+ static byte StaticPrefixByte(ref BlobReader b,ref int used){
+  if(used>=16)throw Fail("FACTORY_PREFIX_LIMIT");if(b.RemainingBytes==0)throw Fail("MALFORMED_FACTORY_PREFIX");used++;return b.ReadByte();
+ }
+ static int StaticPrefixInteger(ref BlobReader b,ref int used){
+  int first=StaticPrefixByte(ref b,ref used),value;
+  if(first<0x80)return first;
+  if((first&0xC0)==0x80){value=((first&0x3F)<<8)|StaticPrefixByte(ref b,ref used);if(value<0x80)throw Fail("FACTORY_PREFIX_INTEGER");return value;}
+  if((first&0xE0)==0xC0){value=((first&0x1F)<<24)|(StaticPrefixByte(ref b,ref used)<<16)|(StaticPrefixByte(ref b,ref used)<<8)|StaticPrefixByte(ref b,ref used);if(value<0x4000)throw Fail("FACTORY_PREFIX_INTEGER");return value;}
+  throw Fail("FACTORY_PREFIX_INTEGER");
+ }
+ static EntityHandle StaticPrefixType(ref BlobReader b,ref int used,MetadataReader r){
+  int coded=StaticPrefixInteger(ref b,ref used),tag=coded&3,row=coded>>2;if(row==0||tag==3)throw Fail("FACTORY_PREFIX_TOKEN");
+  var table=tag==0?TableIndex.TypeDef:tag==1?TableIndex.TypeRef:TableIndex.TypeSpec;if(row>r.GetTableRowCount(table))throw Fail("FACTORY_PREFIX_TOKEN");
+  return tag==0?(EntityHandle)MetadataTokens.TypeDefinitionHandle(row):tag==1?(EntityHandle)MetadataTokens.TypeReferenceHandle(row):MetadataTokens.TypeSpecificationHandle(row);
+ }
+ static StaticReturnPrefix StaticFactoryPrefix(MetadataReader r,BlobHandle signature){
+  var b=r.GetBlobReader(signature);int used=0;byte header=StaticPrefixByte(ref b,ref used);int convention=header&15;
+  if((header&0x80)!=0||convention==6||convention==7||convention==8||convention>=10||((header&0x40)!=0&&(header&0x20)==0))throw Fail("MALFORMED_METHODDEF_HEADER");
+  if((convention!=0&&convention!=5)||((header&0x10)!=0&&convention!=0))throw Fail("UNSUPPORTED_METHODDEF_HEADER");
+  if((header&0x10)!=0&&StaticPrefixInteger(ref b,ref used)==0)throw Fail("FACTORY_PREFIX_GENERIC");
+  StaticPrefixInteger(ref b,ref used);int kind=StaticPrefixByte(ref b,ref used);var result=new StaticReturnPrefix{Header=header};
+  switch(kind){
+   case 0x12:result.Direct=StaticPrefixType(ref b,ref used,r);result.Category=result.Direct.Kind==HandleKind.TypeDefinition?"OTHER_CLASS_TYPEDEF":result.Direct.Kind==HandleKind.TypeReference?"CLASS_TYPEREF_UNRESOLVED":"CLASS_TYPESPEC_UNEXAMINED";break;
+   case 0x11:StaticPrefixType(ref b,ref used,r);result.Category="VALUETYPE_PREFIX_NOT_SELECTED";break;
+   case 0x15:int genericKind=StaticPrefixByte(ref b,ref used);if(genericKind!=0x11&&genericKind!=0x12)throw Fail("FACTORY_PREFIX_RETURN");StaticPrefixType(ref b,ref used,r);result.Category="GENERIC_INSTANCE_PREFIX_UNEXAMINED";break;
+   case 0x1F:case 0x20:StaticPrefixType(ref b,ref used,r);result.Category="MODIFIED_RETURN_PREFIX_UNEXAMINED";break;
+   case 0x13:case 0x1E:StaticPrefixInteger(ref b,ref used);result.Category="GENERIC_PARAMETER_PREFIX_UNEXAMINED";break;
+   case 0x0F:result.Category="POINTER_PREFIX_UNEXAMINED";break;
+   case 0x10:result.Category="BYREF_PREFIX_UNEXAMINED";break;
+   case 0x14:case 0x1D:result.Category="ARRAY_PREFIX_UNEXAMINED";break;
+   case 0x1B:result.Category="FUNCTION_POINTER_PREFIX_UNEXAMINED";break;
+   case 1:result.Category="VOID_PREFIX";break;
+   case 0x0E:result.Category="STRING_PREFIX";break;
+   case 0x1C:result.Category="OBJECT_PREFIX";break;
+   case 0x16:result.Category="TYPED_REFERENCE_PREFIX";break;
+   case 2:case 3:case 4:case 5:case 6:case 7:case 8:case 9:case 10:case 11:case 12:case 13:case 0x18:case 0x19:result.Category="PRIMITIVE_PREFIX";break;
+   default:throw Fail("FACTORY_PREFIX_RETURN");
+  }result.Bytes=used;return result;
+ }
+ public static string ReadSdkStaticFactories(string path,string hash){if(hash!=SdkStaticHash)throw Fail("INPUT_PIN");return ReadSdkStaticFactoriesInternal(path,hash,false);}
+ public static string ReadOwnedSdkStaticFactories(string path,string hash){return ReadSdkStaticFactoriesInternal(path,hash,true);}
+ static string ReadSdkStaticFactoriesInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);if(!owned&&bytes.Length!=6979024)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);if(count>RowLimit)throw new RowLimitObservationException(table,count);}
+   string identity=AssemblyIdentity(r);if(identity!=(owned?OwnedSdkStaticIdentity:SdkStaticIdentity))throw Fail("INPUT_IDENTITY");
+   var targetHandles=StaticFactoryTargets(r,owned);var targetNames=owned?OwnedSdkStaticTargets:SdkStaticTargets;var targets=new List<object>();
+   for(int i=0;i<targetHandles.Length;i++){var h=targetHandles[i];var t=r.GetTypeDefinition(h);targets.Add(Obj("token",MetadataTokens.GetToken(h).ToString("X8"),"name",targetNames[i],"attributes",(int)t.Attributes,"visibility",(t.Attributes&TypeAttributes.VisibilityMask).ToString(),"generic_arity",t.GetGenericParameters().Count));}
+   var methods=new List<object>();var returns=new Dictionary<string,int>();int publicOwners=0,scanned=0,hidden=0,constructors=0,nonpublic=0,instance=0,prefixes=0,maxPrefix=0,matches=0;
+   foreach(var ownerHandle in r.TypeDefinitions){
+    List<string> chain;bool visible=StaticOwnerVisible(r,ownerHandle,out chain);if(visible)publicOwners++;var owner=r.GetTypeDefinition(ownerHandle);
+    foreach(var mh in owner.GetMethods()){
+     scanned++;var m=r.GetMethodDefinition(mh);if(!visible){hidden++;continue;}
+     if(r.StringComparer.Equals(m.Name,".ctor")||r.StringComparer.Equals(m.Name,".cctor")){constructors++;continue;}
+     if((m.Attributes&MethodAttributes.MemberAccessMask)!=MethodAttributes.Public){nonpublic++;continue;}
+     if((m.Attributes&MethodAttributes.Static)==0){instance++;continue;}
+     prefixes++;StaticReturnPrefix prefix;try{prefix=StaticFactoryPrefix(r,m.Signature);}catch(BadImageFormatException){throw Fail("MALFORMED_FACTORY_PREFIX");}maxPrefix=Math.Max(maxPrefix,prefix.Bytes);
+     int target=prefix.Direct.Kind==HandleKind.TypeDefinition&&!prefix.Direct.IsNil?Array.IndexOf(targetHandles,(TypeDefinitionHandle)prefix.Direct):-1;
+     if(target<0){if(!returns.ContainsKey(prefix.Category))returns.Add(prefix.Category,0);returns[prefix.Category]++;continue;}
+     if((prefix.Header&0x60)!=0)throw Fail("STATIC_SIGNATURE_FLAGS");if(methods.Count>=64)throw Fail("STATIC_FACTORY_LIMIT");matches++;
+     string signature;MethodSignature<string> decoded;try{signature=new Names(r,true).Method(m.Signature);decoded=m.DecodeSignature(new Names(r,true),(object)null);}catch(BadImageFormatException){throw Fail("MALFORMED_SIGNATURE");}
+     methods.Add(Obj("owner_token",MetadataTokens.GetToken(ownerHandle).ToString("X8"),"owner_name",new Names(r,true).Named(ownerHandle),"owner_attributes",(int)owner.Attributes,"owner_public_chain",chain,"owner_generic_arity",owner.GetGenericParameters().Count,
+      "target_token",MetadataTokens.GetToken(targetHandles[target]).ToString("X8"),"target_name",targetNames[target],"token",MetadataTokens.GetToken(mh).ToString("X8"),"name",Str(r,m.Name),"attributes",(int)m.Attributes,"signature_header",decoded.Header.RawValue,"calling_convention",decoded.Header.CallingConvention.ToString(),"is_static",true,"is_instance",decoded.Header.IsInstance,"explicit_this",decoded.Header.HasExplicitThis,"generic_arity",decoded.GenericParameterCount,"parameter_types",decoded.ParameterTypes,"return_type",decoded.ReturnType,"signature",signature));
+    }
+   }
+   int omitted=0;foreach(var count in returns.Values)omitted+=count;if(scanned!=hidden+constructors+nonpublic+instance+prefixes||prefixes!=matches+omitted||matches!=methods.Count)throw Fail("SCAN_COUNTS");
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_sdk_static_factories","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_targets",targetNames,"targets",targets,"methods",methods,
+    "counts",Obj("typedef_rows",r.TypeDefinitions.Count,"externally_public_owners",publicOwners,"methoddef_rows",r.MethodDefinitions.Count,"declared_methods_scanned",scanned,"excluded_owner_not_public",hidden,"excluded_constructors",constructors,"excluded_nonpublic_methods",nonpublic,"excluded_instance_methods",instance,"public_static_prefixes",prefixes,"maximum_prefix_bytes_read",maxPrefix,"direct_target_matches",matches,"nonselected_return_prefixes",returns),
+    "limits",Obj("file_bytes",FileLimit,"aggregate_bytes",TotalLimit,"table_rows",RowLimit,"strings",1024,"owner_chain",16,"return_prefix_bytes",16,"selected_methods",64,"selected_signature_bytes",128,"selected_signature_chars",4096,"selected_signature_nodes",128,"selected_signature_depth",16,"selected_parameters",32,"selected_generic_count",32,"report_utf8_bytes",512*1024),
+    "declaration_scope","EXTERNALLY_PUBLIC_DECLARED_STATIC_DIRECT_TARGET_TYPEDEF_RETURNS_ONLY","qualification","DECLARATIONS_ONLY_NOT_ALLOCATION_ARGUMENT_OR_BOOTSTRAP_PROOF",
+    "prefix_methoddef_profile","DEFAULT_OR_POSITIVE_GENERIC_DEFAULT_OR_NONGENERIC_VARARGS_PREFIX_ONLY;SELECTED_STRICT_DECODER_UNCHANGED",
+    "limitations",new[]{"Only direct CLASS return handles to three exact local TypeDefs. TypeRef/TypeSpec/wrapped/generic/array/byref/pointer/nonpublic/instance/inherited/external paths are unexamined, not impossible.","Excluded signatures: only recognized header/count/leading-return-kind and immediate type token are checked within16 bytes. Deeper wrappers, tails and all nonselected parameters/bodies are not validated; prefix categories are not complete valid-signature claims.","Selected Static/HasThis/ExplicitThis contradictions refuse. Selected signatures retain the old strict default-convention decoder; VarArgs prefix recognition does not grant selected VarArgs support.","Generic owner/method arity and static return shape are declarations only, not constructibility, legitimate arguments, dependency independence or offline DCA behavior. No IL, fields/values, attributes, constructor query, SDK activation, dependency resolution or graph search."}));
+   if(System.Text.Encoding.UTF8.GetByteCount(report)>512*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  // Fixed ProjectCollection declarations only; no activation or ancestry/factory graph traversal.
  const string ProjectCollectionHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
  const string ProjectCollectionIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";

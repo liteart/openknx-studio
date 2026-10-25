@@ -135,6 +135,17 @@ instance methods. No public static factory on this root. Saved-result audit PASS
 critical result review PASS42b83c97480bcd3794ad2e434ff118c225b6ba0491eb0f0f4086d2ec7239033d. Argument semantics, overload behavior, bootstrap feasibility and avoidance
 of the catalog dependency remain UNKNOWN; no SDK runtime or task/gate acceptance.
 
+The next NEW declaration selection follows
+[DCA-SDK-STATIC-FACTORIES.md](../docs/DCA-SDK-STATIC-FACTORIES.md): public declared
+static methods across externally public SDK owners with direct exact Project,
+Root or ProjectCollection returns. This covers owners outside the prior fixed
+roots and excludes repeated instance navigation. Source30 implementation and
+owned596 PowerShell/28 Python checks PASS; independent verification
+PASS7a9020da26e0ccad98a1e270e13bda2e4f8e2860b06282c296079a00fdffea8a.
+Freeze96497670fa67e0c8ba6b3e9b3187658184698824687d94415e84d05d9cf0a952
+binds six sources. Critical source/helper review and commit pending; original
+extraction NOT RUN, no actual factory/argument/bootstrap behavior established.
+
 ## Completion Record
 
 | Field | Initial value |
