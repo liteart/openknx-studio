@@ -426,8 +426,16 @@ internal static class ProjectConstructorProbe
     static bool EmptyContainer { get { return mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || TraceOnly || RegisteredTrace; } }
     static bool TraceOriginal { get { return mode == "original-trace-encryptor"; } }
     static bool TraceOwned { get { return mode == "owned-trace-encryptor"; } }
-    static bool ContextOriginal { get { return mode == "original-project-context-denied"; } }
-    static bool ContextOwned { get { return mode == "owned-project-context-denied"; } }
+    const string XmlRegistrationName = "Knx.Ets.Xml.RegistrationRelevanceInformation";
+    const string XmlRegistrationHash = "a9bce396208e9d5b9680e65ef5d730ed9873c21f04de5028cb6f492264c70ac3";
+    const string XmlRegistrationIdentity = "Knx.Ets.Xml.RegistrationRelevanceInformation, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+    const int XmlRegistrationSize = 188880;
+    static volatile bool xmlRegistrationReady;
+    static string ownedXmlPinCase;
+    static bool XmlRegistrationOriginal { get { return mode == "original-project-context-xml-registration"; } }
+    static bool XmlRegistrationOwned { get { return mode == "owned-project-context-xml-registration"; } }
+    static bool ContextOriginal { get { return mode == "original-project-context-denied" || XmlRegistrationOriginal; } }
+    static bool ContextOwned { get { return mode == "owned-project-context-denied" || XmlRegistrationOwned; } }
     static bool ContextMode { get { return ContextOriginal || ContextOwned; } }
     static bool CacheOriginal { get { return mode == "original-project-large-string-cache-denied" || ContextOriginal; } }
     static bool CacheOwned { get { return mode == "owned-project-large-string-cache-denied" || ContextOwned; } }
@@ -529,7 +537,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -548,6 +556,94 @@ internal static class ProjectConstructorProbe
         for (int i = 0; i < FactoryExtraNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, FactoryExtraNames[i] + ".dll")).FullName == FactoryExtraIdentities[i], "FACTORY_INPUT_IDENTITY");
         factoryInputsReady = true;
         Record("FACTORY_PROFILE_READY private-pins=14 extra-reference-admission=THIS_MODE_ONLY");
+    }
+    static void PinXmlRegistrationInputs()
+    {
+        ProbeFiles.Require(XmlRegistrationOriginal && !xmlRegistrationReady && !containerInputsReady, "XML_PROFILE_NEW_MODE");
+        CountInputs(20);
+        for (int i = 0; i < Names.Length; i++) {
+            Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryPrefixSizes[i], "CONTAINER_INPUT_SIZE");
+        }
+        for (int i = 0; i < FactoryExtraNames.Length; i++) {
+            Pin(Path.Combine(stage, FactoryExtraNames[i] + ".dll"), FactoryExtraHashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryExtraSizes[i], "CONTAINER_INPUT_SIZE");
+        }
+        for (int i = 0; i < ContainerNames.Length; i++) {
+            Pin(Path.Combine(stage, ContainerNames[i] + ".dll"), ContainerHashes[i]);
+            ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == ContainerSizes[i], "CONTAINER_INPUT_SIZE");
+        }
+        PinXmlRegistrationFile();
+        PinValueTupleReference();
+        PinPlatformFacade();
+        for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "CONTAINER_INPUT_IDENTITY");
+        for (int i = 0; i < FactoryExtraNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, FactoryExtraNames[i] + ".dll")).FullName == FactoryExtraIdentities[i], "CONTAINER_INPUT_IDENTITY");
+        for (int i = 0; i < ContainerNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, ContainerNames[i] + ".dll")).FullName == ContainerIdentities[i], "CONTAINER_INPUT_IDENTITY");
+        ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, XmlRegistrationName + ".dll")).FullName == XmlRegistrationIdentity, "XML_INPUT_IDENTITY");
+        xmlRegistrationReady = true;
+        containerInputsReady = true;
+        Record("XML_REGISTRATION_PROFILE_READY private-pins=20 total-bytes=24466936 extra-reference-admission=THIS_MODE_ONLY");
+    }
+
+    static void PinXmlRegistrationFile()
+    {
+        string path = Path.Combine(stage, XmlRegistrationName + ".dll");
+        var stream = new FileStream(ProbeFiles.Local(path, true, false), FileMode.Open, FileAccess.Read, FileShare.Read);
+        Inputs.Add(stream);
+        ProbeFiles.Require(stream.Length == XmlRegistrationSize, "XML_INPUT_SIZE");
+        ProbeFiles.Require(ProbeFiles.Hash(stream) == XmlRegistrationHash, "XML_INPUT_HASH");
+        Record("XML_REGISTRATION_PIN bytes=" + stream.Length + " sha256=" + XmlRegistrationHash);
+    }
+    static bool XmlRegistrationResolvePolicy(string selectedMode, bool complete, string requested, string policy)
+    { return selectedMode == "original-project-context-xml-registration" && complete && requested == XmlRegistrationIdentity && policy == XmlRegistrationIdentity; }
+    static bool XmlRegistrationReferencePolicy(string selectedMode, bool complete, string identity, string location, bool gac, bool reflectionOnly, bool dynamicAssembly, string directory)
+    {
+        return selectedMode == "original-project-context-xml-registration" && complete && identity == XmlRegistrationIdentity && !gac && !reflectionOnly && !dynamicAssembly
+            && !String.IsNullOrEmpty(location) && !String.IsNullOrEmpty(directory) && ProbeFiles.Same(location, Path.Combine(directory, XmlRegistrationName + ".dll"));
+    }
+    static Assembly ResolveXmlRegistration(string requested, string policy)
+    {
+        try {
+        ProbeFiles.Require(XmlRegistrationResolvePolicy(mode, xmlRegistrationReady && containerInputsReady, requested, policy), "XML_RESOLVE_EXACT_COMPLETE_PROFILE");
+        string path = Path.Combine(stage, XmlRegistrationName + ".dll");
+        Assembly assembly = Assembly.LoadFrom(path);
+        ProbeFiles.Require(XmlRegistrationReferencePolicy(mode, xmlRegistrationReady && containerInputsReady, assembly.FullName, assembly.Location, assembly.GlobalAssemblyCache, assembly.ReflectionOnly, assembly.IsDynamic, stage), "XML_RESOLVED_IDENTITY_PRIVATE_PATH");
+        Record("XML_REGISTRATION_RESOLVED identity=" + Text(assembly.FullName) + " held-pin-sha256=" + XmlRegistrationHash + " origin=FIXED_PRIVATE_STAGE");
+        return assembly;
+        } catch { rejected = true; throw; }
+    }
+    static void OwnedXmlRegistrationPolicyProof()
+    {
+        string selected = "original-project-context-xml-registration", path = Path.Combine(stage, XmlRegistrationName + ".dll"); int negatives = 0;
+        ProbeFiles.Require(XmlRegistrationResolvePolicy(selected, true, XmlRegistrationIdentity, XmlRegistrationIdentity)
+            && XmlRegistrationReferencePolicy(selected, true, XmlRegistrationIdentity, path, false, false, false, stage), "OWNED_XML_POSITIVE_PREDICATE_ONLY");
+        foreach (string oldMode in new string[] { "original-project-context-denied", "owned-project-context-denied", "original-factory-empty-container", "owned-project-context-xml-registration" }) {
+            ProbeFiles.Require(!XmlRegistrationResolvePolicy(oldMode, true, XmlRegistrationIdentity, XmlRegistrationIdentity)
+                && !XmlRegistrationReferencePolicy(oldMode, true, XmlRegistrationIdentity, path, false, false, false, stage), "OWNED_XML_OLD_OWNED_DENIED"); negatives++;
+        }
+        foreach (string wrong in new string[] { XmlRegistrationIdentity.Replace("6.4.8718.0", "6.4.8718.1"), XmlRegistrationIdentity.Replace("neutral", "en"), XmlRegistrationIdentity.Replace("61439873ec5e1159", "61439873ec5e1158"), XmlRegistrationIdentity + ".resources" }) {
+            ProbeFiles.Require(!XmlRegistrationResolvePolicy(selected, true, wrong, XmlRegistrationIdentity) && !XmlRegistrationResolvePolicy(selected, true, XmlRegistrationIdentity, wrong)
+                && !XmlRegistrationReferencePolicy(selected, true, wrong, path, false, false, false, stage), "OWNED_XML_IDENTITY_MISMATCH"); negatives++;
+        }
+        ProbeFiles.Require(!XmlRegistrationResolvePolicy(selected, false, XmlRegistrationIdentity, XmlRegistrationIdentity)
+            && !XmlRegistrationReferencePolicy(selected, false, XmlRegistrationIdentity, path, false, false, false, stage)
+            && !XmlRegistrationReferencePolicy(selected, true, XmlRegistrationIdentity, path, true, false, false, stage)
+            && !XmlRegistrationReferencePolicy(selected, true, XmlRegistrationIdentity, path, false, true, false, stage)
+            && !XmlRegistrationReferencePolicy(selected, true, XmlRegistrationIdentity, path, false, false, true, stage)
+            && !XmlRegistrationReferencePolicy(selected, true, XmlRegistrationIdentity, fixture, false, false, false, stage), "OWNED_XML_COMPLETION_PRIVATE_ORIGIN");
+        Record("OWNED_XML_POLICY_PASS identity-negatives=" + negatives + " private-origin-negatives=6 predicate-only=True actual-XML-load=NOT_RUN");
+    }
+    static void OwnedXmlRegistrationPinNegative()
+    {
+        ProbeFiles.Require(XmlRegistrationOwned && (ownedXmlPinCase == "missing" || ownedXmlPinCase == "size" || ownedXmlPinCase == "hash"), "OWNED_XML_PIN_FIXED_CASE");
+        bool refused = false;
+        try { PinXmlRegistrationFile(); }
+        catch (IOException error) {
+            refused = ownedXmlPinCase == "missing" ? !File.Exists(Path.Combine(stage, XmlRegistrationName + ".dll"))
+                : error.Message == (ownedXmlPinCase == "size" ? "XML_INPUT_SIZE" : "XML_INPUT_HASH");
+        }
+        ProbeFiles.Require(refused && !xmlRegistrationReady && !containerInputsReady, "OWNED_XML_PIN_REFUSAL_NO_READY");
+        Record("OWNED_XML_PIN_NEGATIVE_PASS case=" + ownedXmlPinCase + " xml-ready=False container-ready=False identity-load=NOT_REACHED");
     }
     static void PinContainerInputs()
     {
@@ -574,7 +670,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -582,7 +678,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -646,6 +742,13 @@ internal static class ProjectConstructorProbe
                 + " gac=" + cache + " reflection-only=" + assembly.ReflectionOnly + " pin-complete=" + valueTuplePinned
                 + " origin=" + (selected ? "FIXED_OS_REFERENCE" : "UNQUALIFIED") + " held-pin-sha256=" + (selected ? ValueTupleHash : "NOT_ESTABLISHED"));
         }
+        if (String.Equals(assembly.GetName().Name, XmlRegistrationName, StringComparison.OrdinalIgnoreCase)) {
+            bool selected = XmlRegistrationReferencePolicy(mode, xmlRegistrationReady && containerInputsReady, assembly.FullName,
+                assembly.IsDynamic ? "UNAVAILABLE_DYNAMIC" : assembly.Location, !assembly.IsDynamic && assembly.GlobalAssemblyCache, assembly.ReflectionOnly, assembly.IsDynamic, stage);
+            allowed = selected;
+            if (!selected) unexpected = true;
+            Record("XML_REGISTRATION_AUDIT allowed=" + selected + " identity=" + Text(assembly.FullName) + " held-pin-sha256=" + (selected ? XmlRegistrationHash : "NOT_ESTABLISHED") + " private-origin-only=True detection=after-load");
+        }
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         if (!allowed) { unexpected = true; Record("UNEXPECTED_ASSEMBLY_BLOCKER detection=after-load prevention=NOT_ESTABLISHED"); }
     }
@@ -695,7 +798,7 @@ internal static class ProjectConstructorProbe
     // Separate new-mode budget: old Factory-only reset behavior above is unchanged.
     static bool ProjectResourcePolicy(string selectedMode, bool complete, bool budget, int window, bool suspended, bool pinned, string request, bool requesterNull, bool matches, int count)
     {
-        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
+        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
             && (request == AutofacResourceEnGb || request == AutofacResourceEn) && (requesterNull ? !matches : matches) && count >= 1 && count <= 8;
     }
     static bool AllowProjectResourceNull(string request, bool pinned, bool requesterNull, bool matches, Assembly requester)
@@ -756,6 +859,10 @@ internal static class ProjectConstructorProbe
     {
         Record("PROJECT_RESOLVE requested=" + Text(args.Name));
         if (AllowAutofacResourceNull(args)) return null;
+        if (XmlRegistrationOriginal && args.Name == XmlRegistrationIdentity) {
+            string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
+            return ResolveXmlRegistration(args.Name, policy);
+        }
         if (Original) {
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             for (int i = 1; i < Names.Length; i++) if (policy == Identities[i]) return Assembly.LoadFrom(Path.Combine(stage, Names[i] + ".dll"));
@@ -1889,6 +1996,7 @@ internal static class ProjectConstructorProbe
     }
     static void OwnedContextConstruction()
     {
+        if (XmlRegistrationOwned) OwnedXmlRegistrationPolicyProof();
         contextOwnedAssembly = Assembly.LoadFrom(fixture); Func<string,Type> type = ContextOwnedType;
         Type project = type("ContextProjectFixture"), collection = type("ContextCollectionFixture"), parent = type("IContextParentFixture"), argument = type("IContextArgumentFixture"), factoryType = type("UndoFactoryDeliveryFixture"), contract = type("IFactoryFixture"), storeType = type("ICacheProjectStoreFixture");
         Type[] importerTypes = new Type[] { storeType, project, type("IContextKeyFixture"), typeof(Func<string,string>), typeof(Func<,>).MakeGenericType(new Type[] { typeof(System.Collections.Generic.IEnumerable<>).MakeGenericType(new Type[] { type("ContextBaggageFixture") }), typeof(bool) }), typeof(Action<>).MakeGenericType(new Type[] { type("IContextImportInformationFixture") }), typeof(Predicate<>).MakeGenericType(new Type[] { type("IContextImportInformationFixture") }), type("ContextImporterFixture") };
@@ -3029,8 +3137,9 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
-                || (ContextOwned && args[6] == "--owned-context-case" && Array.IndexOf(OwnedContextCases, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+                || (ContextOwned && args[6] == "--owned-context-case" && Array.IndexOf(OwnedContextCases, args[7]) >= 0)
+                || (XmlRegistrationOwned && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
+            if (args.Length == 8) { if (XmlRegistrationOwned && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -3048,6 +3157,8 @@ internal static class ProjectConstructorProbe
                 for (int i = 0; i < Names.Length; i++) Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
                 PinPlatformFacade();
                 for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "INPUT_IDENTITY");
+            } else if (XmlRegistrationOriginal) {
+                PinXmlRegistrationInputs();
             } else if (EmptyContainer && FactoryOriginal) {
                 PinContainerInputs();
             } else if (FactoryOriginal) {
@@ -3073,7 +3184,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }
