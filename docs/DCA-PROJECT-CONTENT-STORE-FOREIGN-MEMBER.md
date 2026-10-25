@@ -156,3 +156,66 @@ All10 runtime/six metadata hashes matched current files and committed blobs.
 The corrected owned run preceded commit and used those same bytes. Original37
 was NOT RUN at this checkpoint; its separate plan must use build37c and the
 corrected immutable freeze rather than the historical failed build37 records.
+
+## Actual Original37 foreign member identity
+
+At planningd9eef24de0e3492257ed86a6e2cdbc16d34d858c/coded986fe35e54ec0f3b1119e1429362cf54742c4ad,
+planfc81be197b5dcc729f3aeb6142c289c453a0234105bce40d6536e936a52923de
+passed final static audit38f1e3b970e050045b0bb68ae2c4f38cb221c468d16785b3d5564be8f142f0a8
+and critical review959db0478e822073616601bd0c30b9c71080609a7c2bafa19b7548c92118d6dc.
+The static audit's earlier announced draft hash was replaced only to record the
+exact parser command, before this attempt. Final bytes above are authoritative.
+Full generation check validated12 outputs/seven ASTs/three PS parses before one
+emission. Corrected build37c/freezeabaf were bound explicitly; no old record was
+overwritten or new runtime retry made by this original plan.
+
+Fresh preflight checked20 private+two OS inputs and18 build37c artifacts.
+One attempt FAIL, normal confirmed child exit2, not timeout. The first-refusal
+line now identifies:
+
+```text
+category=FOREIGN_OWNER qualification=UNVERIFIED_CONTRACT_MEMBER declaring-type=Knx.Ets.ObjectModel.IStreamStore generic-instantiation=NOT_INSPECTED declaring-type-token=02000061 module-scope=Knx.Ets.ObjectModel.dll module-assembly=Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159 token=06000367 name=get_Exists values=NOT_INSPECTED caller-origin=UNKNOWN
+```
+
+This is genuine captured runtime member metadata, not proof of IStore contract
+membership/inheritance, signature/meaning, caller origin, SDK caller receipt or
+any value/operation semantics. No args/signature/value was inspected or returned.
+The member remains denied. Collection returned; Project did not. Host reference
+attempt1/reply-commit1/policy faultFalse; proxy denied1/deny faultTrue/lifetime2.
+Cache entries2/attempt0/reply0/faultFalse/stream0; parent/context/importer,
+provider/factory/resource counters0. Container/trace Dispose each returned once,
+trace lifetime auditFalse; no Project disposal claimed. All content final audits
+stay fatal. Cleanup removed the task, owned0/scratch0. Post-check20+2 integrity
+PASS,24466936 private bytes. No new dependency/provisioning/catalog input.
+
+Coordinator commands, each once from repository root:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/run_project37_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project37.py 959db0478e822073616601bd0c30b9c71080609a7c2bafa19b7548c92118d6dc
+python3 -B private/evidence/task009-constructor-windows/poll_project37.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project37.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project37.py
+python3 -B private/evidence/task009-constructor-windows/run_project37_post_corrected.py
+python3 -B private/evidence/task009-constructor-windows/record_project37.py
+```
+
+Private project37-observation.json/SHA256
+8b305d7a2dc0ef03e1f14a2fa433cbe70d832007aa8472c17c9be140a80721e0
+binds44 local files/six native pins. It is the coordinator saved-result record;
+independent audit/review are separate. Exact method identity is now known; the
+next bounded step is declaration/readiness verification for that getter and an
+explicit controlled empty-store fixture, without inferred manufacturer values.
+No DCA initialization/UI/state or intentional device operation; vendor internals
+UNKNOWN/network+descendants NOT_CONTAINED. Task009 stays In progress/all ACs
+unchecked; qualification NOT_ESTABLISHED/no gate advance.
+
+Independent saved-result audit PASS for provenance, runtime FAIL2 unchanged:
+private verifier37/original-result-audit.txt, SHA256
+`ca95c121110703222a15ca67fcb3efeb1e116539be884ac3c08c56f95ab2086b`.
+It checked44 local/six native bindings, committed source16, exact metadata tuple,
+confirmed exit/counters/cleanup and20+2 integrity. Its phrase "project getter"
+is corrected by the separate immutable clarification SHA256
+`4a3adedd5badb142dd8a2001fbe655a2c4339d9b128334dd743993869aa410e6`:
+CONTEXT_PROJECT_END refers to Project constructor06002831, while the get_Project
+host-reply counter is distinct. No caller receipt/origin inference or rerun.
