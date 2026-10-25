@@ -160,4 +160,11 @@ It verified158/158 files/native4, current source10+metadata6,11 PASS dispatches,
 87 profile results,40+13 case-file lengths, descriptor/control records and cleanup.
 Session0 SSH stderr616 bytes is CLIXML progress, retained rather than called empty.
 The audit did not run a helper or redownload compiled payloads. Combined critical
-review/source commit remain next; Original36 NOT RUN.
+review/source commit were next at that checkpoint; Original36 was NOT RUN.
+
+Source36 implementation committed as `399658a8e7bcbb2fba27b02488fe7e60d3c44aa8`. Combined critical
+source/owned-result review PASS, private review36/source-owned-critical-review.txt
+SHA256 `4fd93b403428496b5a8cd64f224a043e27980ff58b3774328d9ca0cccc8fe75c`.
+All10 runtime/six metadata hashes matched current files and committed blobs.
+Owned execution preceded commit and used those same bytes. At this checkpoint
+Original36 remains NOT RUN; a separate immutable original plan/review follows.
