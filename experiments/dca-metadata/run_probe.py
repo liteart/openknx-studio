@@ -46,6 +46,8 @@ PROJECT_COLLECTION_IDENTITY = OBJECT_MODEL_IDENTITY
 SDK_STATIC_FACTORIES_PIN = ("Knx.Ets.Sdk.dll", 6979024, "7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989")
 SDK_STATIC_FACTORIES_IDENTITY = "Knx.Ets.Sdk, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
 SDK_STATIC_FACTORY_TARGETS = ["Knx.Ets.Sdk.Project.Project", "Knx.Ets.Sdk.Root", "Knx.Ets.Sdk.Project.ProjectCollection"]
+PROJECT_CONTEXT_PARENT_PIN = OBJECT_MODEL_PIN
+PROJECT_CONTEXT_PARENT_IDENTITY = OBJECT_MODEL_IDENTITY
 PROJECT_STREAM_STORE_IDENTITY = "Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
 PROJECT_TRACE_ENCRYPTOR_PIN = ("Knx.Ets.Common.dll", 503248, "4d4fcd3b0aed672979aa45b4642a5af772e6dcf0b0388062a96d8ee992f86ecd")
 PROJECT_TRACE_ENCRYPTOR_IDENTITY = "Knx.Ets.Common, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159"
@@ -226,7 +228,7 @@ def private_output(path, data):
 
 
 def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map"):
-    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-stream-store", "project-collection", "sdk-static-factories", "project-online-catalog-references", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"):
+    if experiment not in ("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-stream-store", "project-collection", "project-context-parent", "sdk-static-factories", "project-online-catalog-references", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"):
         raise ProbeError("DCAPROBE_EXPERIMENT")
     if sys.platform != "darwin":
         raise ProbeError("DCAPROBE_MACOS_REQUIRED")
@@ -255,6 +257,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         "project-undo-store-provider": worker_base.parent / "dca-integration" / "Read-ProjectUndoStoreProviderMetadata.ps1",
         "project-stream-store": worker_base.parent / "dca-integration" / "Read-ProjectStreamStoreMetadata.ps1",
         "project-collection": worker_base.parent / "dca-integration" / "Read-ProjectCollectionMetadata.ps1",
+        "project-context-parent": worker_base.parent / "dca-integration" / "Read-ProjectContextParentMetadata.ps1",
         "sdk-static-factories": worker_base.parent / "dca-integration" / "Read-SdkStaticFactoriesMetadata.ps1",
         "project-online-catalog-references": worker_base.parent / "dca-integration" / "Read-ProjectOnlineCatalogReferences.ps1",
         "project-trace-encryptor": worker_base.parent / "dca-integration" / "Read-ProjectTraceEncryptorMetadata.ps1",
@@ -274,6 +277,8 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         selected_pins = (PROJECT_STREAM_STORE_PIN,)
     if experiment == "project-collection":
         selected_pins = (PROJECT_COLLECTION_PIN,)
+    if experiment == "project-context-parent":
+        selected_pins = (PROJECT_CONTEXT_PARENT_PIN,)
     if experiment == "sdk-static-factories":
         selected_pins = (SDK_STATIC_FACTORIES_PIN,)
     if experiment == "project-online-catalog-references":
@@ -313,6 +318,8 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
         command = PROJECT_ID_COMMAND
     if experiment == "project-collection":
         command = PROJECT_ID_COMMAND
+    if experiment == "project-context-parent":
+        command = PROJECT_ID_COMMAND
     if experiment == "sdk-static-factories":
         command = PROJECT_ID_COMMAND
     if experiment == "project-online-catalog-references":
@@ -340,6 +347,7 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
                 "project-undo-store-provider": "static_dca_project_undo_store_provider",
                 "project-stream-store": "static_dca_project_stream_store",
                 "project-collection": "static_dca_project_collection",
+                "project-context-parent": "static_dca_project_context_parent",
                 "sdk-static-factories": "static_dca_sdk_static_factories",
                 "project-online-catalog-references": "static_dca_project_online_catalog_references",
                 "project-trace-encryptor": "static_dca_project_trace_encryptor",
@@ -374,6 +382,10 @@ def run(stage_value, pwsh_value, output_value=None, *, experiment="reference-map
     if experiment == "sdk-static-factories" and observed[0].get("identity") != SDK_STATIC_FACTORIES_IDENTITY:
         raise ProbeError("DCAPROBE_REPORT_IDENTITY")
     if experiment == "sdk-static-factories" and report.get("selected_targets") != SDK_STATIC_FACTORY_TARGETS:
+        raise ProbeError("DCAPROBE_REPORT_SHAPE")
+    if experiment == "project-context-parent" and observed[0].get("identity") != PROJECT_CONTEXT_PARENT_IDENTITY:
+        raise ProbeError("DCAPROBE_REPORT_IDENTITY")
+    if experiment == "project-context-parent" and report.get("selected_root") != "Knx.Ets.ObjectModel.Interfaces.INamedDomObject":
         raise ProbeError("DCAPROBE_REPORT_SHAPE")
     if experiment == "project-collection" and observed[0].get("identity") != PROJECT_COLLECTION_IDENTITY:
         raise ProbeError("DCAPROBE_REPORT_IDENTITY")
@@ -410,7 +422,7 @@ def main():
     parser.add_argument("--stage", required=True)
     parser.add_argument("--pwsh", required=True)
     parser.add_argument("--output", help="New private report path immediately inside stage")
-    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-stream-store", "project-collection", "sdk-static-factories", "project-online-catalog-references", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"), default="reference-map",
+    parser.add_argument("--experiment", choices=("reference-map", "member-map", "entrypoint-map", "project-context", "project-construction", "project-services", "project-providers", "project-constructors", "project-id", "project-undo-manager", "project-undo-store-provider", "project-stream-store", "project-collection", "project-context-parent", "sdk-static-factories", "project-online-catalog-references", "project-trace-encryptor", "project-trace-encryptor-construction", "project-trace-encryptor-parameter"), default="reference-map",
                         help="Fixed owned experiment; Task-140 default is unchanged")
     args = parser.parse_args()
     try:

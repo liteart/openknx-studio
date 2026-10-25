@@ -328,6 +328,51 @@ public static class EntrypointMetadata {
    if(System.Text.Encoding.UTF8.GetByteCount(report)>512*1024)throw Fail("REPORT_LIMIT");return report;
   }
  }
+ // Minimum parent type shape only; no method inventory or TypeSpec signature decoding.
+ const string ContextParentHash="73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a";
+ const string ContextParentIdentity="Knx.Ets.ObjectModel, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+ const string ContextParentRoot="Knx.Ets.ObjectModel.Interfaces.INamedDomObject";
+ const string OwnedContextParentIdentity="Task009.OwnedProjectContextParent, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+ const string OwnedContextParentRoot="Owned.Task009.IProjectContextParentFixture";
+ static void ContextParentHandle(MetadataReader r,EntityHandle h,bool nilAllowed){
+  if(h.IsNil){if(nilAllowed)return;throw Fail("INTERFACE_HANDLE");}
+  TableIndex table;if(h.Kind==HandleKind.TypeDefinition)table=TableIndex.TypeDef;else if(h.Kind==HandleKind.TypeReference)table=TableIndex.TypeRef;else if(h.Kind==HandleKind.TypeSpecification)table=TableIndex.TypeSpec;else throw Fail("INTERFACE_HANDLE");
+  if(MetadataTokens.GetRowNumber(h)>r.GetTableRowCount(table))throw Fail("INTERFACE_HANDLE");
+ }
+ public static string ReadProjectContextParent(string path,string hash){if(hash!=ContextParentHash)throw Fail("INPUT_PIN");return ReadContextParentInternal(path,hash,false);}
+ public static string ReadOwnedProjectContextParent(string path,string hash){return ReadContextParentInternal(path,hash,true);}
+ static string ReadContextParentInternal(string path,string hash,bool owned){
+  long total=0;byte[] bytes=Pinned(path,hash,ref total);if(!owned&&bytes.Length!=14204880)throw Fail("INPUT_SIZE");
+  using(var pe=new PEReader(ImmutableArray.Create(bytes))){
+   if(!pe.HasMetadata)throw Fail("MANAGED_METADATA");var r=pe.GetMetadataReader();if(!r.IsAssembly)throw Fail("ASSEMBLY_REQUIRED");
+   foreach(TableIndex table in Enum.GetValues(typeof(TableIndex))){int count=r.GetTableRowCount(table);if(count>(table==TableIndex.MethodDef?65536:RowLimit))throw new RowLimitObservationException(table,count);}
+   string identity=AssemblyIdentity(r);if(identity!=(owned?OwnedContextParentIdentity:ContextParentIdentity))throw Fail("INPUT_IDENTITY");
+   string rootName=owned?OwnedContextParentRoot:ContextParentRoot;int dot=rootName.LastIndexOf('.');TypeDefinitionHandle root=default;
+   foreach(var h in r.TypeDefinitions){var candidate=r.GetTypeDefinition(h);if(r.StringComparer.Equals(candidate.Namespace,rootName.Substring(0,dot))&&r.StringComparer.Equals(candidate.Name,rootName.Substring(dot+1))){if(!root.IsNil)throw Fail("DUPLICATE_ROOT");root=h;}}
+   if(root.IsNil)throw Fail("ROOT_NOT_FOUND");var t=r.GetTypeDefinition(root);var declaring=t.GetDeclaringType();
+   if(!declaring.IsNil)throw Fail("ROOT_NOT_TOP_LEVEL");if((t.Attributes&TypeAttributes.VisibilityMask)!=TypeAttributes.Public)throw Fail("ROOT_NOT_PUBLIC");
+   if((t.Attributes&TypeAttributes.ClassSemanticsMask)!=TypeAttributes.Interface)throw Fail("ROOT_NOT_INTERFACE");int arity=t.GetGenericParameters().Count;if(arity!=0)throw Fail("UNSUPPORTED_GENERIC_ROOT");
+   var baseHandle=t.BaseType;ContextParentHandle(r,baseHandle,true);var interfaces=new List<object>();
+   foreach(var ih in t.GetInterfaceImplementations()){
+    if(interfaces.Count>=32)throw Fail("INTERFACE_LIMIT");EntityHandle reference;try{reference=r.GetInterfaceImplementation(ih).Interface;}catch(BadImageFormatException){throw Fail("INTERFACE_HANDLE");}ContextParentHandle(r,reference,false);
+    string name=null,assembly=null,scopeKind=null,scopeToken=null,disposition="UNRESOLVED_NOT_FOLLOWED";
+    if(reference.Kind==HandleKind.TypeSpecification)disposition="UNRESOLVED_TYPESPEC";
+    else{
+     if(reference.Kind==HandleKind.TypeDefinition){assembly=identity;scopeKind="CURRENT_ASSEMBLY";}
+     else{
+      var tr=r.GetTypeReference((TypeReferenceHandle)reference);var scope=tr.ResolutionScope;scopeKind=scope.Kind.ToString();if(!scope.IsNil)scopeToken=MetadataTokens.GetToken(scope).ToString("X8");
+      if(!scope.IsNil){TableIndex scopeTable;if(scope.Kind==HandleKind.AssemblyReference)scopeTable=TableIndex.AssemblyRef;else if(scope.Kind==HandleKind.TypeReference)scopeTable=TableIndex.TypeRef;else if(scope.Kind==HandleKind.ModuleReference)scopeTable=TableIndex.ModuleRef;else if(scope.Kind==HandleKind.ModuleDefinition)scopeTable=TableIndex.Module;else throw Fail("REFERENCE_SCOPE");if(MetadataTokens.GetRowNumber(scope)>r.GetTableRowCount(scopeTable))throw Fail("REFERENCE_SCOPE");}
+      if(!scope.IsNil&&scope.Kind==HandleKind.AssemblyReference)assembly=ReferenceIdentity(r,(AssemblyReferenceHandle)scope);
+     }
+     try{name=new Names(r,true).Named(reference);}catch(BadImageFormatException){throw Fail("INTERFACE_HANDLE");}
+    }
+    interfaces.Add(Obj("interface_impl_token",MetadataTokens.GetToken(ih).ToString("X8"),"reference_token",MetadataTokens.GetToken(reference).ToString("X8"),"reference_kind",reference.Kind.ToString(),"name",name,"assembly_identity",assembly,"scope_kind",scopeKind,"scope_token",scopeToken,"disposition",disposition));
+   }
+   var type=Obj("token",MetadataTokens.GetToken(root).ToString("X8"),"name",rootName,"attributes",(int)t.Attributes,"visibility",(t.Attributes&TypeAttributes.VisibilityMask).ToString(),"class_semantics_raw",(int)(t.Attributes&TypeAttributes.ClassSemanticsMask),"is_interface",true,"generic_arity",arity,"declaring_type_is_nil",declaring.IsNil,"declaring_type_token",declaring.IsNil?null:MetadataTokens.GetToken(declaring).ToString("X8"),"base_type_is_nil",baseHandle.IsNil,"base_type_kind",baseHandle.IsNil?null:baseHandle.Kind.ToString(),"base_type_token",baseHandle.IsNil?null:MetadataTokens.GetToken(baseHandle).ToString("X8"),"interfaces",interfaces);
+   string report=JsonSerializer.Serialize(Obj("schema_version",1,"operation","static_dca_project_context_parent","rights","UNRESOLVED","runtime_execution","NOT_RUN","inputs",new[]{Obj("filename",Path.GetFileName(path),"bytes",bytes.Length,"sha256",hash.ToLowerInvariant(),"identity",identity)},"selected_root",rootName,"types",new[]{type},"declaration_scope","ROOT_FLAGS_AND_DIRECT_INTERFACE_REFERENCES_ONLY","referenced_declarations","UNRESOLVED_NOT_FOLLOWED","qualification","TYPE_SHAPE_ONLY_NOT_PROXY_OR_CONSTRUCTION_PROOF","limits",Obj("file_bytes",FileLimit,"aggregate_bytes",TotalLimit,"methoddef_rows",65536,"other_table_rows",RowLimit,"string_chars",1024,"name_depth",16,"direct_interfaces",32,"report_utf8_bytes",64*1024),"limitations",new[]{"No method/constructor inventory or signature decoding. Base is an opaque handle; direct TypeSpec interface contents are UNRESOLVED_TYPESPEC tokens only.","TypeDef/TypeRef naming and directly available scope identity only; no interface/base closure or referenced declarations examined. Flags do not establish CLR proxy marshaling or legitimate constructor arguments.","No fields/values, IL/bodies, attributes, SDK loading, activation, dependency resolution or service values."}));
+   if(System.Text.Encoding.UTF8.GetByteCount(report)>64*1024)throw Fail("REPORT_LIMIT");return report;
+  }
+ }
  // Fixed SDK static-return declarations. New helpers do not change legacy readers.
  const string SdkStaticHash="7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989";
  const string SdkStaticIdentity="Knx.Ets.Sdk, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";

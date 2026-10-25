@@ -6,6 +6,31 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 public static class Task144OwnedFixtures {
+ // Unsigned parent type-shape fixtures. Method/field/TypeSpec payloads are deliberately unusable.
+ public static void CreateProjectContextParent(string path,int profile=0){
+  var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedContextParent.dll"),m.GetOrAddGuid(new Guid("00a00000-1111-1111-1111-111111111111")),default,default);
+  m.AddAssembly(m.GetOrAddString(profile==1?"Owned.ForeignContextParent":"Task009.OwnedProjectContextParent"),new Version(1,0,0,0),default,default,0,AssemblyHashAlgorithm.None);
+  var foreign=m.AddAssemblyReference(m.GetOrAddString(profile==14?new string('A',1000):"Owned.ForeignParent"),new Version(1,0,0,0),default,default,0,default);
+  var external=m.AddTypeReference(profile==12?MetadataTokens.AssemblyReferenceHandle(9999):profile==24?(EntityHandle)m.AddModuleReference(m.GetOrAddString("UnresolvedModule")):profile==25?MetadataTokens.TypeReferenceHandle(1):(EntityHandle)foreign,m.GetOrAddString(profile==25?"":"Owned.ExternalParent"),m.GetOrAddString(profile==13?new string('T',1025):profile==14?new string('T',1000):"IBase"));
+  if(profile==19||profile==20){EntityHandle scope=foreign;for(int i=0;i<(profile==19?17:16);i++)scope=m.AddTypeReference(scope,i==0?m.GetOrAddString("Owned.Depth"):default,m.GetOrAddString("Nested"+i));external=(TypeReferenceHandle)scope;}
+  var spec=m.AddTypeSpecification(m.GetOrAddBlob(new byte[]{0xff}));
+  m.AddTypeDefinition(TypeAttributes.NotPublic,default,m.GetOrAddString("<Module>"),default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  var flags=profile==4?TypeAttributes.NotPublic|TypeAttributes.Interface|TypeAttributes.Abstract:profile==5?TypeAttributes.Public:profile==7?TypeAttributes.NestedPublic|TypeAttributes.Interface|TypeAttributes.Abstract:TypeAttributes.Public|TypeAttributes.Interface|TypeAttributes.Abstract;
+  var root=m.AddTypeDefinition(flags,m.GetOrAddString("Owned.Task009"),m.GetOrAddString(profile==2?"Other":"IProjectContextParentFixture"),profile==21?(EntityHandle)spec:profile==22?MetadataTokens.TypeDefinitionHandle(3):default,MetadataTokens.FieldDefinitionHandle(1),MetadataTokens.MethodDefinitionHandle(1));
+  if(profile==6)m.AddGenericParameter(root,GenericParameterAttributes.None,m.GetOrAddString("T"),0);
+  Method(m,"METHOD_SIGNATURE_MUST_NOT_BE_READ",MethodAttributes.Public|MethodAttributes.Abstract,new byte[]{0xff});Method(m,".cctor",MethodAttributes.Private|MethodAttributes.Static,new byte[]{0xff});
+  var field=m.AddFieldDefinition(FieldAttributes.Public|FieldAttributes.Static|FieldAttributes.Literal,m.GetOrAddString("FIELD_MUST_NOT_BE_READ"),m.GetOrAddBlob(new byte[]{0xff}));m.AddConstant(field,"VALUE_MUST_NOT_BE_READ");
+  var local=m.AddTypeDefinition(TypeAttributes.Public|TypeAttributes.Interface|TypeAttributes.Abstract,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("UnresolvedParentInterface"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(3));
+  Method(m,"INHERITED_SIGNATURE_MUST_NOT_BE_READ",MethodAttributes.Public,new byte[]{0xff});if(profile==7)m.AddNestedType(root,local);
+  int interfaces=profile==8?33:profile==9||profile==14?32:3;
+  for(int i=0;i<interfaces;i++)m.AddInterfaceImplementation(root,i==0?(profile==10?MetadataTokens.TypeDefinitionHandle(9999):profile==11?MetadataTokens.TypeDefinitionHandle(0):(EntityHandle)local):i==2?(profile==23?MetadataTokens.TypeSpecificationHandle(9999):(EntityHandle)spec):(EntityHandle)external);
+  // Following the referenced local interface would reach this invalid edge; the query must not follow it.
+  m.AddInterfaceImplementation(local,MetadataTokens.TypeDefinitionHandle(9999));
+  if(profile==3)m.AddTypeDefinition(flags,m.GetOrAddString("Owned.Task009"),m.GetOrAddString("IProjectContextParentFixture"),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(4));
+  if(profile==15||profile==16)for(int i=3;i<(profile==15?32769:32768);i++)m.AddTypeDefinition(TypeAttributes.NotPublic,m.GetOrAddString("Owned"),m.GetOrAddString("Padding"+i),default,MetadataTokens.FieldDefinitionHandle(2),MetadataTokens.MethodDefinitionHandle(4));
+  if(profile==17||profile==18)for(int i=3;i<(profile==17?65537:65536);i++)Method(m,"UNEXAMINED",MethodAttributes.Public,new byte[]{0xff});
+  var image=new BlobBuilder();new ManagedPEBuilder(new PEHeaderBuilder(),new MetadataRootBuilder(m),new BlobBuilder(),flags:CorFlags.ILOnly).Serialize(image);File.WriteAllBytes(path,image.ToArray());
+ }
  // Unsigned SDK-like declarations; targets/owners are fixtures, never substitute SDK assemblies.
  public static void CreateSdkStaticFactories(string path,int profile=0){
   var m=new MetadataBuilder();m.AddModule(0,m.GetOrAddString("OwnedStaticFactories.dll"),m.GetOrAddGuid(new Guid("009f0000-1111-1111-1111-111111111111")),default,default);

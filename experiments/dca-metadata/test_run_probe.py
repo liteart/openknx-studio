@@ -563,6 +563,68 @@ class PolicyTests(unittest.TestCase):
                         run_probe.run(str(stage), str(pwsh), str(owned), experiment="project-collection")
                     child.assert_not_called()
 
+    def test_project_context_parent_fixed_single_input_route(self):
+        self.assertEqual(run_probe.PROJECT_CONTEXT_PARENT_PIN, ("Knx.Ets.ObjectModel.dll", 14204880,
+                         "73ffaaa97640a4207819c182101d23d3da73d4c983056f5bca5881c0f02eda8a"))
+        self.assertEqual(len(run_probe.PINS), 3)
+        self.assertNotIn(run_probe.PROJECT_CONTEXT_PARENT_PIN, run_probe.PINS)
+        worker = Path(run_probe.__file__).resolve().parent.parent / "dca-integration" / "Read-ProjectContextParentMetadata.ps1"
+        source = worker.read_text()
+        self.assertIn("::ReadProjectContextParent($InputPath,$InputSha256)", source)
+        self.assertNotIn("ReadOwnedProjectContextParent", source)
+        self.assertNotIn("[switch]", source)
+        with tempfile.TemporaryDirectory() as directory:
+            stage = Path(directory).resolve()
+            stage.chmod(0o700)
+            pwsh = stage / "owned-pwsh"
+            pwsh.write_bytes(b"never executed")
+            pwsh.chmod(0o700)
+            pin = ("OwnedProjectContextParent.dll", 1, "a" * 64)
+            owned = stage / pin[0]
+            owned.write_bytes(b"x")
+            owned.chmod(0o600)
+            report = {"schema_version": 1, "operation": "static_dca_project_context_parent",
+                      "runtime_execution": "NOT_RUN", "rights": "UNRESOLVED",
+                      "selected_root": "Knx.Ets.ObjectModel.Interfaces.INamedDomObject", "inputs": [
+                          {"filename": pin[0], "bytes": pin[1], "sha256": pin[2],
+                           "identity": run_probe.PROJECT_CONTEXT_PARENT_IDENTITY}]}
+            with mock.patch.object(run_probe.sys, "platform", "darwin"), \
+                    mock.patch.object(run_probe, "PROJECT_CONTEXT_PARENT_PIN", pin):
+                with mock.patch.object(run_probe, "negative_probes", side_effect=run_probe.ProbeError("DCAPROBE_RESTRICTION")), \
+                        mock.patch.object(run_probe, "bounded_child") as child:
+                    with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_RESTRICTION$"):
+                        run_probe.run(str(stage), str(pwsh), experiment="project-context-parent")
+                    child.assert_not_called()
+                with mock.patch.object(run_probe, "negative_probes", return_value={"owned": True}):
+                    with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(report).encode(), b"")) as child:
+                        run_probe.run(str(stage), str(pwsh), str(stage / "report.json"), experiment="project-context-parent")
+                        command = base64.b64decode(child.call_args.args[0][-1]).decode("utf-16le")
+                        self.assertEqual(command, run_probe.PROJECT_ID_COMMAND)
+                        self.assertIn("$pins.Count -ne 1", command)
+                        self.assertNotIn("ReferencePath", command)
+                        environment = child.call_args.args[1]
+                        self.assertEqual(Path(environment["DCAMETA_WORKER"]), worker)
+                        self.assertEqual(len(json.loads(environment["DCAMETA_INPUTS_JSON"])), 1)
+                        self.assertEqual(child.call_args.args[0][2], run_probe.PROFILE)
+                    for field, value, code in (("identity", "Owned.Wrong", "REPORT_IDENTITY"),
+                                               ("sha256", "f" * 64, "REPORT_PINS")):
+                        changed = json.loads(json.dumps(report))
+                        changed["inputs"][0][field] = value
+                        with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(changed).encode(), b"")):
+                            with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_" + code + "$"):
+                                run_probe.run(str(stage), str(pwsh), experiment="project-context-parent")
+                    for changed in (dict(report, selected_root="Owned.Other"),
+                                    dict(report, operation="static_dca_project_constructors"),
+                                    dict(report, inputs=[]),
+                                    dict(report, inputs=report["inputs"] * 2)):
+                        with mock.patch.object(run_probe, "bounded_child", return_value=(0, json.dumps(changed).encode(), b"")):
+                            with self.assertRaises(run_probe.ProbeError):
+                                run_probe.run(str(stage), str(pwsh), experiment="project-context-parent")
+                with mock.patch.object(run_probe, "bounded_child") as child:
+                    with self.assertRaisesRegex(run_probe.ProbeError, "^DCAPROBE_OUTPUT_PATH$"):
+                        run_probe.run(str(stage), str(pwsh), str(owned), experiment="project-context-parent")
+                    child.assert_not_called()
+
     def test_sdk_static_factories_fixed_single_input_route(self):
         self.assertEqual(run_probe.SDK_STATIC_FACTORIES_PIN, ("Knx.Ets.Sdk.dll", 6979024,
                          "7d28a8d549dd25b08fe798b8e0ee072eb5d5916713808f7ceffa1c35eaf7d989"))

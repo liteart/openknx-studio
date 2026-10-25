@@ -153,6 +153,17 @@ PASS6030ecb9397b6221da3ad289e671ee130f1e86687b2e3b39983e8c768f4acd73
 critical result review PASS6c9fc923b06f0891007b26e2f91d5b45d1d793a84534ee590cc3000c6b2f9194. No universal factory absence, argument/bootstrap/catalog necessity or
 SDK runtime qualification follows.
 
+The next minimum new type-shape inquiry follows
+[DCA-PROJECT-CONTEXT-PARENT.md](../docs/DCA-PROJECT-CONTEXT-PARENT.md): the exact
+INamedDomObject parent interface referenced by the known collection constructor.
+No method inventory is needed for the planned deny-all interface diagnostic.
+Source31 implemented/frozen988569ee3e05731d7164866fa75a3585be0966f7b364f362722a6a9850b64a1b:
+owned638 PowerShell/29 Python PASS, independent verification
+PASS43de21a20b5c3f8e8ce28157229bf12aa79b124c8c4d0f8dff71c2a5fd3a18a7.
+Initial nil-handle fixture failure and fixture-only repair retained. Critical
+source/helper review and commit pending; original extraction NOT RUN. Owned
+.NET Framework ABI/lifetime proof and original activation remain separate work.
+
 ## Completion Record
 
 | Field | Initial value |
