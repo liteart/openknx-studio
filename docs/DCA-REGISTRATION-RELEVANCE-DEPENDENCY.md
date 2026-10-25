@@ -1,7 +1,7 @@
 # Task-009 registration-relevance dependency diagnostic
 
-Task-008 is accepted; no phase gate applies. Task-009 continuation is Blocked
-pending the private source SSH login; all acceptance criteria remain unchecked. This is one dependency-profile increment on
+Task-008 is accepted; no phase gate applies. Task-009 remains In progress; the source SSH/provisioning blocker is resolved.
+All acceptance criteria remain unchecked. This is one dependency-profile increment on
 [explicit context construction](DCA-EXPLICIT-PROJECT-CONTEXT.md), not an XML
 service implementation. Original32 FAIL2 remains immutable: Collection0600298E
 requested this unallowlisted assembly and did not return; Project06002831 was
@@ -22,10 +22,10 @@ construction report5253681cc48e42142a7d214e9229d2d9b68c8f3580152c0ff4a63fb6129d1
 records this exact AssemblyRef in both the pinned ObjectModel and SDK.
 This does not qualify candidate behavior, its own references or type initializers.
 
-No local payload was found. The saved source acquisition uses DESKTOP-JNBB40M,
+At contract freeze, no local payload was found. The saved source acquisition uses DESKTOP-JNBB40M,
 Hugis, `C:\Program Files (x86)\ETS6`; the exact filename there is a candidate,
-not verified current presence. Provisioning awaits the established source
-connection. That blocks original execution only; local owned implementation and
+not verified presence at that checkpoint. Provisioning then awaited the source
+connection. That blocked original execution only; local owned implementation and
 tests require no DLL access. Existing private-copy authorization remains; no
 redistribution or publication is authorized by this contract.
 
@@ -75,8 +75,8 @@ body/projection equality is verified; it is not a new Windows run.
 
 Freeze the current sources, contract, commands, raw failures/results and evidence
 pins. Independent review and focused new-mode Windows owned checks precede source
-commit and a separate immutable one-attempt original20-input plan. Current
-original Source33 execution/provisioning and hardware are NOT RUN. Further vendor
+commit and a separate immutable one-attempt original20-input plan. At contract freeze,
+original Source33 execution/provisioning and hardware were NOT RUN. Further vendor
 requirements remain UNKNOWN; network/descendants NOT_CONTAINED. No Task009
 acceptance, rights certification or gate approval follows.
 
@@ -161,8 +161,8 @@ collect_owned33.py, cleanup_owned33.py, run_owned_admin33.py,
 poll_owned_admin33_01.py, collect_owned_admin33.py, cleanup_owned_admin33.py.
 Each execution handle reached a genuine terminal state.
 
-Original XML provisioning/load and Original33 remain NOT RUN. Source SSH
-control was absent and BatchMode authentication to the fixed source host was
+At this historical post-owned/pre-provision checkpoint, original XML
+provisioning/load and Original33 were NOT RUN. Source SSH control was absent and BatchMode authentication to the fixed source host was
 denied. The user has been given the command to establish that connection;
 private-copy authorization is retained. Actual candidate presence still needs
 fresh verification after login. No Original32 retry, new DLL beyond the one
@@ -175,3 +175,94 @@ Independent saved-owned-result audit PASS:
 All143 file bindings/four native pins matched. Independent raw logs confirm
 22/27/22, the arithmetic-only forecast correction and both cleanup/file lists.
 The audit did not rerun Windows or load an original XML assembly.
+
+## Actual Original33 private provisioning and construction
+
+After the user confirmed source SSH, the exact private candidate was copied
+from the fixed ETS source using metadata-only AssemblyName inspection. Its
+188880-byte size, full6.4.8718.0/neutral/61439873ec5e1159 identity and
+SHA256a9bce396208e9d5b9680e65ef5d730ed9873c21f04de5028cb6f492264c70ac3
+matched. Private acquisition-evidence.json SHA256
+`d968cdd09f6bff024a74f16d4934dc9e6cb8bc925a0a45fe74572af6a9c25b39`
+binds nine acquisition files. Generic inventory rights/compatibility placeholders
+were preserved; Simon's private-copy authorization and no-redistribution decision
+remain the session authority. This is not an agent legal certification.
+
+Original33 plan SHA256
+`b0ba2f6adb1b33ea7cda0e6efbc5d1c37c14790c8fc5e8aa51ebd07260e496e9`
+binds planning HEAD `198485bb314505e986648b133ba655006bca576e` and reviewed
+implementation `31676d37a0b3e66f2cbc9adf3b0e26a485eeeed8`. Root static audit
+`8c1fd8d6a12cc3a6a9fb04eb1d0a22399b41288b09d3a181d05e1c0fe8966594`
+and independent critical plan review
+`041e45c50cc82fb93562fd833463b1124c20d93d4ca5b0902de766ffc8195f2f`
+PASS. Root initially guessed a manifest key; the corrected saved-only audit
+checked the actual provenance schema, with that failure retained and no
+plan/source/runtime change.
+
+Provisioning created a fresh20-input directory with exactly19 no-overwrite
+copies plus the pinned XML file. The old19 source pins were checked before and
+after copying. Immediate live preflight verified20 private pins, two OS pins,
+18 build artifacts, x64 and zero selected ETS/owned processes.
+
+The one actual attempt **FAIL**, normal confirmed child exit2, no timeout or
+retry. The exact original XML assembly passed its post-load private-origin
+audit. No explicit XML resolver-return marker was observed; CLR default probing
+is consistent with the observation but not separately instrumented. This does
+not exercise or qualify every resolver path.
+
+**The genuine Collection constructor0600298E returned** in window0, with exact
+class/nonproxy checks before the Project step. Project06002831 was attempted in
+window2 and did not return. The synthetic IProjectStore.get_Id fixture returned
+once. The cache wrapper ended with entries2, attempts0, replies0, faultedTrue,
+stream-denied0. Parent/context/importer counts and faults were0/False; provider
+denials/factory callback successes/resource probes were0. The exact refused
+store member is UNKNOWN_NOT_RECORDED. Do not infer IdMappingCache or any other
+member from those counters. Cleanup/final audit failures masked the original
+refusal, ending with CACHE_STREAM_FINAL_DENIAL and
+CACHE_WRAPPER_DENIED_PROCESS_FINAL. No new unresolved assembly request or
+catalog request was recorded in this attempt.
+
+Container and trace disposal each returned once; trace lifetime audit wasFalse.
+No Project disposal is claimed because its constructor did not return.
+Collection is retained without an invented Dispose contract. Cleanup removed
+the task and recorded owned processes0/scratch files0. Runtime post-check
+verified20 private pins and two OS pins unchanged,24466936 private bytes. This
+is distinct from the old19 pre/post-copy integrity proof. Limited Session2 was
+UserInteractive=true/nonadministrator; quser showed disconnected, so no active
+GUI qualification follows. Vendor internals remain UNKNOWN and network/
+descendants NOT_CONTAINED. The harness invoked no DCA initialization/UI/state
+or intentional hardware operation.
+
+Private project33-observation.json (22817 bytes, SHA256
+`e4858a1f63faeb26b8dec2c4cf1977bc104716fe0dea4aab79750623919af897`)
+binds53 local files plus acquisition/native review pins. Before execution, root
+corrected stale32 audit-path/output-label literals in the saved-only recorder;
+the initial recorder was never executed. The correction and both scripts are
+bound, no source or runtime changed and no attempt reran.
+
+Coordinator commands actually executed once from the repository root:
+
+```text
+python3 -B private/evidence/task009-xml-registration-dependency/acquisition/acquire_xml_reference.py
+python3 -B private/evidence/task009-constructor-windows/preparation-original33/prepare_original33.py --planning-receipt-sha256 fb1924f2b76b58020e8eadc9d790f62fb9cb722724356504f033c35cf0aa84db
+python3 -B private/evidence/task009-constructor-windows/provision_project33.py 041e45c50cc82fb93562fd833463b1124c20d93d4ca5b0902de766ffc8195f2f
+python3 -B private/evidence/task009-constructor-windows/run_project33_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project33.py 041e45c50cc82fb93562fd833463b1124c20d93d4ca5b0902de766ffc8195f2f
+python3 -B private/evidence/task009-constructor-windows/poll_project33.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project33.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project33.py
+python3 -B private/evidence/task009-constructor-windows/run_project33_post_corrected.py
+python3 -B private/evidence/task009-constructor-windows/record_project33-corrected.py --plan-review-sha256 041e45c50cc82fb93562fd833463b1124c20d93d4ca5b0902de766ffc8195f2f --plan-audit-sha256 8c1fd8d6a12cc3a6a9fb04eb1d0a22399b41288b09d3a181d05e1c0fe8966594
+```
+
+Next bounded work is refusal diagnostics using trusted store method metadata,
+without new getter responses or business values. Original Project construction
+and genuine SDK.Project/get_Project success remain unestablished. All Task009
+criteria remain unchecked; no acceptance or phase gate advances.
+
+Independent saved-result audit PASS for provenance/result consistency:
+`task009-constructor-windows/verifier33/original-result-audit.txt`, SHA256
+`ee452895beea00d0a0758563893a7fca2987b8d2ff78768dadcf628129abf700`.
+It verified53 local bindings, acquisition/native review pins and10 source/six
+metadata files without a rerun or original DLL payload read. The actual
+constructor diagnostic remains FAIL2, with Project qualification unestablished.
