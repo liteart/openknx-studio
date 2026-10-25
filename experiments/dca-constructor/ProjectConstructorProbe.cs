@@ -292,10 +292,26 @@ internal sealed class ProjectContentDenyProxy : RealProxy
         if (System.Runtime.Remoting.RemotingServices.IsTransparentProxy(method) || method.GetType() != typeof(object).GetMethod("GetType").GetType()) return "category=UNTRUSTED_METHOD_KIND";
         foreach (MethodInfo expected in new MethodInfo[] { typeof(object).GetMethod("GetType"), typeof(object).GetMethod("ToString"), typeof(object).GetMethod("GetHashCode"), typeof(object).GetMethod("Equals", new Type[] { typeof(object) }), typeof(IDisposable).GetMethod("Dispose") })
             if (ProjectConstructorProbe.ExactRuntimeMethod(method, expected)) return "category=TRUSTED_CORE_MEMBER owner=" + ProjectConstructorProbe.Text(expected.DeclaringType.FullName) + " token=" + expected.MetadataToken.ToString("X8") + " name=" + ProjectConstructorProbe.Text(expected.Name);
-        if (method.Module != owner.Module || method.DeclaringType != owner) return "category=FOREIGN_OWNER";
+        Module module = method.Module; Type declaring = method.DeclaringType;
+        if (module != owner.Module || declaring != owner) return ForeignContentMethodDescriptor(method, module, declaring);
         int token = method.MetadataToken;
         if ((token & unchecked((int)0xff000000)) != 0x06000000 || (token & 0x00ffffff) == 0) return "category=UNSUPPORTED_TOKEN";
         return "category=TRUSTED_CONTENT_MEMBER owner=" + ProjectConstructorProbe.Text(owner.FullName) + " token=" + token.ToString("X8") + " name=" + ProjectConstructorProbe.Text(method.Name);
+    }
+
+    static string ForeignContentMethodDescriptor(MethodInfo method, Module module, Type declaring)
+    {
+        const string unsupported = "category=FOREIGN_OWNER detail=UNSUPPORTED_OWNER_SHAPE";
+        if (declaring == null || declaring.GetType() != typeof(object).GetType() || declaring.HasElementType || module == null) return unsupported;
+        Type definition = declaring.IsGenericType ? declaring.GetGenericTypeDefinition() : declaring;
+        if (definition.GetType() != typeof(object).GetType() || definition.HasElementType || (definition.IsGenericType && !definition.IsGenericTypeDefinition)
+            || declaring.Module != module || definition.Module != module || module.Assembly != definition.Assembly || module.Assembly.IsDynamic || module.Assembly.ReflectionOnly) return unsupported;
+        int typeToken = definition.MetadataToken, methodToken = method.MetadataToken;
+        if ((typeToken & unchecked((int)0xff000000)) != 0x02000000 || (typeToken & 0x00ffffff) == 0
+            || (methodToken & unchecked((int)0xff000000)) != 0x06000000 || (methodToken & 0x00ffffff) == 0) return unsupported;
+        return "category=FOREIGN_OWNER qualification=UNVERIFIED_CONTRACT_MEMBER declaring-type=" + ProjectConstructorProbe.Text(definition.FullName)
+            + " generic-instantiation=NOT_INSPECTED declaring-type-token=" + typeToken.ToString("X8") + " module-scope=" + ProjectConstructorProbe.Text(module.ScopeName)
+            + " module-assembly=" + ProjectConstructorProbe.Text(module.Assembly.FullName) + " token=" + methodToken.ToString("X8") + " name=" + ProjectConstructorProbe.Text(method.Name);
     }
 
 }
@@ -2153,11 +2169,27 @@ internal static class ProjectConstructorProbe
         if (selected == "trust") {
             ProbeFiles.Require(ProjectContentDenyProxy.ContentMethodDescriptor((MethodInfo)Activator.CreateInstance(type("CacheCustomMethodFixture")), contract) == "category=UNTRUSTED_METHOD_KIND"
                 && ProjectContentDenyProxy.ContentMethodDescriptor(null, contract) == "category=MEMBER_UNAVAILABLE"
-                && ProjectContentDenyProxy.ContentMethodDescriptor(typeof(string).GetMethod("ToString", Type.EmptyTypes), contract) == "category=FOREIGN_OWNER"
+                && ProjectContentDenyProxy.ContentMethodDescriptor(typeof(string).GetMethod("ToString", Type.EmptyTypes), contract).Contains("qualification=UNVERIFIED_CONTRACT_MEMBER declaring-type=System.String ")
                 && ProjectContentDenyProxy.ContentMethodDescriptor(contract.GetMethod("get_Unknown"), contract).Contains("name=get_Unknown"), "OWNED_CONTENT_DIAGNOSTIC_TRUST");
             foreach (MethodInfo core in new MethodInfo[] { typeof(object).GetMethod("GetType"), typeof(object).GetMethod("ToString"), typeof(object).GetMethod("GetHashCode"), typeof(object).GetMethod("Equals", new Type[] { typeof(object) }), typeof(IDisposable).GetMethod("Dispose") })
                 ProbeFiles.Require(ProjectContentDenyProxy.ContentMethodDescriptor(core, contract).Contains("category=TRUSTED_CORE_MEMBER") && ProjectContentDenyProxy.ContentMethodDescriptor(core, contract).Contains("name=" + core.Name), "OWNED_CONTENT_DIAGNOSTIC_CORE");
-            Record("OWNED_CONTENT_DIAGNOSTIC_PASS case=trust descriptor-only=9 no-runtime-caller-proof=True"); return;
+            string foreign = ProjectContentDenyProxy.ContentMethodDescriptor(typeof(string).GetMethod("ToString", Type.EmptyTypes), contract);
+            string generic = ProjectContentDenyProxy.ContentMethodDescriptor(typeof(System.Collections.Generic.List<string>).GetMethod("Add"), contract);
+            ProbeFiles.Require(foreign.Contains("module-assembly=" + Text(typeof(string).Assembly.FullName)) && foreign.Contains("name=ToString") && foreign.Length <= 4096
+                && generic.Contains("declaring-type=System.Collections.Generic.List`1 generic-instantiation=NOT_INSPECTED ") && !generic.Contains("System.String") && !generic.Contains("[["), "OWNED_FOREIGN_CONTENT_DIRECT");
+            string captured = null; int metadata = 0; ProjectContentDenyProxy inherited = null;
+            inherited = new ProjectContentDenyProxy(type("IContextParentFixture"), delegate(string line) {
+                if (line.StartsWith("PROJECT_CONTENT_REFUSAL ", StringComparison.Ordinal)) { metadata++; captured = line; ProbeFiles.Require(inherited.State.Faulted && UndoFactoryCallbackExcluded(), "OWNED_FOREIGN_DENY_FIRST"); }
+                Record(line);
+            }, true);
+            Type control = type("ContextOwnedControl"); int caught = (int)control.GetField("Caught").GetValue(null);
+            control.GetField("Parent").SetValue(null, inherited.GetTransparentProxy());
+            WithProjectResourceBudget(delegate { WithProjectResourceWindow(2, delegate { control.GetMethod("ParentInherited").Invoke(null, null); }); });
+            ProbeFiles.Require(metadata == 1 && inherited.State.Entries == 1 && inherited.State.Faulted && (int)control.GetField("Caught").GetValue(null) == caught + 1
+                && captured != null && captured.Contains("category=FOREIGN_OWNER qualification=UNVERIFIED_CONTRACT_MEMBER declaring-type=Owned.Task009.IContextParentBaseFixture ")
+                && captured.Contains("token=" + type("IContextParentBaseFixture").GetMethod("get_DisplayName").MetadataToken.ToString("X8")) && captured.Contains("name=get_DisplayName"), "OWNED_FOREIGN_CONTENT_TYPED");
+            Record("OWNED_FOREIGN_CONTENT_PASS metadata=1 denied=1 typed-inherited=True qualification=UNVERIFIED_CONTRACT_MEMBER caller-origin=UNKNOWN");
+            Record("OWNED_CONTENT_DIAGNOSTIC_PASS case=trust descriptor-checks=10 typed-inherited=1 no-runtime-caller-proof=True"); return;
         }
         int attempts = 0, emitted = 0; string descriptor = null; bool nested = false;
         Type poisonType = type("ContextReentryMessageFixture"); object poison = Activator.CreateInstance(poisonType);

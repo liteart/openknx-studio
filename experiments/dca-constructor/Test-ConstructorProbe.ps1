@@ -8,7 +8,8 @@ param(
  [switch] $XmlRegistrationOnly,
  [switch] $StoreDiagnosticsOnly,
  [switch] $ContentStoreOnly,
- [switch] $ContentDiagnosticsOnly
+ [switch] $ContentDiagnosticsOnly,
+ [switch] $ForeignDescriptorOnly
 )
 $ErrorActionPreference='Stop';Set-StrictMode -Version Latest
 function Fail([string] $code){throw ('CONSTRUCTOR_TEST_'+$code)}
@@ -244,6 +245,19 @@ Write-Output 'OWNED_CASE PASS source35-content-fixed-guards trusted-return=True 
 # Source36 opts in once; Source35 constructor still has zero message-property reads.
 foreach($guard in @('if (firstDiagnostic && count == 1)','ContentMessageDescriptor(message, diagnosticOwner)','kind.Module != typeof(IMethodCallMessage).Module','method = call.MethodBase as MethodInfo;','category=TRUSTED_CORE_MEMBER','CONTENT_DIAGNOSTIC_OBSERVED_ROOT','category=METHOD_READ_FAILED','caller-origin=UNKNOWN')){if(-not$projectSource.Contains($guard)){Fail 'CONTENT_DIAGNOSTIC_FIXED_SOURCE'}}
 Write-Output 'OWNED_CASE PASS source36-first-content-diagnostic-guard first-only=True deny-before-read=True core-whitelist=True old-profile-zero-reads=True caller-origin=UNKNOWN original=NOT_RUN'
+if($ForeignDescriptorOnly){
+ if(-not$interactive -or $administrator){Fail 'FOREIGN_DESCRIPTOR_LIMITED_INTERACTIVE_REQUIRED'}
+ foreach($selected in @('trust','stored')){
+  $caseLog=Join-Path $output ('foreign-descriptor-'+$selected+'.log')
+  Run ('foreign-descriptor-'+$selected) $launcher @('--seconds','15','--mode','owned-project-content-store-diagnostics','--input',$fixtures,'--log',$caseLog,'--owned-content-diagnostic-case',$selected) $(if($selected-eq'trust'){0}else{2}) 'child-exit-confirmed=true'
+  $body=[IO.File]::ReadAllText($caseLog);if(-not$body.Contains('OWNED_CONTENT_DIAGNOSTIC_PASS case='+$selected+' ')){Fail 'FOREIGN_DESCRIPTOR_CASE'}
+  if($selected-eq'trust' -and (-not$body.Contains('OWNED_FOREIGN_CONTENT_PASS metadata=1 denied=1 typed-inherited=True') -or -not$body.Contains('declaring-type=Owned.Task009.IContextParentBaseFixture ') -or -not$body.Contains('name=get_DisplayName'))){Fail 'FOREIGN_DESCRIPTOR_TYPED'}
+  if($selected-eq'stored' -and (-not$body.Contains('category=TRUSTED_CONTENT_MEMBER') -or -not$body.Contains('name=get_Unknown') -or -not$body.Contains('PROJECT_CONTENT_FINAL_DENIAL'))){Fail 'FOREIGN_DESCRIPTOR_STORED_UNCHANGED'}
+ }
+$active=@(Get-CimInstance Win32_Process -Filter "Name='ConstructorProbe.exe' OR Name='ProjectConstructorProbe.exe' OR Name='ProjectFactoryBindingProbe.exe' OR Name='ProjectFactoryContainerProbe.exe' OR Name='NeutralStaHost.exe'" | Where-Object {$_.ExecutablePath -and ($_.ExecutablePath -ieq (Join-Path $build 'bin\ConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryBindingProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryContainerProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\NeutralStaHost.exe'))})
+if($active.Count -ne 0){Fail 'OWNED_CHILD_REMAINS'}
+ Write-Output 'OWNED_FOREIGN_DESCRIPTOR_SUITE PASS cases=2 original=NOT_RUN caller-origin=UNKNOWN';exit 0
+}
 if($ContentDiagnosticsOnly){
  $diagnosticMode='owned-project-content-store-diagnostics'
  foreach($oldMode in @('original-project-content-store-diagnostics','owned-project-content-store-reference')){
@@ -262,7 +276,7 @@ if($ContentDiagnosticsOnly){
    $body=[IO.File]::ReadAllText($caseLog);if(-not$body.Contains('OWNED_CONTENT_DIAGNOSTIC_PASS case='+$selected+' ')){Fail 'CONTENT_DIAGNOSTIC_CASE_ORACLE'}
    if($selected-ne'trust' -and -not$body.Contains('PROJECT_CONTENT_FINAL_DENIAL')){Fail 'CONTENT_DIAGNOSTIC_FINAL_AUDIT'}
    $metadata=[regex]::Matches($body,'PROJECT_CONTENT_REFUSAL entry=1 ').Count
-   if($metadata-ne$(if($selected-in@('trust','legacy','recorder')){0}else{1})){Fail 'CONTENT_DIAGNOSTIC_METADATA_BOUND'}
+   if($metadata-ne$(if($selected-in@('legacy','recorder')){0}else{1})){Fail 'CONTENT_DIAGNOSTIC_METADATA_BOUND'}
   }
  }
 $active=@(Get-CimInstance Win32_Process -Filter "Name='ConstructorProbe.exe' OR Name='ProjectConstructorProbe.exe' OR Name='ProjectFactoryBindingProbe.exe' OR Name='ProjectFactoryContainerProbe.exe' OR Name='NeutralStaHost.exe'" | Where-Object {$_.ExecutablePath -and ($_.ExecutablePath -ieq (Join-Path $build 'bin\ConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryBindingProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryContainerProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\NeutralStaHost.exe'))})

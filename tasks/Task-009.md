@@ -2659,3 +2659,63 @@ unchanged: private verifier36/original-result-audit.txt, SHA256
 It checked44 files/six native pins, committed source16, exact refusal category,
 confirmed exit/counters/disposal/cleanup and20+2 input integrity. No runtime
 was rerun and no caller/receipt/member identity was inferred.
+
+## Source37 bounded foreign-member diagnostic
+
+The next increment follows
+[DCA-PROJECT-CONTENT-STORE-FOREIGN-MEMBER.md](../docs/DCA-PROJECT-CONTENT-STORE-FOREIGN-MEMBER.md):
+retain FOREIGN_OWNER while logging bounded genuine metadata as
+UNVERIFIED_CONTRACT_MEMBER, without new mode/value/dependency or signature query.
+Existing denial/completion/lifetime semantics remain exact; two fixed owned cases
+replace any full87-suite rerun. Original36 FAIL2 remains latest original runtime;
+caller receipt/origin/member contract status UNKNOWN. Source37 Windows/original
+NOT RUN; Task009 In progress/all ACs unchecked/no gate.
+Source37 local checkpoint: three C#5/x64/Werror builds, parsers/common20guards,
+whole-source projection, unchanged runtime8/metadata6 pins, scope/diff PASS.
+Tiny exact-descriptor model PASS; constructed-generic-name mutant fails the
+no-instantiation-data assertion. Generic owners normalize once to the definition
+without argument/constraint enumeration. Fixed trust+stored limited Windows
+subset expects22 PASS; actual typed inherited metadata/Original37 remain NOT RUN.
+Independent verification/review and focused owned Windows precede commit/runtime.
+
+Source37 initial Windows37b genuinely FAILED:20 common guards passed, trust child
+exit2 expected0, stored NOT RUN. Its DynamicMethod negative loaded an anonymous
+dynamic assembly and correctly tripped the unchanged assembly guard. The typed
+foreign identity was recorded before final dependency failure; no suite PASS.
+Earlier37 startup/preparation failures had no driver execution. The narrow source
+correction removes that Windows test object only (label11 to10), keeps its
+controlled modern negative, and preserves production formatter/denial/completion
+and all guards. Initial c485 freeze/evidence remain immutable; corrected freeze
+and review precede a fresh owned check. Original37 remains NOT RUN.
+Corrected Source37 local checkpoint: three C#5/x64/Werror builds/parsers/guards,
+unchanged tiny modern descriptor model and expected guard mutant, exact narrow
+projection/initial-evidence immutability, scope/diff PASS. Only the Windows-owned
+test object and count label changed; the dynamic negative is modern-only.
+Corrected owned Windows/Original37 remain NOT RUN; c485/37b FAIL records preserved.
+
+## Actual corrected Source37c owned checkpoint
+
+Fresh corrected source37c/build37c with abaf61c0b503134847c1585d6527b954a0918023387c7d58b66d4ba8b7328764
+ran UNCOMMITTED at base97f7a148bd148baf07c94f3e8de9f8de602f2097; runtime16 unchanged.
+Build8sources/18artifacts PASS; limited Session2/non-admin22 PASS (20guards,trust0,
+stored2 expected). Typed inherited fixture descriptor0200008E/get_DisplayName
+0600014D remains UNVERIFIED_CONTRACT_MEMBER; generic definition/no-argument controls
+and unchanged stored denial PASS. Four current helpers once PASS, cleanup task
+removed/owned0/no junction, six case-file lengths checked. No full87-suite replay.
+
+History preserved: initial placeholder start failed locally/no job; old37 wrapper
+hash guard127/no driver then removed; actual37b trust genuinely failed dynamic
+assembly guard after20guards, stored NOT RUN. Corrected37c removed only the Windows
+DynamicMethod negative, with no admission. Its stale capture label was fixed before
+start and final plan review215b11f3 PASS; no claim of a wholly passing/no-retry test
+history. Exact commands and all pins are in the linked component record.
+
+Saved record_owned37.py ran once PASS; owned37-observation.json39890 bytes/SHA256
+12b901e467d7d88b68ff2e9831490298a5728cf302d46d0c53d3fb80956c1ee7 binds192files/native4.
+Independent saved-result audit52ca0eaac78caf2b56f4c5144dd926d777bbd3d795d2d8e0cb4f850aa018822f
+PASS covers source16/build8+18 declarations/raw decode/22markers/fourdispatches/
+sixcase files/cleanup and distinct failures, without helper execution/payload
+redownload. Zero synthetic poisoned-message getter reads is not instrumentation
+of actual CLR MethodBase. Combined critical review/source commit remain next;
+Original37/member/receipt/origin NOT RUN/UNKNOWN. Task009 In progress/all ACs
+unchecked/no gate or production compatibility claim.
