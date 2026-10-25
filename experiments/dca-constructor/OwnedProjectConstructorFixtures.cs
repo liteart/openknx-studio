@@ -924,3 +924,33 @@ namespace Owned.Task009
         public object GetInArg(int index) { return Touch(); } public string GetInArgName(int index) { return (string)Touch(); }
     }
 }
+
+// Source34 declarations are separate from all earlier owned fixture families.
+namespace Owned.Task009
+{
+    public interface IStoreRequestFixture { ScopedIdFixture Id { get; } ICacheStreamFixture LargeStringCache { get; } object Unprovided { get; } }
+    public sealed class StoreDiagnosticMessageFixture : System.Runtime.Remoting.Messaging.IMethodCallMessage
+    {
+        public System.Reflection.MethodBase Method; public string Name, Failure; public int MethodReads, NameReads, ArgsReads;
+        public System.Reflection.MethodBase MethodBase { get { MethodReads++; if (Failure == "method") throw new System.InvalidOperationException("OWNED_METHOD_READ"); return Method; } }
+        public string MethodName { get { NameReads++; if (Failure == "name") throw new System.InvalidOperationException("OWNED_NAME_READ"); return Name; } }
+        public int ArgCount { get { return 0; } } public int InArgCount { get { return 0; } }
+        public object[] Args { get { ArgsReads++; if (Failure == "args") throw new System.InvalidOperationException("OWNED_ARGS_READ"); return new object[0]; } }
+        public System.Runtime.Remoting.Messaging.LogicalCallContext LogicalCallContext { get { return null; } }
+        public string Uri { get { return null; } set { throw new System.NotSupportedException(); } }
+        public bool HasVarArgs { get { throw new System.NotSupportedException(); } } public object MethodSignature { get { throw new System.NotSupportedException(); } }
+        public string TypeName { get { throw new System.NotSupportedException(); } } public System.Collections.IDictionary Properties { get { throw new System.NotSupportedException(); } }
+        public object GetArg(int i) { throw new System.NotSupportedException(); } public string GetArgName(int i) { throw new System.NotSupportedException(); }
+        public object[] InArgs { get { throw new System.NotSupportedException(); } } public object GetInArg(int i) { throw new System.NotSupportedException(); } public string GetInArgName(int i) { throw new System.NotSupportedException(); }
+    }
+}
+
+namespace Owned.Task009
+{
+    public static class StoreDiagnosticTypedFixture
+    {
+        public static object ReadId(IStoreRequestFixture store) { return store.Id; }
+        public static object ReadCache(IStoreRequestFixture store) { return store.LargeStringCache; }
+        public static object ReadRefused(IStoreRequestFixture store) { return store.Unprovided; }
+    }
+}

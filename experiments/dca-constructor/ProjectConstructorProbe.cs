@@ -248,33 +248,71 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
     public override IMessage Invoke(IMessage message)
     {
         int count = State.Count(); bool suspended = false, entered = false, prepared = false; int previous = 0;
+        MethodInfo observedMethod = null; bool methodCaptured = false, diagnosticAttempted = false; string phase = "ENTRY";
         try {
             bool eligible = ProjectConstructorProbe.CacheWindowEligible(), excluded = ProjectConstructorProbe.UndoFactoryCallbackExcluded();
             if (!excluded) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
             State.Enter(count, excluded); entered = true;
+            phase = "METHOD_READ";
             IMethodCallMessage call = message as IMethodCallMessage; MethodInfo method = call == null ? null : call.MethodBase as MethodInfo;
+            observedMethod = method; methodCaptured = true; phase = "METHOD_MATCH";
             bool cache = ProjectConstructorProbe.ExactRuntimeMethod(method, cacheGetter), id = ProjectConstructorProbe.ExactRuntimeMethod(method, idGetter);
+            phase = "CACHE_ELIGIBILITY";
             if (cache) State.CacheAttempt(eligible);
+            phase = "MESSAGE_SHAPE";
             ProbeFiles.Require((cache || id) && call.MethodName == (cache ? cacheGetter.Name : idGetter.Name) && call.ArgCount == 0 && call.InArgCount == 0, "CACHE_MESSAGE_SHAPE");
-            object[] arguments = call.Args; ProbeFiles.Require(arguments != null && arguments.Length == 0, "CACHE_MESSAGE_ARGUMENT_SHAPE");
-            LogicalCallContext context = call.LogicalCallContext; string uri = call.Uri;
+            phase = "ARGS_READ";
+            object[] arguments = call.Args; phase = "ARGS_SHAPE"; ProbeFiles.Require(arguments != null && arguments.Length == 0, "CACHE_MESSAGE_ARGUMENT_SHAPE");
+            phase = "CALL_CONTEXT_READ";
+            LogicalCallContext context = call.LogicalCallContext; phase = "URI_READ"; string uri = call.Uri;
+            phase = "URI_SHAPE";
             ProbeFiles.Require(uri == null || uri.Length <= 1024, "CACHE_MESSAGE_URI_BOUND");
+            phase = "SNAPSHOT";
             var snapshot = new CacheCallSnapshot(cache ? cacheGetter : idGetter, context, uri);
+            phase = "REENTRY_GUARD";
             ProbeFiles.Require(!State.Faulted, "CACHE_MESSAGE_CAUGHT_REENTRY");
             if (!cache) {
+                phase = "ID_REPLY";
                 IMessage result = base.InvokeCore(snapshot);
                 var returned = result as IMethodReturnMessage; ProbeFiles.Require(returned != null && returned.Exception == null && !State.Faulted, "CACHE_ID_REPLY_FAULT"); return result;
             }
+            phase = "CACHE_RECORD";
             record("LARGE_STRING_CACHE_REFERENCE reply=PREPARED same-preexisting-reference=True provider-values=NOT_PROVIDED");
+            phase = "CACHE_REPLY";
             IMessage response = new ReturnMessage(reference, new object[0], 0, context, snapshot);
             ProbeFiles.Require(!State.Faulted, "CACHE_REPLY_CAUGHT_REENTRY"); prepared = true; return response;
-        } catch { State.Fail(); throw; }
+        } catch {
+            State.Fail();
+            DiagnoseFailure(observedMethod, methodCaptured, phase, count, entered, ref diagnosticAttempted);
+            throw;
+        }
         finally {
             try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); }
-            catch { State.Fail(); throw; }
+            catch {
+                State.Fail();
+                DiagnoseFailure(observedMethod, methodCaptured, "RESTORE", count, entered, ref diagnosticAttempted);
+                throw;
+            }
             finally { State.Exit(entered, prepared); }
         }
     }
+    void DiagnoseFailure(MethodInfo method, bool captured, string phase, int count, bool entered, ref bool attempted)
+    {
+        if (!ProjectConstructorProbe.StoreRequestDiagnostics || attempted || !entered || count > 16 || !ProjectConstructorProbe.UndoFactoryCallbackExcluded()) return;
+        attempted = true;
+        record("STORE_REQUEST_DIAGNOSTIC phase=" + phase + " entry=" + count + " " + StoreRequestDescriptor(method, cacheGetter, captured) + " values=NOT_INSPECTED");
+    }
+    internal static string StoreRequestDescriptor(MethodInfo method, MethodInfo anchor, bool captured)
+    {
+        if (!captured || method == null) return "category=MEMBER_UNAVAILABLE";
+        if (System.Runtime.Remoting.RemotingServices.IsTransparentProxy(method) || method.GetType() != typeof(object).GetMethod("GetType").GetType()) return "category=UNTRUSTED_METHOD_KIND";
+        Type owner = anchor.DeclaringType;
+        if (method.Module != anchor.Module || method.DeclaringType != owner) return "category=FOREIGN_OWNER";
+        int token = method.MetadataToken;
+        if ((token & unchecked((int)0xff000000)) != 0x06000000 || (token & 0x00ffffff) == 0) return "category=UNSUPPORTED_TOKEN";
+        return "category=TRUSTED_STORE_MEMBER owner=" + ProjectConstructorProbe.Text(owner.FullName) + " token=" + token.ToString("X8") + " name=" + ProjectConstructorProbe.Text(method.Name);
+    }
+
 }
 
 
@@ -432,7 +470,10 @@ internal static class ProjectConstructorProbe
     const int XmlRegistrationSize = 188880;
     static volatile bool xmlRegistrationReady;
     static string ownedXmlPinCase;
+    static string ownedStoreDiagnosticCase;
+    static readonly string[] OwnedStoreDiagnosticCases = { "positive", "declared", "forged", "custom", "foreign", "method-throw", "args", "recorder", "reentry", "saturated" };
     static bool XmlRegistrationOriginal { get { return mode == "original-project-context-xml-registration"; } }
+    internal static bool StoreRequestDiagnostics { get { return XmlRegistrationOriginal || XmlRegistrationOwned; } }
     static bool XmlRegistrationOwned { get { return mode == "owned-project-context-xml-registration"; } }
     static bool ContextOriginal { get { return mode == "original-project-context-denied" || XmlRegistrationOriginal; } }
     static bool ContextOwned { get { return mode == "owned-project-context-denied" || XmlRegistrationOwned; } }
@@ -1994,6 +2035,58 @@ internal static class ProjectConstructorProbe
         if (selected.StartsWith("off-thread-", StringComparison.Ordinal)) { var thread = new Thread(delegate() { ContextOwnedDeny(target, raw); }); thread.IsBackground = true; thread.Start(); ProbeFiles.Require(thread.Join(2000), "OWNED_CONTEXT_THREAD_BOUND"); }
         else { int repeats = selected.EndsWith("-saturation", StringComparison.Ordinal) ? 20 : 1; for (int i = 0; i < repeats; i++) ContextOwnedDeny(target, raw); }
     }
+    // Source34 owned-only diagnostics; each sticky case runs in a fresh child.
+    static void OwnedStoreRequestDiagnostics()
+    {
+        Assembly owned = Assembly.LoadFrom(fixture); Func<string, Type> type = delegate(string name) { return owned.GetType("Owned.Task009." + name, true); };
+        Type typed = type("StoreDiagnosticTypedFixture");
+        Type storeType = type("IStoreRequestFixture"), streamType = type("ICacheStreamFixture"), idType = type("ScopedIdFixture"), messageType = type("StoreDiagnosticMessageFixture");
+        MethodInfo idGetter = storeType.GetMethod("get_Id"), cacheGetter = storeType.GetMethod("get_LargeStringCache"), refused = storeType.GetMethod("get_Unprovided");
+        object id = CreateFixtureId(idType, idType.GetConstructor(new Type[] { typeof(uint) }), idType.GetMethod("get_ProjectNumber"));
+        var stream = new StreamStoreDenyProxy(streamType, StreamContract(streamType, false), Record);
+        LargeStringCacheStoreProxy store = null; int diagnostics = 0; string diagnostic = null; bool reentered = false;
+        Func<MethodInfo, object> message = delegate(MethodInfo method) { object m = Activator.CreateInstance(messageType); messageType.GetField("Method").SetValue(m, method); messageType.GetField("Name").SetValue(m, method == idGetter ? "get_Id" : "get_Unprovided"); return m; };
+        Action<string> recorder = delegate(string line) {
+            if (line.StartsWith("STORE_REQUEST_DIAGNOSTIC ", StringComparison.Ordinal)) {
+                diagnostics++; diagnostic = line; ProbeFiles.Require(store.State.Faulted && UndoFactoryCallbackExcluded(), "OWNED_DIAGNOSTIC_BEFORE_DENIAL");
+                if (ownedStoreDiagnosticCase == "recorder") throw new IOException("OWNED_DIAGNOSTIC_RECORDER");
+                if (ownedStoreDiagnosticCase == "reentry" && !reentered) { reentered = true; try { store.Invoke((IMessage)message(refused)); } catch (Exception) { } }
+            }
+            Record(line);
+        };
+        store = new LargeStringCacheStoreProxy(storeType, idGetter, id, cacheGetter, streamType, stream.GetTransparentProxy(), recorder);
+        WithCacheLifetime(store, stream, delegate { WithProjectResourceBudget(delegate { WithProjectResourceWindow(2, delegate {
+            string selected = ownedStoreDiagnosticCase;
+            if (selected == "positive") {
+                ProbeFiles.Require(Object.ReferenceEquals(typed.GetMethod("ReadId").Invoke(null, new object[] { store.GetTransparentProxy() }), id) && Object.ReferenceEquals(typed.GetMethod("ReadCache").Invoke(null, new object[] { store.GetTransparentProxy() }), stream.GetTransparentProxy()), "OWNED_DIAGNOSTIC_POSITIVE_REFERENCE");
+                ProbeFiles.Require(!store.State.Faulted && store.State.Entries == 2 && store.State.Replies == 1 && diagnostics == 0, "OWNED_DIAGNOSTIC_POSITIVE_STATE");
+            } else {
+                object raw = message(refused);
+                if (selected == "custom") messageType.GetField("Method").SetValue(raw, Activator.CreateInstance(type("CacheCustomMethodFixture")));
+                if (selected == "foreign") messageType.GetField("Method").SetValue(raw, typeof(object).GetMethod("ToString", Type.EmptyTypes));
+                if (selected == "forged") messageType.GetField("Failure").SetValue(raw, "name");
+                if (selected == "method-throw") messageType.GetField("Failure").SetValue(raw, "method");
+                if (selected == "args") { messageType.GetField("Method").SetValue(raw, idGetter); messageType.GetField("Name").SetValue(raw, "get_Id"); messageType.GetField("Failure").SetValue(raw, "args"); }
+                if (selected == "saturated") { for (int i = 0; i < 16; i++) typed.GetMethod("ReadId").Invoke(null, new object[] { store.GetTransparentProxy() }); messageType.GetField("Failure").SetValue(raw, "method"); }
+                bool caught = false;
+                try { if (selected == "declared") typed.GetMethod("ReadRefused").Invoke(null, new object[] { store.GetTransparentProxy() }); else store.Invoke((IMessage)raw); } catch (Exception) { caught = true; }
+                ProbeFiles.Require(caught && store.State.Faulted && stream.Requests == 0 && !UndoFactoryCallbackExcluded(), "OWNED_DIAGNOSTIC_STICKY_RESTORE");
+                if (selected == "saturated") { for (int i = 0; i < 3; i++) { try { store.Invoke((IMessage)raw); } catch (Exception) { } } }
+                if (selected == "saturated") ProbeFiles.Require(diagnostics == 0 && store.State.Entries == 17 && (int)messageType.GetField("MethodReads").GetValue(raw) == 0, "OWNED_DIAGNOSTIC_CAP");
+                else {
+                    ProbeFiles.Require(diagnostics == 1, "OWNED_DIAGNOSTIC_SINGLE_ATTEMPT");
+                    string expected = selected == "custom" ? "category=UNTRUSTED_METHOD_KIND" : selected == "foreign" ? "category=FOREIGN_OWNER" : selected == "method-throw" ? "phase=METHOD_READ" : selected == "args" ? "phase=ARGS_READ" : "name=get_Unprovided";
+                    ProbeFiles.Require(diagnostic.Contains(expected), "OWNED_DIAGNOSTIC_DESCRIPTOR");
+                    ProbeFiles.Require(diagnostic.Contains("phase=" + (selected == "method-throw" ? "METHOD_READ" : selected == "args" ? "ARGS_READ" : "MESSAGE_SHAPE") + " "), "OWNED_DIAGNOSTIC_PHASE");
+                    if (selected != "declared") ProbeFiles.Require((int)messageType.GetField("MethodReads").GetValue(raw) == 1, "OWNED_DIAGNOSTIC_SINGLE_MESSAGE_READ");
+                    if (selected == "forged") ProbeFiles.Require((int)messageType.GetField("NameReads").GetValue(raw) == 0 && (int)messageType.GetField("ArgsReads").GetValue(raw) == 0, "OWNED_DIAGNOSTIC_NO_EXTRA_READS");
+                    if (selected == "reentry") ProbeFiles.Require(store.State.Entries == 2, "OWNED_DIAGNOSTIC_REENTRY_BOUND");
+                }
+            }
+            Record("OWNED_STORE_DIAGNOSTIC_CASE_PASS case=" + selected + " diagnostics=" + diagnostics + " entries=" + store.State.Entries + " faulted=" + store.State.Faulted + " values=NOT_INSPECTED");
+        }); }); });
+    }
+
     static void OwnedContextConstruction()
     {
         if (XmlRegistrationOwned) OwnedXmlRegistrationPolicyProof();
@@ -3138,8 +3231,9 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
                 || (ContextOwned && args[6] == "--owned-context-case" && Array.IndexOf(OwnedContextCases, args[7]) >= 0)
+                || (XmlRegistrationOwned && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (XmlRegistrationOwned && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if (XmlRegistrationOwned && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if (XmlRegistrationOwned && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (XmlRegistrationOwned && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -3184,7 +3278,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }

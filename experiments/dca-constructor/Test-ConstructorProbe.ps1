@@ -5,7 +5,8 @@ param(
  [Parameter(Mandatory)][string] $BuildDirectory,
  [Parameter(Mandatory)][string] $OutputDirectory,
  [Parameter(Mandatory)][ValidateSet('Session0','Interactive')][string] $ExpectedSession,
- [switch] $XmlRegistrationOnly
+ [switch] $XmlRegistrationOnly,
+ [switch] $StoreDiagnosticsOnly
 )
 $ErrorActionPreference='Stop';Set-StrictMode -Version Latest
 function Fail([string] $code){throw ('CONSTRUCTOR_TEST_'+$code)}
@@ -227,6 +228,31 @@ foreach($guard in @('const int XmlRegistrationSize = 188880;','a9bce396208e9d5b9
 $xmlPin=$projectSource.Substring($projectSource.IndexOf('static void PinXmlRegistrationInputs()'),$projectSource.IndexOf('static void PinXmlRegistrationFile()')-$projectSource.IndexOf('static void PinXmlRegistrationInputs()'))
 if($xmlPin.IndexOf('PinXmlRegistrationFile();')-ge$xmlPin.IndexOf('PinValueTupleReference();') -or $xmlPin.IndexOf('PinValueTupleReference();')-ge$xmlPin.IndexOf('AssemblyName.GetAssemblyName') -or $xmlPin.IndexOf('xmlRegistrationReady = true;')-le$xmlPin.LastIndexOf('AssemblyName.GetAssemblyName') -or [regex]::Matches($projectSource,'xmlRegistrationReady\s*=').Count-ne1){Fail 'XML_HASH_IDENTITY_READY_ORDER'}
 Write-Output 'OWNED_CASE PASS source33-xml-fixed-guards all20-hashes-before-identities=True old19-preserved=True private-origin-only=True original=NOT_RUN'
+# Source34 adds no message reads, replies or dependency admissions.
+foreach($guard in @('StoreRequestDiagnostics || attempted || !entered || count > 16','attempted = true;','StoreRequestDescriptor(method, cacheGetter, captured)','observedMethod = method; methodCaptured = true;','phase = "METHOD_READ";','phase = "ID_REPLY";','"category=UNTRUSTED_METHOD_KIND"','"category=FOREIGN_OWNER"','State.Fail();
+            DiagnoseFailure')){if(-not$projectSource.Contains($guard.Replace('\n',"`n"))){Fail 'STORE_DIAGNOSTIC_FIXED_SOURCE'}}
+Write-Output 'OWNED_CASE PASS source34-diagnostic-fixed-guards captured-once=True failure-before-metadata=True bounded-trusted-owner=True positive-behavior=unchanged original=NOT_RUN'
+if($StoreDiagnosticsOnly){
+ $diagnosticMode='owned-project-context-xml-registration'
+ foreach($oldMode in @('original-project-context-xml-registration','original-project-context-denied','owned-project-context-denied','owned-project-large-string-cache-denied')){
+  Run ('diagnostic-selector-'+$oldMode) $launcher @('--seconds','1','--mode',$oldMode,'--input',$fixtures,'--log',(Join-Path $output ('diagnostic-selector-'+$oldMode+'.log')),'--owned-store-diagnostic-case','positive') 127 'OWNED_RESOURCE_CASE_ARGUMENTS'
+ }
+ if(Get-ChildItem -LiteralPath $output -Filter 'diagnostic-selector*.log'){Fail 'DIAGNOSTIC_SELECTOR_CREATED_LOG'}
+ if(-not$interactive -or $administrator){Case 'diagnostic-session-guard' $diagnosticMode $(if(-not$interactive){4}else{5}) 'child-exit-confirmed=true' $(if(-not$interactive){'INTERACTIVE_SESSION_REQUIRED'}else{'PROJECT_NONADMIN_REQUIRED'})}
+ else{
+  Case 'diagnostic-context-smoke' $diagnosticMode 0 'child-exit-confirmed=true' 'OWNED_CONTEXT_LIFETIME_PASS'
+  foreach($selected in @('positive','declared','forged','custom','foreign','method-throw','args','recorder','reentry','saturated')){
+   $caseLog=Join-Path $output ('diagnostic-'+$selected+'.log')
+   Run ('diagnostic-'+$selected) $launcher @('--seconds','15','--mode',$diagnosticMode,'--input',$fixtures,'--log',$caseLog,'--owned-store-diagnostic-case',$selected) $(if($selected-eq'positive'){0}else{2}) 'child-exit-confirmed=true'
+   $content=[IO.File]::ReadAllText($caseLog)
+   if(-not$content.Contains('OWNED_STORE_DIAGNOSTIC_CASE_PASS case='+$selected+' ')){Fail 'DIAGNOSTIC_CASE_ORACLE'}
+   if($selected-ne'positive' -and -not$content.Contains('CACHE_STREAM_FINAL_DENIAL')){Fail 'DIAGNOSTIC_DENIAL_NOT_FINAL'}
+  }
+ }
+$active=@(Get-CimInstance Win32_Process -Filter "Name='ConstructorProbe.exe' OR Name='ProjectConstructorProbe.exe' OR Name='ProjectFactoryBindingProbe.exe' OR Name='ProjectFactoryContainerProbe.exe' OR Name='NeutralStaHost.exe'" | Where-Object {$_.ExecutablePath -and ($_.ExecutablePath -ieq (Join-Path $build 'bin\ConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectConstructorProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryBindingProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\ProjectFactoryContainerProbe.exe') -or $_.ExecutablePath -ieq (Join-Path $build 'bin\NeutralStaHost.exe'))})
+if($active.Count -ne 0){Fail 'OWNED_CHILD_REMAINS'}
+ Write-Output ('OWNED_STORE_DIAGNOSTICS_SUITE PASS session='+$ExpectedSession+' original=NOT_RUN hardware=NOT_RUN');exit 0
+}
 if($XmlRegistrationOnly){
  $newMode='owned-project-context-xml-registration'
  foreach($oldXmlMode in @('original-project-context-xml-registration','original-project-context-denied','owned-project-context-denied','owned-project-large-string-cache-denied')){
