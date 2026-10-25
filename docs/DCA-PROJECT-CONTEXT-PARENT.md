@@ -142,3 +142,66 @@ review and local source commit precede any original read. The declaration proof
 cannot establish proxy marshaling, typed importer binding or constructor behavior.
 SDK activation, Windows, UI/state and hardware remain NOT RUN. Task-009 remains
 In progress/all ACs unchecked; catalog acquisition/admission is still deferred.
+
+
+## Original31 parent shape result
+
+Critical frozen source/owned/helper review PASS, no unresolved findings:
+review31/critical-source.txt SHA-256
+8c110b6528fa300d834431df01136db8f42dc885e873876a93d5e8064c814f9d.
+Source commit5c3da7565fd31b42ca0a1c0898ddce661c34a7cf was clean; all six
+current/Git source pins matched. Private source-commit31.json SHA-256
+e7a1fda2e42b40ddb40514a73e3e9917ff86bd8aeaf8272a5b7bd43dfc28a07a
+records the pre-execution checkpoint. The coordinator ran once from repository
+root, then polled the same live handle to confirmed terminal exit0:
+
+```text
+python3 -B private/evidence/task009-project-context-parent/run_original31.py --source-commit 5c3da7565fd31b42ca0a1c0898ddce661c34a7cf --review-sha256 8c110b6528fa300d834431df01136db8f42dc885e873876a93d5e8064c814f9d
+```
+
+Result PASS for the exact type-shape inquiry only. Fresh PowerShell7.6.7 probes
+confirmed write_denied=true and network_denied=true before decode under the
+unchanged inner deny-default profile. Both children exited0, stderr empty;
+metadata stdout2,337 bytes. Original input remained unchanged. No retry or SDK
+runtime execution. The outer context allowed the unchanged inner restrictions;
+the helper differed from its pending checkpoint only by the frozen-hash substitution.
+
+original31-report.json2,444 bytes SHA-256
+f4b591c6071ff4121dd245620a62d08bd465436f1f145df1473f9b1b4fa5e8d9;
+original31-observation.json SHA-256
+4a075893a985430ef364df5135876fe9b8849ae5912497663c20519fe61d5245;
+original31-evidence-manifest.json SHA-256
+5488a5e7ef80ede42eacfa3e9c04c12f1eccc729ed1861cef9acdeff197f4e54
+binds54 files and the exact command. Supporting local SSH-control status and
+conditional runtime-reuse notes have separate scope labels, not SDK query,
+remote host readiness or Windows proof. The initial SSH note's unsupported
+stream attribution is corrected in a preserved separate copy; no check repeated.
+
+Actual INamedDomObject TypeDef02000C99 has raw flags1048737, Public visibility,
+Interface semantics32, generic arity0 and nil declaring/base handles. Its two
+direct InterfaceImpl entries are09000E15 referencing TypeDef02000C97
+(ObjectModel.Interfaces.IDisplayName) and09000E16 referencing02000033
+(ObjectModel.IDomObject). Both name the same pinned ObjectModel assembly;
+referenced declarations remain UNRESOLVED_NOT_FOLLOWED. No method/signature,
+constructor, field/value, IL/body, interface closure or runtime operation was
+examined by this query. This establishes a typed-interface candidate only.
+
+Independent verifier31/original-result-audit.txt SHA-256
+8c44ea983345db0ed9dee32c477ee4fbe45afb2ecabf4921b1cd354edf8a938f
+PASS:54 bindings, source/Git pins, raw-report equality, root flags and direct
+reference identities/tokens checked from saved data, without SDK payload access
+or query repetition. Critical result review pending at this checkpoint.
+
+CLR proxy marshaling, typed importer binding, Collection/Project argument and
+constructor behavior remain UNKNOWN. No SDK/vendor constructor, Windows UI/
+state, Secure or hardware operation occurred. Catalog admission stays deferred;
+Task-009 remains In progress/all ACs unchecked, no gate advances.
+
+
+Critical original31 saved-result/two-document review PASS, no findings:
+review31/original-result-review.txt SHA-256
+ec00e9db686bf016ec5d4e6c5135fbdabf7139b0d94b383630a020f0c7e3bd69.
+It independently checked all54 bindings, six current/Git pins, raw-report equality
+and the root/direct-reference scope from saved data without SDK payload access,
+query repetition or runtime use. This closes the preceding review-pending
+checkpoint for the declaration result only; no Task-009/gate acceptance follows.
