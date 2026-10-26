@@ -177,3 +177,74 @@ In progress/all ACs unchecked. Source/owned combined review and source commit
 precede a separately reviewed original38 plan/preflight; incompatible genuine
 assignability must stop without a substitute. Vendor internals/network and
 descendants remain NOT_CONTAINED.
+
+## Actual Original38 result
+
+One separate original attempt on source/reviewed implementation commit
+fd1f22422c225d95035423e36b9c95a9bd2b9116 ended FAIL, normal confirmed child
+exit2 (not timeout). Plan b542b0f005f621413f4fa3f030b940fee369f3c5ace002e87a6347c8f1dd74ca,
+critical plan review f7c3358ab04ad65ee0e692da75efc54aa276a1edeb8629dd7730fddf7e43fcd7
+and independent plan audit d1f7c7f1217a278f35f3f976dbd217275a2db26f58e4a2e534a49fd772552dff
+preceded execution. Live preflight verified20 private/2 OS/18 artifact pins.
+Actual context was interactive Session2/non-admin; the runtime requirement was
+nonzero interactive/non-admin, not a universal Session2 requirement.
+
+Genuine RuntimeType IStreamStore.IsAssignableFrom(IStore) was TRUE for this pinned
+profile. Collection0600298E/window0 returned; Project06002831/window2 attempted
+once and did not return (body entry NOT_ESTABLISHED). Synthetic Id marker1.
+Content reference host commitment1, Exists attempt1/host reply commitment1,
+Exists own faultFalse and content denials0. The false remains explicitly
+CONTROLLED_EMPTY_CONTENT_STORE_FIXTURE_NOT_REAL_STATE. A host commitment is not
+proof of CLR delivery, SDK consumption or caller origin.
+
+The next refused MAIN IProjectStore request was recorded separately:
+
+```text
+STORE_REQUEST_DIAGNOSTIC phase=MESSAGE_SHAPE entry=4 category=TRUSTED_STORE_MEMBER owner=Knx.Ets.ObjectModel.IProjectStore token=060002F7 name=set_ProjectGuid values=NOT_INSPECTED
+```
+
+No PROJECT_CONTENT_REFUSAL was emitted. Shared aggregate4/faultTrue caused final
+refusal; cache attempts0/replies0/stream-denied0. Container and trace Dispose
+returned once each; no Project Dispose because the constructor did not return.
+The diagnostic establishes captured trusted method identity/failed phase only;
+argument type/value, setter semantics and caller origin are not inferred from
+its name. No setter response or real-store state change was supplied.
+
+The coordinator executed these exact six commands once each:
+
+```text
+python3 -B private/evidence/task009-constructor-windows/run_project38_preflight.py
+python3 -B private/evidence/task009-constructor-windows/run_project38.py f7c3358ab04ad65ee0e692da75efc54aa276a1edeb8629dd7730fddf7e43fcd7
+python3 -B private/evidence/task009-constructor-windows/poll_project38.py 01
+python3 -B private/evidence/task009-constructor-windows/collect_project38.py
+python3 -B private/evidence/task009-constructor-windows/cleanup_project38.py
+python3 -B private/evidence/task009-constructor-windows/run_project38_post_corrected.py
+```
+
+Cleanup recorded normal result2, task removed, owned processes0 and scratch0.
+Post audit PASS20 private/2 OS/24466936 bytes unchanged; no new SDK call from the
+post audit. Saved raw log SHA256
+d5702f563d587e688ef0d0476102b3f0658933ac6cfef4f15db2eeba25d48107
+is retained with launcher/context/done/poll/cleanup/post evidence. Driver stderr
+was empty; transport stderr remains separately retained without an empty claim.
+
+The coordinator ran the saved-only private recorder once:
+
+```text
+python3 -B private/evidence/task009-project-content-store-exists-fixture/preparation-original38/record_project38.py --plan-review-sha256 f7c3358ab04ad65ee0e692da75efc54aa276a1edeb8629dd7730fddf7e43fcd7 --plan-audit-sha256 d1f7c7f1217a278f35f3f976dbd217275a2db26f58e4a2e534a49fd772552dff
+```
+
+Recorder SHA256 aa62924a86eb32bdb54063607a9b8a2e445d8cd50a895565484d34b9c4031379;
+private project38-observation.json19057B SHA256
+dfa22cb146e34820f8b1cad45759130410735f6764543423607462aad9424229
+binds44 current Windows files/eight private records. Independent saved-result
+audit PASS for provenance, runtime FAIL2 unchanged: verifier38/original-result-audit.txt
+SHA25648d236a16cc7bd83506f4a8ef9d15a9eda502ca3031e54171a2469489c99dd42.
+Current runtime10/metadata6 remain freeze-exact; no original retry or code change.
+
+Next: verify the already available exact setter declaration and define any
+explicit bounded fixture policy before further implementation/one new plan. No
+argument value, generic void success, real project persistence or SDK/DCA success
+is approved by this result. UI/state/hardware NOT RUN; caller receipt/origin and
+store semantics UNKNOWN; vendor internals/network/descendants NOT_CONTAINED.
+Task009 In progress/all ACs unchecked; no qualification or gate advance.
