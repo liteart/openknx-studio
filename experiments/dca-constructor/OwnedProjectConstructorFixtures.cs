@@ -995,3 +995,18 @@ namespace Owned.Task009
         public void Dispose() { ContextOwnedControl.Disposals++; UndoOwnedControl.ProjectDisposals++; ContextOwnedControl.Point("project-dispose"); }
     }
 }
+
+// Source38: owned empty-content fixture; no real store/files or SDK namespace.
+namespace Owned.Task009
+{
+    public interface IEmptyContentFixture : ICacheStreamFixture { }
+    public interface IEmptyProjectStoreFixture { ScopedIdFixture Id { get; } ICacheStreamFixture LargeStringCache { get; } IEmptyContentFixture Project { get; } }
+    public static class EmptyContentTypedFixture
+    {
+        public static object Reference(IEmptyProjectStoreFixture store) { return store.Project; }
+        public static object Id(IEmptyProjectStoreFixture store) { return store.Id; }
+        public static object Cache(IEmptyProjectStoreFixture store) { return store.LargeStringCache; }
+        public static bool Exists(object value) { return ((ICacheStreamFixture)value).Exists; }
+        public static void Other(object value) { GC.KeepAlive(((ICacheStreamFixture)value).Id); }
+    }
+}
