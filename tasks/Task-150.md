@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Task ID | Task-150 |
-| Status | In progress |
+| Status | Done |
 | Component | Editor documentation and source repository |
 | Owner | Primary coordinator |
 | Authority | Explicit owner naming and GitHub/main push instructions on 2026-10-26 |
@@ -23,7 +23,7 @@ No protocol, DCA functionality, license or product-scope change is included.
 - [x] README, goals, ownership contract and project notice record the product name.
 - [x] The official remote and standing direct-main workflow are recorded and configured.
 - [x] Applicable documentation checks and bounded initial-publication audit pass.
-- [ ] The intended main revision is pushed and independently read back from GitHub.
+- [x] The intended main revision is pushed and independently read back from GitHub.
 
 ## Checks and evidence
 
@@ -68,6 +68,17 @@ published lineage includes the current Task009 result; it is not a claim that al
 parallel project work has been consolidated. The separate protocol fork is not
 published or vendored here.
 
-Actual first push and remote read-back are pending. No successful publication is
-claimed from the dry run alone. Product/Windows/vendor/hardware tests NOT RUN for
-this documentation/repository task; existing Task009 evidence is unchanged.
+First publication completed successfully on 2026-10-26:
+
+- Source commit: `a2f9444a3735457264895e681a35cb8b4383f67d`.
+- `git -c core.hooksPath=/dev/null push -u origin main:main`: PASS, created main
+  and configured local main to track origin/main.
+- `git ls-remote --symref origin HEAD refs/heads/main`: PASS; both GitHub HEAD
+  and refs/heads/main returned that exact source revision, HEAD points to main.
+- `git status --short --branch`: clean main tracking origin/main after publication.
+
+The completion-record commit is pushed under the same authorized workflow and
+its final remote ref is checked before reporting completion. No force-push,
+other branch/tag publication, fork publication or branch-protection change occurred.
+Product/Windows/vendor/hardware tests NOT RUN for this documentation/repository
+task; existing Task009 evidence is unchanged.
