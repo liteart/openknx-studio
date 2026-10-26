@@ -3,6 +3,7 @@ schema_version = 1
 requirements_source = "docs/REQUIREMENTS.md"
 
 [confirmed]
+product_name = "OpenKNX Studio"
 requirements = ["R-001", "R-002", "R-003", "R-004", "R-005", "R-006", "R-007", "R-008", "R-009", "R-010", "R-011", "R-012", "R-013", "R-014", "R-015", "R-016", "R-017", "R-018", "R-019", "R-020", "R-024", "R-025", "R-027", "R-029"]
 implementation_language = "Rust"
 dotnet_exception = "necessary Windows original-DCA and ETS-SDK hosting only"
@@ -42,8 +43,8 @@ product_work_gate = "Task-028: PoCs A/B/C PASS and explicit maintainer GO"
 
 [repositories.editor]
 logical_name = "knx-editor"
-owner = "undecided"
-remote = "undecided"
+owner = "liteart"
+remote = "https://github.com/liteart/openknx-studio.git"
 
 [repositories.protocol]
 logical_name = "knust-fork"

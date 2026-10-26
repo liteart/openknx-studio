@@ -33,7 +33,10 @@ The DCA host calls back into Rust; it does not own a second KNX driver. A manufa
 | `knx-editor` | Rust | Catalog, configuration evaluator, project/graph, compiler, load procedure selection, deployments, safety policy, files/Git/cache, MCP/CLI | KNX wire packet construction, copied codecs, protocol sessions, secure implementation in v1 |
 | `knx-editor/dca-host` | C#/.NET | Original assembly loading, required ETS-SDK compatibility, WPF lifecycle, IPC marshaling | Authoritative state, independent KNX transport, compiler, Git/cache policy, general product logic |
 
-These repository names are provisional labels, not already-created remotes. The fork preserves its upstream notices; the editor and project-owned host use Apache-2.0. The current upstream license is recorded in [REFERENCES.md](REFERENCES.md), but capabilities must be audited at the pinned revision, not inferred from README claims.
+`knx-editor` is the stable logical name for OpenKNX Studio, whose official remote is
+[https://github.com/liteart/openknx-studio.git](https://github.com/liteart/openknx-studio.git).
+`knust-fork` identifies the separate protocol repository; this product naming decision
+does not rename its package or change its repository boundary. The fork preserves its upstream notices; the editor and project-owned host use Apache-2.0. The current upstream license is recorded in [REFERENCES.md](REFERENCES.md), but capabilities must be audited at the pinned revision, not inferred from README claims.
 
 ## Editor modules
 

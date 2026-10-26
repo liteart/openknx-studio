@@ -14,7 +14,7 @@ class ProjectScopeChecks(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         source = Path(__file__).resolve().parents[1]
-        for directory in ("docs", "tasks", "templates", "config"):
+        for directory in ("docs", "tasks", "templates", "config", "experiments"):
             shutil.copytree(source / directory, self.root / directory)
         for path in [*source.glob("*.md"), source / "LICENSE", source / "NOTICE"]:
             if path.is_file():

@@ -1,5 +1,11 @@
 # Local repository setup evidence
 
+Current editor product: **OpenKNX Studio**. Official editor remote:
+`https://github.com/liteart/openknx-studio.git`, configured as `origin`;
+[Task-150](../tasks/Task-150.md) records the owner-authorized direct-main workflow.
+The Task-002 local-only observations below are historical; fork ownership and
+push permissions remain separate.
+
 Task-002, 2026-10-20; macOS 27.0 arm64, Python 3.14.6. User authorization covers
 a local fork and local commits. No external fork creation or push was performed.
 

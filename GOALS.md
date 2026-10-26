@@ -2,7 +2,7 @@
 
 ## Product objective
 
-Build an independent, open-source KNX engineering backend that can configure supported devices and commission them without ETS. The primary operator is an AI agent using MCP, while all decisions affecting configurations and devices remain deterministic, validated, and auditable. The product must also be usable without an AI model, account, or cloud service.
+Build OpenKNX Studio, an independent, open-source KNX engineering backend that can configure supported devices and commission them without ETS. The primary operator is an AI agent using MCP, while all decisions affecting configurations and devices remain deterministic, validated, and auditable. The product must also be usable without an AI model, account, or cloud service.
 
 ETS may be used only to obtain a one-time `.knxproj` export or necessary export-time preparation of an existing installation. Once that material is imported, project editing, product import, DCA operation, and device programming must not depend on installed or running ETS, an ETS project store, or an ETS automation service. For a new project created from `.knxprod` files, ETS is not required at all. A pre-existing reference capture may inform a lab test; ETS must not execute any part of the test operation being claimed as independent.
 
@@ -12,6 +12,7 @@ The objective is not a pixel-for-pixel ETS clone and not an immediate promise of
 
 | Area | Required outcome |
 |---|---|
+| Product name | OpenKNX Studio |
 | Ownership and license | All project-owned source is open source under Apache-2.0; no Free/Pro split, feature gates, subscriptions, or mandatory accounts |
 | Implementation | Rust for the core, parsers, configuration, compiler, orchestration, MCP, persistence, and protocol work |
 | Narrow exception | C#/.NET only where required to host unchanged original DCAs and their ETS-SDK contracts on Windows |

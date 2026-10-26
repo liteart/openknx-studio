@@ -4,7 +4,9 @@ Task-001 establishes a planning baseline, not implemented product capabilities.
 The machine-readable [scope](../config/project-scope.toml) separates confirmed
 requirements, confirmed direction, exclusions and engineering defaults. Its
 requirement IDs refer to [REQUIREMENTS.md](REQUIREMENTS.md). Logical repository
-names are recorded; owners and publication remotes remain undecided.
+names are recorded; the editor owner and remote are now resolved by the explicit
+[OpenKNX Studio decision](ADR-150-product-identity-and-github.md). Protocol-fork
+publication choices remain separate.
 
 The [checker](../scripts/check_project_scope.py) pins the parsed TOML values,
 checks local Markdown destination paths and task identities, and requires one
@@ -61,3 +63,14 @@ is tracked under Task-002.
 
 Hardware, Windows DCA execution, product functionality and rights certification:
 NOT RUN; outside this documentation task. No gate or maintainer acceptance is claimed.
+
+
+## Product identity and editor remote update — 2026-10-26
+
+The owner explicitly selected OpenKNX Studio and
+`https://github.com/liteart/openknx-studio.git`, authorizing direct pushes to main.
+[ADR-150](ADR-150-product-identity-and-github.md) records that instruction. The only
+parsed scope changes are confirmed.product_name and repositories.editor.owner/remote.
+The updated canonical hash is `e316176f102c57d11f4a979fe9b10d8e3f4086371ca2b37d92be282c9283221c`. All other parsed values retain the original
+baseline, including the PoC gate and offline product requirements. Historical
+Task-001 results above retain their original pin.

@@ -14,7 +14,7 @@ from urllib.parse import unquote, urlsplit
 
 # Pin parsed values, allowing comments/formatting changes. See docs/SCOPE-BASELINE.md
 # before updating this value; a passing check cannot grant human approval.
-BASELINE_SHA256 = "371458c1330c4e6f5d1275cca3f4321f184f84ef5c915c355fb53b85c82d4c95"
+BASELINE_SHA256 = "e316176f102c57d11f4a979fe9b10d8e3f4086371ca2b37d92be282c9283221c"
 INLINE_LINK = re.compile(r"!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+\"[^\"\n]*\")?\s*\)")
 REFERENCE_LINK = re.compile(r"^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|\S+)", re.MULTILINE)
 # Root-only private inputs and generated outputs excluded by .gitignore.

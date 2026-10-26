@@ -210,6 +210,12 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-147](tasks/Task-147.md) | Check frame constructor lengths before narrowing | knust-fork / checked frame construction | Accepted Tasks 015, 141 and 146; no phase gate unlocked |
 | [Task-148](tasks/Task-148.md) | Probe the original DCA constructor on a clean Windows host | Bounded original-DCA runtime research | Accepted Tasks 143 and 144; owned tests/review first; explicit constructor-only owner exception despite isolation FAIL; no gate unlocked |
 
+## Project identity and repository workflow
+
+| Task | Subject | Component | Dependencies |
+|---|---|---|---|
+| [Task-150](tasks/Task-150.md) | Record OpenKNX Studio identity and connect the authorized GitHub main workflow | Editor documentation and source repository | Explicit owner naming and publication instructions; no product gate unlocked |
+
 ## How to extend the backlog
 
-Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-149), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
+Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (next Task-151; Task-149 is already used on an existing task branch), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.

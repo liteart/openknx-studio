@@ -2,7 +2,7 @@
 
 ## Mission and authority
 
-Develop the independent KNX editor described in [GOALS.md](GOALS.md). Treat this document as the repository-level operating contract for coding agents and human contributors. Read the active task and its linked component contract before editing code.
+Develop OpenKNX Studio, the independent KNX editor described in [GOALS.md](GOALS.md). Treat this document as the repository-level operating contract for coding agents and human contributors. Read the active task and its linked component contract before editing code.
 
 Later explicit user decisions override earlier discussion: Rust is the implementation language; .NET exists only for necessary original DCA hosting; KNX protocol implementations belong only in the separate knust fork; the project is Apache-2.0 OSS with no paid tiers; Secure and legacy plug-ins are excluded from v1. Do not revive earlier Java/Calimero, all-.NET, Falcon-backed core, SQLite-as-authority, or Free/Pro proposals.
 
@@ -51,7 +51,16 @@ Definition of Done: required code and documentation are present; required automa
 
 This policy concerns development repositories, not the application's automatic project history.
 
-Use a protected `main` and a short-lived branch such as `task/Task-044-safe-product-import`. Use separate worktrees for parallel tasks. Do not create a mandatory long-lived `dev` branch without a later decision. Stay on the branch assigned to the task.
+Owner decision (2026-10-26): the official editor repository is
+`https://github.com/liteart/openknx-studio.git`. Commit tested, reviewed editor
+changes directly to `main` and push them to `origin/main` after each completed
+logical increment. This is standing authorization for those pushes; do not ask
+again for each commit. Check the remote state first and preserve existing history.
+Use separate worktrees for parallel tasks and integrate only their reviewed,
+verified changes into `main`. Do not create a mandatory long-lived `dev` branch.
+The existing task branches remain historical work; do not publish all branches
+or merge unrelated work as part of a routine push. This instruction concerns
+source development, not automatic user-project Git history or the separate fork.
 
 Make small, coherent commits when a logical step is tested. One task may have several commits; one commit must not bundle unrelated tasks or repositories. Stage explicit paths after reviewing the diff. Do not use a blanket `git add .` in a workspace with unrelated or unreviewed changes. No force-push, shared-history rewrite, `reset --hard`, or cleanup of another contributor's files without explicit permission. Never invent an author identity, claim another person's review, or add a signed-off-by line on their behalf.
 
@@ -70,7 +79,11 @@ Allowed types include `feat`, `fix`, `test`, `docs`, `refactor`, `build`, and `c
 
 For cross-repository changes: implement/test/commit the fork change first, pin the exact fork revision in the editor, then commit/test the editor change. Document both commits. A local path override may be used for development but must not enter a release manifest or lockfile. Do not pin a floating branch or imply an atomic commit across two repositories. Resolve branch conflicts by understanding domain invariants, not by choosing all changes from one side.
 
-Push, open PRs, merge, tag, and publish only through the project's authorized workflow. Merge only when the task's CI/evidence requirements pass. No automatic release because an agent finished a task.
+Direct pushes of verified editor changes to `origin/main` are authorized above.
+Respect any server-enforced branch rules; do not bypass them or force-push.
+Other remotes, pull requests, tags, releases and publication of private or third-party
+inputs still require their own authorization. Integration requires the task's
+applicable CI/evidence checks to pass. No automatic release because an agent finished a task.
 
 ## Rust and dependency practices
 

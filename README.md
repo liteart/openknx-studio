@@ -1,8 +1,18 @@
-# KNX Editor Development Kit
+# OpenKNX Studio
 
-**Planning baseline:** 2026-10-19. **Language:** English. **Project status:** requirements and proposed implementation work, not a working product.
+OpenKNX Studio is an independent, open-source KNX engineering backend in development.
+It aims to configure supported devices and host original manufacturer DCAs without
+requiring an installed or running ETS. See [GOALS.md](GOALS.md) for the exact scope.
 
-This kit consolidates the decisions in the project conversation. Later explicit user decisions replace earlier proposals. It does not establish that any repository, fork, implementation, hardware test, standalone DCA host, or release already exists.
+Official repository: [liteart/openknx-studio](https://github.com/liteart/openknx-studio).
+
+**Development stage:** PoC. Selected offline SDK compatibility experiments have
+passed; the original DCA window and complete commissioning workflows are not yet
+qualified. Task records distinguish implemented behavior from planned work.
+
+The original documentation baseline dates from 2026-10-19. Later explicit owner
+decisions supersede earlier proposals. OpenKNX Studio is the product name;
+`knx-editor` remains a technical component identifier in existing contracts.
 
 ## Start here
 
@@ -43,9 +53,10 @@ Each work item has its own `tasks/Task-NNN.md` file. IDs are stable, never reuse
 
 ## How to use the kit in the repositories
 
-Place this kit at the editor repository root, or move its documents as one unit and update relative links. The repository names `knx-editor` and `knust-fork` are logical names, not existing remote URLs. Store the DCA host under `knx-editor/dca-host/`; it is a separate executable, not a third mandatory repository. Put protocol implementation and its tests only in the fork. Copy or adapt the repository-boundary instructions into the fork's own `AGENTS.md` when it is created.
+Place this kit at the editor repository root, or move its documents as one unit and update relative links. The repository names `knx-editor` and `knust-fork` are logical component names.
+`knx-editor` refers to this OpenKNX Studio repository; the protocol fork remains separate. Store the DCA host under `knx-editor/dca-host/`; it is a separate executable, not a third mandatory repository. Put protocol implementation and its tests only in the fork. Copy or adapt the repository-boundary instructions into the fork's own `AGENTS.md` when it is created.
 
-The kit does not contain the user's `.etsapp`, manufacturer binaries, SDK binaries, firmware, product packages, credentials, or real installation data. Fixture acquisition tasks reference them by identity and hash. All task statuses start at **Not started**. This documentation is not proof that their acceptance criteria have been met.
+The kit does not contain the user's `.etsapp`, manufacturer binaries, SDK binaries, firmware, product packages, credentials, or real installation data. Fixture acquisition tasks reference them by identity and hash. New task templates start at **Not started**; current task records state their actual status and evidence. Planning text alone is not proof that acceptance criteria have been met.
 
 ## Interpreting obligations
 
