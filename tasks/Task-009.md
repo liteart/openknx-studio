@@ -9,7 +9,7 @@ Implement only the required offline SDK compatibility surface
 | Field | Value |
 |---|---|
 | Task ID | Task-009 |
-| Status | In progress |
+| Status | In review |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host (C#/.NET) |
@@ -73,19 +73,23 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 
 ## Risks and Blockers
 
-Latest actual original runtime is Original38 normal confirmed FAIL2, one attempt
-on fd1f22422c225d95035423e36b9c95a9bd2b9116. Genuine IStore-to-IStreamStore
-assignability TRUE; Collection returned, Project did not. Exists host reply
-commit1/referencecommit1/contentdenial0 preceded a MAIN IProjectStore refusal:
-set_ProjectGuid060002F7, MESSAGE_SHAPE/entry4, argument values NOT_INSPECTED.
-Shared fault remains fatal. This is method identity/phase evidence, not setter
-argument/value semantics, caller-origin or SDK-receipt proof. Cleanup/post20+2
-integrity PASS; actual context Session2/non-admin. Next verify the exact setter
-contract and explicitly bounded fixture policy; no generic void success or real
-store/persistent project behavior is assumed. Source38 owned41 PASS remains
-fixture-only evidence. No new DLL/catalog/hardware requirement is introduced.
-Task009 In progress/all ACs unchecked/no gate advance; ADR005 private-copy and
-no-redistribution boundaries unchanged.
+The finite offline project-construction compatibility slice is implemented in source commit
+`727b42b47e2c1ddd8f2293a6c8b34d950f32a289` and awaits maintainer acceptance.
+Original48 returned genuine ObjectModel Factory/Collection/Project/checker/notification/UndoManager
+and completed managed cleanup with exit0 and no final faults. Pre/post32+2 pins passed:
+28,770,936 input bytes unchanged. The independent verification and current full owned
+Windows regression passed (423 PASS markers including guards, plus the separate typed smoke).
+Two stale diagnostic labels were corrected afterward with an exact two-string reversal proof
+and three CSharp5/x64 warnings-as-errors compiles; no runtime rerun is claimed for that label-only change.
+
+The ObjectModel Project is distinct from `Knx.Ets.Sdk.Project.Project` required by
+`IInitializationContext.get_Project`. That getter remains explicitly denied/unresolved.
+Original DCA Initialize, original UI, state round trips and hardware are NOT RUN for
+this positive route. This result does not supply a working DCA-window launcher.
+Task010 owns that next integration proof and remains subject to predecessor acceptance.
+Acceptance criteria remain unchecked pending acceptance of the enumerated slice; no
+universal SDK compatibility, vendor-code containment or bus capability is claimed.
+See [the finite shim inventory](../docs/DCA-PROJECT-GUID-FIXTURE.md#source3948-actual-constructor-and-cleanup-checkpoint).
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -2866,3 +2870,42 @@ provenance PASS does not change runtime FAIL2. Next setter-contract/explicit fix
 policy remains separate; no assumed parameter value or generic void success.
 DCA UI/state/hardware NOT RUN; semantics/receipt/origin UNKNOWN; no qualification.
 Task009 remains In progress/all ACs unchecked.
+
+## Exploratory iteration policy —2026-10-26 owner decision
+
+Simon requested faster batched implementation/testing of observed simple
+getters/setters: local compile + focused typed smoke + bounded original run first;
+complete clean suites/preservation/final review deferred until the original flow
+runs, still required before Done. No hardware/dependency/generic-success waiver.
+The next batch follows [ProjectGuid fixture](../docs/DCA-PROJECT-GUID-FIXTURE.md):
+coherent in-memory Guid getter/setter, initial Empty, same shared16 and denials.
+
+Exploratory GUID smoke passed (3 reads/2 writes and unknown refusal); original
+39 reached a healthy setter commit1 but failed on exact HistoryCompare AssemblyRef.
+Owner-source metadata/private copy verified66000B/b7be3b711d244ff40e2a0deaf64fa6ead2e5437ee6f20e7ab0e998465de48b47. Next sameGUIDprofile admits only this21st ABI dependency from a fresh verified stage;
+no history feature. Full suites remain deferred under the owner iteration policy.
+
+
+## Source39–50 final verification record
+
+Implementation source commit: `727b42b47e2c1ddd8f2293a6c8b34d950f32a289`.
+Windows execution used source48, with test-driver-only source49 expectations; source50
+changes only the two diagnostic labels, as documented in the fixture contract.
+
+| Required test | Result and bounded evidence |
+|---|---|
+| TEST-001 | PASS for the enumerated fixture/public SDK slice: original48 lifecycle exit0, new typed GUID/validator/notification/Undo smoke, full owned interactive regression exit0 (423 PASS markers including static guards). No original DCA Initialize/UI claim. |
+| TEST-002 | PASS for enumerated unsupported methods/categories, including all six initialization-context getters, direct/wrapped/caught denial and inherited callback/lifetime cases. Unknown behavior outside that inventory is not qualified. |
+| TEST-003 | PASS:32 private plus2 OS input pins unchanged, original MDT DLL unchanged; source/dependency guards passed. A lexical scan of added owned-source lines found no selected network/interop/ETS-executable patterns; it is not vendor-code containment. |
+
+Reproduction commands and exact private hashes are in the fixture contract and
+private `iteration39/final-check-commands49.md`. Independent verification:
+`final-verification49.md` SHA256
+`b2b1aea3e0667b21d1e5faefa1c8ea600cc1cc47840791bf87496899c37f32d7`.
+Added-source lexical boundary scan: `final-boundary50.json` SHA256
+`585ed2753c8616dfcf373d25f06cfb402c8b6c6c85714a83cf05a5781c80f27a`.
+The preservation check retained474 old members and nine legacy classes exactly;
+22 changed bodies require the separate source review rather than automatic approval.
+Full owned Windows raw evidence is retained in `full49-b730c5e29a41`; original
+lifecycle evidence in `run-6f49a028d3bc`. Both jobs were removed with owned processes0.
+Vendor internals/network/descendants remain NOT_CONTAINED; hardware NOT_RUN.
