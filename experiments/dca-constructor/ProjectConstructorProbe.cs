@@ -152,10 +152,11 @@ internal sealed class UndoProviderFactoryHolder
         int count; lock (sync) { if (entries < 2) entries++; count = entries; }
         bool entered = false, suspended = false, prepared = false; int previous = 0;
         try {
-            bool eligible = ProjectConstructorProbe.UndoFactoryWindowEligible(), excluded = ProjectConstructorProbe.UndoFactoryCallbackExcluded();
+            bool disposalReference = ProjectConstructorProbe.GuidUndoProviderReferenceEligible();
+            bool eligible = disposalReference || ProjectConstructorProbe.UndoFactoryWindowEligible(), excluded = ProjectConstructorProbe.UndoFactoryCallbackExcluded();
             if (!excluded) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
             lock (sync) {
-                ProbeFiles.Require(count == 1 && lifetime == 1 && !inCallback && !violation && !excluded && typeof(T) == contract
+                ProbeFiles.Require(count == 1 && lifetime == 1 && !inCallback && !violation && (!excluded || disposalReference) && typeof(T) == contract
                     && context != null && Thread.CurrentThread.ManagedThreadId == ownerThread
                     && eligible, "UNDO_FACTORY_CALLBACK_CONTEXT");
                 inCallback = true; entered = true;
@@ -192,6 +193,8 @@ internal sealed class CacheReferenceState
     { lock (sync) { if (attempts < 2) attempts++; if (attempts != 1 || !eligible || Thread.CurrentThread.ManagedThreadId != ownerThread || lifetime != 1 || faulted) { faulted = true; throw new NotSupportedException("CACHE_REFERENCE_UNSUPPORTED"); } } }
     internal void Exit(bool ownsEntry, bool prepared)
     { lock (sync) { if (ownsEntry) entered = false; if (prepared && !faulted) replies++; } }
+    internal void ExitGuid(bool ownsEntry, bool prepared, bool setter, Guid value, ProjectGuidFixture policy)
+    { lock (sync) { if (ownsEntry) entered = false; policy.Complete(prepared && !faulted, setter, value); } }
     internal void ExitExists(bool ownsEntry, bool prepared, ContentExistsPolicy policy)
     { lock (sync) { if (ownsEntry) entered = false; policy.Complete(prepared && !faulted); } }
     // New policy only: shared-fault acceptance and reply commit occur while this lock is held.
@@ -287,6 +290,22 @@ internal class ProjectContentDenyProxy : RealProxy
         try { method = call.MethodBase as MethodInfo; }
         catch { return "category=METHOD_READ_FAILED"; }
         return ContentMethodDescriptor(method, owner);
+    }
+    internal static MethodInfo CaptureContentMethod(IMessage message)
+    {
+        if(message==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(message))return null;
+        Type kind=message.GetType();if(kind.Module!=typeof(IMethodCallMessage).Module||kind.Assembly!=typeof(IMethodCallMessage).Assembly)return null;
+        var call=message as IMethodCallMessage;if(call==null)return null;return call.MethodBase as MethodInfo;
+    }
+    internal static string ContentMessageDescriptor(IMessage message, Type owner, out MethodInfo captured)
+    {
+        captured = null;
+        if (message == null || System.Runtime.Remoting.RemotingServices.IsTransparentProxy(message)) return "category=UNTRUSTED_MESSAGE";
+        Type kind = message.GetType();
+        if (kind.Module != typeof(IMethodCallMessage).Module || kind.Assembly != typeof(IMethodCallMessage).Assembly) return "category=UNTRUSTED_MESSAGE_TYPE";
+        var call = message as IMethodCallMessage; if (call == null) return "category=UNTRUSTED_MESSAGE";
+        try { captured = call.MethodBase as MethodInfo; } catch { return "category=METHOD_READ_FAILED"; }
+        return ContentMethodDescriptor(captured, owner);
     }
     internal static string ContentMethodDescriptor(MethodInfo method, Type owner)
     {
@@ -405,22 +424,65 @@ internal sealed class ProjectContentReference
     internal void Complete(bool accepted) { lock (sync) { if (accepted && !faulted && Proxy.State.Entries == 0 && !Proxy.State.Faulted) replies++; } }
 }
 
+// Exploratory owned Guid fixture: coherent memory only, never persistent project state.
+internal sealed class ProjectGuidFixture
+{
+    readonly object sync = new object(); readonly int owner = Thread.CurrentThread.ManagedThreadId;
+    internal readonly MethodInfo Getter, Setter; CacheReferenceState shared; Guid value = Guid.Empty;
+    int gets, sets, reads, writes; bool faulted;
+    internal ProjectGuidFixture(MethodInfo get, MethodInfo set) { Getter = get; Setter = set; }
+    internal void Bind(CacheReferenceState state) { lock (sync) { if (shared != null || state == null) { faulted = true; throw new NotSupportedException("GUID_BIND_ONCE"); } shared = state; } }
+    internal void Fail() { lock (sync) { faulted = true; } }
+    internal void Attempt(bool setter, bool eligible)
+    { lock (sync) { if (setter) sets++; else gets++; if (shared == null || faulted || !eligible || Thread.CurrentThread.ManagedThreadId != owner) { faulted = true; throw new NotSupportedException("GUID_CALLBACK_CONTEXT"); } } }
+    internal Guid Current { get { lock (sync) { return value; } } }
+    internal bool Faulted { get { lock (sync) { return faulted; } } }
+    internal void Complete(bool accepted, bool setter, Guid pending)
+    { lock (sync) { if (accepted && !faulted) { if (setter) { value = pending; writes++; } else reads++; } } }
+    internal void Audit(string phase, Action<string> record)
+    {
+        int g, s, r, w; bool bad; CacheReferenceState state;
+        lock (sync) { g = gets; s = sets; r = reads; w = writes; bad = faulted; state = shared; }
+        bool sharedFault = state != null && state.Faulted;
+        try { record("PROJECT_GUID_AUDIT phase=" + phase + " get-attempts=" + g + " set-attempts=" + s + " read-commits=" + r + " write-commits=" + w + " fault=" + bad + " shared-fault=" + sharedFault + " fixture-only=True values=NOT_LOGGED"); }
+        finally { if (bad || sharedFault || state == null || state.Entries > 16 || r > g || w > s) throw new NotSupportedException("PROJECT_GUID_FINAL_DENIAL"); }
+    }
+}
+internal sealed class GuidCallSnapshot : IMethodCallMessage
+{
+    readonly MethodInfo method; readonly LogicalCallContext context; readonly string uri; readonly object[] arguments;
+    readonly System.Collections.IDictionary properties = new System.Collections.Hashtable();
+    internal GuidCallSnapshot(MethodInfo m, LogicalCallContext c, string u, bool setter, Guid value) { method=m; context=c; uri=u; arguments=setter ? new object[] { value } : new object[0]; }
+    public MethodBase MethodBase { get { return method; } } public string MethodName { get { return method.Name; } }
+    public int ArgCount { get { return arguments.Length; } } public int InArgCount { get { return arguments.Length; } }
+    public object[] Args { get { return (object[])arguments.Clone(); } } public object[] InArgs { get { return (object[])arguments.Clone(); } }
+    public bool HasVarArgs { get { return false; } } public LogicalCallContext LogicalCallContext { get { return context; } }
+    public object MethodSignature { get { return arguments.Length==0 ? Type.EmptyTypes : new Type[] { typeof(Guid) }; } }
+    public string TypeName { get { return method.DeclaringType.AssemblyQualifiedName; } } public string Uri { get { return uri; } set { throw new NotSupportedException("GUID_SNAPSHOT_IMMUTABLE"); } }
+    public System.Collections.IDictionary Properties { get { return properties; } }
+    public object GetArg(int i) { if(i!=0 || arguments.Length!=1) throw new NotSupportedException("GUID_ARG_INDEX"); return arguments[0]; }
+    public string GetArgName(int i) { GetArg(i); return "value"; } public object GetInArg(int i) { return GetArg(i); } public string GetInArgName(int i) { return GetArgName(i); }
+}
+
 internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
 {
     readonly MethodInfo idGetter, cacheGetter; readonly object reference; readonly Action<string> record;
     internal readonly CacheReferenceState State = new CacheReferenceState();
-    readonly ProjectContentReference content;
+    readonly ProjectContentReference content; readonly ProjectGuidFixture guid;
     internal LargeStringCacheStoreProxy(Type owner, MethodInfo idMethod, object id, MethodInfo cacheMethod, Type streamType, object stream, Action<string> recorder)
         : base(owner, idMethod, id, recorder)
     { ProjectConstructorProbe.CacheGetterSignature(owner, cacheMethod, streamType); ProbeFiles.Require(ProjectConstructorProbe.CacheMode && stream != null && streamType.IsInstanceOfType(stream), "CACHE_REFERENCE_CONTRACT"); idGetter = idMethod; cacheGetter = cacheMethod; reference = stream; record = recorder; }
     internal LargeStringCacheStoreProxy(Type owner, MethodInfo idMethod, object id, MethodInfo cacheMethod, Type streamType, object stream, Action<string> recorder, ProjectContentReference policy)
         : this(owner, idMethod, id, cacheMethod, streamType, stream, recorder)
     { ProbeFiles.Require(ProjectConstructorProbe.ContentMode && policy != null && policy.Getter.DeclaringType == owner && policy.Reference != null, "CONTENT_WRAPPER_POLICY"); content = policy; }
+    internal LargeStringCacheStoreProxy(Type owner, MethodInfo idMethod, object id, MethodInfo cacheMethod, Type streamType, object stream, Action<string> recorder, ProjectContentReference policy, ProjectGuidFixture fixture)
+        : this(owner, idMethod, id, cacheMethod, streamType, stream, recorder, policy)
+    { guid = fixture; ProbeFiles.Require(guid != null, "GUID_WRAPPER_POLICY"); guid.Bind(State); }
     public override IMessage Invoke(IMessage message)
     {
         int count = State.Count(); bool suspended = false, entered = false, prepared = false; int previous = 0;
         MethodInfo observedMethod = null; bool methodCaptured = false, diagnosticAttempted = false; string phase = "ENTRY";
-        bool contentRequest = false, contentPrepared = false;
+        bool contentRequest = false, contentPrepared = false, guidRequest = false, guidSetter = false, guidPrepared = false; Guid pendingGuid = Guid.Empty;
         try {
             bool eligible = ProjectConstructorProbe.CacheWindowEligible(), excluded = ProjectConstructorProbe.UndoFactoryCallbackExcluded();
             if (!excluded) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
@@ -429,6 +491,21 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
             IMethodCallMessage call = message as IMethodCallMessage; MethodInfo method = call == null ? null : call.MethodBase as MethodInfo;
             observedMethod = method; methodCaptured = true; phase = "METHOD_MATCH";
             bool cache = ProjectConstructorProbe.ExactRuntimeMethod(method, cacheGetter), id = ProjectConstructorProbe.ExactRuntimeMethod(method, idGetter);
+            guidSetter = guid != null && ProjectConstructorProbe.ExactRuntimeMethod(method, guid.Setter);
+            guidRequest = guid != null && (guidSetter || ProjectConstructorProbe.ExactRuntimeMethod(method, guid.Getter));
+            if (guidRequest) {
+                phase = "GUID_SHAPE"; guid.Attempt(guidSetter, eligible);
+                ProbeFiles.Require(call.MethodName == (guidSetter ? guid.Setter.Name : guid.Getter.Name) && call.ArgCount == (guidSetter ? 1 : 0) && call.InArgCount == (guidSetter ? 1 : 0), "GUID_MESSAGE_SHAPE");
+                object[] values = call.Args; ProbeFiles.Require(values != null && values.Length == (guidSetter ? 1 : 0), "GUID_ARGUMENT_COUNT");
+                if (guidSetter) { object argument = values[0]; ProbeFiles.Require(argument != null && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(argument) && argument.GetType() == typeof(Guid), "GUID_EXACT_BOXED_VALUE"); pendingGuid = (Guid)argument; }
+                else pendingGuid = guid.Current;
+                LogicalCallContext guidContext = call.LogicalCallContext; string guidUri = call.Uri; ProbeFiles.Require(guidUri == null || guidUri.Length <= 1024, "GUID_URI_BOUND");
+                var guidSnapshot = new GuidCallSnapshot(guidSetter ? guid.Setter : guid.Getter, guidContext, guidUri, guidSetter, pendingGuid);
+                ProbeFiles.Require(!State.Faulted && !guid.Faulted, "GUID_CAUGHT_FAULT");
+                record("PROJECT_GUID_FIXTURE operation=" + (guidSetter ? "SET" : "GET") + " reply=PREPARED fixture-only=True values=NOT_LOGGED");
+                IMessage guidResponse = new ReturnMessage(guidSetter ? null : (object)pendingGuid, new object[0], 0, guidContext, guidSnapshot);
+                ProbeFiles.Require(!State.Faulted && !guid.Faulted, "GUID_REPLY_FAULT"); guidPrepared = true; return guidResponse;
+            }
             contentRequest = content != null && ProjectConstructorProbe.ExactRuntimeMethod(method, content.Getter);
             if (contentRequest) { phase = "CONTENT_ELIGIBILITY"; content.Attempt(eligible); }
             phase = "CACHE_ELIGIBILITY";
@@ -465,6 +542,7 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
             ProbeFiles.Require(!State.Faulted, "CACHE_REPLY_CAUGHT_REENTRY"); prepared = true; return response;
         } catch {
             State.Fail();
+            if (guidRequest) guid.Fail();
             if (contentRequest) content.Fail();
             DiagnoseFailure(observedMethod, methodCaptured, phase, count, entered, ref diagnosticAttempted);
             throw;
@@ -473,12 +551,14 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
             try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); }
             catch {
                 State.Fail();
+                if (guidRequest) guid.Fail();
                 if (contentRequest) content.Fail();
                 DiagnoseFailure(observedMethod, methodCaptured, "RESTORE", count, entered, ref diagnosticAttempted);
                 throw;
             }
             finally {
-                if (content == null) State.Exit(entered, prepared);
+                if (guidRequest) State.ExitGuid(entered, guidPrepared, guidSetter, pendingGuid, guid);
+                else if (content == null) State.Exit(entered, prepared);
                 else State.ExitContent(entered, prepared, contentPrepared, content);
             }
         }
@@ -513,24 +593,202 @@ internal sealed class ContextDenialState
     internal int Deny() { lock (sync) { if (entries < limit + 1) entries++; faulted = true; return entries; } }
     internal void Fail() { lock (sync) { faulted = true; } }
 }
+// Exact validator factory plus four explicit context fixtures, GUID diagnostic profile only.
+internal sealed class ValidatorCallSnapshot : IMethodCallMessage
+{
+    readonly MethodInfo method; readonly LogicalCallContext context; readonly string uri; readonly object[] args; readonly Type[] signature;
+    readonly System.Collections.IDictionary properties = new System.Collections.Hashtable();
+    internal ValidatorCallSnapshot(MethodInfo m, LogicalCallContext c, string u, object[] a, Type[] s) { method=m;context=c;uri=u;args=(object[])a.Clone();signature=(Type[])s.Clone(); }
+    public MethodBase MethodBase { get { return method; } } public string MethodName { get { return method.Name; } }
+    public int ArgCount { get { return args.Length; } } public int InArgCount { get { return args.Length; } }
+    public object[] Args { get { return (object[])args.Clone(); } } public object[] InArgs { get { return (object[])args.Clone(); } }
+    public bool HasVarArgs { get { return false; } } public LogicalCallContext LogicalCallContext { get { return context; } }
+    public object MethodSignature { get { return (Type[])signature.Clone(); } } public string TypeName { get { return method.DeclaringType.AssemblyQualifiedName; } }
+    public string Uri { get { return uri; } set { throw new NotSupportedException("VALIDATOR_SNAPSHOT_IMMUTABLE"); } }
+    public System.Collections.IDictionary Properties { get { return properties; } }
+    public object GetArg(int i) { return args[i]; } public object GetInArg(int i) { return args[i]; }
+    public string GetArgName(int i) { if(i<0||i>=args.Length)throw new NotSupportedException("VALIDATOR_ARG_INDEX");return i==0?"project":"collection"; }
+    public string GetInArgName(int i) { return GetArgName(i); }
+}
+internal sealed class ContextValidatorAdapter
+{
+    readonly object sync=new object(); readonly int owner=Thread.CurrentThread.ManagedThreadId;
+    readonly Type projectType,collectionType,checkerType; readonly ConstructorInfo constructor; readonly MethodInfo closedMethod;
+    readonly MethodInfo[] scalarMethods; readonly Type[] validatorParameters; readonly object style;
+    readonly Func<object> collection; readonly Func<bool> eligible; readonly Action<string> record;
+    int entries,replies,constructions,lifetime,nextPuid=1; bool fault,entered,constructorActive,scalarActive,dirty;
+    object project,checker,retainedChecker,notification,retainedNotification,undoManager,retainedUndoManager;
+    MethodInfo undoGetter;Type undoType;Func<object> undoFactory;Func<bool> undoEligible;int undoFactoryCalls,undoReplies;
+    internal void ConfigureUndo(MethodInfo getter,Type resultType,Func<object> create,Func<bool> phase)
+    { ProbeFiles.Require(lifetime==0&&undoGetter==null,"UNDO_CONTEXT_CONFIGURE_ONCE");undoGetter=getter;undoType=resultType;undoFactory=create;undoEligible=phase; }
+    MethodInfo notificationGetter;ConstructorInfo notificationConstructor;Type notificationType;Func<bool> notificationEligible;int notificationConstructions,notificationReplies;
+    internal void ConfigureNotification(MethodInfo getter,ConstructorInfo ctor,Type concrete,Func<bool> phase)
+    { ProbeFiles.Require(lifetime==0&&notificationGetter==null,"NOTIFICATION_CONFIGURE_ONCE");notificationGetter=getter;notificationConstructor=ctor;notificationType=concrete;notificationEligible=phase; }
+    internal ContextValidatorAdapter(Type projectClass,Type collectionClass,Type checkerClass,ConstructorInfo ctor,MethodInfo closed,MethodInfo[] scalar,Type[] parameters,object styleValue,Func<object> getCollection,Func<bool> phase,Action<string> recorder)
+    { projectType=projectClass;collectionType=collectionClass;checkerType=checkerClass;constructor=ctor;closedMethod=closed;scalarMethods=scalar;validatorParameters=parameters;style=styleValue;collection=getCollection;eligible=phase;record=recorder; }
+    internal void Begin(){lock(sync){if(lifetime!=0){fault=true;throw new NotSupportedException("VALIDATOR_BEGIN_ONCE");}lifetime=1;}}
+    internal void Close(){lock(sync){if(lifetime!=1)fault=true;lifetime=2;}}
+    void Fail(){lock(sync){fault=true;}}
+    static string ArgumentType(object value)
+    { if(value==null)return "NULL";if(System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value))return "TRANSPARENT_PROXY";return ProjectConstructorProbe.Text(value.GetType().FullName); }
+    internal IMessage Invoke(IMessage message,ContextArgumentDenyProxy proxy)
+    {
+        int count;lock(sync){if(entries<17)entries++;count=entries;}
+        bool suspended=false,ownsEntry=false,ownsScalar=false,prepared=false,denied=false;int previous=0,operation=-1;MethodInfo method=null;object result=null;int puid=0;
+        try{
+            bool phase=eligible(),notificationPhase=notificationEligible!=null&&notificationEligible(),undoPhase=undoEligible!=null&&undoEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();
+            if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
+            ProbeFiles.Require(count<=16,"VALIDATOR_CONTEXT_BUDGET");
+            method=ProjectContentDenyProxy.CaptureContentMethod(message);
+            bool validator=ProjectConstructorProbe.ExactRuntimeMethod(method,closedMethod);
+            if(!validator)for(int i=0;i<scalarMethods.Length;i++)if(ProjectConstructorProbe.ExactRuntimeMethod(method,scalarMethods[i]))operation=i;
+            if(!validator&&notificationGetter!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,notificationGetter))operation=4;
+            if(!validator&&undoGetter!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,undoGetter))operation=5;
+            ProbeFiles.Require(validator||operation>=0,"VALIDATOR_CONTEXT_UNSUPPORTED");
+            if(operation==4)phase=notificationPhase;else if(operation==5)phase=undoPhase;
+            lock(sync){
+                bool nestedScalar=entered&&constructorActive&&operation>=0&&operation<4&&!scalarActive&&excluded;
+                if(fault||lifetime!=1||Thread.CurrentThread.ManagedThreadId!=owner||(!nestedScalar&&(!phase||excluded||entered))){fault=true;throw new NotSupportedException("VALIDATOR_CONTEXT_PHASE");}
+                if(!nestedScalar){entered=true;ownsEntry=true;}if(operation>=0){scalarActive=true;ownsScalar=true;}
+            }
+            var call=(IMethodCallMessage)message;int arity=validator?2:0;
+            ProbeFiles.Require(call.MethodName==method.Name&&call.ArgCount==arity&&call.InArgCount==arity,"VALIDATOR_CALL_SHAPE");
+            object[] arguments=call.Args;ProbeFiles.Require(arguments!=null&&arguments.Length==arity,"VALIDATOR_ARGUMENT_COUNT");
+            object[] captured=arity==0?new object[0]:new object[]{arguments[0],arguments[1]};
+            LogicalCallContext context=call.LogicalCallContext;string uri=call.Uri;ProbeFiles.Require(uri==null||uri.Length<=1024,"VALIDATOR_URI_BOUND");
+            var snapshot=new ValidatorCallSnapshot(method,context,uri,captured,validator?validatorParameters:Type.EmptyTypes);
+            if(validator){
+                object actualProject=captured[0],actualCollection=captured[1],retainedCollection=collection();
+                bool goodProject=actualProject!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualProject)&&actualProject.GetType()==projectType;
+                bool goodCollection=retainedCollection!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(retainedCollection)&&retainedCollection.GetType()==collectionType&&(actualCollection==null||Object.ReferenceEquals(actualCollection,retainedCollection));
+                if(!goodProject||!goodCollection){record("CONTEXT_VALIDATOR_ARGUMENT_MISMATCH arg0-type="+ArgumentType(actualProject)+" arg1-type="+ArgumentType(actualCollection)+" retained-type="+ArgumentType(retainedCollection)+" values=NOT_INSPECTED");throw new NotSupportedException("VALIDATOR_ACTUAL_ARGUMENT_TYPES");}
+                lock(sync){if(project!=null&&!Object.ReferenceEquals(project,actualProject)){fault=true;throw new NotSupportedException("VALIDATOR_SAME_PROJECT_ONLY");}project=actualProject;result=checker;}
+                if(result==null){
+                    record("CONTEXT_VALIDATOR_CTOR_BEGIN token="+constructor.MetadataToken.ToString("X8")+" exact-instance=True arguments=GENUINE_COLLECTION_PROJECT values=NOT_INSPECTED");
+                    lock(sync){if(fault||constructions!=0){fault=true;throw new NotSupportedException("VALIDATOR_ONE_CONSTRUCTION");}constructions++;constructorActive=true;}
+                    try{result=constructor.Invoke(new object[]{retainedCollection,actualProject});}
+                    finally{lock(sync){constructorActive=false;}}
+                    ProbeFiles.Require(result!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(result)&&result.GetType()==checkerType,"VALIDATOR_EXACT_CONSTRUCTOR_RESULT");
+                    lock(sync){retainedChecker=result;}
+                    record("CONTEXT_VALIDATOR_CTOR_END returned=True exact-type=True disposal-owner=CALLER_NOT_INVENTED");
+                }
+            }else if(operation==4){
+                lock(sync){result=notification;}
+                if(result==null){
+                    record("CONTEXT_NOTIFICATION_CTOR_BEGIN token="+notificationConstructor.MetadataToken.ToString("X8")+" phase=EXPLICIT_PROJECT_DISPOSAL");
+                    lock(sync){ProbeFiles.Require(!fault&&notificationConstructions==0,"NOTIFICATION_ONE_CONSTRUCTION");notificationConstructions++;}
+                    result=notificationConstructor.Invoke(new object[0]);
+                    ProbeFiles.Require(result!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(result)&&result.GetType()==notificationType,"NOTIFICATION_EXACT_CONSTRUCTOR_RESULT");
+                    lock(sync){retainedNotification=result;}
+                    record("CONTEXT_NOTIFICATION_CTOR_END returned=True exact-type=True disposal-owner=CALLER_NOT_INVENTED");
+                }
+            }else if(operation==5){
+                lock(sync){result=undoManager;}
+                if(result==null){
+                    record("CONTEXT_UNDO_FACTORY_BEGIN route=VERIFIED_PUBLIC_IFACTORY phase=EXPLICIT_PROJECT_DISPOSAL");
+                    lock(sync){ProbeFiles.Require(!fault&&undoFactoryCalls==0,"UNDO_CONTEXT_ONE_FACTORY_CALL");undoFactoryCalls++;}
+                    result=undoFactory();
+                    ProbeFiles.Require(result!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(result)&&result.GetType()==undoType,"UNDO_CONTEXT_EXACT_FACTORY_RESULT");
+                    lock(sync){retainedUndoManager=result;}
+                    record("CONTEXT_UNDO_FACTORY_END returned=True exact-type=True disposal-owner=CALLER_NOT_INVENTED");
+                }
+            }else{
+                lock(sync){
+                    if(operation==0)result=style;
+                    else if(operation==1){puid=nextPuid;ProbeFiles.Require(puid>=1&&puid<=16,"CONTEXT_PUID_FIXTURE_BOUND");result=puid;}
+                    else if(operation==2)result=null; // Exact SetProjectModified tracks dirty at accepted completion.
+                    else {ProbeFiles.Require(project!=null,"CONTEXT_PROJECT_NOT_CAPTURED");result=project;}
+                }
+            }
+            lock(sync){ProbeFiles.Require(!fault,"VALIDATOR_CAUGHT_FAULT");}
+            record("CONTEXT_ADAPTER_REPLY method="+ProjectConstructorProbe.Text(method.Name)+" kind="+(validator?"GENUINE_CACHED_CHECKER":operation==3?"GENUINE_CAPTURED_PROJECT":operation==4?"GENUINE_CACHED_NOTIFICATION_SERVICE":operation==5?"GENUINE_CACHED_UNDO_MANAGER":"EXPLICIT_CONTEXT_FIXTURE")+" values=NOT_LOGGED");
+            IMessage response=new ReturnMessage(result,new object[0],0,context,snapshot);
+            lock(sync){ProbeFiles.Require(!fault&&!proxy.State.Faulted,"VALIDATOR_REPLY_FAULT");}prepared=true;return response;
+        }catch{
+            Fail();int refusal=proxy.State.Deny();denied=true;
+            if(refusal==1&&count<=16&&ProjectConstructorProbe.UndoFactoryCallbackExcluded())proxy.DiagnoseCaptured(method,refusal);
+            throw;
+        }finally{
+            try{if(suspended)ProjectConstructorProbe.RestoreProjectResourceCallback(previous);}
+            catch{Fail();if(!denied){proxy.State.Deny();denied=true;}throw;}
+            finally{
+                bool accepted;lock(sync){
+                    if(ownsEntry)entered=false;if(ownsScalar)scalarActive=false;
+                    accepted=prepared&&!fault&&!proxy.State.Faulted;
+                    if(accepted){if(operation<0)checker=result;else if(operation==1)nextPuid=puid+1;else if(operation==2)dirty=true;else if(operation==4){notification=result;notificationReplies++;}else if(operation==5){undoManager=result;undoReplies++;}replies++;}
+                }
+                if(prepared&&!accepted){Fail();if(!denied)proxy.State.Deny();throw new NotSupportedException("VALIDATOR_COMPLETION_FAULT");}
+            }
+        }
+    }
+    internal void Audit(string phase,Action<string> output)
+    {
+        int e,r,c,l;bool f,d,active;lock(sync){e=entries;r=replies;c=constructions;l=lifetime;f=fault;d=dirty;active=constructorActive||entered;}
+        try{output("CONTEXT_ADAPTER_AUDIT phase="+phase+" entries="+e+" replies="+r+" constructions="+c+" lifetime="+l+" fault="+f+" dirty-fixture="+d+" pending="+active+" checker-retained="+(retainedChecker!=null)+" notification-constructions="+notificationConstructions+" notification-replies="+notificationReplies+" notification-retained="+(retainedNotification!=null)+" undo-factory-calls="+undoFactoryCalls+" undo-replies="+undoReplies+" undo-retained="+(retainedUndoManager!=null)+" values=NOT_LOGGED");}
+        finally{if(f||e>16||r>e||c>1||notificationConstructions>1||undoFactoryCalls>1||active||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&l!=2))throw new NotSupportedException("CONTEXT_ADAPTER_FINAL_DENIAL");GC.KeepAlive(retainedChecker);GC.KeepAlive(project);GC.KeepAlive(retainedNotification);GC.KeepAlive(retainedUndoManager);}
+    }
+}
+
 internal sealed class ContextArgumentDenyProxy : RealProxy
 {
     internal readonly ContextDenialState State = new ContextDenialState(16);
-    readonly string name; readonly Action<string> record;
-    internal ContextArgumentDenyProxy(Type type, string label, Action<string> recorder) : base(type) { name = label; record = recorder; }
+    readonly string name; readonly Type contract; readonly Action<string> record; readonly ContextValidatorAdapter adapter;
+    internal ContextArgumentDenyProxy(Type type, string label, Action<string> recorder) : base(type) { name = label; contract = type; record = recorder; }
+    internal ContextArgumentDenyProxy(Type type,string label,Action<string> recorder,ContextValidatorAdapter positive) : this(type,label,recorder) { adapter=positive; }
     public override IMessage Invoke(IMessage message)
     {
+        if(adapter!=null)return adapter.Invoke(message,this);
         int count = State.Deny(); bool suspended = false; int previous = 0;
         try {
             if (!ProjectConstructorProbe.UndoFactoryCallbackExcluded()) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
             if (count > 16) throw new NotSupportedException("CONTEXT_ARGUMENT_BUDGET:" + name);
             record("CONTEXT_ARGUMENT_DENIED argument=" + name + " entry=" + count + " values=NOT_INSPECTED");
             var error = new NotSupportedException("CONTEXT_ARGUMENT_UNSUPPORTED:" + name);
+            if (ProjectConstructorProbe.GuidMode) {
+                if (count == 1) {
+                    MethodInfo captured; string descriptor = ProjectContentDenyProxy.ContentMessageDescriptor(message, contract, out captured);
+                    record("CONTEXT_ARGUMENT_REFUSAL argument=" + name + " entry=1 " + descriptor + " values=NOT_INSPECTED caller-origin=UNKNOWN");
+                    DescribeValidator(captured);
+                }
+                throw error; // Diagnostic profile never redispatches/rereads the original message.
+            }
             IMethodCallMessage call = message as IMethodCallMessage;
             if (call == null) throw error;
             return new ReturnMessage(error, call);
         } catch { State.Fail(); throw; }
         finally { try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); } catch { State.Fail(); throw; } }
+    }
+    internal void DiagnoseCaptured(MethodInfo method,int count)
+    { record("CONTEXT_ARGUMENT_REFUSAL argument="+name+" denial="+count+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED caller-origin=UNKNOWN");DescribeValidator(method); }
+    void DescribeValidator(MethodInfo method)
+    {
+        if (method == null || System.Runtime.Remoting.RemotingServices.IsTransparentProxy(method) || method.GetType() != typeof(object).GetMethod("GetType").GetType()
+            || method.Module != contract.Module || method.DeclaringType != contract || method.MetadataToken != 0x06000255 || !method.IsGenericMethod) return;
+        string phase = "GENERIC_ARGUMENT"; int chars = 0;
+        Action<string> emit = delegate(string line) { ProbeFiles.Require(line.Length <= 2048 && chars <= 8192 - line.Length, "VALIDATOR_METADATA_BOUND"); chars += line.Length; record(line); };
+        try {
+            emit("CONTEXT_VALIDATOR_METADATA_BEGIN method=06000255 generic-definition=" + method.IsGenericMethodDefinition + " caller-origin=UNKNOWN values=NOT_INSPECTED");
+            Type[] arguments = method.GetGenericArguments(); ProbeFiles.Require(arguments.Length == 1, "VALIDATOR_ONE_GENERIC_ARGUMENT"); Type actual = arguments[0];
+            ProbeFiles.Require(actual != null && actual.GetType() == typeof(object).GetType() && !actual.Assembly.IsDynamic && !actual.Assembly.ReflectionOnly, "VALIDATOR_RUNTIME_TYPE");
+            if (actual.IsGenericParameter) { emit("CONTEXT_VALIDATOR_TYPE kind=UNBOUND_GENERIC_PARAMETER name=" + ProjectConstructorProbe.Text(actual.Name)); return; }
+            emit("CONTEXT_VALIDATOR_TYPE full-name=" + ProjectConstructorProbe.Text(actual.FullName) + " assembly=" + ProjectConstructorProbe.Text(actual.Assembly.FullName)
+                + " module=" + ProjectConstructorProbe.Text(actual.Module.ScopeName) + " token=" + actual.MetadataToken.ToString("X8") + " flags=" + (int)actual.Attributes + " contains-generic-parameters=" + actual.ContainsGenericParameters);
+            ProbeFiles.Require(!actual.HasElementType && !actual.ContainsGenericParameters && (actual.MetadataToken & unchecked((int)0xff000000)) == 0x02000000, "VALIDATOR_CONCRETE_TYPEDEF");
+            phase = "CONSTRUCTORS"; ConstructorInfo[] constructors = actual.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+            ProbeFiles.Require(constructors.Length <= 8, "VALIDATOR_CONSTRUCTOR_BOUND");
+            foreach (ConstructorInfo ctor in constructors) {
+                emit("CONTEXT_VALIDATOR_CTOR token=" + ctor.MetadataToken.ToString("X8") + " flags=" + (int)ctor.Attributes + " public=" + ctor.IsPublic + " static=" + ctor.IsStatic);
+                phase = "CONSTRUCTOR_PARAMETERS"; ParameterInfo[] parameters = ctor.GetParameters(); ProbeFiles.Require(parameters.Length <= 6, "VALIDATOR_PARAMETER_BOUND");
+                for (int i = 0; i < parameters.Length; i++) {
+                    Type type = parameters[i].ParameterType; ProbeFiles.Require(type.GetType() == typeof(object).GetType(), "VALIDATOR_PARAMETER_RUNTIME_TYPE");
+                    emit("CONTEXT_VALIDATOR_CTOR_PARAMETER ctor=" + ctor.MetadataToken.ToString("X8") + " index=" + i + " type=" + ProjectConstructorProbe.Text(type.FullName) + " assembly=" + ProjectConstructorProbe.Text(type.Assembly.FullName));
+                }
+            }
+            phase = "GENERIC_CONSTRAINTS"; Type parameter = method.GetGenericMethodDefinition().GetGenericArguments()[0]; Type[] constraints = parameter.GetGenericParameterConstraints();
+            ProbeFiles.Require(constraints.Length <= 6, "VALIDATOR_CONSTRAINT_BOUND"); emit("CONTEXT_VALIDATOR_CONSTRAINT_FLAGS value=" + (int)parameter.GenericParameterAttributes);
+            foreach (Type constraint in constraints) emit("CONTEXT_VALIDATOR_CONSTRAINT type=" + ProjectConstructorProbe.Text(constraint.FullName) + " assembly=" + ProjectConstructorProbe.Text(constraint.Assembly.FullName));
+            emit("CONTEXT_VALIDATOR_METADATA_END constructors=" + constructors.Length + " constraints=" + constraints.Length + " activation=NOT_RUN");
+        } catch (Exception error) { State.Fail(); record("CONTEXT_VALIDATOR_METADATA_PARTIAL phase=" + phase + " error-type=" + ProjectConstructorProbe.Text(error.GetType().FullName) + " activation=NOT_RUN"); }
     }
 }
 internal sealed class ContextImporterDenyHolder
@@ -659,8 +917,11 @@ internal static class ProjectConstructorProbe
     static string ownedXmlPinCase;
     static string ownedStoreDiagnosticCase;
     static readonly string[] OwnedStoreDiagnosticCases = { "positive", "declared", "forged", "custom", "foreign", "method-throw", "args", "recorder", "reentry", "saturated" };
-    static bool ExistsOriginal { get { return mode == "original-project-content-store-exists-fixture"; } }
-    static bool ExistsOwned { get { return mode == "owned-project-content-store-exists-fixture"; } }
+    static bool GuidOriginal { get { return mode == "original-project-guid-fixture"; } }
+    static bool GuidOwned { get { return mode == "owned-project-guid-fixture"; } }
+    internal static bool GuidMode { get { return GuidOriginal || GuidOwned; } }
+    static bool ExistsOriginal { get { return mode == "original-project-content-store-exists-fixture" || GuidOriginal; } }
+    static bool ExistsOwned { get { return mode == "owned-project-content-store-exists-fixture" || GuidOwned; } }
     static bool ExistsMode { get { return ExistsOriginal || ExistsOwned; } }
     static bool ContentDiagnosticsOriginal { get { return mode == "original-project-content-store-diagnostics" || ExistsOriginal; } }
     static bool ContentDiagnosticsOwned { get { return mode == "owned-project-content-store-diagnostics" || ExistsOwned; } }
@@ -774,7 +1035,7 @@ internal static class ProjectConstructorProbe
     // Private finite predicate only. Real admission uses the completed held-file pin.
     static bool ValueTupleReferencePolicy(string selectedMode, bool complete, string identity, string location, bool cache, bool reflectionOnly)
     {
-        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
+        return (selectedMode == "original-factory-empty-container" || selectedMode == "original-trace-encryptor" || selectedMode == "original-factory-registered-trace" || selectedMode == "original-project-genuine-factory" || selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture" || selectedMode == "original-project-guid-fixture") && complete && identity == ValueTupleIdentity && cache && !reflectionOnly
             && ProbeFiles.Same(location, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), ValueTupleRelativePath));
     }
     static void PinFactoryInputs()
@@ -794,10 +1055,38 @@ internal static class ProjectConstructorProbe
         factoryInputsReady = true;
         Record("FACTORY_PROFILE_READY private-pins=14 extra-reference-admission=THIS_MODE_ONLY");
     }
+    // Only the twelve actually requested/verified GUID-profile dependencies; no discovery/closure loader.
+    static readonly string[] GuidExtraFiles = { "Knx.Ets.HistoryCompare.dll", "Knx.Ets.DynamicData.dll", "Knx.Ets.ActiveTree.dll", "log4net.dll", "Newtonsoft.Json.dll", "Knx.Ets.Telemetry.Abstractions.dll", "Microsoft.Bcl.HashCode.dll", "System.Collections.Immutable.dll", "System.Text.Json.dll", "System.IO.Pipelines.dll", "System.Text.Encodings.Web.dll", "System.Reactive.dll" };
+    static readonly int[] GuidExtraSizes = { 66000, 344528, 240080, 294912, 711952, 109520, 26920, 259360, 726320, 84792, 79664, 1359952 };
+    static readonly string[] GuidExtraHashes = { "b7be3b711d244ff40e2a0deaf64fa6ead2e5437ee6f20e7ab0e998465de48b47", "29862fe6678d099706d4d40556e98f62c1a8f9dd532551ef445f4cc56fed3426", "ceec892812bde84ffa0fac4a6cc896cba5cbe56a077d7c3ca3ddabbaecf22078", "232bda95cd37864a3650834015ee76fd42fc2548176a15ceddbed386baa1812b", "e1e27af7b07eeedf5ce71a9255f0422816a6fc5849a483c6714e1b472044fa9d", "3c870c63d4b00009520421a23b3c788ceab737d0dffbc359089fd794e387edf8", "3a4e851ee5fc0f6182aa5a3d65dc56fcd6979b65334b5c3b92fbdc791457c0ab", "77d705fe51f224d77b25fc06ede39e2921f08b46a961a027d6ee49a4bb19c127", "ead4137d1b7ed06d55f609acfedfdad041977b029a9d2c7e8b596f698fedd8ac", "d881b5e01c527bb7cafa3c2482f7cbfbf158fcbb6f93efb4381b638c2d4ea6f7", "ad6be4be7e0183f3eabac3f747b834c557156942c7d2ce12039477ad0874fbfb", "2e998da005362da69f2e87186f675e930d3666ab99683dcff62d8b8b7b67bb38" };
+    static readonly string[] GuidExtraIdentities = { "Knx.Ets.HistoryCompare, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159", "Knx.Ets.DynamicData, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159", "Knx.Ets.ActiveTree, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159", "log4net, Version=3.0.3.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a", "Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed", "Knx.Ets.Telemetry.Abstractions, Version=6.0.171.0, Culture=neutral, PublicKeyToken=61439873ec5e1159", "Microsoft.Bcl.HashCode, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Collections.Immutable, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Text.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.IO.Pipelines, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Text.Encodings.Web, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51", "System.Reactive, Version=6.0.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263" };
+    static bool guidExtrasReady;
+    static bool GuidExtraResolvePolicy(string selected, bool complete, string raw, string policy, int index)
+    { return selected == "original-project-guid-fixture" && complete && index >= 0 && index < GuidExtraFiles.Length && raw == GuidExtraIdentities[index] && policy == GuidExtraIdentities[index]; }
+    static bool GuidExtraReferencePolicy(string selected, bool complete, string identity, string location, bool gac, bool reflection, bool dynamicAssembly, string directory, int index)
+    { return selected == "original-project-guid-fixture" && complete && index >= 0 && index < GuidExtraFiles.Length && identity == GuidExtraIdentities[index] && !gac && !reflection && !dynamicAssembly && !String.IsNullOrEmpty(location) && !String.IsNullOrEmpty(directory) && ProbeFiles.Same(location, Path.Combine(directory, GuidExtraFiles[index])); }
+    static void PinGuidExtras()
+    {
+        for (int i = 0; i < GuidExtraFiles.Length; i++) {
+            var file = new FileStream(ProbeFiles.Local(Path.Combine(stage, GuidExtraFiles[i]), true, false), FileMode.Open, FileAccess.Read, FileShare.Read); Inputs.Add(file);
+            ProbeFiles.Require(file.Length == GuidExtraSizes[i] && ProbeFiles.Hash(file) == GuidExtraHashes[i], "GUID_EXTRA_INPUT_PIN");
+            Record("GUID_EXTRA_PIN name=" + GuidExtraFiles[i] + " bytes=" + file.Length + " sha256=" + GuidExtraHashes[i]);
+        }
+    }
+    static Assembly ResolveGuidExtra(string raw, string policy, int index)
+    {
+        try {
+            ProbeFiles.Require(GuidExtraResolvePolicy(mode, guidExtrasReady && xmlRegistrationReady && containerInputsReady, raw, policy, index), "GUID_EXTRA_EXACT_PROFILE_REQUIRED");
+            Assembly assembly = Assembly.LoadFrom(Path.Combine(stage, GuidExtraFiles[index]));
+            ProbeFiles.Require(GuidExtraReferencePolicy(mode, guidExtrasReady && containerInputsReady, assembly.FullName, assembly.Location, assembly.GlobalAssemblyCache, assembly.ReflectionOnly, assembly.IsDynamic, stage, index), "GUID_EXTRA_PRIVATE_IDENTITY");
+            Record("GUID_EXTRA_RESOLVED identity=" + Text(assembly.FullName) + " held-pin=" + GuidExtraHashes[index]); return assembly;
+        } catch { rejected = true; throw; }
+    }
+
     static void PinXmlRegistrationInputs()
     {
         ProbeFiles.Require(XmlRegistrationOriginal && !xmlRegistrationReady && !containerInputsReady, "XML_PROFILE_NEW_MODE");
-        CountInputs(20);
+        CountInputs(GuidOriginal ? 20 + GuidExtraFiles.Length : 20);
         for (int i = 0; i < Names.Length; i++) {
             Pin(Path.Combine(stage, Names[i] + ".dll"), Hashes[i]);
             ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == FactoryPrefixSizes[i], "CONTAINER_INPUT_SIZE");
@@ -811,15 +1100,18 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(Inputs[Inputs.Count - 1].Length == ContainerSizes[i], "CONTAINER_INPUT_SIZE");
         }
         PinXmlRegistrationFile();
+        if (GuidOriginal) PinGuidExtras();
         PinValueTupleReference();
         PinPlatformFacade();
         for (int i = 0; i < Names.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, Names[i] + ".dll")).FullName == Identities[i], "CONTAINER_INPUT_IDENTITY");
         for (int i = 0; i < FactoryExtraNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, FactoryExtraNames[i] + ".dll")).FullName == FactoryExtraIdentities[i], "CONTAINER_INPUT_IDENTITY");
         for (int i = 0; i < ContainerNames.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, ContainerNames[i] + ".dll")).FullName == ContainerIdentities[i], "CONTAINER_INPUT_IDENTITY");
         ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, XmlRegistrationName + ".dll")).FullName == XmlRegistrationIdentity, "XML_INPUT_IDENTITY");
+        if (GuidOriginal) { for (int i = 0; i < GuidExtraFiles.Length; i++) ProbeFiles.Require(AssemblyName.GetAssemblyName(Path.Combine(stage, GuidExtraFiles[i])).FullName == GuidExtraIdentities[i], "GUID_EXTRA_INPUT_IDENTITY"); guidExtrasReady = true; }
         xmlRegistrationReady = true;
         containerInputsReady = true;
-        Record("XML_REGISTRATION_PROFILE_READY private-pins=20 total-bytes=24466936 extra-reference-admission=THIS_MODE_ONLY");
+        if (GuidOriginal) Record("GUID_EXTRA_PROFILE_READY private-pins=32 total-bytes=28770936 exact-extra-references=12");
+        else Record("XML_REGISTRATION_PROFILE_READY private-pins=20 total-bytes=24466936 extra-reference-admission=THIS_MODE_ONLY");
     }
 
     static void PinXmlRegistrationFile()
@@ -832,10 +1124,10 @@ internal static class ProjectConstructorProbe
         Record("XML_REGISTRATION_PIN bytes=" + stream.Length + " sha256=" + XmlRegistrationHash);
     }
     static bool XmlRegistrationResolvePolicy(string selectedMode, bool complete, string requested, string policy)
-    { return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture") && complete && requested == XmlRegistrationIdentity && policy == XmlRegistrationIdentity; }
+    { return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture" || selectedMode == "original-project-guid-fixture") && complete && requested == XmlRegistrationIdentity && policy == XmlRegistrationIdentity; }
     static bool XmlRegistrationReferencePolicy(string selectedMode, bool complete, string identity, string location, bool gac, bool reflectionOnly, bool dynamicAssembly, string directory)
     {
-        return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture") && complete && identity == XmlRegistrationIdentity && !gac && !reflectionOnly && !dynamicAssembly
+        return (selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture" || selectedMode == "original-project-guid-fixture") && complete && identity == XmlRegistrationIdentity && !gac && !reflectionOnly && !dynamicAssembly
             && !String.IsNullOrEmpty(location) && !String.IsNullOrEmpty(directory) && ProbeFiles.Same(location, Path.Combine(directory, XmlRegistrationName + ".dll"));
     }
     static Assembly ResolveXmlRegistration(string requested, string policy)
@@ -907,7 +1199,7 @@ internal static class ProjectConstructorProbe
     }
     static bool ContainerReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference" && selectedMode != "original-project-content-store-diagnostics" && selectedMode != "original-project-content-store-exists-fixture") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference" && selectedMode != "original-project-content-store-diagnostics" && selectedMode != "original-project-content-store-exists-fixture" && selectedMode != "original-project-guid-fixture") || !complete || reflectionOnly) return false;
         for (int i = 0; i < ContainerNames.Length; i++)
             if (identity == ContainerIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, ContainerNames[i] + ".dll"))) return true;
         return false;
@@ -915,7 +1207,7 @@ internal static class ProjectConstructorProbe
     // Private finite policy seam; real facts come from the completed pin and Assembly.
     static bool FactoryReferencePolicy(string selectedMode, bool complete, string identity, string location, bool reflectionOnly)
     {
-        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference" && selectedMode != "original-project-content-store-diagnostics" && selectedMode != "original-project-content-store-exists-fixture") || !complete || reflectionOnly) return false;
+        if ((selectedMode != "original-factory" && selectedMode != "original-factory-bcl9" && selectedMode != "original-factory-empty-container" && selectedMode != "original-trace-encryptor" && selectedMode != "original-factory-registered-trace" && selectedMode != "original-project-genuine-factory" && selectedMode != "original-project-genuine-factory-resources" && selectedMode != "original-project-undo-provider-denied" && selectedMode != "original-project-undo-provider-factory" && selectedMode != "original-project-large-string-cache-denied" && selectedMode != "original-project-context-denied" && selectedMode != "original-project-context-xml-registration" && selectedMode != "original-project-content-store-reference" && selectedMode != "original-project-content-store-diagnostics" && selectedMode != "original-project-content-store-exists-fixture" && selectedMode != "original-project-guid-fixture") || !complete || reflectionOnly) return false;
         for (int i = 0; i < FactoryExtraNames.Length; i++)
             if (identity == FactoryExtraIdentities[i] && ProbeFiles.Same(location, Path.Combine(stage, FactoryExtraNames[i] + ".dll"))) return true;
         return false;
@@ -986,6 +1278,11 @@ internal static class ProjectConstructorProbe
             if (!selected) unexpected = true;
             Record("XML_REGISTRATION_AUDIT allowed=" + selected + " identity=" + Text(assembly.FullName) + " held-pin-sha256=" + (selected ? XmlRegistrationHash : "NOT_ESTABLISHED") + " private-origin-only=True detection=after-load");
         }
+        for (int i = 0; i < GuidExtraFiles.Length; i++) if (String.Equals(assembly.GetName().Name, Path.GetFileNameWithoutExtension(GuidExtraFiles[i]), StringComparison.OrdinalIgnoreCase)) {
+            bool selected = GuidExtraReferencePolicy(mode, guidExtrasReady && xmlRegistrationReady && containerInputsReady, assembly.FullName, assembly.IsDynamic ? "UNAVAILABLE_DYNAMIC" : assembly.Location, !assembly.IsDynamic && assembly.GlobalAssemblyCache, assembly.ReflectionOnly, assembly.IsDynamic, stage, i);
+            allowed = selected; if (!selected) unexpected = true;
+            Record("GUID_EXTRA_AUDIT allowed=" + selected + " identity=" + Text(assembly.FullName) + " held-pin=" + (selected ? GuidExtraHashes[i] : "NOT_ESTABLISHED") + " detection=after-load prevention=NOT_ESTABLISHED");
+        }
         Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         if (!allowed) { unexpected = true; Record("UNEXPECTED_ASSEMBLY_BLOCKER detection=after-load prevention=NOT_ESTABLISHED"); }
     }
@@ -1035,7 +1332,7 @@ internal static class ProjectConstructorProbe
     // Separate new-mode budget: old Factory-only reset behavior above is unchanged.
     static bool ProjectResourcePolicy(string selectedMode, bool complete, bool budget, int window, bool suspended, bool pinned, string request, bool requesterNull, bool matches, int count)
     {
-        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
+        return (selectedMode == "original-project-genuine-factory-resources" || selectedMode == "original-project-undo-provider-denied" || selectedMode == "original-project-undo-provider-factory" || selectedMode == "original-project-large-string-cache-denied" || selectedMode == "original-project-context-denied" || selectedMode == "original-project-context-xml-registration" || selectedMode == "original-project-content-store-reference" || selectedMode == "original-project-content-store-diagnostics" || selectedMode == "original-project-content-store-exists-fixture" || selectedMode == "original-project-guid-fixture") && complete && budget && (window == 1 || window == 2) && !suspended && pinned
             && (request == AutofacResourceEnGb || request == AutofacResourceEn) && (requesterNull ? !matches : matches) && count >= 1 && count <= 8;
     }
     static bool AllowProjectResourceNull(string request, bool pinned, bool requesterNull, bool matches, Assembly requester)
@@ -1096,6 +1393,7 @@ internal static class ProjectConstructorProbe
     {
         Record("PROJECT_RESOLVE requested=" + Text(args.Name));
         if (AllowAutofacResourceNull(args)) return null;
+        if (GuidOriginal) for (int i = 0; i < GuidExtraFiles.Length; i++) if (args.Name == GuidExtraIdentities[i]) return ResolveGuidExtra(args.Name, AppDomain.CurrentDomain.ApplyPolicy(args.Name), i);
         if (XmlRegistrationOriginal && args.Name == XmlRegistrationIdentity) {
             string policy = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
             return ResolveXmlRegistration(args.Name, policy);
@@ -2383,6 +2681,51 @@ internal static class ProjectConstructorProbe
         }); }); });
     }
 
+    static ProjectGuidFixture activeGuid;
+    static ProjectGuidFixture GuidContract(Type owner, bool original)
+    {
+        ProbeFiles.Require(GuidMode && owner != null && owner.GetType() == typeof(object).GetType() && PublicInterface(owner), "GUID_OWNER");
+        MethodInfo get = owner.GetMethod("get_ProjectGuid", BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly);
+        MethodInfo set = owner.GetMethod("set_ProjectGuid", BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly);
+        foreach (MethodInfo m in new MethodInfo[] { get, set }) ProbeFiles.Require(m != null && m.GetType() == typeof(object).GetMethod("GetType").GetType() && m.Module == owner.Module && m.DeclaringType == owner && !m.IsStatic && m.IsPublic && m.IsSpecialName && !m.IsGenericMethod && !m.ContainsGenericParameters && (int)m.Attributes == 3526 && m.CallingConvention == (CallingConventions.Standard|CallingConventions.HasThis), "GUID_METHOD_PROFILE");
+        ParameterInfo[] parameters = set.GetParameters();
+        ProbeFiles.Require(get.ReturnType == typeof(Guid) && get.GetParameters().Length == 0 && set.ReturnType == typeof(void) && parameters.Length == 1 && parameters[0].ParameterType == typeof(Guid) && !parameters[0].IsOut, "GUID_EXACT_ABI");
+        if (original) ProbeFiles.Require(GuidOriginal && owner.MetadataToken == 0x02000057 && owner.Assembly.FullName == OmIdentity && ProbeFiles.Same(owner.Assembly.Location, Path.Combine(stage,"Knx.Ets.ObjectModel.dll")) && get.MetadataToken == 0x060002f6 && set.MetadataToken == 0x060002f7, "GUID_ORIGINAL_PIN");
+        return new ProjectGuidFixture(get,set);
+    }
+    static void OwnedGuidFixture()
+    {
+        for (int i = 0; i < GuidExtraFiles.Length; i++) {
+            string path = Path.Combine(stage, GuidExtraFiles[i]); string identity = GuidExtraIdentities[i];
+            ProbeFiles.Require(GuidExtraResolvePolicy("original-project-guid-fixture", true, identity, identity, i)
+                && !GuidExtraResolvePolicy("original-project-content-store-exists-fixture", true, identity, identity, i)
+                && !GuidExtraResolvePolicy("original-project-guid-fixture", false, identity, identity, i)
+                && !GuidExtraResolvePolicy("original-project-guid-fixture", true, identity + ".resources", identity, i)
+                && GuidExtraReferencePolicy("original-project-guid-fixture", true, identity, path, false, false, false, stage, i)
+                && !GuidExtraReferencePolicy("original-project-guid-fixture", true, identity, path, true, false, false, stage, i), "OWNED_GUID_EXTRA_FIXED_POLICY");
+        }
+        Record("OWNED_GUID_EXTRA_POLICY_PASS entries=12 predicate-only=True actual-DLLs=NOT_RUN");
+        Assembly a=Assembly.LoadFrom(fixture); Func<string,Type> type=delegate(string n){return a.GetType("Owned.Task009."+n,true);};
+        Type owner=type("IGuidProjectStoreFixture"), streamType=type("ICacheStreamFixture"), idType=type("ScopedIdFixture"), typed=type("GuidTypedFixture");
+        MethodInfo[] methods=StreamContract(streamType,false); var stream=new StreamStoreDenyProxy(streamType,methods,Record);
+        PrepareExistsStore(owner,owner.GetMethod("get_Project"),streamType,methods[1],false,Record); activeGuid=GuidContract(owner,false);
+        object id=CreateFixtureId(idType,idType.GetConstructor(new Type[]{typeof(uint)}),idType.GetMethod("get_ProjectNumber"));
+        var store=new LargeStringCacheStoreProxy(owner,owner.GetMethod("get_Id"),id,owner.GetMethod("get_LargeStringCache"),streamType,stream.GetTransparentProxy(),Record,activeContent,activeGuid);
+        activeExists.Bind(store.State,activeContent);
+        WithContentLifetime(delegate { WithCacheLifetime(store,stream,delegate { WithProjectResourceBudget(delegate { WithProjectResourceWindow(2,delegate {
+            object proxy=store.GetTransparentProxy();typed.GetMethod("RoundTrip").Invoke(null,new object[]{proxy});
+            ProbeFiles.Require(activeGuid.Current==Guid.Empty && !activeGuid.Faulted && !store.State.Faulted,"OWNED_GUID_ROUNDTRIP");
+            Record("OWNED_GUID_ROUNDTRIP_PASS initial-empty=True repeated-read-write=True copied=True fixture-only=True values=NOT_LOGGED");
+            string descriptor = null; var deniedContext = new ContextArgumentDenyProxy(type("IContextArgumentFixture"), "owned-smoke", delegate(string line) { if (line.StartsWith("CONTEXT_ARGUMENT_REFUSAL ", StringComparison.Ordinal)) descriptor = line; Record(line); });
+            Type control = type("ContextOwnedControl"); control.GetField("Context").SetValue(null, deniedContext.GetTransparentProxy()); control.GetMethod("ContextProject").Invoke(null, new object[0]);
+            ProbeFiles.Require(deniedContext.State.Entries == 1 && deniedContext.State.Faulted && descriptor != null && descriptor.Contains("name=get_Project"), "OWNED_CONTEXT_DESCRIPTOR_SMOKE");
+            Record("OWNED_CONTEXT_DESCRIPTOR_SMOKE_PASS denied=1 method=get_Project values=NOT_INSPECTED"); GC.KeepAlive(deniedContext);
+            OwnedValidatorSmoke(a);
+            try { typed.GetMethod("Unsupported").Invoke(null,new object[]{proxy}); } catch (TargetInvocationException) { }
+            ProbeFiles.Require(store.State.Faulted,"OWNED_GUID_UNKNOWN_REFUSED");Record("OWNED_GUID_UNSUPPORTED_PASS fatal-final-audit=True");
+        }); }); }); });
+    }
+
     static ContentExistsPolicy activeExists;
     static string ownedExistsCase;
     static readonly string[] OwnedExistsCases = { "positive", "second", "next-denial", "wrong-receiver", "shape", "outside", "off-thread", "nested", "late", "malformed", "recorder", "restore", "budget", "audit" };
@@ -2461,8 +2804,8 @@ internal static class ProjectConstructorProbe
     static void CheckContentStore(string phase)
     {
         if (ExistsMode) {
-            try { CheckExists(phase); }
-            finally { if (activeContent != null) ContentFinalAudit(activeContent.Attempts, activeContent.Replies, activeContent.Faulted, activeContent.Proxy.State.Entries, activeContent.Proxy.State.Faulted, activeContent.Lifetime, phase); }
+            try { if (GuidMode && activeGuid != null) activeGuid.Audit(phase, Record); }
+            finally { try { CheckExists(phase); } finally { if (activeContent != null) ContentFinalAudit(activeContent.Attempts, activeContent.Replies, activeContent.Faulted, activeContent.Proxy.State.Entries, activeContent.Proxy.State.Faulted, activeContent.Lifetime, phase); } }
             return;
         }
         if (!ContentMode || activeContent == null) return;
@@ -2763,13 +3106,96 @@ internal static class ProjectConstructorProbe
         return new ContextConstructionApi { Project = project, Collection = collection, Parent = parent, Context = context, Factory = factory, Contract = contract, Store = store, Callback = callback,
             CollectionConstructor = constructors[0], ProjectConstructor = constructors[1], Dispose = dispose };
     }
+    static ContextValidatorAdapter activeValidator;
+    static ContextValidatorAdapter ValidatorApi(Type context,Type project,Type collection,Type parent,Type domCollection,Type checker,Type validatorBase,Type style,object styleValue,bool original,Func<object> retainedCollection,Func<bool> phase)
+    {
+        foreach(Type type in new Type[]{context,project,collection,parent,domCollection,checker,validatorBase,style})ProbeFiles.Require(type!=null&&type.GetType()==typeof(object).GetType()&&!type.ContainsGenericParameters&&!type.Assembly.IsDynamic&&!type.Assembly.ReflectionOnly,"VALIDATOR_RUNTIME_TYPES");
+        ProbeFiles.Require(PublicInterface(context)&&PublicInterface(parent)&&PublicInterface(domCollection)&&parent.IsAssignableFrom(project)&&domCollection.IsAssignableFrom(collection)&&checker.IsPublic&&checker.IsClass&&!checker.IsAbstract&&!checker.IsGenericType&&validatorBase.IsAssignableFrom(checker)&&style.IsEnum&&styleValue!=null&&styleValue.GetType()==style,"VALIDATOR_CLASS_INTERFACES");
+        MethodInfo definition=context.GetMethod("GetValidator",BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(definition!=null&&definition.IsGenericMethodDefinition&&definition.GetGenericArguments().Length==1&&(int)definition.Attributes==1478&&definition.CallingConvention==(CallingConventions.Standard|CallingConventions.HasThis),"VALIDATOR_GENERIC_DEFINITION");
+        Type generic=definition.GetGenericArguments()[0];Type[] constraints=generic.GetGenericParameterConstraints();ParameterInfo[] args=definition.GetParameters();
+        ProbeFiles.Require(generic.GenericParameterAttributes==GenericParameterAttributes.None&&constraints.Length==1&&constraints[0]==validatorBase&&definition.ReturnType==generic&&args.Length==2&&args[0].ParameterType==parent&&args[1].ParameterType==domCollection,"VALIDATOR_GENERIC_SIGNATURE");
+        ConstructorInfo ctor=checker.GetConstructor(new Type[]{collection,project});
+        ProbeFiles.Require(ctor!=null&&ctor.GetType()==typeof(object).GetConstructor(Type.EmptyTypes).GetType()&&ctor.IsPublic&&!ctor.IsStatic&&ctor.DeclaringType==checker&&(int)ctor.Attributes==6278,"VALIDATOR_EXACT_PUBLIC_CTOR");
+        ParameterInfo[] vector=ctor.GetParameters();ProbeFiles.Require(vector.Length==2&&vector[0].ParameterType==collection&&vector[1].ParameterType==project,"VALIDATOR_CTOR_VECTOR");
+        Type projectReturn=original?project.Assembly.GetType("Knx.Ets.ObjectModel.Project.IProject",true):project;
+        ProbeFiles.Require(projectReturn.IsAssignableFrom(project)&&(!original||(projectReturn.GetType()==typeof(object).GetType()&&projectReturn.Module==context.Module&&PublicInterface(projectReturn)&&!projectReturn.IsGenericType)),"VALIDATOR_PROJECT_RETURN_INTERFACE");
+        string[] names={"get_GroupAddressStyle","GetNextPuid","SetProjectModified","get_Project"};Type[] returns={style,typeof(int),typeof(void),projectReturn};int[] tokens={0x06000267,0x06000269,0x06000256,0x06000261};MethodInfo[] scalar=new MethodInfo[4];
+        for(int i=0;i<names.Length;i++){
+            scalar[i]=context.GetMethod(names[i],BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly,null,Type.EmptyTypes,null);MethodInfo method=scalar[i];
+            ProbeFiles.Require(method!=null&&method.Module==context.Module&&method.DeclaringType==context&&!method.IsStatic&&method.IsPublic&&!method.IsGenericMethod&&method.ReturnType==returns[i]&&method.GetParameters().Length==0&&(int)method.Attributes==(i==0||i==3?3526:1478)&&method.CallingConvention==(CallingConventions.Standard|CallingConventions.HasThis),"VALIDATOR_SCALAR_PROFILE:"+names[i]);
+            if(original)ProbeFiles.Require(method.MetadataToken==tokens[i],"VALIDATOR_SCALAR_TOKEN");
+        }
+        if(original)ProbeFiles.Require(GuidOriginal&&context.Assembly.FullName==OmIdentity&&context.Module==project.Module&&checker.Module==project.Module&&collection.Module==project.Module&&context.MetadataToken==0x02000044&&project.MetadataToken==0x020003a5&&collection.MetadataToken==0x020003bd&&checker.MetadataToken==0x02000e89&&(int)checker.Attributes==1048577&&ctor.MetadataToken==0x06008a52&&definition.MetadataToken==0x06000255&&checker.FullName=="Knx.Ets.ObjectModel.ConsistencyRules.ProjectConsistencyChecker"&&validatorBase.FullName=="Knx.Ets.ObjectModel.ConsistencyRules.Validator"&&style.MetadataToken==0x0200008e&&style.Assembly.FullName==CommonIdentity&&ProbeFiles.Same(context.Assembly.Location,Path.Combine(stage,"Knx.Ets.ObjectModel.dll")),"VALIDATOR_ORIGINAL_PINNED_PROFILE");
+        MethodInfo closed=definition.MakeGenericMethod(new Type[]{checker});ProbeFiles.Require(closed.ReturnType==checker&&!closed.ContainsGenericParameters,"VALIDATOR_CLOSED_METHOD");
+        Record("CONTEXT_VALIDATOR_API_READY type="+Text(checker.FullName)+" ctor="+ctor.MetadataToken.ToString("X8")+" generic-method="+definition.MetadataToken.ToString("X8")+" scalar-fixtures=4 activation=NOT_YET_RUN");
+        return new ContextValidatorAdapter(project,collection,checker,ctor,closed,scalar,new Type[]{parent,domCollection},styleValue,retainedCollection,phase,ContextArgumentRecord);
+    }
+    static void PrepareNotificationApi(ContextValidatorAdapter adapter,Type context,Type service,Type implementation,bool original,Func<bool> phase)
+    {
+        foreach(Type type in new Type[]{service,implementation})ProbeFiles.Require(type.GetType()==typeof(object).GetType()&&!type.IsGenericType&&!type.ContainsGenericParameters&&!type.Assembly.IsDynamic&&!type.Assembly.ReflectionOnly,"NOTIFICATION_RUNTIME_TYPES");
+        MethodInfo getter=context.GetMethod("get_ProjectChangedNotificationService",BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly,null,Type.EmptyTypes,null);
+        ConstructorInfo ctor=implementation.GetConstructor(Type.EmptyTypes);
+        ProbeFiles.Require(PublicInterface(service)&&implementation.IsPublic&&implementation.IsClass&&!implementation.IsAbstract&&service.IsAssignableFrom(implementation)&&typeof(IDisposable).IsAssignableFrom(implementation)&&getter!=null&&getter.DeclaringType==context&&getter.Module==context.Module&&getter.IsPublic&&!getter.IsStatic&&!getter.IsGenericMethod&&getter.ReturnType==service&&getter.GetParameters().Length==0&&(int)getter.Attributes==3526&&getter.CallingConvention==(CallingConventions.Standard|CallingConventions.HasThis)&&ctor!=null&&ctor.GetType()==typeof(object).GetConstructor(Type.EmptyTypes).GetType()&&ctor.DeclaringType==implementation&&ctor.IsPublic&&!ctor.IsStatic&&(int)ctor.Attributes==6278,"NOTIFICATION_EXACT_PUBLIC_API");
+        if(original)ProbeFiles.Require(GuidOriginal&&service.Module==context.Module&&implementation.Module==context.Module&&service.Assembly.FullName==OmIdentity&&(int)service.Attributes==1048737&&(int)implementation.Attributes==1048577&&service.FullName=="Knx.Ets.ObjectModel.IProjectChangedNotificationService"&&implementation.FullName=="Knx.Ets.ObjectModel.ProjectChangedNotificationService"&&getter.MetadataToken==0x0600026d&&ctor.MetadataToken==0x060004ee,"NOTIFICATION_PINNED_ORIGINAL_API");
+        adapter.ConfigureNotification(getter,ctor,implementation,phase);Record("CONTEXT_NOTIFICATION_API_READY ctor="+ctor.MetadataToken.ToString("X8")+" activation=NOT_YET_RUN owner=CALLER_NOT_INVENTED");
+    }
+    [ThreadStatic] static bool guidUndoFactoryActive;
+    static object contextGenuineFactory;
+    internal static bool GuidUndoProviderReferenceEligible()
+    { return GuidOriginal&&guidUndoFactoryActive&&guidProjectDisposal&&contextLifetime&&projectResourceBudgetActive&&projectResourceWindow==0&&projectResourceCallbackSuspended; }
+    static void PrepareUndoManagerApi(ContextValidatorAdapter adapter,Type context,Type result,Type factoryContract,Type factoryClass,Type idType,object id,Func<object> factory,Func<object> contextValue,bool original,Func<bool> phase)
+    {
+        foreach(Type type in new Type[]{context,result,factoryContract,factoryClass,idType})ProbeFiles.Require(type.GetType()==typeof(object).GetType()&&!type.IsGenericType&&!type.ContainsGenericParameters&&!type.Assembly.IsDynamic&&!type.Assembly.ReflectionOnly,"UNDO_CONTEXT_RUNTIME_TYPES");
+        MethodInfo getter=context.GetMethod("get_UndoManager",BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly,null,Type.EmptyTypes,null);
+        MethodInfo method=factoryContract.GetMethod("UndoManager",BindingFlags.Public|BindingFlags.Instance|BindingFlags.DeclaredOnly,null,new Type[]{idType,context},null);
+        ProbeFiles.Require(PublicInterface(context)&&PublicInterface(factoryContract)&&factoryClass.IsPublic&&factoryClass.IsClass&&factoryContract.IsAssignableFrom(factoryClass)&&result.IsPublic&&result.IsClass&&!result.IsAbstract&&typeof(IDisposable).IsAssignableFrom(result)&&id!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(id)&&id.GetType()==idType&&getter!=null&&getter.DeclaringType==context&&getter.IsPublic&&!getter.IsStatic&&!getter.IsGenericMethod&&getter.ReturnType==result&&getter.GetParameters().Length==0&&(int)getter.Attributes==3526&&getter.CallingConvention==(CallingConventions.Standard|CallingConventions.HasThis)&&method!=null&&method.DeclaringType==factoryContract&&method.IsPublic&&!method.IsStatic&&!method.IsGenericMethod&&method.ReturnType==result&&(int)method.Attributes==1478&&method.CallingConvention==(CallingConventions.Standard|CallingConventions.HasThis),"UNDO_CONTEXT_EXACT_PUBLIC_FACTORY");
+        ParameterInfo[] parameters=method.GetParameters();ProbeFiles.Require(parameters.Length==2&&parameters[0].ParameterType==idType&&parameters[1].ParameterType==context,"UNDO_CONTEXT_FACTORY_PARAMETERS");
+        if(original)ProbeFiles.Require(GuidOriginal&&context.Assembly.FullName==OmIdentity&&result.Module==context.Module&&factoryContract.Module==context.Module&&factoryClass.Module==context.Module&&result.MetadataToken==0x02000131&&(int)result.Attributes==1048577&&result.FullName=="Knx.Ets.ObjectModel.UndoRedo.UndoManager"&&getter.MetadataToken==0x06000257&&method.MetadataToken==0x060001fd&&idType.FullName=="Knx.Ets.Ids.Project.ProjectId"&&idType.Assembly.FullName=="Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159","UNDO_CONTEXT_ORIGINAL_TOKENS");
+        adapter.ConfigureUndo(getter,result,delegate{
+            object actualFactory=factory(),actualContext=contextValue();
+            ProbeFiles.Require(actualFactory!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualFactory)&&actualFactory.GetType()==factoryClass&&actualContext!=null&&context.IsInstanceOfType(actualContext),"UNDO_CONTEXT_ACTUAL_ARGUMENTS");
+            ProbeFiles.Require(!guidUndoFactoryActive,"UNDO_CONTEXT_FACTORY_NONNESTED");guidUndoFactoryActive=true;
+            try{return method.Invoke(actualFactory,new object[]{id,actualContext});}finally{guidUndoFactoryActive=false;}
+        },phase);
+        Record("CONTEXT_UNDO_API_READY method="+method.MetadataToken.ToString("X8")+" ctor=NOT_INVOKED_BY_HOST result="+Text(result.FullName)+" activation=NOT_YET_RUN");
+    }
+    static void PrepareOriginalValidator(ContextConstructionApi api)
+    {
+        Assembly om=api.Project.Assembly;Type style=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Common.Types.dll")).GetType(EnumName,true);FieldInfo literal=style.GetField(ReviewedLiteral,BindingFlags.Public|BindingFlags.Static|BindingFlags.DeclaredOnly);
+        ProbeFiles.Require(literal!=null&&literal.MetadataToken==0x04000176&&literal.IsLiteral&&Enum.GetUnderlyingType(style)==typeof(byte)&&Object.Equals(literal.GetRawConstantValue(),(byte)1),"VALIDATOR_REVIEWED_STYLE");
+        activeValidator=ValidatorApi(api.Context,api.Project,api.Collection,api.Parent,om.GetType("Knx.Ets.ObjectModel.IDomCollection",true),om.GetType("Knx.Ets.ObjectModel.ConsistencyRules.ProjectConsistencyChecker",true),om.GetType("Knx.Ets.ObjectModel.ConsistencyRules.Validator",true),style,Enum.ToObject(style,literal.GetRawConstantValue()),true,delegate{return contextRetained==null?null:contextRetained[6];},delegate{return contextLifetime&&CacheWindowEligible();});
+        PrepareNotificationApi(activeValidator,api.Context,om.GetType("Knx.Ets.ObjectModel.IProjectChangedNotificationService",true),om.GetType("Knx.Ets.ObjectModel.ProjectChangedNotificationService",true),true,GuidProjectDisposalEligible);
+    }
+    static void OwnedValidatorSmoke(Assembly assembly)
+    {
+        Func<string,Type> type=delegate(string name){return assembly.GetType("Owned.Task009."+name,true);};
+        Type c=type("ValidatorCollectionFixture"),p=type("ValidatorProjectFixture"),context=type("IValidatorContextFixture"),style=type("ValidatorStyleFixture");
+        object collection=c.GetConstructor(Type.EmptyTypes).Invoke(new object[0]),project=p.GetConstructor(Type.EmptyTypes).Invoke(new object[0]);
+        activeValidator=ValidatorApi(context,p,c,type("IValidatorParentFixture"),type("IValidatorCollectionFixture"),type("ValidatorCheckerFixture"),type("ValidatorBaseFixture"),style,Enum.ToObject(style,(byte)1),false,delegate{return collection;},delegate{return CacheWindowEligible();});
+        bool notificationPhase=false;PrepareNotificationApi(activeValidator,context,type("INotificationServiceFixture"),type("NotificationServiceFixture"),false,delegate{return notificationPhase&&CacheWindowEligible();});
+        object ownedValidatorContext=null;
+        object ownedUndoFactory=type("ValidatorUndoFactoryFixture").GetConstructor(Type.EmptyTypes).Invoke(new object[0]);
+        PrepareUndoManagerApi(activeValidator,context,type("ValidatorUndoManagerFixture"),type("IValidatorUndoFactoryFixture"),type("ValidatorUndoFactoryFixture"),p,project,delegate{return ownedUndoFactory;},delegate{return ownedValidatorContext;},false,delegate{return notificationPhase&&CacheWindowEligible();});
+        var proxy=new ContextArgumentDenyProxy(context,"context",ContextArgumentRecord,activeValidator);ownedValidatorContext=proxy.GetTransparentProxy();activeValidator.Begin();
+        try{
+            type("ValidatorTypedFixture").GetMethod("RoundTrip").Invoke(null,new object[]{proxy.GetTransparentProxy(),collection,project});
+            notificationPhase=true;try{type("ValidatorTypedFixture").GetMethod("Notification").Invoke(null,new object[]{proxy.GetTransparentProxy()});type("ValidatorTypedFixture").GetMethod("Undo").Invoke(null,new object[]{proxy.GetTransparentProxy()});}finally{notificationPhase=false;}
+            Record("OWNED_NOTIFICATION_ROUNDTRIP_PASS genuine-owned-ctor=1 cached-reference=True fixture-disposal-phase=True host-dispose=0");
+            Record("OWNED_UNDO_FACTORY_ROUNDTRIP_PASS genuine-owned-factory=1 cached-reference=True fixture-disposal-phase=True host-dispose=0");
+            ProbeFiles.Require(proxy.State.Entries==0&&!proxy.State.Faulted,"OWNED_VALIDATOR_NO_DENIAL");Record("OWNED_VALIDATOR_ROUNDTRIP_PASS genuine-owned-ctor=1 cached-reference=True scalar-coherence=True constructor-scalar-reentry=True");
+            try{type("ValidatorTypedFixture").GetMethod("Unsupported").Invoke(null,new object[]{proxy.GetTransparentProxy()});}catch(TargetInvocationException){}
+            ProbeFiles.Require(proxy.State.Entries==1&&proxy.State.Faulted,"OWNED_VALIDATOR_UNKNOWN_DENIED");Record("OWNED_VALIDATOR_UNSUPPORTED_PASS denial=1 fatal=True");
+        }finally{activeValidator.Close();GC.KeepAlive(proxy);}
+    }
     static ContextArgumentDenyProxy contextParent, contextObject; static ContextImporterDenyHolder contextImporter;
     static object[] contextRetained; static bool contextLifetime;
     static void PrepareContextArguments(ContextConstructionApi api)
     {
         ProbeFiles.Require(ContextMode && contextParent == null && contextObject == null && contextImporter == null, "CONTEXT_PREPARE_ONCE");
         contextParent = new ContextArgumentDenyProxy(api.Parent, "parent", ContextArgumentRecord);
-        contextObject = new ContextArgumentDenyProxy(api.Context, "context", ContextArgumentRecord);
+        if(GuidOriginal){PrepareOriginalValidator(api);contextObject=new ContextArgumentDenyProxy(api.Context,"context",ContextArgumentRecord,activeValidator);}
+        else contextObject = new ContextArgumentDenyProxy(api.Context, "context", ContextArgumentRecord);
         contextImporter = new ContextImporterDenyHolder(api.Callback, api.Callback.GetGenericArguments()[7], ContextArgumentRecord);
         contextRetained = new object[] { contextParent, contextObject, contextImporter, contextParent.GetTransparentProxy(), contextObject.GetTransparentProxy(), contextImporter.Callback, null };
     }
@@ -2781,6 +3207,11 @@ internal static class ProjectConstructorProbe
     }
     static void CheckContextArguments(string phase)
     {
+        try { if(activeValidator!=null)activeValidator.Audit(phase,Record); }
+        finally { CheckContextDenials(phase); }
+    }
+    static void CheckContextDenials(string phase)
+    {
         if (!ContextMode || (contextParent == null && contextObject == null && contextImporter == null)) return;
         ContextFinalAudit(contextParent == null ? 0 : contextParent.State.Entries, contextParent != null && contextParent.State.Faulted,
             contextObject == null ? 0 : contextObject.State.Entries, contextObject != null && contextObject.State.Faulted,
@@ -2789,8 +3220,9 @@ internal static class ProjectConstructorProbe
     static void WithContextLifetime(Action run)
     {
         ProbeFiles.Require(ContextMode && !contextLifetime, "CONTEXT_LIFETIME_ONCE"); contextLifetime = true;
-        try { run(); }
+        try { if(activeValidator!=null)activeValidator.Begin(); run(); }
         finally {
+            if(activeValidator!=null)activeValidator.Close();
             contextLifetime = false;
             try { if (ContextOwned) { if (ownedContextCase == "dispose-begin-log-fault") OwnedContextDisposeLogProof(); OwnedContextPoint("late"); } }
             finally { try { CheckContextArguments("AFTER_ALL_MANAGED_CLEANUP"); } finally { GC.KeepAlive(contextRetained); } }
@@ -2812,9 +3244,20 @@ internal static class ProjectConstructorProbe
             && (int)trace.GetField("Disposals").GetValue(null) == 1, "OWNED_CONTEXT_DISPOSE_LOG_GUARANTEE");
         Record("OWNED_CONTEXT_DISPOSE_LOG_PASS project=1 dispose=1 container-dispose=1 trace-dispose=1 after-all-managed-cleanup=True");
     }
+    [ThreadStatic] static bool guidProjectDisposal;
+    static bool GuidProjectDisposalEligible()
+    { return GuidOriginal && guidProjectDisposal && contextLifetime && projectResourceBudgetActive && projectResourceWindow == 0 && !projectResourceCallbackSuspended; }
+    static void DisposeContextProject(object project)
+    {
+        if(!GuidOriginal){((IDisposable)project).Dispose();return;}
+        ProbeFiles.Require(!guidProjectDisposal && projectResourceWindow == 0 && !projectResourceCallbackSuspended,"GUID_DISPOSAL_PHASE");
+        guidProjectDisposal=true;
+        try{((IDisposable)project).Dispose();}finally{guidProjectDisposal=false;}
+    }
     static void WithContextConstruction(ContextConstructionApi api, object factory, ProjectStoreIdProxy store)
     {
         object collection = null, project = null; bool exact = false, collectionReturned = false, projectReturned = false;
+        if(GuidOriginal){ProbeFiles.Require(contextGenuineFactory==null,"CONTEXT_FACTORY_RETAIN_ONCE");contextGenuineFactory=factory;}
         ProbeFiles.Require(ContextMode && contextLifetime && factory != null && factory.GetType() == api.Factory && api.Contract.IsInstanceOfType(factory)
             && !System.Runtime.Remoting.RemotingServices.IsTransparentProxy(factory), "CONTEXT_GENUINE_FACTORY");
         try {
@@ -2835,7 +3278,7 @@ internal static class ProjectConstructorProbe
         } catch { if (ContextOwned) OwnedContextPoint("error"); throw; } finally {
             try { if (exact) {
                 try { ContextConstructionRecord("CONTEXT_PROJECT_DISPOSE_BEGIN attempts=1"); }
-                finally { try { ((IDisposable)project).Dispose(); } finally { Record("CONTEXT_PROJECT_DISPOSE_END attempts=1"); } }
+                finally { try { DisposeContextProject(project); } finally { Record("CONTEXT_PROJECT_DISPOSE_END attempts=1"); } }
             } }
             finally { try { TraceDependencyGuard(unexpected, rejected, "CONTEXT_POST_PROJECT_DISPOSAL"); } finally { GC.KeepAlive(project); GC.KeepAlive(collection); GC.KeepAlive(contextRetained); } }
         }
@@ -2964,14 +3407,17 @@ internal static class ProjectConstructorProbe
         if (CacheOriginal) { streamType = om.GetType("Knx.Ets.ObjectModel.IStreamStore", true); MethodInfo[] declarations = StreamContract(streamType, true); streamDeclarations = declarations; cacheGetter = storeType.GetMethod("get_LargeStringCache", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly); CacheGetterSignature(storeType, cacheGetter, streamType); stream = new StreamStoreDenyProxy(streamType, declarations, Record); }
         if (ExistsOriginal) PrepareExistsStore(storeType, storeType.GetMethod("get_Project", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly), streamType, streamDeclarations[1], true, Record);
         else if (ContentOriginal) PrepareContentStore(storeType, storeType.GetMethod("get_Project", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly), true, Record);
+        if (GuidOriginal) activeGuid = GuidContract(storeType, true);
         object value = CreateFixtureId(id, idCtor, idGetter); ProjectStoreIdProxy store;
-        if (ContentOriginal) store = new LargeStringCacheStoreProxy(storeType, storeGetter, value, cacheGetter, streamType, stream.GetTransparentProxy(), Record, activeContent);
+        if (GuidOriginal) { store = new LargeStringCacheStoreProxy(storeType, storeGetter, value, cacheGetter, streamType, stream.GetTransparentProxy(), Record, activeContent, activeGuid); }
+        else if (ContentOriginal) store = new LargeStringCacheStoreProxy(storeType, storeGetter, value, cacheGetter, streamType, stream.GetTransparentProxy(), Record, activeContent);
         else if (CacheOriginal) store = new LargeStringCacheStoreProxy(storeType, storeGetter, value, cacheGetter, streamType, stream.GetTransparentProxy(), Record);
         else store = new ProjectStoreIdProxy(storeType, storeGetter, value, Record);
         if (ExistsOriginal) activeExists.Bind(((LargeStringCacheStoreProxy)store).State, activeContent);
         var denied = new ProjectDenyProxy(providerType, Record);
         resourceOwner = autofac;
         PrepareContextArguments(scope);
+        if(GuidOriginal)PrepareUndoManagerApi(activeValidator,objectContext,om.GetType("Knx.Ets.ObjectModel.UndoRedo.UndoManager",true),factoryContract,factory,id,value,delegate{return contextGenuineFactory;},delegate{return contextRetained[4];},true,GuidProjectDisposalEligible);
         Action run = delegate {
             if (UndoFactoryOriginal) WithUndoFactoryProvider(trace, container, registration, factoryRegistration, factoryCtor, denied, store, undo, holder,
                 delegate(object actualFactory) { WithContextConstruction(scope, actualFactory, store); });
@@ -3812,7 +4258,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
                 || ((mode == "owned-project-context-denied" || mode == "owned-project-context-xml-registration") && args[6] == "--owned-context-case" && Array.IndexOf(OwnedContextCases, args[7]) >= 0)
-                || (ExistsOwned && args[6] == "--owned-exists-case" && Array.IndexOf(OwnedExistsCases, args[7]) >= 0)
+                || (mode == "owned-project-content-store-exists-fixture" && args[6] == "--owned-exists-case" && Array.IndexOf(OwnedExistsCases, args[7]) >= 0)
                 || (mode == "owned-project-content-store-diagnostics" && args[6] == "--owned-content-diagnostic-case" && Array.IndexOf(OwnedContentDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
@@ -3862,7 +4308,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if (ExistsOwned) OwnedExistsFixture(); else if (ContentDiagnosticsOwned && ownedContentDiagnosticCase != null) OwnedContentDiagnostics(); else if (ContentOwned) { if (ownedContentCase == null) OwnedContentContextConstruction(); else OwnedContentCasesRun(); } else if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if (GuidOwned) OwnedGuidFixture(); else if (ExistsOwned) OwnedExistsFixture(); else if (ContentDiagnosticsOwned && ownedContentDiagnosticCase != null) OwnedContentDiagnostics(); else if (ContentOwned) { if (ownedContentCase == null) OwnedContentContextConstruction(); else OwnedContentCasesRun(); } else if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }

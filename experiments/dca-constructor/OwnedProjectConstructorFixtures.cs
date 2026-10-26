@@ -1010,3 +1010,84 @@ namespace Owned.Task009
         public static void Other(object value) { GC.KeepAlive(((ICacheStreamFixture)value).Id); }
     }
 }
+
+namespace Owned.Task009
+{
+    public interface IGuidProjectStoreFixture { ScopedIdFixture Id { get; } ICacheStreamFixture LargeStringCache { get; } IEmptyContentFixture Project { get; } Guid ProjectGuid { get; set; } int Unprovided { get; } }
+    public static class GuidTypedFixture
+    {
+        public static void RoundTrip(IGuidProjectStoreFixture store)
+        {
+            if(store.ProjectGuid!=Guid.Empty)throw new InvalidOperationException("GUID_INITIAL");
+            Guid value=new Guid("48ed1311-23bd-4276-8ba7-138a4706e401");store.ProjectGuid=value;
+            if(store.ProjectGuid!=value)throw new InvalidOperationException("GUID_COPY");store.ProjectGuid=Guid.Empty;
+            if(store.ProjectGuid!=Guid.Empty)throw new InvalidOperationException("GUID_SECOND_COPY");
+        }
+        public static void Unsupported(IGuidProjectStoreFixture store) { GC.KeepAlive(store.Unprovided); }
+    }
+}
+
+namespace Owned.Task009
+{
+    public interface IValidatorParentFixture { }
+    public interface IValidatorCollectionFixture { }
+    public sealed class ValidatorProjectFixture : IValidatorParentFixture { }
+    public sealed class ValidatorCollectionFixture : IValidatorCollectionFixture { }
+    public class ValidatorBaseFixture { }
+    public enum ValidatorStyleFixture : byte { ThreeLevel=1 }
+    public interface IValidatorContextFixture
+    {
+        T GetValidator<T>(IValidatorParentFixture project,IValidatorCollectionFixture collection) where T : ValidatorBaseFixture;
+        INotificationServiceFixture ProjectChangedNotificationService { get; }
+        ValidatorUndoManagerFixture UndoManager { get; }
+        ValidatorStyleFixture GroupAddressStyle { get; }
+        int GetNextPuid();void SetProjectModified();ValidatorProjectFixture Project { get; }void Unsupported();
+    }
+    public sealed class ValidatorCheckerFixture : ValidatorBaseFixture
+    {
+        public static IValidatorContextFixture Context;public static int Constructions;
+        public readonly ValidatorCollectionFixture Collection;public readonly ValidatorProjectFixture Project;
+        public ValidatorCheckerFixture(ValidatorCollectionFixture collection,ValidatorProjectFixture project)
+        {
+            Collection=collection;Project=project;Constructions++;
+            if(!Object.ReferenceEquals(Context.Project,project)||Context.GroupAddressStyle!=ValidatorStyleFixture.ThreeLevel||Context.GetNextPuid()!=1)throw new InvalidOperationException("OWNED_VALIDATOR_NESTED_SCALARS");Context.SetProjectModified();
+        }
+    }
+    public static class ValidatorTypedFixture
+    {
+        public static void RoundTrip(IValidatorContextFixture context,ValidatorCollectionFixture collection,ValidatorProjectFixture project)
+        {
+            ValidatorCheckerFixture.Context=context;var a=context.GetValidator<ValidatorCheckerFixture>(project,collection);var b=context.GetValidator<ValidatorCheckerFixture>(project,null);
+            if(!Object.ReferenceEquals(a,b)||!Object.ReferenceEquals(a.Project,project)||!Object.ReferenceEquals(a.Collection,collection)||ValidatorCheckerFixture.Constructions!=1||!Object.ReferenceEquals(context.Project,project)||context.GroupAddressStyle!=ValidatorStyleFixture.ThreeLevel||context.GetNextPuid()!=2)throw new InvalidOperationException("OWNED_VALIDATOR_CACHE_SCALARS");context.SetProjectModified();
+        }
+        public static void Notification(IValidatorContextFixture context)
+        { var a=context.ProjectChangedNotificationService;var b=context.ProjectChangedNotificationService;if(!Object.ReferenceEquals(a,b)||a.GetType()!=typeof(NotificationServiceFixture)||NotificationServiceFixture.Constructions!=1||NotificationServiceFixture.Disposals!=0)throw new InvalidOperationException("OWNED_NOTIFICATION_CACHE"); }
+        public static void Undo(IValidatorContextFixture context)
+        { var a=context.UndoManager;var b=context.UndoManager;if(!Object.ReferenceEquals(a,b)||a.GetType()!=typeof(ValidatorUndoManagerFixture)||ValidatorUndoFactoryFixture.Calls!=1||ValidatorUndoManagerFixture.Disposals!=0)throw new InvalidOperationException("OWNED_UNDO_FACTORY_CACHE"); }
+        public static void Unsupported(IValidatorContextFixture context){context.Unsupported();}
+    }
+}
+
+namespace Owned.Task009
+{
+    public interface INotificationServiceFixture : IDisposable { }
+    public sealed class NotificationServiceFixture : INotificationServiceFixture
+    {
+        public static int Constructions,Disposals;
+        public NotificationServiceFixture(){Constructions++;}
+        public void Dispose(){Disposals++;}
+    }
+}
+
+namespace Owned.Task009
+{
+    public interface IValidatorUndoFactoryFixture { ValidatorUndoManagerFixture UndoManager(ValidatorProjectFixture id,IValidatorContextFixture context); }
+    public sealed class ValidatorUndoFactoryFixture : IValidatorUndoFactoryFixture
+    {
+        public static int Calls;
+        public ValidatorUndoManagerFixture UndoManager(ValidatorProjectFixture id,IValidatorContextFixture context)
+        { if(id==null||context==null)throw new InvalidOperationException("OWNED_UNDO_FACTORY_ARGUMENTS");Calls++;return new ValidatorUndoManagerFixture(); }
+    }
+    public sealed class ValidatorUndoManagerFixture : IDisposable
+    { public static int Disposals;public void Dispose(){Disposals++;} }
+}
