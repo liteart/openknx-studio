@@ -1,4 +1,16 @@
-# Task009 exploratory ProjectGuid fixture
+# Task009 ProjectGuid fixture and offline lifecycle
+
+## Accepted completion
+
+Task009 is Done as of 2026-10-26. Simon instructed closure after the successful
+finite offline lifecycle/tests and the remaining original DCA initialization/UI
+limitation were reported. Source commit: `727b42b47e2c1ddd8f2293a6c8b34d950f32a289`.
+Independent verification and final critical review passed; see the
+[task completion record](../tasks/Task-009.md)
+for commands, hashes, acceptance and exact limitations. The original DCA window
+remains Task010 work; vendor-code containment and hardware are not qualified.
+
+## Historical exploration contract
 
 Simon explicitly requested on2026-10-26 that related missing simple properties be
 batched and the original flow tested promptly. Exploratory local compile and a
@@ -128,8 +140,8 @@ NOT_CONTAINED, bus operations denied.
 
 Source49 changes only obsolete named source-guard expectations in the owned test
 driver. The full owned regression and independent local verification passed, as
-recorded below. Task009 awaits final source review and maintainer acceptance;
-all acceptance criteria remain unchecked. This constructor/cleanup proof does not launch
+recorded below. The completion record above supersedes the historical pending-review
+status. This constructor/cleanup proof does not launch
 the DCA application: original DCA Initialize, WPF UI, state round trips, hardware,
 and Task010 are NOT RUN.
 
@@ -162,7 +174,7 @@ legacy classes, append-only old fixture types, and unchanged legacy runtime case
 Independent verification is recorded in private final-verification49.md, SHA256
 `b2b1aea3e0667b21d1e5faefa1c8ea600cc1cc47840791bf87496899c37f32d7`.
 This remains a constructor and cleanup compatibility experiment, not a DCA
-initialization/UI/state qualification or Task009 Done.
+initialization/UI/state qualification or, by itself, task acceptance.
 
 ### Diagnostic-only source50 correction
 

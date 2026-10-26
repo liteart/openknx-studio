@@ -9,7 +9,7 @@ Implement only the required offline SDK compatibility surface
 | Field | Value |
 |---|---|
 | Task ID | Task-009 |
-| Status | In review |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host (C#/.NET) |
@@ -37,9 +37,9 @@ Supply the smallest lawful SDK-compatible services needed to progress reference 
 
 ## Acceptance Criteria
 
-- [ ] AC-001: Required shim contracts are covered by tests and map to the actual dependency inventory.
-- [ ] AC-002: Unknown service requests fail deterministically with no external side effect.
-- [ ] AC-003: No shim contains KNX encoding or hidden ETS executable calls.
+- [x] AC-001: Required shim contracts are covered by tests and map to the actual dependency inventory.
+- [x] AC-002: Unknown service requests fail deterministically with no external side effect.
+- [x] AC-003: No shim contains KNX encoding or hidden ETS executable calls.
 
 ## Dependencies to Other Tasks
 
@@ -74,7 +74,8 @@ No broad ETS clone, live bus access, or production-quality adapter yet.
 ## Risks and Blockers
 
 The finite offline project-construction compatibility slice is implemented in source commit
-`727b42b47e2c1ddd8f2293a6c8b34d950f32a289` and awaits maintainer acceptance.
+`727b42b47e2c1ddd8f2293a6c8b34d950f32a289` and accepted for closure by Simon
+on 2026-10-26 after the successful tests and explicit initialization/UI limitation were reported.
 Original48 returned genuine ObjectModel Factory/Collection/Project/checker/notification/UndoManager
 and completed managed cleanup with exit0 and no final faults. Pre/post32+2 pins passed:
 28,770,936 input bytes unchanged. The independent verification and current full owned
@@ -86,12 +87,17 @@ The ObjectModel Project is distinct from `Knx.Ets.Sdk.Project.Project` required 
 `IInitializationContext.get_Project`. That getter remains explicitly denied/unresolved.
 Original DCA Initialize, original UI, state round trips and hardware are NOT RUN for
 this positive route. This result does not supply a working DCA-window launcher.
-Task010 owns that next integration proof and remains subject to predecessor acceptance.
-Acceptance criteria remain unchecked pending acceptance of the enumerated slice; no
-universal SDK compatibility, vendor-code containment or bus capability is claimed.
+Task010 owns that next integration proof; its Task009 predecessor is now accepted.
+The three criteria above are satisfied for the enumerated slice and tested host-service
+boundary. No universal SDK compatibility, vendor-code containment or bus capability is claimed.
 See [the finite shim inventory](../docs/DCA-PROJECT-GUID-FIXTURE.md#source3948-actual-constructor-and-cleanup-checkpoint).
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
+
+### Historical exploration records
+
+The intermediate statuses and pending actions below describe their recorded checkpoints;
+the metadata and final completion record define the current status.
 
 The next bounded declaration-only increment follows
 [DCA-PROJECT-STREAM-STORE.md](../docs/DCA-PROJECT-STREAM-STORE.md).
@@ -2905,7 +2911,34 @@ private `iteration39/final-check-commands49.md`. Independent verification:
 Added-source lexical boundary scan: `final-boundary50.json` SHA256
 `585ed2753c8616dfcf373d25f06cfb402c8b6c6c85714a83cf05a5781c80f27a`.
 The preservation check retained474 old members and nine legacy classes exactly;
-22 changed bodies require the separate source review rather than automatic approval.
+22 changed bodies were assessed in the separate final critical source review (PASS),
+not automatically approved by the preservation check.
 Full owned Windows raw evidence is retained in `full49-b730c5e29a41`; original
 lifecycle evidence in `run-6f49a028d3bc`. Both jobs were removed with owned processes0.
 Vendor internals/network/descendants remain NOT_CONTAINED; hardware NOT_RUN.
+
+
+## Completion and acceptance — 2026-10-26
+
+Status: Done. Simon requested closure after being informed that Task009 proves the
+finite offline SDK/project lifecycle, while the original DCA initialization and
+window are still open under Task010. This records that instruction as acceptance
+of the stated Task009 result, not acceptance of the wider DCA PoC or a phase gate.
+
+All three required tests passed for the inventory above. Final critical review:
+`private/evidence/task009-project-guid-fixture/iteration39/final-critical-review50.txt`,
+SHA256 `bd51bdb0534fe1cf92ea9c0ea4b3944219befbd470e9ae32050d4e410329f082`,
+outcome PASS, no remaining material findings; its finding covering two stale
+diagnostic labels was resolved. The reviewer did not grant maintainer acceptance; acceptance is
+the subsequent owner instruction recorded here. Independent verification remains
+`final-verification49.md` with its hash above.
+
+Source commit: `727b42b47e2c1ddd8f2293a6c8b34d950f32a289`.
+Prior result/status commit: `8526dd1c39610985da73785d6479fac90daf586f`.
+Closure changes documentation only; existing Windows evidence is retained without
+repeating runtime tests. Closure checks: review/source SHA256 binding and
+`git diff --check` PASS. No push, merge, redistribution or hardware action.
+
+Next unblocked task: Task010, supplying the concrete SDK project context and
+initializing/displaying the unchanged original DCA on the qualified Windows host.
+Task010 is not executed or declared complete by this closure.
