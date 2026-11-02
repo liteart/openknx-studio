@@ -87,7 +87,7 @@ was imported into a genuine SDK device context. Its complete application ID suff
 differs from the DCA manifest declaration; compatibility and recognition are not
 yet proven. The original DCA rendered and the owner interacted with its UI. A
 connection attempt failed; no hardware connection or network isolation is claimed.
-The source is uncommitted; Source89 records a successful offline UI lifecycle
+Source89 records a successful offline UI lifecycle
 and cleanup, but does not qualify the selected application identity. See the
 latest checkpoint below and the linked component contract.
 
@@ -96,7 +96,7 @@ latest checkpoint below and the linked component contract.
 | Field | Current value |
 |---|---|
 | Implementation / report status | In progress; genuine product import and original UI observed; identity qualification and negative tests pending |
-| Source commit(s) | Uncommitted worktree based on 37fcb089b0d851210413af1122d2bf9773fd16a9 |
+| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68 |
 | Tests executed | Source89 original UI and clean exit PASS; 423 owned cases PASS; identity and missing-context negatives pending |
 | Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-56aa362ec007 and run-60e2151ed943 |
 | Acceptance criteria met | None asserted |

@@ -89,7 +89,7 @@ device connection or hardware test is claimed. See the latest checkpoint below.
 | Field | Current value |
 |---|---|
 | Implementation / report status | In progress; Source89 original UI, clean process exit, owned regression and admission negatives passed; remaining acceptance evidence pending |
-| Source commit(s) | Uncommitted worktree based on 37fcb089b0d851210413af1122d2bf9773fd16a9 |
+| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68 |
 | Tests executed | Source89 original UI and clean exit PASS; owner interaction observed; 423 owned cases and two original-profile admission negatives PASS; selected ETS host inventory negative; network path and late resolver not established |
 | Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-56aa362ec007; run-60e2151ed943; missing-original89-a15c9e8376d2 |
 | Acceptance criteria met | AC-001 has positive render and manual-interaction evidence; full task acceptance pending |
