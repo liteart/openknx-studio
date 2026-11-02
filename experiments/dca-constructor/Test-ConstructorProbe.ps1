@@ -255,8 +255,21 @@ foreach($guard in @('StoreRequestDiagnostics || attempted || !entered || count >
             if(productApplicationRequest)selectedProductStore.Fail();
                 if(mappingRequest)sdkMapping.Fail();
             if (guidRequest) guid.Fail();
-            if (contentRequest) content.Fail();
-            DiagnoseFailure')){if(-not$projectSource.Contains($guard.Replace('\n',"`n"))){Fail 'STORE_DIAGNOSTIC_FIXED_SOURCE'}}
+            if (contentRequest) content.Fail();')){if(-not$projectSource.Contains($guard.Replace('\n',"`n"))){Fail 'STORE_DIAGNOSTIC_FIXED_SOURCE'}}
+# Capture the first-failure path separately: the parameter-lease diagnostic may run
+# between sticky failure latches and the general captured-method diagnostic.
+$storeInvoke=$cacheProxy.Substring($cacheProxy.IndexOf('public override IMessage Invoke('),$cacheProxy.IndexOf('void DiagnoseFailure(')-$cacheProxy.IndexOf('public override IMessage Invoke('))
+$failureStart=$storeInvoke.IndexOf('} catch (Exception error) {')
+if($failureStart-lt0){Fail 'STORE_DIAGNOSTIC_FAILURE_BOUNDARY'}
+$failureEnd=$storeInvoke.IndexOf('finally {',$failureStart)
+if($failureEnd-le$failureStart){Fail 'STORE_DIAGNOSTIC_FAILURE_BOUNDARY'}
+$failurePath=$storeInvoke.Substring($failureStart,$failureEnd-$failureStart)
+$prior=-1
+foreach($guard in @('State.Fail();','if(productApplicationRequest)selectedProductStore.Fail();','if(mappingRequest)sdkMapping.Fail();','if (guidRequest) guid.Fail();','if (contentRequest) content.Fail();','if(parameterStorePhase&&Interlocked.CompareExchange(ref parameterStoreFailureRecorded,1,0)==0)','STORE_PARAMETER_READ_FAILURE phase=','DiagnoseFailure(observedMethod, methodCaptured, phase, count, entered, ref diagnosticAttempted);')){
+ $at=$failurePath.IndexOf($guard,[StringComparison]::Ordinal)
+ if($at-le$prior){Fail 'STORE_DIAGNOSTIC_FAULT_BEFORE_REPORT'};$prior=$at
+}
+if($failurePath.Substring(0,$failurePath.IndexOf('State.Fail();')).Trim()-cne'} catch (Exception error) {'){Fail 'STORE_DIAGNOSTIC_FAULT_FIRST'}
 Write-Output 'OWNED_CASE PASS source34-diagnostic-fixed-guards captured-once=True failure-before-metadata=True bounded-trusted-owner=True positive-behavior=unchanged original=NOT_RUN'
 # Source35 is one explicit typed denial reference; no positive IStore operation.
 foreach($guard in @('internal class ProjectContentDenyProxy : RealProxy','int count = State.Deny();','if (count > 16) throw new NotSupportedException("PROJECT_CONTENT_STORE_BUDGET");','internal static Type ContentStoreContract(','method.MetadataToken == 0x060002f9','contract.FullName == "Knx.Ets.ObjectModel.IStore"','if (!cache && !contentRequest)','contentPrepared = true; return contentResponse;','replies > attempts || fault || denied != 0 || denyFault','CheckContentStore("PROCESS_FINAL")','ContentOriginal) WithContentLifetime(lifetime); else lifetime();')){if(-not$projectSource.Contains($guard)){Fail 'CONTENT_FIXED_SOURCE'}}

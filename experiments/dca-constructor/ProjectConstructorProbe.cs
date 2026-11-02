@@ -42,6 +42,73 @@ internal static class ReferenceDcaManifestSelection
     }
 }
 
+// A required original parameter-reference definition must exist before original UI use.
+// Negative tests may omit an owned view reference; they never alter the original SDK object.
+internal static class ReferenceDcaRequiredParameters
+{
+    internal static bool CompactDiagnostics(bool ui,bool negative){return ui||negative;}
+    internal static bool AllowsPreparedService(bool active,bool ownerThread,bool knownValidator,int operation)
+    {return active&&((knownValidator&&ownerThread)||operation==14);}
+    internal static int ContextBudget(bool negative,int ordinary){return negative?1000000:ordinary;}
+    internal static int ReadBudget(bool negative,int ordinary){return negative?200000:ordinary;}
+    internal static bool AllowsProductStoreRead(bool active,int slot)
+    {return active&&slot>=0&&slot<=4;}
+    internal static bool AllowsDerivedReadCreation(bool completed,bool uiLifetime,bool parameterLifetime)
+    {return completed&&(uiLifetime||parameterLifetime);}
+    internal static bool AllowsBackgroundRead(bool active,int operation)
+    {return active&&(operation==10||operation==11||operation==12);}
+    internal static bool AllowsReadOperation(bool active,int operation)
+    {return active&&(operation==3||operation==10||operation==11||operation==12||operation==13);}
+    internal static void BeforeUi(object definition,Action invokeUi)
+    {
+        if(invokeUi==null)throw new ArgumentNullException("invokeUi");
+        if(definition==null)throw new InvalidDataException("DCA_REQUIRED_PARAMETER_DEFINITION_MISSING");
+        invokeUi();
+    }
+}
+
+// Exact repeat suppression for known healthy records only; never an admission decision.
+internal sealed class ReferenceHealthyLogCoalescer
+{
+    readonly object sync=new object();readonly Dictionary<string,bool> seen=new Dictionary<string,bool>(StringComparer.Ordinal);int omitted;
+    internal int Omitted{get{lock(sync){return omitted;}}}
+    internal int Kinds{get{lock(sync){return seen.Count;}}}
+    internal bool ShouldEmit(bool compact,string value)
+    {
+        if(!compact||value==null||value.Length>4096)return true;
+        bool known=value.StartsWith("FACTORY_BINDING_RESOLVED requested=",StringComparison.Ordinal)||value.StartsWith("PRODUCT_STORE_REFERENCE member=",StringComparison.Ordinal)
+            ||value.StartsWith("UNDO_PROVIDER_FACTORY_CALLBACK entries=1 same-existing-proxy=True",StringComparison.Ordinal)||value.StartsWith("SDK_REFERENCE_PRODUCT_ID input=",StringComparison.Ordinal)
+            ||value.StartsWith("PROJECT_CONTENT_REFERENCE reply=PREPARED same-preexisting-reference=True",StringComparison.Ordinal)||value.StartsWith("SDK_CONTEXT_CANONICAL_REFERENCE member=",StringComparison.Ordinal);
+        string counter=null;
+        if(value.StartsWith("SDK_NAME_RESOURCE_PROBE allowed=True ",StringComparison.Ordinal)){known=true;counter="aggregate-probe=";}
+        else if(value.StartsWith("DCA_UI_RESOURCE_PROBE allowed=True ",StringComparison.Ordinal)){known=true;counter="aggregate=";}
+        if(!known)return true;
+        string key=value;
+        if(counter!=null){int a=value.IndexOf(counter,StringComparison.Ordinal);if(a>=0){a+=counter.Length;int b=a;while(b<value.Length&&b-a<8&&value[b]>='0'&&value[b]<='9')b++;if(b>a)key=value.Substring(0,a)+"COUNT"+value.Substring(b);}}
+        lock(sync){if(seen.ContainsKey(key)){omitted++;return false;}if(seen.Count<64)seen.Add(key,true);return true;}
+    }
+}
+
+// Admission accounting only: this never grants an SDK service or a successful reply.
+internal sealed class ParameterReadPublication
+{
+    readonly object sync=new object();bool started,accepting,closed,fault;int inflight;
+    internal bool Started{get{lock(sync){return started;}}}
+    internal bool Accepting{get{lock(sync){return accepting&&!fault;}}}
+    internal int Inflight{get{lock(sync){return inflight;}}}
+    internal bool Faulted{get{lock(sync){return fault;}}}
+    internal void Begin(){lock(sync){if(started||fault){fault=true;throw new InvalidOperationException("PARAMETER_READ_BEGIN_ONCE");}started=true;accepting=true;}}
+    internal IDisposable TryEnter(){lock(sync){if(!accepting||fault)return null;if(inflight>=1024){fault=true;throw new InvalidOperationException("PARAMETER_READ_LEASE_LIMIT");}inflight++;return new Lease(this);}}
+    internal void Close(){lock(sync){accepting=false;closed=true;if(inflight!=0){fault=true;throw new InvalidOperationException("PARAMETER_READ_INFLIGHT:"+inflight);}if(fault)throw new InvalidOperationException("PARAMETER_READ_FENCE_FAULT");}}
+    internal void CheckClosed(){lock(sync){if(accepting||inflight!=0||fault||(started&&!closed))throw new InvalidOperationException("PARAMETER_READ_FINAL_FENCE");}}
+    void Release(){lock(sync){if(inflight<=0){fault=true;throw new InvalidOperationException("PARAMETER_READ_LEASE_RELEASE");}inflight--;}}
+    sealed class Lease:IDisposable
+    {
+        ParameterReadPublication source;internal Lease(ParameterReadPublication value){source=value;}
+        public void Dispose(){ParameterReadPublication value=Interlocked.Exchange(ref source,null);if(value!=null)value.Release();}
+    }
+}
+
 internal sealed class ProjectDenyProxy : RealProxy
 {
     readonly Action<string> record;
@@ -52,9 +119,12 @@ internal sealed class ProjectDenyProxy : RealProxy
     internal int Requests { get { lock (sync) { return requests; } } }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int suspended = ProjectConstructorProbe.SuspendProjectResourceCallback();
         try { return InvokeCore(message); }
         finally { ProjectConstructorProbe.RestoreProjectResourceCallback(suspended); }
+
+        }
     }
     IMessage InvokeCore(IMessage message)
     {
@@ -87,9 +157,12 @@ internal class ProjectStoreIdProxy : RealProxy
     internal int DeniedRequests { get { lock (sync) { return denied; } } }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int suspended = ProjectConstructorProbe.SuspendProjectResourceCallback();
         try { return InvokeCore(message); }
         finally { ProjectConstructorProbe.RestoreProjectResourceCallback(suspended); }
+
+        }
     }
     protected IMessage InvokeCore(IMessage message)
     {
@@ -129,6 +202,7 @@ internal sealed class UndoProviderDenyProxy : RealProxy
     internal int Requests { get { lock (sync) { return requests; } } }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int count; lock (sync) { if (requests < 17) requests++; count = requests; }
         int previous = 0; bool suspended = false;
         try {
@@ -141,6 +215,8 @@ internal sealed class UndoProviderDenyProxy : RealProxy
             if (call == null || call.MethodBase == null) throw error;
             return new ReturnMessage(error, call);
         } finally { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); }
+
+        }
     }
 }
 
@@ -219,6 +295,7 @@ internal sealed class CacheReferenceState
     internal void Fail() { lock (sync) { faulted = true; } }
     internal void Begin() { lock (sync) { if (lifetime != 0) { faulted = true; throw new NotSupportedException("CACHE_LIFETIME_BEGIN"); } lifetime = 1; } }
     internal void Close() { lock (sync) { if (lifetime != 1) faulted = true; lifetime = 2; } }
+    internal string EntryDiagnostic(){lock(sync){return "shared-lifetime="+lifetime+" shared-entered="+entered+" shared-fault="+faulted+" shared-entries="+entries;}}
     internal void Enter(int count, bool excluded,int maximum=16)
     { lock (sync) { if (count > maximum || excluded || entered || faulted || lifetime != 1) { faulted = true; throw new NotSupportedException("CACHE_CALLBACK_CONTEXT"); } entered = true; } }
     internal void CacheAttempt(bool eligible)
@@ -276,6 +353,7 @@ internal sealed class StreamStoreDenyProxy : RealProxy
     internal int Requests { get { lock (sync) { return requests; } } }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int count; lock (sync) { if (requests < 17) requests++; count = requests; }
         bool suspended = false; int previous = 0;
         try {
@@ -290,6 +368,8 @@ internal sealed class StreamStoreDenyProxy : RealProxy
             if (call == null || method == null) throw error;
             return new ReturnMessage(error, call);
         } finally { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); }
+
+        }
     }
 }
 // Source35: the supplied object is only a typed denial reference, never an IStore implementation.
@@ -307,6 +387,7 @@ internal class ProjectContentDenyProxy : RealProxy
     }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int count = State.Deny(); bool suspended = false; int previous = 0;
         try {
             if (!ProjectConstructorProbe.UndoFactoryCallbackExcluded()) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
@@ -317,6 +398,8 @@ internal class ProjectContentDenyProxy : RealProxy
             throw new NotSupportedException("PROJECT_CONTENT_STORE_UNSUPPORTED");
         } catch { State.Fail(); throw; }
         finally { try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); } catch { State.Fail(); throw; } }
+
+        }
     }
     internal static string ContentMessageDescriptor(IMessage message, Type owner)
     {
@@ -409,6 +492,7 @@ internal sealed class ProjectContentExistsProxy : ProjectContentDenyProxy
     { contract = type; record = recorder; policy = value; }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         CacheReferenceState shared = policy.Shared; int storeLimit=ProjectConstructorProbe.ProductStoreCallbackLimit();int count = shared.Count(storeLimit);
         bool suspended = false, entered = false, prepared = false, denied = false, writerRequest=false, writerPrepared=false; int previous = 0; MethodInfo method = null;string writerStage="ENTRY";bool cleanupEligibleForDiagnostic=false;
         try {
@@ -457,6 +541,8 @@ internal sealed class ProjectContentExistsProxy : ProjectContentDenyProxy
             catch { shared.Fail(); policy.Fail(); if(writerRequest)productWriter.Fail(); if (!denied) State.Deny(); throw; }
             finally { if(writerRequest)shared.ExitProductApplication(entered,writerPrepared,productWriter);else shared.ExitExists(entered, prepared, policy); }
         }
+
+        }
     }
 }
 
@@ -494,20 +580,24 @@ internal sealed class SdkHostProxy : RealProxy
     int contextActions,contextActionReplies,contextActionsActive;
     internal void InvokeContextUiAction(Action action)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         bool started=false,prepared=false;
         try{
-            lock(sync){if(contextActions<200001)contextActions++;ProbeFiles.Require(role=="DISPATCHER"&&lifetime==1&&!fault&&contextActions<=200000&&contextActionsActive<8&&ProjectConstructorProbe.ProductUiCacheLifetime(),"SDK_CONTEXT_UI_DISPATCH_LIFETIME_OR_LIMIT");contextActionsActive++;started=true;}
+            lock(sync){if(contextActions<200001)contextActions++;ProbeFiles.Require(role=="DISPATCHER"&&lifetime==1&&!fault&&contextActions<=200000&&contextActionsActive<8&&ProjectConstructorProbe.ProductDataReadLifetime(),"SDK_CONTEXT_UI_DISPATCH_LIFETIME_OR_LIMIT");contextActionsActive++;started=true;}
             ProbeFiles.Require(action!=null&&action.GetType()==typeof(Action)&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(action),"SDK_CONTEXT_UI_EXACT_ACTION");
-            Action original=delegate{ProbeFiles.Require(dispatcher.CheckAccess()&&!dispatcher.HasShutdownStarted&&!dispatcher.HasShutdownFinished&&ProjectConstructorProbe.ProductUiCacheLifetime(),"SDK_CONTEXT_UI_ACTION_ON_REAL_DISPATCHER");action();};
+            Action original=delegate{using(IDisposable targetInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){ProbeFiles.Require(dispatcher.CheckAccess()&&!dispatcher.HasShutdownStarted&&!dispatcher.HasShutdownFinished&&ProjectConstructorProbe.ProductDataReadLifetime(),"SDK_CONTEXT_UI_ACTION_ON_REAL_DISPATCHER");action();}};
             if(dispatcher.CheckAccess())original();else dispatcher.Invoke(original,DispatcherPriority.Send,CancellationToken.None,TimeSpan.FromSeconds(2));
-            lock(sync){ProbeFiles.Require(!fault&&lifetime==1&&ProjectConstructorProbe.ProductUiCacheLifetime(),"SDK_CONTEXT_UI_ACTION_COMPLETION");prepared=true;}
+            lock(sync){ProbeFiles.Require(!fault&&lifetime==1&&ProjectConstructorProbe.ProductDataReadLifetime(),"SDK_CONTEXT_UI_ACTION_COMPLETION");prepared=true;}
         }catch{lock(sync){fault=true;}throw;}
         finally{lock(sync){if(started)contextActionsActive--;if(prepared&&!fault)contextActionReplies++;}}
+
+        }
     }
     internal void Begin(){lock(sync){ProbeFiles.Require(lifetime==0,"SDK_HOST_BEGIN_ONCE");lifetime=1;}}
     internal void Close(){lock(sync){if(lifetime!=1)fault=true;lifetime=2;}}
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int count;lock(sync){if(entries<17)entries++;count=entries;}int previous=0;bool suspended=false,prepared=false,owns=false;MethodInfo method=null;
         try{bool eligible=ProjectConstructorProbe.SdkHostPhaseEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
             lock(sync){if(count>16||fault||lifetime!=1||Thread.CurrentThread.ManagedThreadId!=owner||!eligible||excluded){fault=true;throw new NotSupportedException("SDK_HOST_PHASE_OR_BUDGET:"+role);}}
@@ -524,6 +614,8 @@ internal sealed class SdkHostProxy : RealProxy
             IMessage response=new ReturnMessage(result,new object[0],0,context,snapshot);prepared=true;return response;
         }catch{lock(sync){fault=true;}if(count<=16)record("SDK_HOST_DENIED role="+role+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED");throw;}
         finally{try{if(suspended)ProjectConstructorProbe.RestoreProjectResourceCallback(previous);}catch{lock(sync){fault=true;}throw;}finally{lock(sync){if(owns)inAction=false;if(prepared&&!fault)replies++;}}}
+
+        }
     }
     internal void Audit(string phase){int e,r,l;bool f,active;lock(sync){e=entries;r=replies;l=lifetime;f=fault;active=inAction||contextActionsActive!=0;}try{if(f||e>16||r>e||active||ProjectConstructorProbe.SdkAuditLog(phase))record("SDK_HOST_AUDIT role="+role+" phase="+phase+" entries="+e+" replies="+r+" fault="+f+" lifetime="+l+" context-actions="+contextActions+" context-action-replies="+contextActionReplies);}finally{if(f||e>16||r>e||active||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&l!=2))throw new NotSupportedException("SDK_HOST_FINAL_DENIAL:"+role);GC.KeepAlive(dispatcher);GC.KeepAlive(emptyStores);}}
 }
@@ -549,11 +641,14 @@ internal sealed class SdkMappingPolicy
     {
         readonly SdkMappingPolicy policy;
         internal SdkMappingStreamProxy(Type stream,SdkMappingPolicy p):base(stream){policy=p;}
-        public override IMessage Invoke(IMessage message){int count=policy.Shared.Count(),previous=0;bool suspended=false,entered=false,prepared=false;MethodInfo method=null;
+        public override IMessage Invoke(IMessage message){
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){int count=policy.Shared.Count(),previous=0;bool suspended=false,entered=false,prepared=false;MethodInfo method=null;
             try{bool eligible=ProjectConstructorProbe.SdkWrapperEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}policy.Shared.Enter(count,excluded);entered=true;policy.Enter(false,eligible);method=ProjectContentDenyProxy.CaptureContentMethod(message);ProbeFiles.Require(ProjectConstructorProbe.ExactRuntimeMethod(method,policy.Exists),"SDK_MAPPING_EXISTS_ONLY");var call=(IMethodCallMessage)message;ProbeFiles.Require(call.MethodName=="get_Exists"&&call.ArgCount==0&&call.InArgCount==0,"SDK_MAPPING_EXISTS_SHAPE");object[] args=call.Args;ProbeFiles.Require(args!=null&&args.Length==0,"SDK_MAPPING_ZERO_ARGS");var context=call.LogicalCallContext;string uri=call.Uri;ProbeFiles.Require(uri==null||uri.Length<=1024,"SDK_MAPPING_URI_BOUND");var snapshot=new CacheCallSnapshot(policy.Exists,context,uri);ProbeFiles.Require(!policy.Shared.Faulted,"SDK_MAPPING_CAUGHT_FAULT");IMessage response=new ReturnMessage((object)false,new object[0],0,context,snapshot);prepared=true;return response;}
             catch{policy.Shared.Fail();policy.Deny(method);throw;}
             finally{try{if(suspended)ProjectConstructorProbe.RestoreProjectResourceCallback(previous);}catch{policy.Shared.Fail();policy.Fail();throw;}finally{policy.Shared.ExitSdkRead(entered,prepared,policy);}}
+
         }
+    }
     }
 }
 
@@ -615,7 +710,7 @@ internal sealed class SdkProductApplicationPolicy
     internal bool Used{get{lock(sync){return attempts!=0||replies!=0;}}}
     internal bool Faulted{get{lock(sync){return fault;}}}
     internal void Audit(string phase)
-    {lock(sync){try{bool ui=ProjectConstructorProbe.ProductUiFixtureMode();if(fault||(ui?ProjectConstructorProbe.SdkAuditLog(phase)&&(attempts!=0||replies!=0):ProjectConstructorProbe.SdkAuditLog(phase)))record("PRODUCT_STORE_REFERENCE_AUDIT member="+Method.Name+" phase="+phase+" attempts="+attempts+" reply-commits="+replies+" fault="+fault+(ui&&!fault?String.Empty:" content=ORIGINAL_IMPORTED_STORE caller-receipt=UNKNOWN"));}finally{ProbeFiles.Require(!fault&&attempts<=16&&replies<=attempts,"PRODUCT_APPLICATION_STORE_FINAL_DENIAL");GC.KeepAlive(application);}}}
+    {lock(sync){try{bool ui=ProjectConstructorProbe.CompactProductDiagnostics();if(fault||(ui?ProjectConstructorProbe.SdkAuditLog(phase)&&(attempts!=0||replies!=0):ProjectConstructorProbe.SdkAuditLog(phase)))record("PRODUCT_STORE_REFERENCE_AUDIT member="+Method.Name+" phase="+phase+" attempts="+attempts+" reply-commits="+replies+" fault="+fault+(ui&&!fault?String.Empty:" content=ORIGINAL_IMPORTED_STORE caller-receipt=UNKNOWN"));}finally{ProbeFiles.Require(!fault&&attempts<=16&&replies<=attempts,"PRODUCT_APPLICATION_STORE_FINAL_DENIAL");GC.KeepAlive(application);}}}
 }
 internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
 {
@@ -632,6 +727,7 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
     internal LargeStringCacheStoreProxy(Type owner, MethodInfo idMethod, object id, MethodInfo cacheMethod, Type streamType, object stream, Action<string> recorder, ProjectContentReference policy, ProjectGuidFixture fixture)
         : this(owner, idMethod, id, cacheMethod, streamType, stream, recorder, policy)
     { guid = fixture; ProbeFiles.Require(guid != null, "GUID_WRAPPER_POLICY"); guid.Bind(State); }
+    int parameterStoreFailureRecorded;
     SdkProductApplicationPolicy productApplication,productStringStream,productFilePath;
     SdkProductApplicationPolicy[] productManufacturerReads,productProjectReads;
     internal void ConfigureProductProjectReads(SdkProductApplicationPolicy[] policies)
@@ -646,15 +742,19 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
     {ProbeFiles.Require(ProjectConstructorProbe.ProductFixtureMode()&&productFilePath==null&&policy!=null&&policy.Arity==0&&policy.Method.ReturnType==typeof(string),"PRODUCT_FILE_PATH_CONFIGURE_ONCE");productFilePath=policy;}
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int storeLimit=ProjectConstructorProbe.ProductStoreCallbackLimit();int count = State.Count(storeLimit); bool suspended = false, entered = false, prepared = false; int previous = 0;
         MethodInfo observedMethod = null; bool methodCaptured = false, diagnosticAttempted = false; string phase = "ENTRY";
         bool mappingRequest=false,mappingPrepared=false,productApplicationRequest=false,productApplicationPrepared=false;SdkProductApplicationPolicy selectedProductStore=null;
         bool contentRequest = false, contentPrepared = false, guidRequest = false, guidSetter = false, guidPrepared = false; Guid pendingGuid = Guid.Empty;
+        bool parameterStorePhase=false,entryExcluded=false;int parameterStoreSlot=-1;
         try {
             bool productApplicationEligible=ProjectConstructorProbe.ProductUiCacheEligible();
+            parameterStorePhase=ProjectConstructorProbe.ParameterDefinitionCacheEligible();
             bool productFilePathEligible=ProjectConstructorProbe.ProductStoreDisposalEligible();
             bool mappingEligible=ProjectConstructorProbe.SdkWrapperEligible();
             bool eligible = ProjectConstructorProbe.CacheWindowEligible(), excluded = ProjectConstructorProbe.UndoFactoryCallbackExcluded();
+            entryExcluded=excluded;
             if (!excluded) { previous = ProjectConstructorProbe.SuspendProjectResourceCallback(); suspended = true; }
             State.Enter(count, excluded,storeLimit); entered = true;
             phase = "METHOD_READ";
@@ -671,7 +771,9 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
                 phase="PRODUCT_APPLICATION_SHAPE";ProbeFiles.Require(call.MethodName==selectedProductStore.Method.Name&&call.ArgCount==selectedProductStore.Arity&&call.InArgCount==selectedProductStore.Arity,"PRODUCT_APPLICATION_STORE_CALL_SHAPE");
                 object[] values=call.Args;ProbeFiles.Require(values!=null&&values.Length==selectedProductStore.Arity,"PRODUCT_APPLICATION_STORE_ARGUMENTS");object argument=selectedProductStore.Arity==0?null:values[0];
                 var productContext=call.LogicalCallContext;string productUri=call.Uri;ProbeFiles.Require(productUri==null||productUri.Length<=1024,"PRODUCT_APPLICATION_STORE_URI");
-                phase="PRODUCT_APPLICATION_ORIGINAL";object value=selectedProductStore.Read(argument,Object.ReferenceEquals(selectedProductStore,productFilePath)||(productProjectReads!=null&&Array.IndexOf(productProjectReads,selectedProductStore)>=0)?productFilePathEligible:productApplicationEligible);
+                parameterStoreSlot=Object.ReferenceEquals(selectedProductStore,productApplication)?0:Object.ReferenceEquals(selectedProductStore,productStringStream)?4:productManufacturerReads==null?-1:Array.IndexOf(productManufacturerReads,selectedProductStore)+1;
+                if(parameterStoreSlot==0&&!Object.ReferenceEquals(selectedProductStore,productApplication))parameterStoreSlot=-1;
+                phase="PRODUCT_APPLICATION_ORIGINAL";object value=selectedProductStore.Read(argument,Object.ReferenceEquals(selectedProductStore,productFilePath)||(productProjectReads!=null&&Array.IndexOf(productProjectReads,selectedProductStore)>=0)?productFilePathEligible:productApplicationEligible||ReferenceDcaRequiredParameters.AllowsProductStoreRead(parameterStorePhase,parameterStoreSlot));
                 var productSnapshot=new ValidatorCallSnapshot(selectedProductStore.Method,productContext,productUri,selectedProductStore.Arity==0?new object[0]:new object[]{argument},selectedProductStore.Arity==0?Type.EmptyTypes:new Type[]{selectedProductStore.Method.GetParameters()[0].ParameterType});
                 ProbeFiles.Require(!State.Faulted,"PRODUCT_APPLICATION_STORE_SHARED_FAULT");
                 record("PRODUCT_STORE_REFERENCE member="+selectedProductStore.Method.Name+" reply=PREPARED source=ORIGINAL_OWNED_SCRATCH_STORE selected-application=EXACT_NO_REMAP values=NOT_LOGGED caller-receipt=UNKNOWN");
@@ -728,12 +830,16 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
             phase = "CACHE_REPLY";
             IMessage response = new ReturnMessage(reference, new object[0], 0, context, snapshot);
             ProbeFiles.Require(!State.Faulted, "CACHE_REPLY_CAUGHT_REENTRY"); prepared = true; return response;
-        } catch {
+        } catch (Exception error) {
             State.Fail();
             if(productApplicationRequest)selectedProductStore.Fail();
                 if(mappingRequest)sdkMapping.Fail();
             if (guidRequest) guid.Fail();
             if (contentRequest) content.Fail();
+            if(parameterStorePhase&&Interlocked.CompareExchange(ref parameterStoreFailureRecorded,1,0)==0){
+                try{record("STORE_PARAMETER_READ_FAILURE phase="+phase+" count="+count+" policy-slot="+parameterStoreSlot+" excluded-at-entry="+entryExcluded+" owns-entry="+entered+" "+State.EntryDiagnostic()+" type="+ProjectConstructorProbe.Text(error.GetType().FullName)+" message="+ProjectConstructorProbe.Text(error.Message)+" arguments=NOT_READ_BY_DIAGNOSTIC");}
+                catch(Exception diagnosticError){throw new AggregateException("STORE_PARAMETER_READ_DIAGNOSTIC",error,diagnosticError);}
+            }
             DiagnoseFailure(observedMethod, methodCaptured, phase, count, entered, ref diagnosticAttempted);
             throw;
         }
@@ -755,6 +861,8 @@ internal sealed class LargeStringCacheStoreProxy : ProjectStoreIdProxy
                 else if (content == null) State.Exit(entered, prepared);
                 else State.ExitContent(entered, prepared, contentPrepared, content);
             }
+        }
+
         }
     }
     void DiagnoseFailure(MethodInfo method, bool captured, string phase, int count, bool entered, ref bool attempted)
@@ -814,6 +922,7 @@ internal sealed class ContextValidatorAdapter
     readonly Func<object> collection; readonly Func<bool> eligible; readonly Action<string> record;
     int uiProjectReferences,uiOtherCalls,uiProjectReplies,uiOtherReplies;
     int entries,replies,constructions,lifetime,nextPuid=1; bool fault,entered,constructorActive,scalarActive,dirty;
+    int activeCallbackThread,activeCallbackOperation=-1;
     object project,checker,retainedChecker,notification,retainedNotification,undoManager,retainedUndoManager;
     readonly List<SdkChildValidatorCase> childValidators=new List<SdkChildValidatorCase>();
     internal sealed class UiValidatorType{internal Type ObjectType,CheckerType;internal MethodInfo Method,Parent,Context,Project;internal ConstructorInfo Constructor;}
@@ -822,7 +931,7 @@ internal sealed class ContextValidatorAdapter
     {public new bool Equals(object left,object right){return Object.ReferenceEquals(left,right);}public int GetHashCode(object value){return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value);}}
     UiValidatorType[] uiValidatorTypes;readonly Dictionary<object,UiValidatorEntry> uiValidatorEntries=new Dictionary<object,UiValidatorEntry>(new UiObjectIdentityComparer());
     internal void ConfigureUiValidators(UiValidatorType[] types,object expectedProject)
-    {lock(sync){ProbeFiles.Require(ProjectConstructorProbe.ProductUiFixtureMode()&&lifetime==1&&!fault&&uiValidatorTypes==null&&types.Length==2&&Object.ReferenceEquals(project,expectedProject),"PRODUCT_UI_VALIDATOR_CONFIGURE_ONCE");uiValidatorTypes=(UiValidatorType[])types.Clone();}}
+    {lock(sync){ProbeFiles.Require(ProjectConstructorProbe.ProductDefinitionContextRequested()&&lifetime==1&&!fault&&uiValidatorTypes==null&&types.Length==2&&Object.ReferenceEquals(project,expectedProject),"PRODUCT_UI_VALIDATOR_CONFIGURE_ONCE");uiValidatorTypes=(UiValidatorType[])types.Clone();}}
     internal void ConfigureChildValidator(SdkChildValidatorCase value)
     {lock(sync){ProbeFiles.Require(lifetime==1&&!fault&&childValidators.Count<2,"SDK_CHILD_VALIDATOR_CONFIGURE");foreach(var existing in childValidators)ProbeFiles.Require(!Object.ReferenceEquals(existing.Child,value.Child)&&!existing.Method.Equals(value.Method),"SDK_CHILD_VALIDATOR_UNIQUE");childValidators.Add(value);}}
     MethodInfo idCreatorGetter;ConstructorInfo idCreatorConstructor;Type idCreatorType;Func<object> idContext;object idCreator,retainedIdCreator;int idCreatorConstructions;
@@ -853,7 +962,7 @@ internal sealed class ContextValidatorAdapter
     MethodInfo productMasterMethod;object productMasterReference,productMasterFactory;
     MethodInfo productDispatchMethod;Action<Action> productDispatch;
     internal void ConfigureProductDispatcher(MethodInfo method,Action<Action> invoke)
-    {lock(sync){ProbeFiles.Require(ProjectConstructorProbe.ProductUiFixtureMode()&&lifetime==1&&!fault&&productDispatchMethod==null&&invoke!=null,"PRODUCT_CONTEXT_DISPATCH_CONFIGURE_ONCE");productDispatchMethod=method;productDispatch=invoke;}}
+    {lock(sync){ProbeFiles.Require(ProjectConstructorProbe.ProductDefinitionContextRequested()&&lifetime==1&&!fault&&productDispatchMethod==null&&invoke!=null,"PRODUCT_CONTEXT_DISPATCH_CONFIGURE_ONCE");productDispatchMethod=method;productDispatch=invoke;}}
     internal void ConfigureProductMaster(MethodInfo method,object master,object factory)
     {lock(sync){ProbeFiles.Require(ProjectConstructorProbe.ProductFixtureMode()&&lifetime==1&&!fault&&productMasterMethod==null&&master!=null&&master.GetType()==method.ReturnType&&factory!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(factory),"PRODUCT_CONTEXT_MASTER_CONFIGURE_ONCE");productMasterMethod=method;productMasterReference=master;productMasterFactory=factory;}}
     internal void ConfigureProductLargeStrings(MethodInfo getter,object value)
@@ -879,27 +988,50 @@ internal sealed class ContextValidatorAdapter
     internal void Begin(){lock(sync){if(lifetime!=0){fault=true;throw new NotSupportedException("VALIDATOR_BEGIN_ONCE");}lifetime=1;}}
     internal void Close(){lock(sync){if(lifetime!=1)fault=true;lifetime=2;}}
     void Fail(){lock(sync){fault=true;}}
+    bool firstFailureDiagnosticRecorded;
+    internal void ParameterReadEntrySnapshot()
+    {
+        int e,r,l;bool f,pending;lock(sync){e=entries;r=replies;l=lifetime;f=fault;pending=entered||constructorActive||scalarActive;}
+        record("DCA_PARAMETER_CONTEXT_SNAPSHOT entries="+e+" replies="+r+" lifetime="+l+" fault="+f+" pending="+pending+" owner-thread="+owner+" current-thread="+Thread.CurrentThread.ManagedThreadId);
+    }
+    void FirstFailure(Exception error,string stage,int count,int limit,int operation,bool faultAtEntry,MethodInfo method)
+    {
+        if(!ProjectConstructorProbe.ProductFixtureMode())return;
+        lock(sync){if(firstFailureDiagnosticRecorded)return;firstFailureDiagnosticRecorded=true;}
+        try{record("CONTEXT_ADAPTER_FIRST_FAILURE stage="+stage+" count="+count+" limit="+limit+" operation="+operation+" fault-at-entry="+faultAtEntry+" owner-thread="+owner+" current-thread="+Thread.CurrentThread.ManagedThreadId
+            +" type="+ProjectConstructorProbe.Text(error.GetType().FullName)+" hresult="+error.HResult.ToString("X8")+" message="+ProjectConstructorProbe.Text(error.Message)+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,closedMethod.DeclaringType)+" arguments=NOT_READ_BY_DIAGNOSTIC");
+            Exception cause=error.InnerException;int depth=1;
+            for(;cause!=null&&depth<4;depth++,cause=cause.InnerException)record("CONTEXT_ADAPTER_FIRST_FAILURE_CAUSE depth="+depth+" type="+ProjectConstructorProbe.Text(cause.GetType().FullName)+" hresult="+cause.HResult.ToString("X8")+" message="+ProjectConstructorProbe.Text(cause.Message));
+            if(cause!=null)record("CONTEXT_ADAPTER_FIRST_FAILURE_CAUSE truncated=True maximum=4");}
+        catch(Exception diagnosticError){throw new AggregateException("CONTEXT_ADAPTER_FIRST_FAILURE_DIAGNOSTIC",error,diagnosticError);}
+    }
     static string ArgumentType(object value)
     { if(value==null)return "NULL";if(System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value))return "TRANSPARENT_PROXY";return ProjectConstructorProbe.Text(value.GetType().FullName); }
     internal IMessage Invoke(IMessage message,ContextArgumentDenyProxy proxy)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         bool uiProfile=ProjectConstructorProbe.ProductUiFixtureMode(),uiProjectRequest=false;
-        int limit=ProjectConstructorProbe.ContextAdapterLimit();int count;lock(sync){if(entries<limit+1)entries++;count=entries;}
-        bool suspended=false,ownsEntry=false,ownsScalar=false,prepared=false,denied=false,ownsProductCacheGate=false,uiCacheOperation=false;int previous=0,operation=-1,childCase=-1,referenceCase=-1,uiValidatorCase=-1;MethodInfo method=null;object result=null;int puid=0;UiValidatorEntry uiValidatorEntry=null;
+        bool compactProfile=uiProfile||ProjectConstructorProbe.ParameterNegativeProfile();
+        int limit=ProjectConstructorProbe.ContextAdapterLimit();int count;bool faultAtEntry;lock(sync){faultAtEntry=fault;if(entries<limit+1)entries++;count=entries;}
+        string attemptStage="ELIGIBILITY";
+        bool suspended=false,ownsEntry=false,ownsScalar=false,prepared=false,denied=false,ownsProductCacheGate=false,uiCacheOperation=false,parameterCacheOperation=false;int previous=0,operation=-1,childCase=-1,referenceCase=-1,uiValidatorCase=-1;MethodInfo method=null;object result=null;int puid=0;UiValidatorEntry uiValidatorEntry=null;
         try{
             bool uiCachePhase=ProjectConstructorProbe.ProductUiCacheEligible();
+            bool parameterReadPhase=ProjectConstructorProbe.ParameterDefinitionReadEligible();
+            bool parameterCachePhase=ProjectConstructorProbe.ParameterDefinitionCacheEligible();
             bool productCleanupPhase=ProjectConstructorProbe.ProductStoreDisposalEligible();
             bool phase=eligible(),notificationPhase=notificationEligible!=null&&notificationEligible(),undoPhase=undoEligible!=null&&undoEligible(),writePhase=writeEligible!=null&&writeEligible(),allDevicesPhase=allDevicesEligible!=null&&allDevicesEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();
             if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
+            attemptStage="BUDGET";
             if(count>limit&&ProjectConstructorProbe.ProductFixtureMode())BudgetDiagnostic(count,limit);
             ProbeFiles.Require(count<=limit,"VALIDATOR_CONTEXT_BUDGET");
             if(uiProfile){lock(sync){ProbeFiles.Require(!fault,"VALIDATOR_UI_PREVIOUS_FAULT_NO_MESSAGE_READ");}}
-            method=ProjectContentDenyProxy.CaptureContentMethod(message);
+            attemptStage="METHOD_CAPTURE";method=ProjectContentDenyProxy.CaptureContentMethod(message);
             uiProjectRequest=uiProfile&&ProjectConstructorProbe.ExactRuntimeMethod(method,scalarMethods[3]);
             if(uiProfile){int bucketCount,bucketLimit=uiProjectRequest?ProjectConstructorProbe.ProductUiProjectReferenceLimit():ProjectConstructorProbe.ProductUiOtherContextLimit();lock(sync){if(uiProjectRequest){if(uiProjectReferences<bucketLimit+1)uiProjectReferences++;bucketCount=uiProjectReferences;}else{if(uiOtherCalls<bucketLimit+1)uiOtherCalls++;bucketCount=uiOtherCalls;}}
                 if(bucketCount>bucketLimit)BudgetDiagnostic(count,limit,uiProjectRequest?"PROJECT_REFERENCE":"OTHER_CONTEXT",bucketCount,bucketLimit);
                 ProbeFiles.Require(bucketCount<=bucketLimit,uiProjectRequest?"VALIDATOR_UI_PROJECT_REFERENCE_BUDGET":"VALIDATOR_UI_OTHER_CONTEXT_BUDGET");}
-            bool validator=false;
+            attemptStage="METHOD_SELECTION";bool validator=false;
             if(uiProjectRequest)operation=3;
             else{
             validator=ProjectConstructorProbe.ExactRuntimeMethod(method,closedMethod);
@@ -921,29 +1053,41 @@ internal sealed class ContextValidatorAdapter
             if(!validator&&productCacheReleaseMethod!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,productCacheReleaseMethod))operation=17;
             }
             ProbeFiles.Require(validator||operation>=0,"VALIDATOR_CONTEXT_UNSUPPORTED");
-            if(ProjectConstructorProbe.ProductUiFixtureMode()){lock(sync){UiMethodCount tally;if(!uiMethodCounts.TryGetValue(method,out tally)){ProbeFiles.Require(uiMethodCounts.Count<64,"UI_METHOD_SUMMARY_BOUND");string label=uiValidatorCase>=0?"GetValidator:"+uiValidatorTypes[uiValidatorCase].CheckerType.Name:validator?"GetValidator:"+(childCase>=0?"Child"+childCase:"Project"):method.Name;tally=new UiMethodCount{Label=ProjectConstructorProbe.Text(label)};uiMethodCounts.Add(method,tally);}if(tally.Count<ProjectConstructorProbe.ContextAdapterLimit()+1)tally.Count++;lastUiMethod=tally.Label;}}
+            if(compactProfile){lock(sync){UiMethodCount tally;if(!uiMethodCounts.TryGetValue(method,out tally)){ProbeFiles.Require(uiMethodCounts.Count<64,"UI_METHOD_SUMMARY_BOUND");string label=uiValidatorCase>=0?"GetValidator:"+uiValidatorTypes[uiValidatorCase].CheckerType.Name:validator?"GetValidator:"+(childCase>=0?"Child"+childCase:"Project"):method.Name;tally=new UiMethodCount{Label=ProjectConstructorProbe.Text(label)};uiMethodCounts.Add(method,tally);}if(tally.Count<ProjectConstructorProbe.ContextAdapterLimit()+1)tally.Count++;lastUiMethod=tally.Label;}}
 
+            attemptStage="PHASE";
             if(operation==4)phase=notificationPhase;else if(operation==5)phase=undoPhase;else if(operation==6)phase=writePhase;else if(operation==8||operation==9||operation==10)phase=allDevicesPhase;else if(operation==11)phase=uiCachePhase;else if(operation==12)phase=uiCachePhase||undoPhase;else if(operation==13||operation==14)phase=uiCachePhase;
             if(operation==3&&productCleanupPhase){lock(sync){ProbeFiles.Require(project!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(project)&&project.GetType()==projectType&&project.GetType().Module==scalarMethods[3].Module,"PRODUCT_DISPOSAL_EXACT_RETAINED_PROJECT");}phase=true;}
+            if(ReferenceDcaRequiredParameters.AllowsReadOperation(parameterReadPhase,operation)){
+                if(operation==3){lock(sync){ProbeFiles.Require(project!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(project)&&project.GetType()==projectType&&project.GetType().Module==scalarMethods[3].Module,"PARAMETER_READ_EXACT_RETAINED_PROJECT");}}
+                phase=true;
+            }
             if(operation==15||operation==16||operation==17)phase=productCleanupPhase;
-            if(uiValidatorCase>=0)phase=uiCachePhase;
+            bool parameterPreparedService=ReferenceDcaRequiredParameters.AllowsPreparedService(parameterCachePhase,Thread.CurrentThread.ManagedThreadId==owner,uiValidatorCase>=0,operation);
+            if(uiValidatorCase>=0)phase=uiCachePhase||parameterPreparedService;
+            if(operation==14&&parameterPreparedService){phase=true;parameterCacheOperation=true;}
             if(operation==14&&uiCachePhase)uiCacheOperation=true;
             if((operation==10||operation==11||operation==12||operation==13||uiValidatorCase>=0)&&uiCachePhase){ProbeFiles.Require(Monitor.TryEnter(productUiCacheGate,2000),"PRODUCT_UI_CACHE_SERIALIZATION_TIMEOUT");ownsProductCacheGate=true;uiCacheOperation=true;phase=true;}
+            if(ReferenceDcaRequiredParameters.AllowsBackgroundRead(parameterCachePhase,operation)||ReferenceDcaRequiredParameters.AllowsReadOperation(parameterReadPhase,operation)||(parameterPreparedService&&operation!=14)){
+                ProbeFiles.Require(!ownsProductCacheGate&&Monitor.TryEnter(productUiCacheGate,2000),"PARAMETER_CACHE_SERIALIZATION_TIMEOUT");ownsProductCacheGate=true;
+                ProbeFiles.Require(ProjectConstructorProbe.ParameterDefinitionCacheLifetime(),"PARAMETER_CACHE_SCOPE_EXPIRED");parameterCacheOperation=true;phase=true;
+            }
             lock(sync){
                 bool nestedScalar=entered&&constructorActive&&((operation>=0&&operation<4)||(ProjectConstructorProbe.DeviceFixtureMode()&&(operation==8||operation==9||operation==10)))&&!scalarActive&&excluded;
-                if(fault||lifetime!=1||(Thread.CurrentThread.ManagedThreadId!=owner&&!uiCacheOperation)||(!nestedScalar&&(!phase||excluded||entered))){
+                if(fault||lifetime!=1||(Thread.CurrentThread.ManagedThreadId!=owner&&!uiCacheOperation&&!parameterCacheOperation)||(!nestedScalar&&(!phase||excluded||entered))){
                     bool before=fault;fault=true;
-                    if(ProjectConstructorProbe.ProductUiFixtureMode())record("CONTEXT_ADAPTER_PHASE_DENIAL operation="+operation+" owner-thread="+owner+" current-thread="+Thread.CurrentThread.ManagedThreadId+" lifetime="+lifetime+" fault-before="+before+" phase="+phase+" excluded="+excluded+" entered="+entered+" constructor-active="+constructorActive+" scalar-active="+scalarActive+" nested-selected="+nestedScalar+" values=NOT_INSPECTED");
+                    if(ProjectConstructorProbe.ProductUiFixtureMode()||parameterReadPhase||parameterCachePhase)record("CONTEXT_ADAPTER_PHASE_DENIAL operation="+operation+" owner-thread="+owner+" current-thread="+Thread.CurrentThread.ManagedThreadId+" lifetime="+lifetime+" fault-before="+before+" phase="+phase+" excluded="+excluded+" entered="+entered+" constructor-active="+constructorActive+" scalar-active="+scalarActive+" nested-selected="+nestedScalar+" active-callback-thread="+activeCallbackThread+" active-callback-operation="+activeCallbackOperation+" same-callback-thread="+(activeCallbackThread==Thread.CurrentThread.ManagedThreadId)+" values=NOT_INSPECTED");
                     throw new NotSupportedException("VALIDATOR_CONTEXT_PHASE");
                 }
-                if(!nestedScalar){entered=true;ownsEntry=true;}if(operation>=0){scalarActive=true;ownsScalar=true;}
+                if(!nestedScalar){entered=true;ownsEntry=true;activeCallbackThread=Thread.CurrentThread.ManagedThreadId;activeCallbackOperation=operation;}if(operation>=0){scalarActive=true;ownsScalar=true;}
             }
-            var call=(IMethodCallMessage)message;int arity=validator?2:(operation==10||operation==13||operation==14||operation==16)?1:0;
+            attemptStage="CALL_SHAPE";var call=(IMethodCallMessage)message;int arity=validator?2:(operation==10||operation==13||operation==14||operation==16)?1:0;
             ProbeFiles.Require(call.MethodName==method.Name&&call.ArgCount==arity&&call.InArgCount==arity,"VALIDATOR_CALL_SHAPE");
             object[] arguments=call.Args;ProbeFiles.Require(arguments!=null&&arguments.Length==arity,"VALIDATOR_ARGUMENT_COUNT");
             object[] captured=new object[arity];for(int i=0;i<arity;i++)captured[i]=arguments[i];
             LogicalCallContext context=call.LogicalCallContext;string uri=call.Uri;ProbeFiles.Require(uri==null||uri.Length<=1024,"VALIDATOR_URI_BOUND");
             var snapshot=new ValidatorCallSnapshot(method,context,uri,captured,validator?validatorParameters:operation==10?new Type[]{productCacheMethods[referenceCase].GetParameters()[0].ParameterType}:operation==13?new Type[]{productMasterMethod.GetParameters()[0].ParameterType}:operation==14?new Type[]{typeof(Action)}:operation==16?new Type[]{typeof(bool)}:Type.EmptyTypes);
+            attemptStage="OPERATION";
             if(validator&&uiValidatorCase>=0){
                 UiValidatorType selected=uiValidatorTypes[uiValidatorCase];object child=captured[0],parent=captured[1];
                 ProbeFiles.Require(child!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(child)&&child.GetType()==selected.ObjectType&&parent!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(parent)&&parent.GetType().Module==selected.ObjectType.Module,"PRODUCT_UI_VALIDATOR_ACTUAL_TYPES");
@@ -1003,7 +1147,7 @@ internal sealed class ContextValidatorAdapter
                 result=productCacheWeak(operation==16,argument);ProbeFiles.Require(operation==16?result==null:result!=null&&result.GetType()==typeof(bool),"PRODUCT_CACHE_WEAK_ORIGINAL_RESULT");
             }else if(operation==14){
                 object action=captured[0];ProbeFiles.Require(action!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(action)&&action.GetType()==typeof(Action),"PRODUCT_CONTEXT_UI_EXACT_ACTION");
-                lock(sync){if(ownsEntry){entered=false;ownsEntry=false;}if(ownsScalar){scalarActive=false;ownsScalar=false;}}
+                lock(sync){if(ownsEntry){entered=false;ownsEntry=false;activeCallbackThread=0;activeCallbackOperation=-1;}if(ownsScalar){scalarActive=false;ownsScalar=false;}}
                 if(suspended){ProjectConstructorProbe.RestoreProjectResourceCallback(previous);suspended=false;}
                 productDispatch((Action)action);result=null;
             }else if(operation==13){ProbeFiles.Require(Object.ReferenceEquals(captured[0],productMasterFactory),"PRODUCT_CONTEXT_MASTER_SAME_GENUINE_FACTORY");result=productMasterReference;ProbeFiles.Require(result!=null&&result.GetType()==productMasterMethod.ReturnType,"PRODUCT_CONTEXT_MASTER_ORIGINAL_REFERENCE");
@@ -1021,14 +1165,16 @@ internal sealed class ContextValidatorAdapter
                     else {ProbeFiles.Require(project!=null,"CONTEXT_PROJECT_NOT_CAPTURED");result=project;}
                 }
             }
-            lock(sync){ProbeFiles.Require(!fault,"VALIDATOR_CAUGHT_FAULT");}
-            bool logReply;lock(sync){logReply=!ProjectConstructorProbe.ProductUiFixtureMode()||uiMethodCounts[method].Count==1;}
+            attemptStage="REPLY";lock(sync){ProbeFiles.Require(!fault,"VALIDATOR_CAUGHT_FAULT");}
+            bool logReply;lock(sync){logReply=!compactProfile||uiMethodCounts[method].Count==1;}
             if(logReply)record("CONTEXT_ADAPTER_REPLY method="+ProjectConstructorProbe.Text(method.Name)+" kind="+(validator?"GENUINE_CACHED_CHECKER":operation==3?"GENUINE_CAPTURED_PROJECT":operation==4?"GENUINE_CACHED_NOTIFICATION_SERVICE":operation==5?"GENUINE_CACHED_UNDO_MANAGER":operation==6?"OFFLINE_CONTROLLED_WRITE_FIXTURE_NOT_PERSISTENT_CONFIGURATION":operation==7?"GENUINE_CACHED_ID_CREATOR":operation==8?"GENUINE_CANONICAL_DEVICE_COLLECTION":operation==9?"GENUINE_CANONICAL_CONTEXT_REFERENCE":operation==10?"GENUINE_IMPORTED_PRODUCT_CACHE":operation==11?"OWNED_TRANSIENT_WEAK_FACADE_CACHE":operation==12?"GENUINE_ORIGINAL_PROJECT_LARGE_STRING_CACHE":operation==13?"GENUINE_LOADED_MASTER_REFERENCE":operation==14?"REAL_WPF_DISPATCHED_ACTION":operation==15||operation==16?"GENUINE_IMPORTED_CACHE_WEAK_POLICY":operation==17?"GENUINE_IMPORTED_CACHE_RELEASE":"EXPLICIT_CONTEXT_FIXTURE")+" values=NOT_LOGGED");
             IMessage response=new ReturnMessage(result,new object[0],0,context,snapshot);
             ProbeFiles.Require(!uiCacheOperation||ProjectConstructorProbe.ProductUiCacheLifetime(),"PRODUCT_UI_CACHE_COMPLETION_LIFETIME");
+            ProbeFiles.Require(!parameterCacheOperation||ProjectConstructorProbe.ParameterDefinitionCacheLifetime(),"PARAMETER_CACHE_COMPLETION_LIFETIME");
             lock(sync){ProbeFiles.Require(!fault&&!proxy.State.Faulted,"VALIDATOR_REPLY_FAULT");}prepared=true;return response;
-        }catch{
+        }catch(Exception error){
             Fail();int refusal=proxy.State.Deny();denied=true;
+            FirstFailure(error,attemptStage,count,limit,operation,faultAtEntry,method);
             if(refusal==1&&count<=limit&&ProjectConstructorProbe.UndoFactoryCallbackExcluded())proxy.DiagnoseCaptured(method,refusal);
             throw;
         }finally{
@@ -1037,19 +1183,30 @@ internal sealed class ContextValidatorAdapter
             finally{
                 try{
                     bool accepted;lock(sync){
-                        if(ownsEntry)entered=false;if(ownsScalar)scalarActive=false;
-                        accepted=prepared&&!fault&&!proxy.State.Faulted&&(!uiCacheOperation||ProjectConstructorProbe.ProductUiCacheLifetime());
+                        if(ownsEntry){entered=false;activeCallbackThread=0;activeCallbackOperation=-1;}if(ownsScalar)scalarActive=false;
+                        accepted=prepared&&!fault&&!proxy.State.Faulted&&(!uiCacheOperation||ProjectConstructorProbe.ProductUiCacheLifetime())&&(!parameterCacheOperation||ProjectConstructorProbe.ParameterDefinitionCacheLifetime());
                         if(accepted){if(operation<0){if(uiValidatorEntry!=null)uiValidatorEntry.Instance=result;else if(childCase>=0)childValidators[childCase].Instance=result;else checker=result;}else if(operation==7)idCreator=result;else if(operation==1)nextPuid=puid+1;else if(operation==2)dirty=true;else if(operation==4){notification=result;notificationReplies++;}else if(operation==5){undoManager=result;undoReplies++;}replies++;if(uiProfile){if(uiProjectRequest)uiProjectReplies++;else uiOtherReplies++;}}
                     }
                     if(prepared&&!accepted){Fail();if(!denied)proxy.State.Deny();throw new NotSupportedException("VALIDATOR_COMPLETION_FAULT");}
                 }finally{if(ownsProductCacheGate)Monitor.Exit(productUiCacheGate);}
             }
         }
+
+        }
+    }
+    bool parameterSummaryRecorded;
+    void ParameterMethodSummary(string phase)
+    {
+        if(!ProjectConstructorProbe.ParameterNegativeProfile()||phase!="PROCESS_FINAL")return;
+        List<UiMethodCount> snapshot;int e,r;lock(sync){if(parameterSummaryRecorded)return;parameterSummaryRecorded=true;e=entries;r=replies;snapshot=new List<UiMethodCount>();foreach(var item in uiMethodCounts.Values)snapshot.Add(new UiMethodCount{Label=item.Label,Count=item.Count});}
+        snapshot.Sort(delegate(UiMethodCount left,UiMethodCount right){return right.Count.CompareTo(left.Count);});
+        record("PARAMETER_READ_CALLBACK_SUMMARY phase=PROCESS_FINAL_FIRST entries="+e+" reply-commits="+r+" context-cap="+ProjectConstructorProbe.ContextAdapterLimit()+" selected-method-kinds="+snapshot.Count+" healthy-reply-logs=FIRST_PER_METHOD checks=EVERY_CALLBACK");
+        for(int i=0;i<snapshot.Count&&i<6;i++)record("PARAMETER_READ_METHOD_SUMMARY rank="+(i+1)+" method="+snapshot[i].Label+" selected-attempts="+snapshot[i].Count);
     }
     internal void Audit(string phase,Action<string> output)
     {
         int e,r,c,l;bool f,d,active;lock(sync){e=entries;r=replies;c=constructions;l=lifetime;f=fault;d=dirty;active=constructorActive||entered;}
-        try{if(f||e>ProjectConstructorProbe.ContextAdapterLimit()||r>e||c>1||notificationConstructions>1||undoFactoryCalls>1||active||ProjectConstructorProbe.InitializeAuditLog(phase))output("CONTEXT_ADAPTER_AUDIT phase="+phase+" entries="+e+" replies="+r+" ui-project-attempts="+uiProjectReferences+" ui-project-replies="+uiProjectReplies+" ui-other-attempts="+uiOtherCalls+" ui-other-replies="+uiOtherReplies+" constructions="+c+" lifetime="+l+" fault="+f+" dirty-fixture="+d+" pending="+active+" checker-retained="+(retainedChecker!=null)+" notification-constructions="+notificationConstructions+" notification-replies="+notificationReplies+" notification-retained="+(retainedNotification!=null)+" undo-factory-calls="+undoFactoryCalls+" undo-replies="+undoReplies+" undo-retained="+(retainedUndoManager!=null)+" values=NOT_LOGGED");}
+        try{ParameterMethodSummary(phase);if(f||e>ProjectConstructorProbe.ContextAdapterLimit()||r>e||c>1||notificationConstructions>1||undoFactoryCalls>1||active||ProjectConstructorProbe.InitializeAuditLog(phase))output("CONTEXT_ADAPTER_AUDIT phase="+phase+" entries="+e+" replies="+r+" ui-project-attempts="+uiProjectReferences+" ui-project-replies="+uiProjectReplies+" ui-other-attempts="+uiOtherCalls+" ui-other-replies="+uiOtherReplies+" constructions="+c+" lifetime="+l+" fault="+f+" dirty-fixture="+d+" pending="+active+" checker-retained="+(retainedChecker!=null)+" notification-constructions="+notificationConstructions+" notification-replies="+notificationReplies+" notification-retained="+(retainedNotification!=null)+" undo-factory-calls="+undoFactoryCalls+" undo-replies="+undoReplies+" undo-retained="+(retainedUndoManager!=null)+" values=NOT_LOGGED");}
         finally{if(f||e>ProjectConstructorProbe.ContextAdapterLimit()||r>e||c>1||notificationConstructions>1||undoFactoryCalls>1||idCreatorConstructions>1||uiProjectReferences>ProjectConstructorProbe.ProductUiProjectReferenceLimit()||uiOtherCalls>ProjectConstructorProbe.ProductUiOtherContextLimit()||uiProjectReplies>uiProjectReferences||uiOtherReplies>uiOtherCalls||active||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&l!=2))throw new NotSupportedException("CONTEXT_ADAPTER_FINAL_DENIAL");GC.KeepAlive(retainedChecker);GC.KeepAlive(project);GC.KeepAlive(retainedNotification);GC.KeepAlive(retainedUndoManager);GC.KeepAlive(retainedIdCreator);foreach(var value in childValidators){if(value.Constructions>1)throw new NotSupportedException("SDK_CHILD_VALIDATOR_FINAL_DENIAL");GC.KeepAlive(value);}}
     }
 }
@@ -1062,6 +1219,7 @@ internal sealed class ContextArgumentDenyProxy : RealProxy
     internal ContextArgumentDenyProxy(Type type,string label,Action<string> recorder,ContextValidatorAdapter positive) : this(type,label,recorder) { adapter=positive; }
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         if(adapter!=null)return adapter.Invoke(message,this);
         int count = State.Deny(); bool suspended = false; int previous = 0;
         try {
@@ -1082,6 +1240,8 @@ internal sealed class ContextArgumentDenyProxy : RealProxy
             return new ReturnMessage(error, call);
         } catch { State.Fail(); throw; }
         finally { try { if (suspended) ProjectConstructorProbe.RestoreProjectResourceCallback(previous); } catch { State.Fail(); throw; } }
+
+        }
     }
     internal void DiagnoseCaptured(MethodInfo method,int count)
     { record("CONTEXT_ARGUMENT_REFUSAL argument="+name+" denial="+count+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED caller-origin=UNKNOWN");DescribeValidator(method); }
@@ -1187,6 +1347,7 @@ internal sealed class SdkWriteContextProxy : RealProxy
     {int e,r,d;bool f,a,changed;lock(sync){e=entries;r=replies;d=dirtyCommits;f=fault;a=active;changed=dirty;}try{if(ProjectConstructorProbe.SdkAuditLog(phase)||f)record("SDK_WRITE_FIXTURE_AUDIT phase="+phase+" entries="+e+" replies="+r+" dirty-commits="+d+" dirty="+changed+" clean-commits="+cleanCommits+" active="+a+" fault="+f+" service=OFFLINE_CONTROLLED_FIXTURE_NOT_PERSISTENT_CONFIGURATION"+(writeScope==null?String.Empty:" scopes="+scopeAcquires+"/"+scopeReleases+"/"+scopeAborts+" scope-held="+scopeHeld));}finally{if(f||e>ProjectConstructorProbe.ProductUiWriteLimit()||r>e||d>r||cleanCommits>r||(writeScope!=null&&(scopeAborts!=0||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&(scopeHeld||scopeAcquires!=scopeReleases))))||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&a))throw new NotSupportedException("SDK_WRITE_FIXTURE_FINAL_DENIAL");GC.KeepAlive(project);}}
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int limit=ProjectConstructorProbe.ProductUiWriteLimit();int count;lock(sync){if(entries<limit+1)entries++;count=entries;}
         bool suspended=false,prepared=false,makeDirty=false,makeClean=false,queryDirty=false,queryLock=false,openScope=false,productCleanup=false;WriteLease lease=null;int previous=0,objectIndex=-1;MethodInfo method=null;string failureStage="ENTRY";object observedArgument=null;
         try{
@@ -1202,13 +1363,15 @@ internal sealed class SdkWriteContextProxy : RealProxy
             LogicalCallContext context=call.LogicalCallContext;string uri=call.Uri;ProbeFiles.Require(uri==null||uri.Length<=1024,"SDK_WRITE_FIXTURE_URI_BOUND");
             var snapshot=new ValidatorCallSnapshot(method,context,uri,arity==1?new object[]{argument}:new object[0],arity==1?new Type[]{method.GetParameters()[0].ParameterType}:Type.EmptyTypes);
             failureStage="STATE";object result;if(openScope){lease=AcquireScope();result=lease;}else if(makeDirty||makeClean)result=null;else if(queryDirty){lock(sync){result=objectIndex>=0&&dirtyObjects[objectIndex];}}else if(queryLock)result=!unlocked.WaitOne(TimeSpan.Zero);else result=unlocked.WaitOne(TimeSpan.Zero);
-            bool logReply;lock(sync){bool ui=ProjectConstructorProbe.ProductUiFixtureMode();logReply=!ui||!uiLoggedWriteReplies.ContainsKey(method);if(ui&&logReply)uiLoggedWriteReplies.Add(method,true);}
+            bool logReply;lock(sync){bool ui=ProjectConstructorProbe.ProductUiFixtureMode()||ProjectConstructorProbe.ParameterNegativeProfile();logReply=!ui||!uiLoggedWriteReplies.ContainsKey(method);if(ui&&logReply)uiLoggedWriteReplies.Add(method,true);}
             if(logReply)record("SDK_WRITE_FIXTURE_REPLY method="+method.Name+" entry="+count+" synchronization=OWNED_EVENT_NONBLOCKING service=OFFLINE_CONTROLLED_FIXTURE_NOT_PERSISTENT_CONFIGURATION");
             IMessage response=new ReturnMessage(result,new object[0],0,context,snapshot);lock(sync){ProbeFiles.Require(active&&!fault,"SDK_WRITE_FIXTURE_CAUGHT_FAULT");}prepared=true;return response;
         }catch{lock(sync){fault=true;}if(count<=limit){
                 if(ProjectConstructorProbe.ProductFixtureMode()){string argumentType=observedArgument==null?"NULL":System.Runtime.Remoting.RemotingServices.IsTransparentProxy(observedArgument)?"PROXY":ProjectConstructorProbe.Text(observedArgument.GetType().FullName);record("SDK_WRITE_FIXTURE_FAILURE stage="+failureStage+" count="+count+" limit="+limit+" product-cleanup="+productCleanup+" scope-held="+scopeHeld+" thread="+Thread.CurrentThread.ManagedThreadId+" argument-type="+argumentType+" values=NOT_INSPECTED");}
                 record("SDK_WRITE_FIXTURE_DENIED "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED");}throw;}
         finally{try{if(suspended)ProjectConstructorProbe.RestoreProjectResourceCallback(previous);}catch{lock(sync){fault=true;}throw;}finally{lock(sync){if(lease!=null&&(!prepared||fault))AbortScope(lease);if(prepared){ProbeFiles.Require(active&&!fault,"SDK_WRITE_FIXTURE_COMPLETION_FAULT");replies++;if(makeDirty){dirty=true;dirtyObjects[objectIndex]=true;dirtyCommits++;}else if(makeClean){if(objectIndex>=0)dirtyObjects[objectIndex]=false;dirty=false;foreach(bool value in dirtyObjects)if(value){dirty=true;break;}cleanCommits++;}}}}}
+
+        }
     }
     sealed class WriteLease:IDisposable
     {
@@ -1265,6 +1428,7 @@ internal sealed class SdkInitializationProjectProxy : RealProxy
     {int e,r,d,u;bool f,a;lock(sync){e=entries;r=replies;d=denials;u=absentReplies;f=fault;a=active;}try{if(ProjectConstructorProbe.SdkAuditLog(phase)||f)record("DCA_INITIALIZE_CONTEXT_AUDIT phase="+phase+" entries="+e+" project-reply-commits="+(r-u)+" absent-user-configuration-commits="+u+" denials="+d+" fault="+f+" active="+a+" caller-receipt=UNKNOWN");}finally{if(f||d!=0||e>16||r>e||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&a))throw new NotSupportedException("DCA_INITIALIZE_CONTEXT_FINAL_DENIAL");GC.KeepAlive(project);}}
     public override IMessage Invoke(IMessage message)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         int count;lock(sync){if(entries<17)entries++;count=entries;}
         bool suspended=false;int previous=0;MethodInfo method=null;
         try{
@@ -1285,6 +1449,8 @@ internal sealed class SdkInitializationProjectProxy : RealProxy
             int denied;lock(sync){fault=true;if(denials<17)denials++;denied=denials;}
             if(count<=16&&denied==1)record("DCA_INITIALIZE_CONTEXT_REFUSAL entry="+count+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED caller-origin=UNKNOWN");throw;
         }finally{try{if(suspended)ProjectConstructorProbe.RestoreProjectResourceCallback(previous);}catch{lock(sync){fault=true;}throw;}}
+
+        }
     }
 }
 
@@ -1401,7 +1567,7 @@ internal static class ProjectConstructorProbe
     static bool SdkDeviceMode {get{return (mode=="original-sdk-device-fixture"||mode==OriginalProductImportProbe.Mode);}}
     internal static bool DeviceFixtureMode(){return SdkDeviceMode;}
     internal static bool ProductFixtureMode(){return SdkProductMode;}
-    internal static int ContextAdapterLimit(){return SdkUiRequested?10200000:SdkProductMode?64:SdkDeviceMode?32:16;}
+    internal static int ContextAdapterLimit(){return ReferenceDcaRequiredParameters.ContextBudget(ParameterNegativeProfile(),SdkUiRequested?10200000:SdkProductMode?64:SdkDeviceMode?32:16);}
     static bool SdkOwned { get { return mode == "owned-sdk-project-fixture"; } }
     internal static bool SdkMode { get { return SdkOriginal || SdkOwned; } }
     static bool GuidOriginal { get { return mode == "original-project-guid-fixture" || SdkOriginal; } }
@@ -1452,8 +1618,10 @@ internal static class ProjectConstructorProbe
         value = value.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\0", "\\0");
         return value.Length <= 512 ? value : value.Substring(0, 512) + "[truncated]";
     }
+    static readonly ReferenceHealthyLogCoalescer healthyLog=new ReferenceHealthyLogCoalescer();
     static void Record(string value)
     {
+        if(!healthyLog.ShouldEmit(CompactProductDiagnostics(),value))return;
         byte[] bytes = Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) + " " + value + "\n");
         lock (LogLock) {
             ProbeFiles.Require(logBytes <= 65536 - bytes.Length, "PROJECT_LOG_LIMIT");
@@ -1861,7 +2029,7 @@ internal static class ProjectConstructorProbe
         }
         if(!allowed&&SdkProductMode)allowed=AllowProductGenerated(assembly);
         if(!allowed||!productDetail){
-            if(allowed&&ProductUiFixtureMode()&&!assembly.IsDynamic)Interlocked.Increment(ref sdkUiCompactedAssemblyLogs);
+            if(allowed&&CompactProductDiagnostics()&&!assembly.IsDynamic)Interlocked.Increment(ref sdkUiCompactedAssemblyLogs);
             else Record("PROJECT_ASSEMBLY allowed=" + allowed + " reflection-only=" + assembly.ReflectionOnly + " identity=" + Text(assembly.FullName));
         }
         if (!allowed) { unexpected = true;
@@ -3908,9 +4076,9 @@ internal static class ProjectConstructorProbe
         Record("SDK_IMPORTER_REGISTER_END same-existing-delegate=True SingleInstance=True ExternallyOwned=True invocation=UNSUPPORTED registrations=5");
     }
     internal static bool InitializeAuditLog(string phase)
-    {return ProductUiFixtureMode()?!sdkUiSuppressRepeatedHealthyFinal&&phase=="PROCESS_FINAL":!SdkInitializing||phase=="POST_DISPOSE"||phase=="AFTER_ALL_MANAGED_CLEANUP"||phase=="PROCESS_FINAL";}
+    {return CompactProductDiagnostics()?!sdkUiSuppressRepeatedHealthyFinal&&phase=="PROCESS_FINAL":!SdkInitializing||phase=="POST_DISPOSE"||phase=="AFTER_ALL_MANAGED_CLEANUP"||phase=="PROCESS_FINAL";}
     internal static bool SdkAuditLog(string phase)
-    { return ProductUiFixtureMode()?!sdkUiSuppressRepeatedHealthyFinal&&phase=="PROCESS_FINAL":!SdkOriginal || phase=="AFTER_ALL_MANAGED_CLEANUP" || phase=="PROCESS_FINAL" || phase=="POST_DISPOSE"; }
+    { return CompactProductDiagnostics()?!sdkUiSuppressRepeatedHealthyFinal&&phase=="PROCESS_FINAL":!SdkOriginal || phase=="AFTER_ALL_MANAGED_CLEANUP" || phase=="PROCESS_FINAL" || phase=="POST_DISPOSE"; }
     static void RegisterSdkUi(object builder)
     {
         object registration=sdkUiApi.Register.Invoke(null,new object[]{builder,sdkUiHolder.Callback});ProbeFiles.Require(registration!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(registration)&&sdkUiApi.Return.IsInstanceOfType(registration)&&registration.GetType().Assembly==sdkUiApi.Return.Assembly,"SDK_UI_REGISTRATION_RETURN");ProbeFiles.Require(Object.ReferenceEquals(registration,sdkUiApi.Single.Invoke(registration,new object[0]))&&Object.ReferenceEquals(registration,sdkUiApi.External.Invoke(registration,new object[0])),"SDK_UI_SINGLE_EXTERNAL");TraceDependencyGuard(unexpected,rejected,"SDK_UI_REGISTER");Record("SDK_UI_REGISTER_END contract=ORIGINAL_IDISPATCHER implementation=OWNED_REAL_WPF_ADAPTER SingleInstance=True ExternallyOwned=True registrations=4");
@@ -3948,12 +4116,13 @@ internal static class ProjectConstructorProbe
     }
     static bool SdkUiRequested{get{return SdkProductMode&&sdkUiSeconds==600;}}
     internal static bool ProductUiFixtureMode(){return SdkUiRequested;}
-    internal static int ProductUiCacheRequestLimit(){return SdkUiRequested?200000:32;}
-    internal static int ProductUiCreatorLimit(){return SdkUiRequested?200000:128;}
-    internal static int ProductUiWriteLimit(){return SdkUiRequested?200000:16;}
+    internal static bool CompactProductDiagnostics(){return ReferenceDcaRequiredParameters.CompactDiagnostics(ProductUiFixtureMode(),ParameterNegativeProfile());}
+    internal static int ProductUiCacheRequestLimit(){return ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:32);}
+    internal static int ProductUiCreatorLimit(){return ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:128);}
+    internal static int ProductUiWriteLimit(){return ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:16);}
     internal static int ProductUiProjectReferenceLimit(){return SdkUiRequested?10000000:0;}
     internal static int ProductUiOtherContextLimit(){return SdkUiRequested?200000:ContextAdapterLimit();}
-    internal static string ContextBudgetModeDescription(){return "mode="+Text(mode)+" ui-requested="+SdkUiRequested+" ui-active="+sdkProductUiActive+" ui-seconds="+sdkUiSeconds;}
+    internal static string ContextBudgetModeDescription(){return "mode="+Text(mode)+" ui-requested="+SdkUiRequested+" ui-active="+sdkProductUiActive+" ui-seconds="+sdkUiSeconds+" parameter-negative="+ParameterNegativeProfile();}
     static volatile bool sdkProductUiActive;
     internal static bool ProductUiCacheLifetime(){return sdkProductUiActive&&SdkUiRequested&&ProductDependencyComplete&&contextLifetime;}
     internal static bool ProductUiCacheEligible(){return ProductUiCacheLifetime()&&(Thread.CurrentThread.ManagedThreadId!=sdkOwner||(sdkWrapperPhase&&projectResourceBudgetActive))&&projectResourceWindow==0&&!projectResourceCallbackSuspended;}
@@ -3975,7 +4144,9 @@ internal static class ProjectConstructorProbe
     {try{if(sdkWriteFixture!=null)sdkWriteFixture.Audit(phase);}finally{try{if(sdkInitialization!=null)sdkInitialization.Audit(phase);}finally{try{CheckSdkFixtureCore(phase);}finally{CheckProductMaster(phase);}}}}
     static void CheckSdkFixtureCore(string phase)
     {
-        if(ProductUiFixtureMode()&&SdkAuditLog(phase)){
+        try{if(phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")sdkParameterReadPublication.CheckClosed();}
+        finally{
+        if(CompactProductDiagnostics()&&SdkAuditLog(phase)){
             var policies=new List<SdkProductApplicationPolicy>{sdkProductFilePath,sdkProductContentWriter,sdkProductApplication,sdkProductStringStream};
             if(sdkProductManufacturerReads!=null)policies.AddRange(sdkProductManufacturerReads);if(sdkProductProjectReads!=null)policies.AddRange(sdkProductProjectReads);
             int configured=0,used=0,faults=0;foreach(var policy in policies)if(policy!=null){configured++;if(policy.Used)used++;if(policy.Faulted)faults++;}
@@ -3984,7 +4155,9 @@ internal static class ProjectConstructorProbe
         }
         try{try{if(sdkMapping!=null)sdkMapping.Audit(phase);}finally{try{if(sdkRootData!=null)sdkRootData.Audit(phase);}finally{try{if(sdkUi!=null)sdkUi.Audit(phase);}finally{if(sdkUiHolder!=null)ProbeFiles.Require(!sdkUiHolder.Faulted&&sdkUiHolder.Entries<=1&&sdkUiHolder.Successes<=1,"SDK_UI_REFERENCE_FINAL_DENIAL");}}}}
         finally{try{if(sdkKim!=null){if(sdkKim.Faulted||SdkAuditLog(phase))Record("SDK_KIM_AUDIT phase="+phase+" entries="+sdkKim.Entries+" successes="+sdkKim.Successes+" fault="+sdkKim.Faulted);ProbeFiles.Require(!sdkKim.Faulted&&sdkKim.Entries<=1&&sdkKim.Successes<=1,"SDK_KIM_FINAL_DENIAL");}}
-            finally{try{if(sdkDevicePlugin!=null)ProbeFiles.Require(sdkDevicePlugin.State.Entries==0&&!sdkDevicePlugin.State.Faulted,"SDK_DEVICE_PLUGIN_FINAL_DENIAL");}finally{GC.KeepAlive(sdkDeviceRetained);GC.KeepAlive(sdkDevicePreviousEmptyCollections);}ProbeFiles.Require(!sdkProbeFault&&!sdkFirstChanceFault&&sdkProbeAttempts<=1&&((phase!="PROCESS_FINAL"&&phase!="AFTER_ALL_MANAGED_CLEANUP")||!sdkWrapperPhase&&!sdkRootSetupPhase&&!sdkModelRootConstructorActive&&!sdkDeviceFactoryInvokeActive),"SDK_WRAPPER_FINAL_DENIAL");GC.KeepAlive(sdkRetained);GC.KeepAlive(sdkModelRoot);}}
+            finally{try{if(sdkDevicePlugin!=null)ProbeFiles.Require(sdkDevicePlugin.State.Entries==0&&!sdkDevicePlugin.State.Faulted,"SDK_DEVICE_PLUGIN_FINAL_DENIAL");}finally{GC.KeepAlive(sdkDeviceRetained);GC.KeepAlive(sdkDevicePreviousEmptyCollections);}ProbeFiles.Require(!sdkProbeFault&&!sdkFirstChanceFault&&sdkProbeAttempts<=1&&((phase!="PROCESS_FINAL"&&phase!="AFTER_ALL_MANAGED_CLEANUP")||!sdkWrapperPhase&&!sdkRootSetupPhase&&!sdkModelRootConstructorActive&&!sdkDeviceFactoryInvokeActive&&!sdkParameterDefinitionReadActive&&!sdkParameterReadPublication.Accepting&&sdkParameterReadPublication.Inflight==0&&!sdkParameterReadPublication.Faulted),"SDK_WRAPPER_FINAL_DENIAL");GC.KeepAlive(sdkRetained);GC.KeepAlive(sdkModelRoot);}}
+
+        }
     }
     sealed class SdkProjectApi
     {internal Type Root,Collection,Project,Execution;internal ConstructorInfo Constructor,ExecutionConstructor;internal MethodInfo Projects,Item,ValidProject;}
@@ -4387,9 +4560,9 @@ internal static class ProjectConstructorProbe
         activeValidator.ConfigureProductMaster(contextMaster,productMaster,contextGenuineFactory);
         Type productStoreContract=om.GetType("Knx.Ets.ObjectModel.IProductStore",true);MethodInfo applicationStore=SdkDeviceMethod(productStoreContract,0x060002d9);
         ProbeFiles.Require(productStoreContract.MetadataToken==0x02000052&&applicationStore.Name=="ApplicationProgram"&&applicationStore.ReturnType==om.GetType("Knx.Ets.ObjectModel.IStore",true)&&applicationStore.GetParameters().Length==1&&applicationStore.GetParameters()[0].ParameterType==appIdType&&(int)applicationStore.Attributes==1478&&activeCache!=null&&sdkProductApplication==null,"PRODUCT_APPLICATION_STORE_EXACT_ABI");
-        sdkProductApplication=new SdkProductApplicationPolicy(applicationStore,selectedApp,sdkProductImport.ApplicationProgram,Record);activeCache.ConfigureProductApplication(sdkProductApplication);
+        sdkProductApplication=new SdkProductApplicationPolicy(applicationStore,selectedApp,sdkProductImport.ApplicationProgram,Record,null,ProductDataReadLifetime);activeCache.ConfigureProductApplication(sdkProductApplication);
         string[] readNames={"ApplicationPrograms","Hardware","Baggages"};int[] readTokens={0x060002e0,0x060002d7,0x060002d8};sdkProductManufacturerReads=new SdkProductApplicationPolicy[3];
-        for(int i=0;i<3;i++){MethodInfo readMethod=SdkDeviceMethod(productStoreContract,readTokens[i]);Type expected=i==0?typeof(IEnumerable<>).MakeGenericType(appIdType):applicationStore.ReturnType;ProbeFiles.Require(readMethod.Name==readNames[i]&&readMethod.ReturnType==expected&&readMethod.GetParameters().Length==1&&readMethod.GetParameters()[0].ParameterType==manufacturer.GetType()&&(int)readMethod.Attributes==1478,"PRODUCT_MANUFACTURER_READ_EXACT_ABI");int selectedRead=i;sdkProductManufacturerReads[i]=new SdkProductApplicationPolicy(readMethod,manufacturer,delegate(object id){return sdkProductImport.ManufacturerRead(selectedRead,id,selectedApp);},Record,i==0?typeof(List<>).MakeGenericType(appIdType):null);}
+        for(int i=0;i<3;i++){MethodInfo readMethod=SdkDeviceMethod(productStoreContract,readTokens[i]);Type expected=i==0?typeof(IEnumerable<>).MakeGenericType(appIdType):applicationStore.ReturnType;ProbeFiles.Require(readMethod.Name==readNames[i]&&readMethod.ReturnType==expected&&readMethod.GetParameters().Length==1&&readMethod.GetParameters()[0].ParameterType==manufacturer.GetType()&&(int)readMethod.Attributes==1478,"PRODUCT_MANUFACTURER_READ_EXACT_ABI");int selectedRead=i;sdkProductManufacturerReads[i]=new SdkProductApplicationPolicy(readMethod,manufacturer,delegate(object id){return sdkProductImport.ManufacturerRead(selectedRead,id,selectedApp);},Record,i==0?typeof(List<>).MakeGenericType(appIdType):null,ProductDataReadLifetime);}
         activeCache.ConfigureProductManufacturerReads(sdkProductManufacturerReads);
         MethodInfo filePath=SdkDeviceMethod(productStoreContract,0x060002e4);
         ProbeFiles.Require(filePath.Name=="get_FilePath"&&filePath.ReturnType==typeof(string)&&filePath.GetParameters().Length==0&&(int)filePath.Attributes==3526&&sdkProductFilePath==null,"PRODUCT_FILE_PATH_EXACT_ABI");
@@ -4405,14 +4578,16 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(projectStoreContract.MetadataToken==0x02000057&&getter.Name==saveNames[i]&&getter.ReturnType==result&&getter.GetParameters().Length==0&&(int)getter.Attributes==3526,"PRODUCT_PROJECT_SAVE_GETTER_EXACT_ABI");int selected=i;
             sdkProductProjectReads[i]=new SdkProductApplicationPolicy(getter,null,delegate(object ignored){return sdkProductImport.ProjectStateRead(selected,ignored);},Record,i<14?null:typeof(List<>).MakeGenericType(element),ProductStoreDisposalLifetime);}
         activeCache.ConfigureProductProjectReads(sdkProductProjectReads);
-        if(SdkUiRequested){
+        if(ProductDefinitionContextRequested()){
             MethodInfo contextStrings=SdkDeviceMethod(objectContext,0x06000258),storeStrings=SdkDeviceMethod(om.GetType("Knx.Ets.ObjectModel.IProjectStore",true),0x06000313);
             ProbeFiles.Require(contextStrings.Name=="get_LargeStringCache"&&contextStrings.ReturnType.MetadataToken==0x02000f24&&contextStrings.ReturnType.Module==om.ManifestModule&&contextStrings.GetParameters().Length==0&&(int)contextStrings.Attributes==3526&&storeStrings.Name=="get_LargeStringCache"&&storeStrings.ReturnType==om.GetType("Knx.Ets.ObjectModel.IStreamStore",true)&&storeStrings.GetParameters().Length==0,"PRODUCT_LARGE_STRING_CONTEXT_STORE_ABI");
             object[] strings=sdkProductImport.PrepareLargeStrings();activeValidator.ConfigureProductLargeStrings(contextStrings,strings[1]);
+            sdkProductStringStream=new SdkProductApplicationPolicy(storeStrings,null,sdkProductImport.LargeStringStream,Record,null,ProductDataReadLifetime);activeCache.ConfigureProductStringStream(sdkProductStringStream);
+        }
+        if(ProductDefinitionContextRequested()){
             PrepareProductUiValidators(om,objectContext,project);
             MethodInfo contextDispatch=SdkDeviceMethod(objectContext,0x0600026a);ProbeFiles.Require(contextDispatch.Name=="CheckUiDispatcherAccess"&&contextDispatch.ReturnType==typeof(void)&&contextDispatch.GetParameters().Length==1&&contextDispatch.GetParameters()[0].ParameterType==typeof(Action)&&(int)contextDispatch.Attributes==1478&&sdkUi!=null,"PRODUCT_CONTEXT_UI_DISPATCH_EXACT_ABI");
             activeValidator.ConfigureProductDispatcher(contextDispatch,sdkUi.InvokeContextUiAction);
-            sdkProductStringStream=new SdkProductApplicationPolicy(storeStrings,null,sdkProductImport.LargeStringStream,Record);activeCache.ConfigureProductStringStream(sdkProductStringStream);
         }
         Record("PRODUCT_FACADE_CACHE_READY getter=06000268 implementation=ORIGINAL_DECLARED_BCL_DICTIONARY ownership=TRANSIENT_CONTEXT_WEAK_CACHE initial-count=0 population=ORIGINAL_SDK_UI_ONLY product-data=NOT_SUBSTITUTED");
         ProbeFiles.Require(productMasterBound&&productMaster!=null&&sdkProductManufacturer==null,"PRODUCT_IMPORT_MASTER_MANUFACTURER_PHASE");
@@ -4446,7 +4621,7 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(child.MetadataToken==objectTokens[i]&&child.IsPublic&&!child.IsGenericType&&baseObject.IsAssignableFrom(child)&&checker.MetadataToken==checkerTokens[i]&&checker.IsPublic&&!checker.IsAbstract&&!checker.IsGenericType&&validator.IsAssignableFrom(checker)&&ctor!=null&&ctor.IsPublic&&!ctor.IsStatic&&ctor.MetadataToken==ctorTokens[i]&&(int)ctor.Attributes==6278,"PRODUCT_UI_VALIDATOR_FIXED_ORIGINAL_CONSTRUCTOR");
             cases[i]=new ContextValidatorAdapter.UiValidatorType{ObjectType=child,CheckerType=checker,Constructor=ctor,Method=definition.MakeGenericMethod(checker),Parent=i==0?SdkDeviceMethod(child,0x06001852):SdkDeviceMethod(om.GetType("Knx.Ets.ObjectModel.DomObject",true),0x06000114),Context=SdkDeviceMethod(baseObject,0x060029cd),Project=SdkDeviceMethod(baseObject,0x060029e4)};
         }
-        activeValidator.ConfigureUiValidators(cases,project);Record("PRODUCT_UI_VALIDATORS_READY types=2 original-public-constructors=True cache=OBJECT_AND_CLOSED_TYPE max-objects=20000 other-types=DENIED");
+        activeValidator.ConfigureUiValidators(cases,project);Record("PRODUCT_UI_VALIDATORS_READY types=2 original-public-constructors=True cache=OBJECT_AND_CLOSED_TYPE max-objects=20000 other-types=DENIED profile=UI_OR_EXPLICIT_DEFINITION_READ");
     }
     static void CreateSdkReferenceDevice(object project,object sdkProject)
     {
@@ -4476,16 +4651,102 @@ internal static class ProjectConstructorProbe
         try{device=createDevice.Invoke(contextGenuineFactory,new object[]{hp,product,null,"DALI Control 64 Gateway",String.Empty,null,"SCN-DA641.04 offline fixture",String.Empty,null,false,ipNone,Type.Missing});}finally{sdkDeviceFactoryInvokeActive=false;}
         ProbeFiles.Require(device!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(device)&&device.GetType()==deviceType,"SDK_DEVICE_GENUINE_FACTORY_RETURN");sdkDeviceRetained[3]=device;
         ProbeFiles.Require(Object.ReferenceEquals(devicesGetter.Invoke(installation,new object[0]),devices),"SDK_DEVICE_CANONICAL_COLLECTION_STABLE");BindSdkReferenceObject(device,devices);SdkAttachReferenceObject(devices,device,"Knx.Ets.ObjectModel.Project.DeviceCollection",0x02000230);
+        bool parameterReads=SdkUiRequested||ownedParameterNegative;object sdkDevice=null,requiredDefinition=null;
+        if(parameterReads)BeginParameterCacheReadScope();
+        try{
         Type sdkType=sdkProject.GetType();MethodInfo sdkInstallations=SdkDeviceMethod(sdkType,0x0600141d);object sdkCollection=sdkInstallations.Invoke(sdkProject,new object[0]);Type sdkInstallationType=sdkType.Assembly.GetType("Knx.Ets.Sdk.Project.Installation",true),sdkDeviceType=sdkType.Assembly.GetType("Knx.Ets.Sdk.Project.Device",true);
         ProbeFiles.Require(sdkCollection!=null&&sdkInstallationType.MetadataToken==0x020001ba&&sdkDeviceType.MetadataToken==0x020001a0,"SDK_DEVICE_SDK_TYPES");object sdkInstallation=SdkSingleReferenceItem(sdkCollection,sdkInstallationType,0x0600133b);
-        object sdkDevices=SdkDeviceMethod(sdkInstallationType,0x06001308).Invoke(sdkInstallation,new object[0]);ProbeFiles.Require(sdkDevices!=null,"SDK_DEVICE_SDK_DEVICE_COLLECTION");object sdkDevice=SdkSingleReferenceItem(sdkDevices,sdkDeviceType,0x060011af);
+        object sdkDevices=SdkDeviceMethod(sdkInstallationType,0x06001308).Invoke(sdkInstallation,new object[0]);ProbeFiles.Require(sdkDevices!=null,"SDK_DEVICE_SDK_DEVICE_COLLECTION");sdkDevice=SdkSingleReferenceItem(sdkDevices,sdkDeviceType,0x060011af);
         sdkDeviceRetained[4]=sdkCollection;sdkDeviceRetained[5]=sdkInstallation;sdkDeviceRetained[6]=sdkDevice;Record("SDK_REFERENCE_DEVICE_OBTAINED exact-genuine-wrapper=True before-dependency-postcondition=True dependency-clean=NOT_ASSERTED GetDcaUi=NOT_RUN");TraceDependencyGuard(unexpected,rejected,"SDK_REFERENCE_DEVICE_POST");
         Record("SDK_REFERENCE_DEVICE_END returned=True exact-genuine-wrapper=True original-product-lookups=NOT_QUALIFIED GetDcaUi=NOT_RUN hardware=NOT_RUN");
         MethodInfo productGetter=SdkDeviceMethod(sdkDeviceType,0x060010e2);ProbeFiles.Require(productGetter.GetParameters().Length==0&&productGetter.ReturnType.Module==sdkDeviceType.Module&&productGetter.ReturnType.FullName=="Knx.Ets.Sdk.Product.Product","SDK_DEVICE_REFERENCE_PRODUCT_READ_ABI");
         Record("SDK_REFERENCE_PRODUCT_READ_BEGIN token=060010E2 operation=OFFLINE_LOCAL_MODEL_READ GetDcaUi=NOT_RUN");object actualProduct=productGetter.Invoke(sdkDevice,new object[0]);
         Record("SDK_REFERENCE_PRODUCT_READ_END returned="+(actualProduct!=null)+" genuine="+(actualProduct!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualProduct)&&actualProduct.GetType()==productGetter.ReturnType)+" application-match=NOT_QUALIFIED");
         ProbeFiles.Require(actualProduct!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualProduct)&&actualProduct.GetType()==productGetter.ReturnType,"SDK_DEVICE_REFERENCE_PRODUCT_NOT_AVAILABLE");sdkDeviceRetained[8]=actualProduct;
-        if(SdkUiRequested)ShowSdkProductUi(sdkDevice);
+        if(parameterReads)requiredDefinition=OriginalRequiredParameterDefinition(sdkDevice);
+        }finally{if(parameterReads)EndParameterCacheReadScope();}
+        if(parameterReads){
+            if(ownedParameterNegative)RunMissingParameterDefinitionNegative(requiredDefinition);
+            else ReferenceDcaRequiredParameters.BeforeUi(requiredDefinition,delegate{ShowSdkProductUi(sdkDevice);});
+        }
+    }
+    static bool ownedParameterNegative;
+    [ThreadStatic] static bool sdkParameterDefinitionReadActive;
+    static readonly ParameterReadPublication sdkParameterReadPublication=new ParameterReadPublication();
+    [ThreadStatic] static int sdkParameterInvocationDepth;
+    sealed class ParameterInvocationLease:IDisposable
+    {
+        IDisposable lease;readonly int thread=Thread.CurrentThread.ManagedThreadId;
+        internal ParameterInvocationLease(IDisposable value){lease=value;}
+        public void Dispose(){IDisposable value=Interlocked.Exchange(ref lease,null);if(value==null)return;try{ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId==thread&&sdkParameterInvocationDepth>0,"PARAMETER_READ_LEASE_THREAD");sdkParameterInvocationDepth--;}finally{value.Dispose();}}
+    }
+    internal static IDisposable AcquireParameterReadInvocation()
+    {
+        if(!ProductDefinitionContextRequested())return null;
+        IDisposable lease=sdkParameterReadPublication.TryEnter();if(lease==null)return null;
+        sdkParameterInvocationDepth++;return new ParameterInvocationLease(lease);
+    }
+    internal static bool ParameterNegativeProfile(){return SdkProductMode&&ownedParameterNegative&&!SdkUiRequested;}
+    internal static bool ProductDefinitionContextRequested(){return SdkProductMode&&(SdkUiRequested||ownedParameterNegative);}
+    internal static bool ProductDataReadLifetime(){return ProductUiCacheLifetime()||ParameterDefinitionCacheLifetime();}
+    internal static bool ParameterDefinitionCacheLifetime()
+    {return sdkParameterInvocationDepth>0&&sdkParameterReadPublication.Accepting&&SdkProductMode&&ProductDependencyComplete&&contextLifetime;}
+    internal static bool ParameterDefinitionCacheEligible()
+    {return ParameterDefinitionCacheLifetime()&&projectResourceWindow==0&&!projectResourceCallbackSuspended&&(Thread.CurrentThread.ManagedThreadId!=sdkOwner||SdkWrapperEligible());}
+    static void BeginParameterCacheReadScope()
+    {
+        ProbeFiles.Require(SdkProductMode&&ProductDependencyComplete&&contextLifetime&&SdkWrapperEligible()&&!sdkProductUiActive&&activeValidator!=null&&!sdkParameterReadPublication.Started,"PARAMETER_CACHE_SCOPE_OWNER_ENTRY");
+        sdkParameterReadPublication.Begin();
+        try{Record("DCA_PARAMETER_CACHE_SCOPE_BEGIN owner-validated=True SDK-wrapper-and-definition-read=True worker-service=VERIFIED_READ_REFERENCES_AND_REAL_DISPATCH owner-validators=GENUINE_FIXED_FAMILY2 UI-active=False context-cap="+ContextAdapterLimit()+" cache-cap="+ProductUiCacheRequestLimit()+" creator-cap="+ProductUiCreatorLimit()+" write-cap="+ProductUiWriteLimit()+" healthy-reply-logs=FIRST_PER_METHOD");}
+        catch{sdkParameterReadPublication.Close();throw;}
+    }
+    static void EndParameterCacheReadScope()
+    {
+        bool quiescent=false;
+        try{sdkParameterReadPublication.Close();quiescent=true;}
+        finally{Record("DCA_PARAMETER_CACHE_SCOPE_END active=False admission=CLOSED inflight="+sdkParameterReadPublication.Inflight+" quiescent="+quiescent+" fence-fault="+sdkParameterReadPublication.Faulted+" wait=NONE_FAIL_CLOSED");}
+    }
+    internal static bool ParameterDefinitionReadEligible()
+    {return sdkParameterDefinitionReadActive&&sdkParameterInvocationDepth>0&&SdkProductMode&&ProductDependencyComplete&&contextLifetime&&SdkWrapperEligible();}
+    static object OriginalRequiredParameterDefinition(object device)
+    {
+        ProbeFiles.Require(!sdkParameterDefinitionReadActive&&!sdkProductUiActive&&SdkProductMode&&ProductDependencyComplete&&SdkWrapperEligible()&&contextLifetime&&sdkParameterReadPublication.Accepting,"DCA_PARAMETER_READ_SCOPE_ENTRY");
+        bool returned=false;sdkParameterDefinitionReadActive=true;
+        try{Record("DCA_PARAMETER_READ_SCOPE_BEGIN owner-only=True operations=EXISTING_VERIFIED_READ_SERVICES owner-validators=GENUINE_FIXED_FAMILY2 dispatcher=REAL_WPF UI-active=False values=NOT_READ");activeValidator.ParameterReadEntrySnapshot();object definition=OriginalRequiredParameterDefinitionCore(device);returned=true;return definition;}
+        finally{sdkParameterDefinitionReadActive=false;Record("DCA_PARAMETER_READ_SCOPE_END returned="+returned+" active=False");}
+    }
+    static object OriginalRequiredParameterDefinitionCore(object device)
+    {
+        ProbeFiles.Require(SdkProductMode&&SdkWrapperEligible()&&contextLifetime&&device!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(device),"DCA_PARAMETER_PREFLIGHT_PHASE");
+        Assembly sdk=device.GetType().Assembly;
+        ProbeFiles.Require(sdk.FullName==Identities[1]&&!sdk.IsDynamic&&!sdk.ReflectionOnly&&!sdk.GlobalAssemblyCache&&ProbeFiles.Same(sdk.Location,Path.Combine(stage,"Knx.Ets.Sdk.dll")),"DCA_PARAMETER_PINNED_SDK");
+        Type deviceType=sdk.GetType("Knx.Ets.Sdk.Project.Device",true),collectionType=sdk.GetType("Knx.Ets.Sdk.Project.ParameterInstanceRefCollection",true),instanceType=sdk.GetType("Knx.Ets.Sdk.Project.ParameterInstanceRef",true),definitionType=sdk.GetType("Knx.Ets.Sdk.Product.ParameterRef",true);
+        ProbeFiles.Require(device.GetType()==deviceType&&deviceType.MetadataToken==0x020001a0&&collectionType.MetadataToken==0x020001ce&&instanceType.MetadataToken==0x020001ca&&definitionType.MetadataToken==0x0200024b,"DCA_PARAMETER_ORIGINAL_TYPES");
+        MethodInfo collectionGetter=SdkDeviceMethod(deviceType,0x060010df),item=SdkDeviceMethod(collectionType,0x060013f7),definitionGetter=SdkDeviceMethod(instanceType,0x060013cf),nameGetter=SdkDeviceMethod(definitionType,0x060019c8);
+        ProbeFiles.Require(collectionGetter.Name=="get_ParameterInstanceRefs"&&collectionGetter.ReturnType==collectionType&&collectionGetter.GetParameters().Length==0
+            &&item.Name=="get_Item"&&item.ReturnType==instanceType&&item.GetParameters().Length==1&&item.GetParameters()[0].ParameterType==typeof(ushort)
+            &&definitionGetter.Name=="get_ParameterRef"&&definitionGetter.ReturnType==definitionType&&definitionGetter.GetParameters().Length==0
+            &&nameGetter.Name=="get_Name"&&nameGetter.ReturnType==typeof(string)&&nameGetter.GetParameters().Length==0,"DCA_PARAMETER_EXACT_READ_ABI");
+        object collection=collectionGetter.Invoke(device,new object[0]);ProbeFiles.Require(collection!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(collection)&&collection.GetType()==collectionType,"DCA_REQUIRED_PARAMETER_COLLECTION_MISSING");
+        object instance=item.Invoke(collection,new object[]{(ushort)0});ProbeFiles.Require(instance!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(instance)&&instance.GetType()==instanceType,"DCA_REQUIRED_PARAMETER_INSTANCE_MISSING");
+        object definition=definitionGetter.Invoke(instance,new object[0]);
+        if(definition==null)throw new InvalidDataException("DCA_REQUIRED_PARAMETER_DEFINITION_MISSING");
+        ProbeFiles.Require(!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(definition)&&definition.GetType()==definitionType,"DCA_PARAMETER_GENUINE_DEFINITION");
+        string name=nameGetter.Invoke(definition,new object[0]) as string;ProbeFiles.Require(!String.IsNullOrEmpty(name)&&name.Length<=512,"DCA_PARAMETER_DEFINITION_NAME_MISSING");
+        Record("DCA_REQUIRED_PARAMETER_DEFINITION_READY source=ORIGINAL_SDK original-DCA-first-access=06000123 index=0 instance=060013F7 definition=060013CF type=0200024B name-present=True parameter-values=NOT_READ GetDcaUi=NOT_INVOKED");
+        return definition;
+    }
+    static void RunMissingParameterDefinitionNegative(object actualDefinition)
+    {
+        ProbeFiles.Require(ownedParameterNegative&&!SdkUiRequested&&!sdkUiCallAttempted&&actualDefinition!=null,"PARAMETER_NEGATIVE_PROFILE");
+        int positive=0,forbiddenUiEntries=0;
+        ReferenceDcaRequiredParameters.BeforeUi(actualDefinition,delegate{positive++;});
+        bool denied=false;
+        try{ReferenceDcaRequiredParameters.BeforeUi(null,delegate{forbiddenUiEntries++;throw new InvalidDataException("PARAMETER_NEGATIVE_UI_GUARD_BYPASS");});}
+        catch(InvalidDataException error){if(error.Message!="DCA_REQUIRED_PARAMETER_DEFINITION_MISSING")throw;denied=true;}
+        ProbeFiles.Require(positive==1&&denied&&forbiddenUiEntries==0&&!sdkUiCallAttempted&&!sdkUiCallReturned&&!unexpected&&!rejected,"PARAMETER_NEGATIVE_BEFORE_UI");
+        Record("OWNED_PARAMETER_DEFINITION_NEGATIVE_PASS genuine-SDK-definition-control=1 omission=OWNED_CONTEXT_VIEW_ONLY rejection=DCA_REQUIRED_PARAMETER_DEFINITION_MISSING original-GetDcaUi-attempts=0 UI-config-action-entries=0 model-fixture=ALREADY_CONSTRUCTED vendor-missing-definition-behavior=NOT_RUN original-data=UNCHANGED");
+        GC.KeepAlive(actualDefinition);
     }
     static void ShowSdkProductUi(object device)
     {
@@ -5763,7 +6024,7 @@ internal static class ProjectConstructorProbe
         int outcome = 2;
         try { outcome = MainCore(args); }
         finally {
-            bool suppress=ProductUiFixtureMode()&&sdkUiMainCoreFinalRecorded,prior=sdkUiSuppressRepeatedHealthyFinal;
+            bool suppress=CompactProductDiagnostics()&&sdkUiMainCoreFinalRecorded,prior=sdkUiSuppressRepeatedHealthyFinal;
             sdkUiSuppressRepeatedHealthyFinal=suppress;
             try{
                 try { if (ContextOwned && contextRetained != null) OwnedContextPoint("process-final"); CheckContextArguments("PROCESS_FINAL"); }
@@ -5774,7 +6035,7 @@ internal static class ProjectConstructorProbe
                     finally { GC.KeepAlive(activeContent); GC.KeepAlive(contextRetained); }
                 }
             }finally{sdkUiSuppressRepeatedHealthyFinal=prior;}
-            if(suppress){try{Record("SDK_UI_FINAL_REVALIDATION exit="+outcome+" checks=EXECUTED healthy-repeat-logs=OMITTED fault-logs=UNCHANGED");}catch(Exception error){outcome=2;try{if(log!=null)Errors(error);}catch{}}}
+            if(suppress){try{Record((ParameterNegativeProfile()?"SDK_READ_FINAL_REVALIDATION exit=":"SDK_UI_FINAL_REVALIDATION exit=")+outcome+" checks=EXECUTED healthy-repeat-logs=OMITTED fault-logs=UNCHANGED");}catch(Exception error){outcome=2;try{if(log!=null)Errors(error);}catch{}}}
         }
         return outcome;
     }
@@ -5784,7 +6045,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -5794,7 +6055,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -5855,8 +6116,9 @@ internal static class ProjectConstructorProbe
             }
             CheckUndoProvider("PROCESS_FINAL"); CheckUndoFactory("PROCESS_FINAL"); CheckCache("PROCESS_FINAL"); CheckContextArguments("PROCESS_FINAL");
             ProbeFiles.Require(!unexpected && !rejected, "PROJECT_DEPENDENCY_BLOCKER");
+            if(CompactProductDiagnostics())Record("HEALTHY_DIAGNOSTIC_SUMMARY distinct-known-records="+healthyLog.Kinds+" repeated-healthy-records-omitted="+healthyLog.Omitted+" first-provenance=RETAINED errors-and-validation=UNCHANGED");
             Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui="+UiOutcome()+" state=NOT_RUN hardware=NOT_RUN");
-            if(ProductUiFixtureMode())sdkUiMainCoreFinalRecorded=true;
+            if(CompactProductDiagnostics())sdkUiMainCoreFinalRecorded=true;
             return result;
         } catch (Exception error) { if (log != null) { try { Errors(error); } catch (IOException) { } } Console.WriteLine("PROJECT_FAILURE " + error.GetType().FullName + " " + Text(error.Message)+" ui="+UiOutcome()); return 2; }
         finally { GC.KeepAlive(constructed); /* Held input/log handles live until supervised process exit. */ }

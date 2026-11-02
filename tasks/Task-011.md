@@ -483,3 +483,64 @@ attempted to retrieve an absent smoke-only file; that collector error does not
 change the saved suite outcome. The original DCA was not executed by this suite.
 An independent source91 review found no blocking issue, and separately confirmed
 the two negative runs and the normal original UI run described above.
+
+
+## Parameter-definition preflight checkpoint — 2026-11-02
+
+Source102 negative run `8f02417cd55d` observed the genuine first SDK parameter
+definition, then rejected an intentionally absent owned view before invoking
+GetDcaUi or its configuration action. The owned model fixture had already been
+constructed. The child and final revalidation exited 0; original files were not
+modified. This tests a host preflight, not the vendor UI's handling of an actually
+corrupt product. Private audit SHA-256
+`a795d389b1bf6df3fedcd6607f5b05cc04ccba0bfb514b84341c77f47953db33`;
+logs are in `private/evidence/task010-sdk-wrapper/iteration01/run-8f02417cd55d`.
+On the subsequent positive UI run, the original control rendered and closed but
+the child exited 2 after exhausting the log limit before final revalidation.
+Consequently the Source102 positive lifecycle is FAIL and the increment remains
+uncommitted; investigate logging and repeat before acceptance.
+
+
+## Stable identity evidence gap — 2026-11-02
+
+The owned project-store test establishes one stable synthetic project-number
+object within one process. The actual SDK device receives an original domain ID
+from its creator, but its stability across fixture reconstruction or runs has
+not been shown. The observed `GetNextPuid` callback logs do not record reply
+values, so deterministic sequence and callback identity are not established.
+Task011 TEST-003 remains partial. A future bounded fixture test must establish
+synthetic project/device identity and callback consistency without treating a
+physical address or a real device identity as a fixture ID; a separate Windows
+observation is needed to connect those assertions to the genuine SDK context.
+
+
+## Parameter definition and callback quiescence — Source103
+
+On Windows, run `54b41270cd58` resolved the genuine SDK parameter definition
+required by the DCA as a positive control. The owned test view then deliberately
+omitted that reference and the host rejected it before `GetDcaUi` or the guarded
+UI configuration action. The original SDK project/device fixture had already
+been constructed; no claim of zero setup mutations or of vendor UI behavior on
+corrupt input follows. The child and final revalidation exited 0. A normal
+original DCA run on the same build rendered and closed with child exit 0; its
+42 private input pins and two OS pins remained intact and no owned processes
+remained. Private evidence is in
+`private/evidence/task010-sdk-wrapper/iteration01/run-54b41270cd58`; source audit
+SHA-256 `01330d2222644f8c68858b3105d48419eab6d6a1299f3564fc60d3a88141e812`.
+
+An independent review found and then re-reviewed a callback-lifetime race in
+the earlier Source102 scope. Source103 uses atomic admission and nonwaiting
+fail-closed closure for whole callback lifetimes; the owned held-callback test
+passed, including sticky failure and rejected post-close admission. Source102's
+positive process exit 2 and log-limit failure remain historical evidence. Stable
+fixture IDs across reconstruction, the original ETS selector execution, vendor
+missing-definition behavior, and final task acceptance remain open.
+
+
+The complete owned Windows constructor suite was repeated with the Source103
+code and repaired Source104 diagnostic test guard as run `c0858bdf7763`: 423
+case PASS records, `OWNED_SUITE PASS`, scheduled result 0, zero owned processes.
+The generic collector subsequently attempted to fetch a smoke-only file absent
+from the full suite; the complete captured output and status precede that error.
+Source audit104 SHA-256
+`446650ad76d56a132290766c4b101850fafd6bd0044de46f52078aacdf280964`.

@@ -127,3 +127,11 @@ original SDK projection and a missing context before the project constructor,
 with no factory, project, configuration or UI creation. The missing-context case
 is an owned preflight and is not a test of missing parameter definitions inside
 the vendor UI. The precise fixture hashes and private evidence are in Task011.
+
+
+The Source103 Windows preflight resolves the genuine SDK definition used at the
+DCA's first parameter access and verifies rejection when an owned view omits it.
+The original UI was not invoked in that negative case. Callback publication has
+explicit lifetime accounting and a nonwaiting fail-closed close; an independent
+review and held-callback test cover the previously identified shutdown race.
+This fixture is not a production persistence or vendor-corrupt-input test.

@@ -368,8 +368,8 @@ internal sealed class OriginalProductImportProbe : IDisposable
     internal void Audit(string phase)
     {
         CheckTree(); ProbeFiles.Require(completed && !faulted && cacheReplies <= ProjectConstructorProbe.ProductUiCacheRequestLimit() && progressCalls<=4096 && progressAccepted<=progressCalls && !progressActive && !progressEntered, "PRODUCT_IMPORT_FINAL_FAULT");
-        if(ProjectConstructorProbe.ProductUiFixtureMode()&&(phase=="DCA_UI_RETURNED"||ProjectConstructorProbe.SdkAuditLog(phase))){lock(treeGate){record("PRODUCT_UI_IO_AUDIT phase="+phase+" ui-cache-lookups="+uiCacheLookups+" full-tree-checks="+treeChecks+" full-tree-check-ms="+(treeTicks*1000/Stopwatch.Frequency)+" read-checkpoint=FIRST_OR_256_OR_NEXT_READ_AFTER_1S creator-and-terminal-checks=UNCHANGED quota=BOUNDARY_NOT_OS_CONTAINED");}}
-        if (phase == "PROCESS_FINAL"&&(!ProjectConstructorProbe.ProductUiFixtureMode()||ProjectConstructorProbe.SdkAuditLog(phase))) record("PRODUCT_IMPORT_AUDIT phase=PROCESS_FINAL completed=" + completed + " disposed=" + disposed + " fault=" + faulted + " cache-replies=" + cacheReplies + " progress-calls=" + progressCalls);
+        if(ProjectConstructorProbe.CompactProductDiagnostics()&&(phase=="DCA_UI_RETURNED"||ProjectConstructorProbe.SdkAuditLog(phase))){lock(treeGate){record((ProjectConstructorProbe.ParameterNegativeProfile()?"PARAMETER_READ_IO_AUDIT phase=":"PRODUCT_UI_IO_AUDIT phase=")+phase+" ui-cache-lookups="+uiCacheLookups+" full-tree-checks="+treeChecks+" full-tree-check-ms="+(treeTicks*1000/Stopwatch.Frequency)+" read-checkpoint=FIRST_OR_256_OR_NEXT_READ_AFTER_1S creator-and-terminal-checks=UNCHANGED quota=BOUNDARY_NOT_OS_CONTAINED");}}
+        if (phase == "PROCESS_FINAL"&&(!ProjectConstructorProbe.CompactProductDiagnostics()||ProjectConstructorProbe.SdkAuditLog(phase))) record("PRODUCT_IMPORT_AUDIT phase=PROCESS_FINAL completed=" + completed + " disposed=" + disposed + " fault=" + faulted + " cache-replies=" + cacheReplies + " progress-calls=" + progressCalls);
     }
     object Keep(object value) { ProbeFiles.Require(value != null, "PRODUCT_IMPORT_NON_NULL"); retained.Add(value); return value; }
 
@@ -417,7 +417,7 @@ internal sealed class OriginalProductImportProbe : IDisposable
     internal object[] PrepareLargeStrings()
     {
         lock(progressGate){
-            ProbeFiles.Require(completed&&!disposed&&!faulted&&Thread.CurrentThread.ManagedThreadId==owner&&ProjectConstructorProbe.ProductUiFixtureMode()&&projectLargeStrings==null,"PRODUCT_LARGE_STRING_PREPARE_ONCE");
+            ProbeFiles.Require(completed&&!disposed&&!faulted&&Thread.CurrentThread.ManagedThreadId==owner&&ProjectConstructorProbe.ProductDefinitionContextRequested()&&projectLargeStrings==null,"PRODUCT_LARGE_STRING_PREPARE_ONCE");
             try{projectStringStream=projectStreamCreator.CreateOriginal(new DirectoryInfo(Path.Combine(root,"project-state")),"large-strings.cache");
                 projectLargeStrings=Keep(projectLargeStringCtor.Invoke(new object[]{projectStringStream}));RequireObject(projectLargeStrings,projectLargeStringCtor.DeclaringType,"PRODUCT_LARGE_STRING_ORIGINAL_CACHE");CheckTree();
                 record("PRODUCT_LARGE_STRING_READY cache-ctor=0600914F stream=ORIGINAL_FILE_STREAM_STORE initial-project-state=FRESH_TRANSIENT_SCRATCH codec=ORIGINAL_ONLY");return new object[]{projectStringStream,projectLargeStrings};
@@ -425,7 +425,10 @@ internal sealed class OriginalProductImportProbe : IDisposable
         }
     }
     internal object LargeStringStream(object ignored)
-    {lock(progressGate){ProbeFiles.Require(ignored==null&&completed&&!disposed&&!faulted&&ProjectConstructorProbe.ProductUiCacheLifetime()&&projectStringStream!=null,"PRODUCT_LARGE_STRING_STORE_UI_LIFETIME");CheckTree();return projectStringStream;}}
+    {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){lock(progressGate){ProbeFiles.Require(ignored==null&&completed&&!disposed&&!faulted&&ProjectConstructorProbe.ProductDataReadLifetime()&&projectStringStream!=null,"PRODUCT_LARGE_STRING_STORE_UI_LIFETIME");CheckTree();return projectStringStream;}
+        }
+    }
     void EnsureProjectSerializationStore()
     {
         ProbeFiles.Require(completed&&!disposed&&!faulted&&Thread.CurrentThread.ManagedThreadId==owner&&ProjectConstructorProbe.ProductStoreDisposalLifetime(),"PRODUCT_PROJECT_SERIALIZATION_PHASE");
@@ -495,40 +498,49 @@ internal sealed class OriginalProductImportProbe : IDisposable
     }
     internal object ManufacturerRead(int selected,object manufacturer,object selectedApplication)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         lock(progressGate){
-            ProbeFiles.Require(completed&&!disposed&&!faulted&&ProjectConstructorProbe.ProductUiCacheLifetime()&&manufacturerStoreReads<16&&selected>=0&&selected<3,"PRODUCT_MANUFACTURER_STORE_UI_PHASE");RequireObject(manufacturer,manufacturerType,"PRODUCT_MANUFACTURER_STORE_EXACT_ARGUMENT");
+            ProbeFiles.Require(completed&&!disposed&&!faulted&&ProjectConstructorProbe.ProductDataReadLifetime()&&manufacturerStoreReads<16&&selected>=0&&selected<3,"PRODUCT_MANUFACTURER_STORE_UI_PHASE");RequireObject(manufacturer,manufacturerType,"PRODUCT_MANUFACTURER_STORE_EXACT_ARGUMENT");
             try{CheckTree();MethodInfo method=selected==0?applicationPrograms:selected==1?hardwareStore:baggageStore;object value=method.Invoke(target,new object[]{manufacturer});
                 if(selected==0){RequireObject(value,applicationListType,"PRODUCT_APPLICATIONS_ORIGINAL_LIST");var list=(IList)value;ProbeFiles.Require(list.Count<=1024,"PRODUCT_APPLICATIONS_LIST_BOUND");bool present=false;
                     for(int i=0;i<list.Count;i++){object id=list[i];RequireObject(id,applicationStore.GetParameters()[0].ParameterType,"PRODUCT_APPLICATIONS_ORIGINAL_ID");ProbeFiles.Require(Object.Equals(applicationManufacturer.Invoke(id,new object[0]),manufacturer),"PRODUCT_APPLICATIONS_SAME_MANUFACTURER");if(Object.Equals(id,selectedApplication))present=true;}
                     record("PRODUCT_APPLICATIONS_ENUMERATED count="+list.Count+" selected-present="+present+" identity=ORIGINAL_IDS_NO_REMAP compatibility=NOT_QUALIFIED");
                 }else RequireObject(value,applicationStoreType,"PRODUCT_MANUFACTURER_ORIGINAL_SINGLE_FILE");
-                CheckTree();ProbeFiles.Require(!faulted&&!disposed&&ProjectConstructorProbe.ProductUiCacheLifetime(),"PRODUCT_MANUFACTURER_STORE_COMPLETION");Keep(value);manufacturerStoreReads++;return value;
+                CheckTree();ProbeFiles.Require(!faulted&&!disposed&&ProjectConstructorProbe.ProductDataReadLifetime(),"PRODUCT_MANUFACTURER_STORE_COMPLETION");Keep(value);manufacturerStoreReads++;return value;
             }catch{faulted=true;throw;}
+        }
+
         }
     }
     internal object ApplicationProgram(object application)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         lock(progressGate){
-            ProbeFiles.Require(completed&&!disposed&&!faulted&&ProjectConstructorProbe.ProductUiCacheLifetime()&&applicationStores<16,"PRODUCT_APPLICATION_STORE_HELPER_UI_PHASE");
+            ProbeFiles.Require(completed&&!disposed&&!faulted&&ProjectConstructorProbe.ProductDataReadLifetime()&&applicationStores<16,"PRODUCT_APPLICATION_STORE_HELPER_UI_PHASE");
             RequireObject(application,applicationStore.GetParameters()[0].ParameterType,"PRODUCT_APPLICATION_STORE_ARGUMENT_TYPE");
-            try{CheckTree();object value=applicationStore.Invoke(target,new object[]{application});RequireObject(value,applicationStoreType,"PRODUCT_APPLICATION_STORE_ORIGINAL_SINGLE_FILE");CheckTree();ProbeFiles.Require(!faulted&&!disposed&&ProjectConstructorProbe.ProductUiCacheLifetime(),"PRODUCT_APPLICATION_STORE_HELPER_COMPLETION");Keep(value);applicationStores++;return value;}
+            try{CheckTree();object value=applicationStore.Invoke(target,new object[]{application});RequireObject(value,applicationStoreType,"PRODUCT_APPLICATION_STORE_ORIGINAL_SINGLE_FILE");CheckTree();ProbeFiles.Require(!faulted&&!disposed&&ProjectConstructorProbe.ProductDataReadLifetime(),"PRODUCT_APPLICATION_STORE_HELPER_COMPLETION");Keep(value);applicationStores++;return value;}
             catch{faulted=true;throw;}
+        }
+
         }
     }
     internal object Cache(int selected, object manufacturer)
     {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
         lock(progressGate){
             bool background=Thread.CurrentThread.ManagedThreadId!=owner;
-            ProbeFiles.Require(completed && !disposed && !faulted && (!background||ProjectConstructorProbe.ProductUiCacheLifetime()) && cacheReplies < ProjectConstructorProbe.ProductUiCacheRequestLimit() && selected >= 0 && selected < 7, "PRODUCT_IMPORT_CACHE_PHASE");
+            ProbeFiles.Require(completed && !disposed && !faulted && (!background||ProjectConstructorProbe.ProductUiCacheLifetime()||ProjectConstructorProbe.ParameterDefinitionCacheLifetime()) && cacheReplies < ProjectConstructorProbe.ProductUiCacheRequestLimit() && selected >= 0 && selected < 7, "PRODUCT_IMPORT_CACHE_PHASE");
             RequireObject(manufacturer, selected>=3?dynamicTranslations.GetParameters()[0].ParameterType:manufacturerType, "PRODUCT_IMPORT_CACHE_MANUFACTURER_OR_APPLICATION_TYPE");
             try { CheckCacheReadTree(); MethodInfo selectedMethod=selected==0?hardware:selected==1?application:selected==2?manufacturerProvider:selected==3?dynamicTranslations:selected==4?parameterRefs:selected==5?comObjectRefs:calculatedParameters; object value = selectedMethod.Invoke(caches, new object[] { manufacturer });
-                RequireObject(value, selected==2?manufacturerProviderType:selectedMethod.ReturnType, "PRODUCT_IMPORT_CACHE_ORIGINAL_RESULT");ProbeFiles.Require(!faulted&&!disposed&&(!background||ProjectConstructorProbe.ProductUiCacheLifetime()),"PRODUCT_IMPORT_CACHE_COMPLETION");if(selected>=2)Keep(value); cacheReplies++; return value;
+                RequireObject(value, selected==2?manufacturerProviderType:selectedMethod.ReturnType, "PRODUCT_IMPORT_CACHE_ORIGINAL_RESULT");ProbeFiles.Require(!faulted&&!disposed&&(!background||ProjectConstructorProbe.ProductUiCacheLifetime()||ProjectConstructorProbe.ParameterDefinitionCacheLifetime()),"PRODUCT_IMPORT_CACHE_COMPLETION");if(selected>=2)Keep(value); cacheReplies++; return value;
             } catch { faulted = true; throw; }
+        }
+
         }
     }
     void CheckPath(DirectoryInfo directory, string name)
     {
-        ProbeFiles.Require(!disposed && !faulted && (Thread.CurrentThread.ManagedThreadId == owner || (completed&&ProjectConstructorProbe.ProductUiCacheLifetime())) && directory != null && name != null && name.Length <= 256
+        ProbeFiles.Require(!disposed && !faulted && (Thread.CurrentThread.ManagedThreadId == owner || ReferenceDcaRequiredParameters.AllowsDerivedReadCreation(completed,ProjectConstructorProbe.ProductUiCacheLifetime(),ProjectConstructorProbe.ParameterDefinitionCacheLifetime())) && directory != null && name != null && name.Length <= 256
             && !Path.IsPathRooted(name) && Path.GetFileName(name) == name && name != "." && name != ".." && name.IndexOfAny(new char[] { ':', '/', '\\' }) < 0,
             "PRODUCT_IMPORT_CREATOR_ARGUMENTS");
         string stem = name.Split('.')[0].ToUpperInvariant();
@@ -564,7 +576,7 @@ internal sealed class OriginalProductImportProbe : IDisposable
     }
     void CheckCacheReadTree()
     {
-        if(!ProjectConstructorProbe.ProductUiCacheLifetime()){CheckTree();return;}
+        if(!ProjectConstructorProbe.ProductDataReadLifetime()){CheckTree();return;}
         uiCacheLookups++;long now=Stopwatch.GetTimestamp();
         if(uiLastTreeTicks==0||uiCacheLookups%256==0||now-uiLastTreeTicks>=Stopwatch.Frequency){CheckTree();uiLastTreeTicks=Stopwatch.GetTimestamp();}
     }
@@ -598,16 +610,19 @@ internal sealed class OriginalProductImportProbe : IDisposable
         { return (TCache)Run(directory, name, new object[] { directory, manufacturer, name }); }
         object Run(DirectoryInfo directory, string name, object[] args)
         {
+        using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
             lock(parent.progressGate){
                 bool beforeFault=Volatile.Read(ref parent.faulted),beforeDisposed=Volatile.Read(ref parent.disposed);string stage="CREATOR_LIMIT";
                 bool background=Thread.CurrentThread.ManagedThreadId!=parent.owner;
                 try { int limit=ProjectConstructorProbe.ProductUiCreatorLimit();if(calls<limit+1)calls++;ProbeFiles.Require(calls <= limit, "PRODUCT_IMPORT_CREATOR_LIMIT");stage="CREATOR_PATH";parent.CheckPath(directory, name);
                     stage="CREATOR_ORIGINAL";object result = invoke.Invoke(original, args);stage="CREATOR_RESULT";RequireObject(result, expected, "PRODUCT_IMPORT_CREATOR_GENUINE_RESULT");
-                    ProbeFiles.Require(!parent.disposed&&!parent.faulted&&(!background||(parent.completed&&ProjectConstructorProbe.ProductUiCacheLifetime())),"PRODUCT_IMPORT_CREATOR_COMPLETION_LIFETIME");
+                    ProbeFiles.Require(!parent.disposed&&!parent.faulted&&(!background||ReferenceDcaRequiredParameters.AllowsDerivedReadCreation(parent.completed,ProjectConstructorProbe.ProductUiCacheLifetime(),ProjectConstructorProbe.ParameterDefinitionCacheLifetime())),"PRODUCT_IMPORT_CREATOR_COMPLETION_LIFETIME");
                     parent.Keep(result);stage="CREATOR_TREE";parent.CheckTree();return result;
                 } catch(Exception error) { Volatile.Write(ref parent.faulted,true);parent.RecordCallbackFailure(stage,error,beforeFault,beforeDisposed,calls,expected,directory,name);throw; }
             }
+
         }
+    }
     }
     public void Dispose()
     {
