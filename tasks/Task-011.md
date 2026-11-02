@@ -9,7 +9,7 @@ Supply one coherent device and product context to the DCA
 | Field | Value |
 |---|---|
 | Task ID | Task-011 |
-| Status | In progress |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host fixture context |
@@ -39,9 +39,9 @@ Component contract: [DCA-REFERENCE-PRODUCT-STORE.md](../docs/DCA-REFERENCE-PRODU
 
 ## Acceptance Criteria
 
-- [ ] AC-001: The DCA recognizes the selected device/application context.
-- [ ] AC-002: Wrong application identity is rejected before configuration mutation.
-- [ ] AC-003: All context values are traceable to the fixture or explicitly synthetic test identifiers.
+- [x] AC-001: The DCA recognizes the selected device/application context.
+- [x] AC-002: Wrong application identity is rejected before configuration mutation.
+- [x] AC-003: All context values are traceable to the fixture or explicitly synthetic test identifiers.
 
 ## Dependencies to Other Tasks
 
@@ -82,27 +82,26 @@ No complete KNXPROD model, database, or multi-device DCA behavior.
 
 ## Risks and Blockers
 
-The selected product fixture is available and hash-verified, and its original data
-was imported into a genuine SDK device context. Its complete application ID suffix
-differs from the DCA manifest declaration; compatibility and recognition are not
-yet proven. The original DCA rendered and the owner interacted with its UI. A
-connection attempt failed; no hardware connection or network isolation is claimed.
-Source89 records a successful offline UI lifecycle
-and cleanup, but does not qualify the selected application identity. See the
-latest checkpoint below and the linked component contract.
+The accepted result covers one offline reference fixture and the unchanged original
+DCA control. The pinned SDK projection and bounded reference rule support the
+selected application; the original ETS selector was not executed. The negative
+missing-definition and missing-device cases exercise owned host guards, not vendor
+behavior on corrupted input. Fixture IDs are synthetic and validated for fixed
+creation order; ProjectGuid/reload, durable configuration, network containment and
+hardware were not tested. The DCA's process is not established as a sandbox.
 
 ## Completion Record
 
 | Field | Current value |
 |---|---|
-| Implementation / report status | In progress; genuine product import and original UI observed; identity qualification and negative tests pending |
-| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68; 4c753441277e204270aad75c467a8753b1b92156; d6ac3fe (selection negative checks) |
-| Tests executed | Source91 original UI and clean exit PASS; 423 owned cases PASS; wrong-product and missing-context preflight negatives PASS; missing-parameter/vendor UI negative pending |
-| Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-1ff189d478a2 and run-d372a1e54c78 |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Original SDK projection and owned reference-rule match observed; original ETS predicate and vendor missing-parameter behavior not executed |
-| Gate outcome, when applicable | Not evaluated |
-| Reviewer | Independent agent review of Source88 and Source89 fixes completed; maintainer acceptance pending |
+| Implementation / report status | Done for one bounded offline reference context; wider DCA and hardware qualification not asserted |
+| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68; 4c753441277e204270aad75c467a8753b1b92156; d6ac3fe7ed0065dbd5c6f3a69afd744d890a2904; c5b29a9a1a098161583eb2dd9015d1f038a2e834; c106b20e0716777a7dba6f1ad9b3d16e8e52e199; 5f9e2f5f34f697a833479502720f3939632396b3 |
+| Tests executed | TEST-001 PASS original reference initialization/render/close; TEST-002 PASS wrong app, owned missing-definition and missing-device guards; TEST-003 PASS two fresh fixed-fixture contexts and callback identity; owned Windows suite 423 PASS; details below |
+| Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-ba26d475e3f2, run-1ff189d478a2, run-54b41270cd58, run-16cb552daed0 and run-a31894dac225 |
+| Acceptance criteria met | AC-001, AC-002 and AC-003 for the fixed offline reference fixture |
+| Technical outcome | Original SDK data and selected device context reached the original DCA; host rejects bounded invalid inputs and retains stable fixture IDs |
+| Gate outcome, when applicable | No phase gate applies |
+| Reviewer | Independent agent reviewed acceptance and Source109; no blocking finding. Agent review is not maintainer acceptance. |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -590,3 +589,14 @@ requested a smoke-only file not produced by the full suite; the captured complet
 driver output and scheduled result are the suite evidence. Independent review
 confirmed the missing-device test executes the shared production entry guard,
 with unchanged normal UI core, and closes this bounded TEST-002 coverage gap.
+
+
+## Completion and bounded acceptance — 2026-11-02
+
+Task011 is Done for the stated reference fixture. Source commits, fixture hashes,
+Windows runs, the 423-case owned regression, negative checks and their limitations
+are recorded above and in the component contract. The missing-device and
+missing-definition tests are host preflight tests; they do not claim vendor
+behavior with corrupted input. The DCA UI observation is not a hardware or
+network-isolation result. Task012 can now begin its separate offline state
+round-trip work, subject to its own required checks.

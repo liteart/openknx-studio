@@ -79,11 +79,10 @@ filesystem sandbox or proof of containment inside vendor calls. The existing
 constructor/device profiles retain their15-second limit. Preserve named failures
 and no automatic retries. Vendor internals remain NOT_CONTAINED.
 
-Task011 acceptance still requires actual DCA recognition, mismatch/missing-context
-negatives and stable coherent identities. Task010 requires actual original UI
-rendering, benign interaction and closing. Comprehensive internal regressions and
-independent review remain required before acceptance under the owner's deferred
-test workflow. Neither task is Done, and no phase gate is unlocked here.
+Task011 completed its bounded reference-context criteria, including original UI
+observation, host-side mismatch/missing-context negatives and fixed-fixture identity
+checks. Task010 remains separate and its network-path requirement remains open.
+No broader DCA, hardware or persistence qualification follows from Task011.
 
 
 ## ETS 6.4 manifest selection evidence
