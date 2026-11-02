@@ -95,14 +95,13 @@ identified `AddInManager.GetDcaAddInForApplicationProgram` and
 `Ets4AddIn.IsDcaAppForApplicationProgramId`. The latter checks each non-null
 manifest `DeviceConfiguration` application ID using
 `manifestId.StartsWith(selectedId.ToStringWithoutFingerprintAndOrigManuf())`.
-The projection uses manufacturer, program type and version; its runtime value
-and the original predicate have not been executed in this investigation.
-
-For the selected fixture, static evidence suggests the product projection is
+The projection uses manufacturer, program type and version. The original SDK
+projection was later executed for the selected fixture and returned
 `M-0083_A-0155-40`, a prefix of the manifest declaration
-`M-0083_A-0155-40-0000`. This is an inference, not runtime recognition. Preserve
-the complete source IDs and test the actual predicate and mismatches before
-accepting Task011. The bounded private IL report and method tokens are recorded
+`M-0083_A-0155-40-0000`. The original ETS selection predicate itself was not
+executed; the owned reference guard and mismatch tests use the bounded rule
+described below. Preserve the complete source IDs. The bounded private IL report
+and method tokens are recorded
 in `private/evidence/task010-sdk-route/ets-manifest-selection-task011-02.md`
 (SHA-256 `ee25da0b9b8058646a0d8ae0ef42928a5dd8e7f497ae6d7c59cc0afbea3d3851`).
 

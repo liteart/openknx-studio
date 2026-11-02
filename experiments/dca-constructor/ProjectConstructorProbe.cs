@@ -42,6 +42,17 @@ internal static class ReferenceDcaManifestSelection
     }
 }
 
+// An absent device is rejected at the owned entry to the real GetDcaUi path.
+internal static class ReferenceDcaRequiredDevice
+{
+    internal static void BeforeUi(object device,Action invokeUi)
+    {
+        if(invokeUi==null)throw new ArgumentNullException("invokeUi");
+        if(device==null)throw new InvalidDataException("DCA_REQUIRED_SDK_DEVICE_MISSING");
+        invokeUi();
+    }
+}
+
 // A required original parameter-reference definition must exist before original UI use.
 // Negative tests may omit an owned view reference; they never alter the original SDK object.
 internal static class ReferenceDcaRequiredParameters
@@ -1573,7 +1584,7 @@ internal static class ProjectConstructorProbe
     static bool SdkDeviceMode {get{return (mode=="original-sdk-device-fixture"||mode==OriginalProductImportProbe.Mode);}}
     internal static bool DeviceFixtureMode(){return SdkDeviceMode;}
     internal static bool ProductFixtureMode(){return SdkProductMode;}
-    internal static int ContextAdapterLimit(){return ReferenceDcaRequiredParameters.IdentityContextBudget(ownedStableIdentity,ReferenceDcaRequiredParameters.ContextBudget(ParameterNegativeProfile(),SdkUiRequested?10200000:SdkProductMode?64:SdkDeviceMode?32:16));}
+    internal static int ContextAdapterLimit(){return ReferenceDcaRequiredParameters.IdentityContextBudget(FixtureObservationProfile(),ReferenceDcaRequiredParameters.ContextBudget(ParameterNegativeProfile(),SdkUiRequested?10200000:SdkProductMode?64:SdkDeviceMode?32:16));}
     static bool SdkOwned { get { return mode == "owned-sdk-project-fixture"; } }
     internal static bool SdkMode { get { return SdkOriginal || SdkOwned; } }
     static bool GuidOriginal { get { return mode == "original-project-guid-fixture" || SdkOriginal; } }
@@ -1627,7 +1638,7 @@ internal static class ProjectConstructorProbe
     static readonly ReferenceHealthyLogCoalescer healthyLog=new ReferenceHealthyLogCoalescer();
     static void Record(string value)
     {
-        if(!(ownedStableIdentity?healthyLog.ShouldEmitIdentity(CompactProductDiagnostics(),value):healthyLog.ShouldEmit(CompactProductDiagnostics(),value)))return;
+        if(!(FixtureObservationProfile()?healthyLog.ShouldEmitIdentity(CompactProductDiagnostics(),value):healthyLog.ShouldEmit(CompactProductDiagnostics(),value)))return;
         byte[] bytes = Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) + " " + value + "\n");
         lock (LogLock) {
             ProbeFiles.Require(logBytes <= 65536 - bytes.Length, "PROJECT_LOG_LIMIT");
@@ -4122,10 +4133,10 @@ internal static class ProjectConstructorProbe
     }
     static bool SdkUiRequested{get{return SdkProductMode&&sdkUiSeconds==600;}}
     internal static bool ProductUiFixtureMode(){return SdkUiRequested;}
-    internal static bool CompactProductDiagnostics(){return ownedStableIdentity||ReferenceDcaRequiredParameters.CompactDiagnostics(ProductUiFixtureMode(),ParameterNegativeProfile());}
+    internal static bool CompactProductDiagnostics(){return FixtureObservationProfile()||ReferenceDcaRequiredParameters.CompactDiagnostics(ProductUiFixtureMode(),ParameterNegativeProfile());}
     internal static int ProductUiCacheRequestLimit(){return ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:32);}
     internal static int ProductUiCreatorLimit(){return ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:128);}
-    internal static int ProductUiWriteLimit(){return ReferenceDcaRequiredParameters.IdentityWriteBudget(ownedStableIdentity,ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:16));}
+    internal static int ProductUiWriteLimit(){return ReferenceDcaRequiredParameters.IdentityWriteBudget(FixtureObservationProfile(),ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:16));}
     internal static int ProductUiProjectReferenceLimit(){return SdkUiRequested?10000000:0;}
     internal static int ProductUiOtherContextLimit(){return SdkUiRequested?200000:ContextAdapterLimit();}
     internal static string ContextBudgetModeDescription(){return "mode="+Text(mode)+" ui-requested="+SdkUiRequested+" ui-active="+sdkProductUiActive+" ui-seconds="+sdkUiSeconds+" parameter-negative="+ParameterNegativeProfile();}
@@ -4666,6 +4677,7 @@ internal static class ProjectConstructorProbe
         sdkDeviceRetained[4]=sdkCollection;sdkDeviceRetained[5]=sdkInstallation;sdkDeviceRetained[6]=sdkDevice;Record("SDK_REFERENCE_DEVICE_OBTAINED exact-genuine-wrapper=True before-dependency-postcondition=True dependency-clean=NOT_ASSERTED GetDcaUi=NOT_RUN");TraceDependencyGuard(unexpected,rejected,"SDK_REFERENCE_DEVICE_POST");
         Record("SDK_REFERENCE_DEVICE_END returned=True exact-genuine-wrapper=True original-product-lookups=NOT_QUALIFIED GetDcaUi=NOT_RUN hardware=NOT_RUN");
         if(ownedStableIdentity){ObserveStableFixtureIdentity(project,installation,device,installations,devices);return;}
+        if(ownedMissingDevice){RunMissingSdkDeviceNegative(sdkDevice);return;}
         MethodInfo productGetter=SdkDeviceMethod(sdkDeviceType,0x060010e2);ProbeFiles.Require(productGetter.GetParameters().Length==0&&productGetter.ReturnType.Module==sdkDeviceType.Module&&productGetter.ReturnType.FullName=="Knx.Ets.Sdk.Product.Product","SDK_DEVICE_REFERENCE_PRODUCT_READ_ABI");
         Record("SDK_REFERENCE_PRODUCT_READ_BEGIN token=060010E2 operation=OFFLINE_LOCAL_MODEL_READ GetDcaUi=NOT_RUN");object actualProduct=productGetter.Invoke(sdkDevice,new object[0]);
         Record("SDK_REFERENCE_PRODUCT_READ_END returned="+(actualProduct!=null)+" genuine="+(actualProduct!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualProduct)&&actualProduct.GetType()==productGetter.ReturnType)+" application-match=NOT_QUALIFIED");
@@ -4679,6 +4691,8 @@ internal static class ProjectConstructorProbe
     }
     // Observation only: normal original Bind creates IDs; no ID is injected or rewritten.
     static bool ownedStableIdentity;
+    static bool ownedMissingDevice;
+    static bool FixtureObservationProfile(){return ownedStableIdentity||ownedMissingDevice;}
     static string StableFixtureId(object value,Type exact)
     {
         ProbeFiles.Require(value!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value)&&value.GetType()==exact&&exact.Assembly.FullName==Identities[11],"STABLE_FIXTURE_ORIGINAL_ID_TYPE");
@@ -4782,7 +4796,23 @@ internal static class ProjectConstructorProbe
         Record("OWNED_PARAMETER_DEFINITION_NEGATIVE_PASS genuine-SDK-definition-control=1 omission=OWNED_CONTEXT_VIEW_ONLY rejection=DCA_REQUIRED_PARAMETER_DEFINITION_MISSING original-GetDcaUi-attempts=0 UI-config-action-entries=0 model-fixture=ALREADY_CONSTRUCTED vendor-missing-definition-behavior=NOT_RUN original-data=UNCHANGED");
         GC.KeepAlive(actualDefinition);
     }
+    static int sdkUiBoundaryEntries;
+    static void RunMissingSdkDeviceNegative(object actualDevice)
+    {
+        ProbeFiles.Require(ownedMissingDevice&&SdkProductMode&&!SdkUiRequested&&!ownedStableIdentity&&!ownedParameterNegative&&SdkWrapperEligible()&&sdkUiBoundaryEntries==0&&!sdkUiCallAttempted,"DEVICE_NEGATIVE_PROFILE");
+        Type original=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Sdk.dll")).GetType("Knx.Ets.Sdk.Project.Device",true);
+        ProbeFiles.Require(actualDevice!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualDevice)&&actualDevice.GetType()==original&&original.MetadataToken==0x020001a0&&Object.ReferenceEquals(actualDevice,sdkDeviceRetained[6]),"DEVICE_NEGATIVE_GENUINE_CONTROL");
+        int positive=0;ReferenceDcaRequiredDevice.BeforeUi(actualDevice,delegate{positive++;});
+        bool denied=false;try{ShowSdkProductUi(null);}catch(InvalidDataException error){if(error.Message!="DCA_REQUIRED_SDK_DEVICE_MISSING")throw;denied=true;}
+        ProbeFiles.Require(positive==1&&denied&&sdkUiBoundaryEntries==0&&!sdkUiCallAttempted&&!sdkUiCallReturned&&!unexpected&&!rejected,"DEVICE_NEGATIVE_BEFORE_UI");
+        Record("OWNED_UI_DEVICE_NEGATIVE_PASS genuine-SDK-device-control=1 omission=OWNED_UI_VIEW_ONLY rejection=DCA_REQUIRED_SDK_DEVICE_MISSING production-UI-boundary-entries=0 original-GetDcaUi-attempts=0 original-device=UNCHANGED vendor-missing-device-behavior=NOT_RUN");
+        GC.KeepAlive(actualDevice);
+    }
     static void ShowSdkProductUi(object device)
+    {
+        ReferenceDcaRequiredDevice.BeforeUi(device,delegate{sdkUiBoundaryEntries++;ShowSdkProductUiCore(device);});
+    }
+    static void ShowSdkProductUiCore(object device)
     {
         ProbeFiles.Require(SdkUiRequested&&SdkWrapperEligible()&&contextLifetime&&sdkDcaInstance!=null&&sdkInitialization!=null
             &&Thread.CurrentThread.GetApartmentState()==ApartmentState.STA&&Environment.UserInteractive,"DCA_UI_EXPLICIT_ACTIVE_STA_PHASE");
@@ -6069,7 +6099,7 @@ internal static class ProjectConstructorProbe
                     finally { GC.KeepAlive(activeContent); GC.KeepAlive(contextRetained); }
                 }
             }finally{sdkUiSuppressRepeatedHealthyFinal=prior;}
-            if(suppress){try{Record((ownedStableIdentity?"SDK_IDENTITY_FINAL_REVALIDATION exit=":ParameterNegativeProfile()?"SDK_READ_FINAL_REVALIDATION exit=":"SDK_UI_FINAL_REVALIDATION exit=")+outcome+" checks=EXECUTED healthy-repeat-logs=OMITTED fault-logs=UNCHANGED");}catch(Exception error){outcome=2;try{if(log!=null)Errors(error);}catch{}}}
+            if(suppress){try{Record((ownedMissingDevice?"SDK_DEVICE_NEGATIVE_FINAL_REVALIDATION exit=":ownedStableIdentity?"SDK_IDENTITY_FINAL_REVALIDATION exit=":ParameterNegativeProfile()?"SDK_READ_FINAL_REVALIDATION exit=":"SDK_UI_FINAL_REVALIDATION exit=")+outcome+" checks=EXECUTED healthy-repeat-logs=OMITTED fault-logs=UNCHANGED");}catch(Exception error){outcome=2;try{if(log!=null)Errors(error);}catch{}}}
         }
         return outcome;
     }
@@ -6079,7 +6109,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -6089,7 +6119,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.

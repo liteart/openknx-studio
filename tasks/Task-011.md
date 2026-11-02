@@ -568,3 +568,25 @@ The full owned Windows constructor suite for Source108 ran as `0c0abe25f4db`:
 the generic collector then requested an absent smoke-only file and failed, which
 does not change the recorded full-suite result. Independent review found no
 blocking issue in the bounded identity observation.
+
+
+## Missing SDK device at UI boundary — Source109
+
+On Windows, run `ba26d475e3f2` first obtained a genuine SDK Device as a positive
+control. An explicitly owned view then omitted the device at the same host UI
+entry used in the positive flow. The entry rejected it with
+`DCA_REQUIRED_SDK_DEVICE_MISSING`; counted UI-core entries and original GetDcaUi
+attempts were zero. The child and final revalidation exited 0. A separate normal
+original DCA run on the same build rendered, closed and exited 0; 42 private
+input pins and two OS pins remained intact. This tests the host's missing-device
+rejection, not vendor behavior when invoked with an invalid device. Private run
+evidence is in `private/evidence/task010-sdk-wrapper/iteration01/run-ba26d475e3f2`;
+source audit SHA-256
+`7f032053475df441f45ad367e18e4603797a5b01bb84946501ce7182dc0b8a78`.
+
+The full owned Windows suite for this source was run as `a31894dac225`: 423 case
+PASS records, suite PASS and scheduled result 0. Its generic collector then
+requested a smoke-only file not produced by the full suite; the captured complete
+driver output and scheduled result are the suite evidence. Independent review
+confirmed the missing-device test executes the shared production entry guard,
+with unchanged normal UI core, and closes this bounded TEST-002 coverage gap.

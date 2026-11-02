@@ -78,6 +78,28 @@ $null=$contextBefore.Invoke($null,[object[]]@([object]::new(),$declarations,$pro
 if($state.ConstructorPathEntries -ne 1){throw 'CONTEXT_POSITIVE_GUARD_MUTANT'}
 Write-Output 'MANIFEST_CONTEXT PASS case=valid-context-control constructor-path-entries=1 proof=OWNED_SENTINEL'
 Write-Output 'OWNED_SELECTION_PREFLIGHT_SUITE PASS rule-cases=12 context-cases=3 context-mutation=OWNED_SENTINEL actual-SDK-negative=NOT_RUN vendor-UI-missing-parameter-behavior=NOT_RUN'
+$deviceType=$compiled|Where-Object FullName -CEQ 'ReferenceDcaRequiredDevice'
+if($null -eq $deviceType){throw 'DEVICE_GUARD_TYPE_NOT_FOUND'}
+$deviceBefore=$deviceType.GetMethod('BeforeUi',$flags)
+$state=[pscustomobject]@{UiActions=0};$action=[Action]{$state.UiActions++}
+$null=$deviceBefore.Invoke($null,[object[]]@([object]::new(),$action))
+if($state.UiActions -ne 1){throw 'DEVICE_GUARD_POSITIVE_FAIL'}
+Write-Output 'SDK_DEVICE_BOUNDARY_GUARD PASS case=present-control UI-actions=1 proof=OWNED_SENTINEL actual-SDK-device=NOT_RUN'
+$state.UiActions=0;$denied=$false
+try{$null=$deviceBefore.Invoke($null,[object[]]@($null,$action))}
+catch{if($_.Exception.GetBaseException() -isnot [IO.InvalidDataException] -or $_.Exception.GetBaseException().Message -cne 'DCA_REQUIRED_SDK_DEVICE_MISSING'){throw};$denied=$true}
+if(-not $denied -or $state.UiActions -ne 0){throw 'DEVICE_GUARD_MISSING_FAIL'}
+Write-Output 'SDK_DEVICE_BOUNDARY_GUARD PASS case=missing-device UI-actions=0 proof=OWNED_SENTINEL vendor-missing-device-behavior=NOT_RUN'
+$state.UiActions=0;$failure=[Action]{$state.UiActions++;throw [InvalidOperationException]::new('OWNED_DEVICE_UI_ACTION_FAILED')};$propagated=$false
+try{$null=$deviceBefore.Invoke($null,[object[]]@([object]::new(),$failure))}
+catch{if($_.Exception.GetBaseException() -isnot [InvalidOperationException] -or $_.Exception.GetBaseException().Message -cne 'OWNED_DEVICE_UI_ACTION_FAILED'){throw};$propagated=$true}
+if(-not $propagated -or $state.UiActions -ne 1){throw 'DEVICE_GUARD_FAILURE_MASKED'}
+Write-Output 'SDK_DEVICE_BOUNDARY_GUARD PASS case=action-failure-propagated proof=OWNED_SENTINEL'
+$nullActionDenied=$false
+try{$null=$deviceBefore.Invoke($null,[object[]]@([object]::new(),$null))}
+catch{if($_.Exception.GetBaseException() -isnot [ArgumentNullException]){throw};$nullActionDenied=$true}
+if(-not $nullActionDenied){throw 'DEVICE_GUARD_NULL_ACTION_ACCEPTED'}
+Write-Output 'SDK_DEVICE_BOUNDARY_GUARD PASS case=null-action-rejected proof=OWNED_SENTINEL'
 $parameterType=$compiled|Where-Object FullName -CEQ 'ReferenceDcaRequiredParameters'
 if($null -eq $parameterType){throw 'PARAMETER_GUARD_TYPE_NOT_FOUND'}
 $parameterBefore=$parameterType.GetMethod('BeforeUi',$flags)

@@ -29,7 +29,7 @@ function CompareIdentities($first,$second){
 if($SelfTest){
  $source=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'ProjectConstructorProbe.cs'))
  $budget=[regex]::Matches($source,'internal static int Identity(?:Write|Context)Budget\(bool identity,int ordinary\)\{[^}]+\}')
- if($budget.Count -ne 2 -or -not $source.Contains('IdentityWriteBudget(ownedStableIdentity,ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:16))') -or -not $source.Contains('IdentityContextBudget(ownedStableIdentity,ReferenceDcaRequiredParameters.ContextBudget(ParameterNegativeProfile(),SdkUiRequested?10200000:SdkProductMode?64:SdkDeviceMode?32:16))')){throw 'STABLE_IDENTITY_BUDGET_POLICY_WIRING'}
+ if($budget.Count -ne 2 -or -not $source.Contains('IdentityWriteBudget(FixtureObservationProfile(),ReferenceDcaRequiredParameters.ReadBudget(ParameterNegativeProfile(),SdkUiRequested?200000:16))') -or -not $source.Contains('IdentityContextBudget(FixtureObservationProfile(),ReferenceDcaRequiredParameters.ContextBudget(ParameterNegativeProfile(),SdkUiRequested?10200000:SdkProductMode?64:SdkDeviceMode?32:16))')){throw 'STABLE_IDENTITY_BUDGET_POLICY_WIRING'}
  Add-Type -TypeDefinition ('public static class StableIdentityBudgetProof {'+(($budget | ForEach-Object {$_.Value.Replace('internal static','public static')}) -join "`n")+'}') -Language CSharp
  foreach($ordinary in @(16,32,64,200000,1000000,10200000)){
   if([StableIdentityBudgetProof]::IdentityWriteBudget($false,$ordinary) -ne $ordinary -or [StableIdentityBudgetProof]::IdentityWriteBudget($true,$ordinary) -ne 128){throw 'STABLE_IDENTITY_WRITE_POLICY'}
@@ -37,7 +37,7 @@ if($SelfTest){
  }
  $coalescerStart=$source.IndexOf('internal sealed class ReferenceHealthyLogCoalescer',[StringComparison]::Ordinal)
  $coalescerEnd=$source.IndexOf('// Admission accounting only:',$coalescerStart,[StringComparison]::Ordinal)
- if($coalescerStart -lt 0 -or $coalescerEnd -le $coalescerStart -or -not $source.Contains('ownedStableIdentity?healthyLog.ShouldEmitIdentity(CompactProductDiagnostics(),value):healthyLog.ShouldEmit(CompactProductDiagnostics(),value)')){throw 'STABLE_IDENTITY_COALESCER_WIRING'}
+ if($coalescerStart -lt 0 -or $coalescerEnd -le $coalescerStart -or -not $source.Contains('FixtureObservationProfile()?healthyLog.ShouldEmitIdentity(CompactProductDiagnostics(),value):healthyLog.ShouldEmit(CompactProductDiagnostics(),value)')){throw 'STABLE_IDENTITY_COALESCER_WIRING'}
  $proof=@'
 public static class StableIdentityLogProof {
  public static void Run() {
