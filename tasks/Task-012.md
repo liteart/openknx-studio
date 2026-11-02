@@ -91,3 +91,16 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Reviewer | Unassigned |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+
+## Read-only readiness checkpoint — 2026-11-02
+
+Task011 remains in progress, so Task012 is not ready. Source103 original UI run
+`54b41270cd58` rendered and closed, but recorded parameter values not read,
+configuration acceptance not established, a transient fixture-only writer and
+`state=NOT_RUN`. These observations do not establish a user configuration change
+or persistent state. Once Task011 is accepted, the first bounded investigation
+is one actually offered non-bus editable value and its genuine before/after
+read, write and save path; only then can the file envelope and restart/reload
+requirements be implemented. Hardware and bus operations are not required for
+that first investigation.
