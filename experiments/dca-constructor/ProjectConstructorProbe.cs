@@ -13,6 +13,30 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 
+// Task011 fixed-reference manifest selection, owned from the observed ETS predicate.
+internal static class ReferenceDcaManifestSelection
+{
+    internal const string ManifestHash="ad508caccbd89efad6d1c7c3bd783bd075614fecd77ba45e1b096f3cfaa6a4f6";
+    internal const string Hardware2ProgramId="M-0083_H-193-1-O00EF_HP-0155-40-4D9F-O00EF";
+    internal static string[] Declarations()
+    {return new string[]{"M-0083_A-0154-10-0000","M-0083_A-0155-10-0000","M-0083_A-0154-11-0000","M-0083_A-0155-11-0000","M-0083_A-0154-40-0000","M-0083_A-0155-40-0000"};}
+    static bool BoundedAscii(string value)
+    {if(String.IsNullOrEmpty(value)||value.Length>128)return false;foreach(char c in value)if(c<0x21||c>0x7e)return false;return true;}
+    internal static bool MatchesProjection(string[] declarations,string originalProjection)
+    {
+        if(declarations==null||declarations.Length==0||declarations.Length>16||!BoundedAscii(originalProjection))return false;
+        bool selected=false;
+        foreach(string declaration in declarations){if(declaration==null)continue;if(!BoundedAscii(declaration))return false;if(declaration.StartsWith(originalProjection,StringComparison.Ordinal))selected=true;}
+        return selected;
+    }
+    internal static void BeforeMutation(string[] declarations,string originalProjection,Action mutation)
+    {
+        if(mutation==null)throw new ArgumentNullException("mutation");
+        if(!MatchesProjection(declarations,originalProjection))throw new InvalidDataException("DCA_MANIFEST_APPLICATION_MISMATCH");
+        mutation();
+    }
+}
+
 internal sealed class ProjectDenyProxy : RealProxy
 {
     readonly Action<string> record;
@@ -4425,7 +4449,7 @@ internal static class ProjectConstructorProbe
         Assembly om=project.GetType().Assembly,ids=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Ids.dll")),common=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Common.Types.dll"));
         Type installationType=om.GetType("Knx.Ets.ObjectModel.Project.Installation",true),deviceType=om.GetType("Knx.Ets.ObjectModel.Project.Device",true),factoryType=om.GetType("Knx.Ets.ObjectModel.Factory",true);
         ProbeFiles.Require(om.FullName==OmIdentity&&installationType.MetadataToken==0x02000324&&deviceType.MetadataToken==0x02000230&&contextGenuineFactory.GetType()==factoryType,"SDK_DEVICE_ORIGINAL_TYPES");
-        object hp=SdkReferenceId(ids,"Knx.Ets.Ids.Product.Hardware2ProgramId",0x0200004c,0x060003ab,"M-0083_H-193-1-O00EF_HP-0155-40-4D9F-O00EF");
+        object hp=SdkReferenceId(ids,"Knx.Ets.Ids.Product.Hardware2ProgramId",0x0200004c,0x060003ab,ReferenceDcaManifestSelection.Hardware2ProgramId);
         object product=SdkReferenceId(ids,"Knx.Ets.Ids.Product.ProductId",0x0200005f,0x060004b3,"M-0083_H-193-1-O00EF_P-SCN.2DDA641.2E04");
         if(SdkProductMode)PrepareSdkProductImport(om,project,product,hp);
         MethodInfo projectIdGetter=SdkDeviceMethod(project.GetType(),0x06002836),installationsGetter=SdkDeviceMethod(project.GetType(),0x06002852);
@@ -4820,7 +4844,28 @@ internal static class ProjectConstructorProbe
         // Local ownership survives Project cleanup; it never depends on the global diagnostic field.
         try { use(factory); } finally { GC.KeepAlive(factory); }
     }
+    static string OriginalReferenceApplicationProjection()
+    {
+        ProbeFiles.Require(SdkProductMode&&ProductDependencyComplete&&containerInputsReady,"DCA_MANIFEST_COMPLETE_PINNED_PROFILE");
+        Assembly ids=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Ids.dll"));
+        ProbeFiles.Require(ids.FullName==Identities[11]&&!ids.IsDynamic&&!ids.ReflectionOnly&&!ids.GlobalAssemblyCache&&ProbeFiles.Same(ids.Location,Path.Combine(stage,"Knx.Ets.Ids.dll")),"DCA_MANIFEST_ORIGINAL_IDS_OWNER");
+        object hp=SdkReferenceId(ids,"Knx.Ets.Ids.Product.Hardware2ProgramId",0x0200004c,0x060003ab,ReferenceDcaManifestSelection.Hardware2ProgramId);
+        MethodInfo applicationGetter=SdkDeviceMethod(hp.GetType(),0x060003a5);Type applicationType=ids.GetType("Knx.Ets.Ids.Product.ApplicationProgramId",true,false);
+        ProbeFiles.Require(applicationGetter.Name=="get_ApplicationProgramId"&&applicationGetter.GetParameters().Length==0&&applicationGetter.ReturnType==applicationType&&applicationType.Module==ids.ManifestModule&&applicationType.MetadataToken==0x0200003a&&(int)applicationType.Attributes==1056769,"DCA_MANIFEST_APPLICATION_ID_API");
+        object application=applicationGetter.Invoke(hp,new object[0]);ProbeFiles.Require(application!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(application)&&application.GetType()==applicationType,"DCA_MANIFEST_GENUINE_APPLICATION_ID");
+        MethodInfo projection=SdkDeviceMethod(applicationType,0x06000299);ProbeFiles.Require(projection.Name=="ToStringWithoutFingerprintAndOrigManuf"&&projection.ReturnType==typeof(string)&&projection.GetParameters().Length==0&&(int)projection.Attributes==134,"DCA_MANIFEST_ORIGINAL_PROJECTION_API");
+        string value=projection.Invoke(application,new object[0]) as string;ProbeFiles.Require(!String.IsNullOrEmpty(value)&&value.Length<=128,"DCA_MANIFEST_ORIGINAL_PROJECTION_RESULT");return value;
+    }
     static void OriginalContextConstruction()
+    {
+        if(!SdkProductMode){OriginalContextConstructionCore();return;}
+        string projection=OriginalReferenceApplicationProjection();
+        ReferenceDcaManifestSelection.BeforeMutation(ReferenceDcaManifestSelection.Declarations(),projection,delegate{
+            Record("DCA_MANIFEST_SELECTION selected=True rule=DECLARATION_STARTS_WITH_ORIGINAL_PROJECTION comparison=ORDINAL_ASCII_REFERENCE projection="+Text(projection)+" manifest-sha256="+ReferenceDcaManifestSelection.ManifestHash+" mutations=NOT_STARTED qualification=OWNED_RULE_ORIGINAL_IDS_API");
+            OriginalContextConstructionCore();
+        });
+    }
+    static void OriginalContextConstructionCore()
     {
         ProbeFiles.Require(ProjectScopeOriginal && containerInputsReady, "PROJECT_SCOPE_COMPLETE_PROFILE");
         Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll")), common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.dll"));

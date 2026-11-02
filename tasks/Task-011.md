@@ -418,3 +418,40 @@ manifest selection rule. Private evidence and exact command are recorded in
 `private/evidence/task010-sdk-route/dca-application-match-callscan-task011-01.md`
 (SHA-256 `d381550a2ef6e73b6cb3bb3885bfec015c11c5b48159f0ae33bc81f9110ad29c`).
 The selected application match and negative pre-mutation test remain unqualified.
+
+
+## ETS-side manifest predicate — 2026-11-02
+
+Static inspection of ETS 6.4.8718.0 identified the add-in selection predicate:
+a non-null manifest `DeviceConfiguration` ID starts with the selected application
+ID projected without fingerprint and original-manufacturer fields. See the
+component contract and private report
+`private/evidence/task010-sdk-route/ets-manifest-selection-task011-02.md`
+(SHA-256 `ee25da0b9b8058646a0d8ae0ef42928a5dd8e7f497ae6d7c59cc0afbea3d3851`).
+The exact fixture appears to match under this rule by static inference, but the
+original projection and predicate have not been executed. AC-001/002 and their
+positive/negative tests remain open.
+
+
+## Reference selection guard runtime — 2026-11-02
+
+Source90 Windows run `b67fd838e21c` observed the actual original SDK projection
+`M-0083_A-0155-40`, and the reference-only owned guard accepted a pinned manifest
+declaration before product-mode constructor mutations. The original DCA rendered
+and closed, child exit 0; postchecks retained 42+2 input pins and no owned process.
+`private/toolchains/powershell-7.6.7/pwsh -NoProfile -File
+experiments/dca-constructor/Test-ManifestSelection.ps1` passed 12 owned cases;
+wrong manufacturer/program/version cases did not invoke a test mutation sentinel.
+Private evidence: `private/evidence/task010-sdk-wrapper/iteration01/
+run-b67fd838e21c`, source audit SHA-256
+`743fb034b967df7ea0dd0e9577944c56e662ed2abf90b8d6b13402435caa268c`.
+The original ETS selector was not executed; negative production-context and
+missing-context tests and full task acceptance remain open.
+
+
+The full owned Windows constructor regression was repeated with Source90 as run
+`6f2eab4c94a3`: 423 `OWNED_CASE PASS` records and `OWNED_SUITE PASS`, scheduled
+result 0 and no owned process. The full suite does not create the focused smoke
+file expected by the generic collector; its subsequent missing-file error does
+not alter the saved complete suite output or its result. This owned test does not
+execute the original ETS manifest predicate or prove production state behavior.

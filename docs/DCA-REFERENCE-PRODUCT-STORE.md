@@ -84,3 +84,39 @@ negatives and stable coherent identities. Task010 requires actual original UI
 rendering, benign interaction and closing. Comprehensive internal regressions and
 independent review remain required before acceptance under the owner's deferred
 test workflow. Neither task is Done, and no phase gate is unlocked here.
+
+
+## ETS 6.4 manifest selection evidence
+
+A static inspection of the privately held ETS 6.4.8718.0
+`Knx.Ets.Ui.UserControls.dll` (SHA-256
+`2488a5a951e772af6530ecdab351f2d8b1cf9fbfd079b13ec56c0b91efbbdf8a`)
+identified `AddInManager.GetDcaAddInForApplicationProgram` and
+`Ets4AddIn.IsDcaAppForApplicationProgramId`. The latter checks each non-null
+manifest `DeviceConfiguration` application ID using
+`manifestId.StartsWith(selectedId.ToStringWithoutFingerprintAndOrigManuf())`.
+The projection uses manufacturer, program type and version; its runtime value
+and the original predicate have not been executed in this investigation.
+
+For the selected fixture, static evidence suggests the product projection is
+`M-0083_A-0155-40`, a prefix of the manifest declaration
+`M-0083_A-0155-40-0000`. This is an inference, not runtime recognition. Preserve
+the complete source IDs and test the actual predicate and mismatches before
+accepting Task011. The bounded private IL report and method tokens are recorded
+in `private/evidence/task010-sdk-route/ets-manifest-selection-task011-02.md`
+(SHA-256 `ee25da0b9b8058646a0d8ae0ef42928a5dd8e7f497ae6d7c59cc0afbea3d3851`).
+
+
+### Bounded reference-selection runtime observation
+
+Source90 run `b67fd838e21c` invoked the pinned original SDK projection on the
+reference application ID and observed `M-0083_A-0155-40`. Before entering the
+product-mode constructor, the owned reference-only matcher accepted this against
+the six declarations bound to the manifest SHA-256 above. The original DCA then
+rendered and closed, and the child exited 0. Twelve owned matcher cases passed,
+including wrong manufacturer, program and version; rejection kept the test
+mutation sentinel at zero. This proves the owned reference guard and original
+projection for this fixture, not execution of the original ETS predicate,
+production configuration rejection, or general culture-independent matching.
+Private source audit SHA-256
+`743fb034b967df7ea0dd0e9577944c56e662ed2abf90b8d6b13402435caa268c`.
