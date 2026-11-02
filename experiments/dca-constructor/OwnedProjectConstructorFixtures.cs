@@ -1091,3 +1091,83 @@ namespace Owned.Task009
     public sealed class ValidatorUndoManagerFixture : IDisposable
     { public static int Disposals;public void Dispose(){Disposals++;} }
 }
+
+// Task010: unsigned owned SDK-wrapper ABI fixture; no SDK namespace or vendor implementation.
+namespace Owned.Task009
+{
+    public interface ISdkProjectStoreFixture
+    {ScopedIdFixture Id{get;}ICacheStreamFixture LargeStringCache{get;}IEmptyContentFixture Project{get;}Guid ProjectGuid{get;set;}ICacheStreamFixture IdMappingCache{get;}}
+    public abstract class SdkExecutionFixture { public abstract bool IsValidProject(SdkModelProjectFixture project); }
+    public sealed class SdkAddinExecutionFixture : SdkExecutionFixture
+    {
+        readonly SdkModelProjectFixture project;
+        internal SdkAddinExecutionFixture(SdkModelProjectFixture contextObject,string scope)
+        {if(contextObject==null||scope!="OpenKNXStudio.OfflineSdkFixture")throw new InvalidOperationException("OWNED_SDK_EXECUTION_ARGUMENTS");project=contextObject;}
+        public override bool IsValidProject(SdkModelProjectFixture candidate){return Object.ReferenceEquals(project,candidate);}
+    }
+    public interface ISdkPluginFixture { }
+    public sealed class SdkRootFixture
+    {
+        public static bool Empty;
+        readonly SdkCollectionFixture projects;
+        internal SdkRootFixture(SdkModelProjectFixture project,ISdkProjectStoreFixture store,SdkExecutionFixture executionContext=null,ISdkPluginFixture pluginInstaller=null)
+        {if(project==null||store==null||executionContext==null||pluginInstaller!=null||store.IdMappingCache.Exists)throw new InvalidOperationException("OWNED_SDK_DEFAULTS_OR_EMPTY_CACHE");projects=new SdkCollectionFixture(project,Empty,executionContext);}
+        public SdkCollectionFixture Projects{get{return projects;}}
+    }
+    public sealed class SdkProjectFixture
+    {public readonly SdkModelProjectFixture Original;public readonly SdkExecutionFixture Context;public SdkProjectFixture(SdkModelProjectFixture original,SdkExecutionFixture context){Original=original;Context=context;}}
+    public sealed class SdkCollectionFixture : System.Collections.Generic.IEnumerable<SdkProjectFixture>
+    {
+        readonly SdkProjectFixture[] projects;
+        public SdkCollectionFixture(SdkModelProjectFixture project,bool empty,SdkExecutionFixture context){var result=new System.Collections.Generic.List<SdkProjectFixture>();if(!empty)foreach(var actual in project.ParentCollection)if(context.IsValidProject(actual))result.Add(new SdkProjectFixture(actual,context));projects=result.ToArray();}
+        public SdkProjectFixture this[int index]{get{return projects[index];}}
+        public System.Collections.Generic.IEnumerator<SdkProjectFixture> GetEnumerator(){return ((System.Collections.Generic.IEnumerable<SdkProjectFixture>)projects).GetEnumerator();}
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator(){return GetEnumerator();}
+    }
+    public static class SdkTypedFixture
+    {
+        public static void Check(SdkProjectFixture wrapper,SdkModelProjectFixture model){if(wrapper==null||!Object.ReferenceEquals(wrapper.Original,model)||!wrapper.Context.IsValidProject(model)||wrapper.Context.IsValidProject(new SdkModelProjectFixture(new SdkModelCollectionFixture())))throw new InvalidOperationException("OWNED_SDK_WRAPPER_REFERENCE");}
+        public static void HostRoundTrip(ISdkDispatcherFixture dispatcher,ISdkEmptyDataStoreFixture data,SdkModelRootFixture root)
+        {int owner=System.Threading.Thread.CurrentThread.ManagedThreadId,worked=0;if(!dispatcher.CheckAccess()||root==null||!Object.ReferenceEquals(root.Projects.ParentRoot,root)||!Object.ReferenceEquals(root.Dispatcher,dispatcher))throw new InvalidOperationException("OWNED_REAL_WPF_HOST_QUERY");dispatcher.Invoke(delegate{if(System.Threading.Thread.CurrentThread.ManagedThreadId!=owner)throw new InvalidOperationException("OWNED_REAL_WPF_THREAD");worked++;});if(worked!=1)throw new InvalidOperationException("OWNED_REAL_WPF_ACTION");foreach(var value in data.ProjectStores)throw new InvalidOperationException("OWNED_EMPTY_ENUMERATION");}
+        public static void DataUnsupported(ISdkEmptyDataStoreFixture data){data.Unsupported();}
+        public static void DispatcherUnsupported(ISdkDispatcherFixture dispatcher){dispatcher.Unsupported();}
+        public static void Unsupported(ICacheStreamFixture cache){cache.AsStream(false);}
+    }
+}
+
+namespace Owned.Task009
+{
+    public interface ISdkMembershipFixture{int Count{get;}void Add(IValidatorParentFixture project);}
+    public sealed class SdkModelProjectFixture : IValidatorParentFixture
+    {public readonly SdkModelCollectionFixture ParentCollection;public SdkModelProjectFixture(SdkModelCollectionFixture collection){ParentCollection=collection;}}
+    public sealed class SdkModelCollectionFixture : ISdkMembershipFixture,System.Collections.Generic.IEnumerable<SdkModelProjectFixture>
+    {
+        readonly System.Collections.Generic.List<SdkModelProjectFixture> projects=new System.Collections.Generic.List<SdkModelProjectFixture>();
+        public readonly SdkModelRootFixture ParentRoot;
+        public SdkModelCollectionFixture(){ }
+        public SdkModelCollectionFixture(SdkModelRootFixture parent){ParentRoot=parent;}
+        public int Count{get{return projects.Count;}}
+        public void Add(IValidatorParentFixture project){var typed=project as SdkModelProjectFixture;if(typed==null||!Object.ReferenceEquals(typed.ParentCollection,this)||projects.Contains(typed))throw new InvalidOperationException("OWNED_MEMBERSHIP_ARGUMENT");projects.Add(typed);}
+        public System.Collections.Generic.IEnumerator<SdkModelProjectFixture> GetEnumerator(){return projects.GetEnumerator();}
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator(){return GetEnumerator();}
+    }
+}
+
+namespace Owned.Task009
+{
+    public interface ISdkEmptyDataStoreFixture{System.Collections.Generic.IEnumerable<ISdkProjectStoreFixture> ProjectStores{get;}void Unsupported();}
+    public interface ISdkDispatcherFixture{bool CheckAccess();void Invoke(Action callback);void Unsupported();}
+    public interface ISdkUsageDataFixture{ }
+    public interface ISdkModelFactoryFixture{ISdkDispatcherFixture UiDispatcher{get;}}
+    public sealed class SdkModelFactoryFixture : ISdkModelFactoryFixture
+    {readonly ISdkDispatcherFixture dispatcher;public SdkModelFactoryFixture(ISdkDispatcherFixture value){dispatcher=value;}public ISdkDispatcherFixture UiDispatcher{get{return dispatcher;}}}
+    public interface ISdkModelRootFixture{SdkModelCollectionFixture Projects{get;}}
+    public sealed class SdkModelRootFixture : ISdkModelRootFixture
+    {
+        readonly SdkModelCollectionFixture projects;
+        public readonly ISdkDispatcherFixture Dispatcher;
+        public SdkModelRootFixture(ISdkEmptyDataStoreFixture store,ISdkModelFactoryFixture factory,ISdkUsageDataFixture usage=null)
+        {if(store==null||factory==null||usage!=null)throw new InvalidOperationException("OWNED_MODEL_ROOT_ARGUMENTS");foreach(var value in store.ProjectStores)throw new InvalidOperationException("OWNED_MODEL_ROOT_EXPECTED_EMPTY");Dispatcher=factory.UiDispatcher;if(Dispatcher==null||!Dispatcher.CheckAccess())throw new InvalidOperationException("OWNED_MODEL_ROOT_DISPATCHER");projects=new SdkModelCollectionFixture(this);}
+        public SdkModelCollectionFixture Projects{get{return projects;}}
+    }
+}

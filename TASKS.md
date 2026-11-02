@@ -35,8 +35,8 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-007](tasks/Task-007.md) | Build a minimum Windows STA DCA host shell | knx-editor / poc/dca-host (C#/.NET) | [Task-003](tasks/Task-003.md), [Task-005](tasks/Task-005.md) |
 | [Task-008](tasks/Task-008.md) | Map the actual ETS SDK surface used by the reference DCA | knx-editor / poc/dca-host analysis | [Task-005](tasks/Task-005.md), [Task-006](tasks/Task-006.md), [Task-007](tasks/Task-007.md) |
 | [Task-009](tasks/Task-009.md) | Implement only the required offline SDK compatibility surface | knx-editor / poc/dca-host (C#/.NET) | [Task-008](tasks/Task-008.md) |
-| [Task-010](tasks/Task-010.md) | Initialize and display the unchanged original MDT DCA | knx-editor / poc/dca-host (C#/.NET) | [Task-009](tasks/Task-009.md) |
-| [Task-011](tasks/Task-011.md) | Supply one coherent device and product context to the DCA | knx-editor / poc/dca-host fixture context | [Task-010](tasks/Task-010.md), [Task-004](tasks/Task-004.md) |
+| [Task-010](tasks/Task-010.md) | Initialize and display the unchanged original MDT DCA | knx-editor / poc/dca-host (C#/.NET) | [Task-009](tasks/Task-009.md), [Task-011](tasks/Task-011.md) for visible UI; [ADR-011](docs/ADR-011-dca-context-before-ui.md) |
+| [Task-011](tasks/Task-011.md) | Supply one coherent device and product context to the DCA | knx-editor / poc/dca-host fixture context | [Task-009](tasks/Task-009.md), [Task-004](tasks/Task-004.md); [ADR-011](docs/ADR-011-dca-context-before-ui.md) |
 | [Task-012](tasks/Task-012.md) | Round-trip one original DCA configuration change | knx-editor / poc/dca-host state bridge | [Task-011](tasks/Task-011.md) |
 | [Task-013](tasks/Task-013.md) | Demonstrate fail-closed PoC DCA bus isolation | knx-editor / poc/dca-host test harness | [Task-012](tasks/Task-012.md) |
 | [Task-014](tasks/Task-014.md) | Record PoC A evidence and its exact limitations | knx-editor / poc reports | [Task-010](tasks/Task-010.md), [Task-012](tasks/Task-012.md), [Task-013](tasks/Task-013.md) |

@@ -44,7 +44,7 @@ if($env:OS -ne 'Windows_NT' -or -not [Environment]::Is64BitProcess){Fail 'WINDOW
 $compilerPath=Local $Compiler;$refs=Local $ReferenceDirectory;$output=Local $OutputDirectory $true
 if([IO.Path]::GetFileName($compilerPath) -ine 'csc.exe' -or [Diagnostics.FileVersionInfo]::GetVersionInfo($compilerPath).FileVersion -cne '4.8.9221.0 built by: NET481REL1LAST_25H2' -or (Hash $compilerPath) -cne '46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00'){Fail 'COMPILER_PIN'}
 $current=[IO.Directory]::GetParent($output);while($null -ne $current){if(Test-Path -LiteralPath (Join-Path $current.FullName '.git')){Fail 'OUTPUT_IN_GIT'};$current=$current.Parent}
-$sources=@('ConstructorProbe.cs','ProbeLauncher.cs','OwnedConstructorFixtures.cs','InitializeContextProbe.cs','OwnedInitializationFixtures.cs','ProjectConstructorProbe.cs','OwnedProjectConstructorFixtures.cs')|ForEach-Object{Local (Join-Path $PSScriptRoot $_)}
+$sources=@('ConstructorProbe.cs','ProbeLauncher.cs','OwnedConstructorFixtures.cs','InitializeContextProbe.cs','OwnedInitializationFixtures.cs','ProjectConstructorProbe.cs','OwnedProjectConstructorFixtures.cs','OriginalProductImportProbe.cs')|ForEach-Object{Local (Join-Path $PSScriptRoot $_)}
 $neutral=Local (Join-Path ([IO.Directory]::GetParent($PSScriptRoot).FullName) 'dca-integration\NeutralStaHost.cs')
 if((Hash $neutral) -cne '7f3045efbc29efe73a743c47724df57c19fa3cc285556e62d850412baa70863c'){Fail 'NEUTRAL_SOURCE_PIN'}
 foreach($path in @($refs,$PSScriptRoot)){
@@ -65,9 +65,9 @@ $bin=Join-Path $output 'bin';$fixtures=Join-Path $output 'fixtures';$null=New-It
 Compile ($common+@('/target:library',('/out:'+(Join-Path $fixtures 'Owned.Task148.ConstructorFixtures.dll')),$sources[2],$sources[4],$sources[6]))
 Compile ($common+@('/target:exe','/main:ConstructorProbe',('/out:'+(Join-Path $bin 'ConstructorProbe.exe')),$sources[0],$sources[3]))
 Compile ($common+@('/target:exe','/main:ProbeLauncher',('/out:'+(Join-Path $bin 'ProbeLauncher.exe')),$sources[0],$sources[1],$sources[3]))
-Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectConstructorProbe.exe')),$sources[0],$sources[3],$sources[5]))
-Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectFactoryBindingProbe.exe')),$sources[0],$sources[3],$sources[5]))
-Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectFactoryContainerProbe.exe')),$sources[0],$sources[3],$sources[5]))
+Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectConstructorProbe.exe')),$sources[0],$sources[3],$sources[5],$sources[7]))
+Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectFactoryBindingProbe.exe')),$sources[0],$sources[3],$sources[5],$sources[7]))
+Compile ($common+@('/target:exe','/main:ProjectConstructorProbe',('/out:'+(Join-Path $bin 'ProjectFactoryContainerProbe.exe')),$sources[0],$sources[3],$sources[5],$sources[7]))
 Compile ($common+@('/target:exe',('/out:'+(Join-Path $bin 'NeutralStaHost.exe')),$neutral))
 $utf8=[Text.UTF8Encoding]::new($false)
 $config='<configuration><startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.8"/></startup><runtime><assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">'+
