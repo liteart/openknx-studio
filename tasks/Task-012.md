@@ -157,3 +157,67 @@ zero remaining owned processes. Its collector failed afterward because it
 expected a `sdk-project.log` file not produced by this suite; the driver output
 was inspected separately and the completed scheduled task was removed. This
 owned regression does not execute the original DCA or prove state round-trip.
+
+Edit attempt `dca012e11301`, source audit SHA-256
+`7b57640362c57c2295a3c5c7a6814b7e6474f0857cb243aa8bc534968a41ca3f`,
+reached the original grid editor for the selected fixture value but failed
+the original cell commit and validation (exit 2). The post-attempt SDK change
+was not established and a partial change was not ruled out; no rollback,
+capture, or round-trip is asserted. Input hashes remained intact and no owned
+process remained. Private log SHA-256:
+`e71b92635768010a9636d1099b93ca738b83c852d9dab528c00ae64a4a159284`.
+The WPF validation cause needs further diagnosis before another edit attempt.
+
+Diagnostic retry `dca012e11401` also exited 2 with cell commit rejected. It
+recorded an unchanged actual SDK value, an active binding, no validation errors
+on editor/row/grid, an active row edit, and no keyboard focus on the editor.
+The row commit was not attempted. Lack of focus is an observed correlation,
+not yet a proven cause. The private log SHA-256 is
+`98743990d7cd45a1ac099c1232157fa63e8ff61dbcd5ba3bd1083b821dc3e217`;
+source audit SHA-256 is
+`acac3ea38352580e8c947347d9956794bada9ef9f52822f7ab214388112a6747`.
+The test confirmed input pins and cleanup, and did not establish persistence.
+
+Focus retry `dca012e11501` confirmed the editor and grid had keyboard focus
+before the change; the cell commit still returned false with no validation
+errors and the SDK value unchanged. Focus alone is therefore insufficient.
+The run exited 2 and also reached the global log limit during cleanup. Input
+pins and process cleanup passed. Private log SHA-256:
+`387fc39f144d81453a85cab826c48367056273bc4d556b1d213875c14430dc51`;
+source audit SHA-256:
+`1035b55986bf3efe0130d8dbe8680d34d21f8b380287f1018b8f6d1d5dea40c5`.
+
+Event diagnostic `dca012e11601` exited 2: the requested fixture text was in
+the original editor, its binding was dirty, and the passive cell-ending
+observer saw `Cancel=false`. Commit returned false and the cell remained in
+edit mode; no editor, row, grid or row binding-group errors were reported.
+The SDK value remained unchanged. The observer does not rule out a later
+handler changing cancellation. Original inputs and process cleanup passed.
+Private log SHA-256:
+`e3320bc58bde51a9090e533bf2affc8e5918544d2f74b7327f8b1c77bd220730`;
+source audit SHA-256:
+`8db820f6b9c8a025194f81baaa2be63d0510da9ef98c326e8ac74a61177785a5`.
+
+Enter-input diagnostic `dca012e11701` reached both original cell and row
+commit events. The SDK invoked `IDispatcher.EnableDefer` (`060001AD`), which
+the current host rejected as unsupported; WPF exposed that exception as a
+validation error and the SDK value remained unchanged. The run exited 2 and
+did not capture or persist state. The next increment must implement only the
+verified dispatcher contract; it must not bypass SDK write checks. Input pins
+and process cleanup passed. Private log SHA-256:
+`0a979fc7f7d20853bcc86310eed0c984681e3e3a8260454fe6d10a9727a60989`;
+source audit SHA-256:
+`ac65b368db19a8af0f3e1a04283cde3d8c9544f67cd3022d9ed6c2eefa051b2e`.
+For this snapshot, the focused `Test-StateInspection.ps1` policy checks passed;
+Windows owned regression `dca012f11701` reported 423 passing cases and task
+exit 0. Its collector again expected an absent `sdk-project.log`; the driver
+output was checked separately and the completed task was removed. These tests
+do not establish a successful original edit or persistence.
+
+After input-filter and reporting review fixes, source audit SHA-256
+`c62330b182ea650a1544d1861845209ea50b9a6eb9f2f04979d871eedeb926d3`
+built on Windows in run `dca012e11801`. The original edit attempt again exited
+2 at the unsupported `EnableDefer` call; the SDK value remained unchanged.
+Input hashes passed and the test process and task were removed. Private log
+SHA-256:
+`4cd50d27d7f96076c768f5b0f3a4ee797758688c478923b90ae6107d319e2388`.

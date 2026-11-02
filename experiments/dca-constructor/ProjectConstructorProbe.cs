@@ -61,6 +61,27 @@ internal static class ReferenceDcaStateInspection
     {if(value==null||value.Length>256)throw new InvalidDataException("STATE_INSPECTION_STRING_BOUND");return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(value));}
 }
 
+// One observed offline fixture cell; this is not a production state envelope.
+internal static class ReferenceDcaStateEdit
+{
+    internal const string ParameterId="P-0001-1_DI-1_M-0083_A-0155-40-4D9F-O00EF_MD-4_M-3_MI-1_P-1_R-1";
+    internal const string InternalName="DCE1-Description";
+    internal const string FixtureText="OpenKNX offline fixture";
+    internal static bool Target(string id,string name,int source,string member,string before)
+    {return id==ParameterId&&name==InternalName&&source==0x0200001f&&member=="Description"&&before==String.Empty;}
+    internal static bool OmitHealthyDetail(bool edit,string line)
+    {return edit&&line!=null&&(line.StartsWith("CONTEXT_ADAPTER_REPLY method=",StringComparison.Ordinal)||line.StartsWith("SDK_WRITE_FIXTURE_REPLY method=",StringComparison.Ordinal)||line.StartsWith("PRODUCT_STORE_REFERENCE member=",StringComparison.Ordinal)||line.StartsWith("SDK_DEVICE_PRIME_COLLECTION ",StringComparison.Ordinal));}
+    internal static bool DiagnosticEmit(int used,int length){return used>=0&&length>=0&&length<=512&&used<=1536-length;}
+    internal static string DiagnosticText(string text)
+    {return text==null?"NULL":Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text.Length<=128?text:text.Substring(0,128)+"[truncated]"));}
+    internal static bool OwnedInput(object expected,object actual,bool enter)
+    {return expected!=null&&Object.ReferenceEquals(expected,actual)&&enter;}
+    internal static bool EndedFromEvents(bool editing,bool commit,bool cancelled){return !editing&&commit&&!cancelled;}
+    internal static bool FocusReady(bool active,bool editor,bool grid,bool sameCell){return active&&editor&&grid&&sameCell;}
+    internal static bool Changed(bool began,bool cell,bool row,bool valid,string actual)
+    {return began&&cell&&row&&valid&&actual==FixtureText;}
+}
+
 // An absent device is rejected at the owned entry to the real GetDcaUi path.
 internal static class ReferenceDcaRequiredDevice
 {
@@ -1654,9 +1675,11 @@ internal static class ProjectConstructorProbe
         value = value.Replace("\r", "\\r").Replace("\n", "\\n").Replace("\0", "\\0");
         return value.Length <= 512 ? value : value.Substring(0, 512) + "[truncated]";
     }
+    static int sdkEditHealthyRepliesOmitted;
     static readonly ReferenceHealthyLogCoalescer healthyLog=new ReferenceHealthyLogCoalescer();
     static void Record(string value)
     {
+        if(ReferenceDcaStateEdit.OmitHealthyDetail(sdkStateEdit,value)){Interlocked.Increment(ref sdkEditHealthyRepliesOmitted);return;}
         if(!(FixtureObservationProfile()?healthyLog.ShouldEmitIdentity(CompactProductDiagnostics(),value):healthyLog.ShouldEmit(CompactProductDiagnostics(),value)))return;
         byte[] bytes = Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) + " " + value + "\n");
         lock (LogLock) {
@@ -4150,7 +4173,8 @@ internal static class ProjectConstructorProbe
             :sdkUiCallReturned?"RETURNED_WITHOUT_ORIGINAL_VIEW":"CALL_NOT_RETURNED";
         return observed+(sdkUiLifecycleFault?"_WITH_FAILURE":String.Empty);
     }
-    static bool sdkStateInspection,sdkStateInspectionFault,sdkStateEditors;
+    static bool sdkStateInspection,sdkStateInspectionFault,sdkStateEditors,sdkStateEdit,sdkStateEditAttempted,sdkStateEditChanged;
+    static System.Windows.Input.KeyEventArgs sdkStateEnterEvent;
     static bool SdkUiRequested{get{return SdkProductMode&&sdkUiSeconds==600;}}
     internal static bool ProductUiFixtureMode(){return SdkUiRequested;}
     internal static bool CompactProductDiagnostics(){return FixtureObservationProfile()||ReferenceDcaRequiredParameters.CompactDiagnostics(ProductUiFixtureMode(),ParameterNegativeProfile());}
@@ -4816,7 +4840,82 @@ internal static class ProjectConstructorProbe
         Record("OWNED_PARAMETER_DEFINITION_NEGATIVE_PASS genuine-SDK-definition-control=1 omission=OWNED_CONTEXT_VIEW_ONLY rejection=DCA_REQUIRED_PARAMETER_DEFINITION_MISSING original-GetDcaUi-attempts=0 UI-config-action-entries=0 model-fixture=ALREADY_CONSTRUCTED vendor-missing-definition-behavior=NOT_RUN original-data=UNCHANGED");
         GC.KeepAlive(actualDefinition);
     }
-    static void InspectOriginalStateBindings(FrameworkElement view,object device)
+    sealed class StateEditTarget
+    {
+        internal System.Windows.Controls.DataGrid Grid;internal System.Windows.Controls.DataGridRow Row;internal System.Windows.Controls.DataGridTextColumn Column;
+        internal object Source,Parameter,Device;internal MethodInfo Read,Identity,Parent;internal string Id,Name;
+    }
+    static bool OriginalRowBinding(System.Windows.Data.Binding binding)
+    {return binding!=null&&binding.Path!=null&&binding.Path.Path=="Description"&&binding.Mode==System.Windows.Data.BindingMode.TwoWay&&ReferenceDcaStateInspection.DefaultRowBinding(binding.ShouldSerializeSource()||binding.Source!=null,binding.RelativeSource!=null,binding.ElementName,binding.XPath)&&binding.Converter==null&&String.IsNullOrEmpty(binding.StringFormat)&&!binding.IsAsync&&binding.Delay==0&&binding.UpdateSourceTrigger!=System.Windows.Data.UpdateSourceTrigger.Explicit;}
+    static void DiagnoseStateEditCommit(StateEditTarget target,System.Windows.Controls.TextBox editor,System.Windows.Data.BindingExpression binding,System.ComponentModel.IEditableCollectionView editing,bool cell,bool row,object before,object after,System.Windows.Controls.DataGridCell actualCell)
+    {
+        int used=0,errors=0,skipped=0;Action<string> emit=delegate(string line){if(ReferenceDcaStateEdit.DiagnosticEmit(used,line.Length+40)){Record(line);used+=line.Length+40;}else skipped++;};
+        string observed=after as string,comparison=after is string?(Object.Equals(before,after)?"UNCHANGED":observed==ReferenceDcaStateEdit.FixtureText?"REQUESTED_VALUE_COMMIT_NOT_ACCEPTED":"OTHER_VALUE"):"NOT_A_STRING";
+        emit("DCA_STATE_UI_READBACK cell-commit="+cell+" row-completed="+row+" commit-source=ENTER_EVENTS"+" SDK-kind="+(after==null?"NULL":after is string?"STRING":"UNSUPPORTED")+" SDK-after="+ReferenceDcaStateEdit.DiagnosticText(observed)+" comparison="+comparison+" encoding=UTF8_BASE64 capture=NOT_RUN");
+        emit("DCA_STATE_UI_COMMIT_STATE binding-status="+binding.Status+" binding-error="+binding.HasValidationError+" editor-error="+System.Windows.Controls.Validation.GetHasError(editor)+" row-error="+System.Windows.Controls.Validation.GetHasError(target.Row)+" grid-error="+System.Windows.Controls.Validation.GetHasError(target.Grid)+" editing-item="+editing.IsEditingItem+" row-editing="+target.Row.IsEditing+" editor-focused="+Object.ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement,editor)+" current-cell-valid="+target.Grid.CurrentCell.IsValid);
+        Action<string,int,System.Windows.Controls.ValidationError> detail=delegate(string label,int index,System.Windows.Controls.ValidationError error){errors++;string content=error.ErrorContent as string;Exception failure=error.Exception;
+            if(failure!=null){Exception cause=failure.InnerException??failure;emit("DCA_STATE_UI_VALIDATION_EXCEPTION type="+Text(cause.GetType().FullName)+" hresult="+cause.HResult.ToString("X8")+" message="+ReferenceDcaStateEdit.DiagnosticText(cause.Message)+" encoding=UTF8_BASE64");}
+            emit("DCA_STATE_UI_VALIDATION target="+label+" index="+index+" rule="+Text(error.RuleInError==null?"NONE":error.RuleInError.GetType().FullName)+" step="+(error.RuleInError==null?"NONE":error.RuleInError.ValidationStep.ToString())+" content="+(content==null?"NONSTRING_NOT_FORMATTED":ReferenceDcaStateEdit.DiagnosticText(content))+" encoding=UTF8_BASE64");
+        };
+        DependencyObject[] nodes={editor,target.Row,target.Grid};string[] labels={"EDITOR","ROW","GRID"};
+        for(int i=0;i<nodes.Length&&errors<2;i++){var collection=System.Windows.Controls.Validation.GetErrors(nodes[i]);for(int j=0;j<collection.Count&&errors<2;j++)detail(labels[i],j,collection[j]);}
+        System.Windows.Data.BindingGroup[] groups={editor.BindingGroup,actualCell==null?null:actualCell.BindingGroup,target.Row.BindingGroup,target.Grid.BindingGroup};string[] groupLabels={"EDITOR","CELL","ROW","GRID"};int rules=0;
+        for(int i=0;i<groups.Length;i++){var group=groups[i];var collection=group==null?null:group.ValidationErrors;emit("DCA_STATE_UI_BINDING_GROUP target="+groupLabels[i]+" present="+(group!=null)+" has-validation-error="+(group!=null&&group.HasValidationError)+" errors="+(collection==null?0:collection.Count)+" rules="+(group==null?0:group.ValidationRules.Count));
+            if(group!=null)for(int j=0;j<group.ValidationRules.Count&&rules<2;j++){rules++;var rule=group.ValidationRules[j];emit("DCA_STATE_UI_VALIDATION_RULE target="+groupLabels[i]+" type="+Text(rule.GetType().FullName)+" step="+rule.ValidationStep+" target-updated="+rule.ValidatesOnTargetUpdated+" invoked-by-host=False");}
+            if(collection!=null)for(int j=0;j<collection.Count&&errors<2;j++)detail(groupLabels[i]+"_BINDING_GROUP",j,collection[j]);
+        }
+        Record("DCA_STATE_UI_DIAGNOSTIC_END error-records-inspected="+errors+" emitted-chars="+used+" max=1536 skipped-over-budget="+skipped+" rollback=NOT_ASSERTED");
+    }
+    static void AttemptOriginalGridEdit(StateEditTarget target,FrameworkElement view,System.Windows.Controls.Border host)
+    {
+        ProbeFiles.Require(sdkStateEdit&&!sdkStateEditAttempted&&SdkUiRequested&&sdkProductUiActive&&SdkWrapperEligible()&&contextLifetime&&view.IsVisible&&view.Dispatcher.CheckAccess()&&host!=null&&Object.ReferenceEquals(host.Child,view)&&!host.IsEnabled,"STATE_EDIT_EXPLICIT_OWNER_PHASE");sdkStateEditAttempted=true;
+        ProbeFiles.Require(target!=null&&target.Grid.IsVisible&&target.Row.IsVisible&&Object.ReferenceEquals(target.Row.Item,target.Source)&&Object.ReferenceEquals(System.Windows.Controls.ItemsControl.ItemsControlFromItemContainer(target.Row),target.Grid)&&target.Column.Visibility==Visibility.Visible&&!target.Column.IsReadOnly&&!target.Grid.IsReadOnly&&OriginalRowBinding(target.Column.Binding as System.Windows.Data.Binding),"STATE_EDIT_EXACT_GRID_CELL");
+        var editView=target.Grid.Items as System.ComponentModel.IEditableCollectionView;
+        ProbeFiles.Require(editView!=null&&!editView.IsEditingItem&&!editView.IsAddingNew&&!target.Row.IsEditing,"STATE_EDIT_NO_PRIOR_EDIT");
+        object observed=target.Read.Invoke(target.Parameter,new object[0]);ProbeFiles.Require(observed is string&&ReferenceDcaStateEdit.Target(target.Id,target.Name,target.Source.GetType().MetadataToken,"Description",(string)observed),"STATE_EDIT_EXACT_EMPTY_FIXTURE_TARGET");
+        bool began=false,cell=false,row=false,valid=false;System.Windows.Controls.TextBox editor=null;
+        Record("DCA_STATE_UI_EDIT_BEGIN operation=OWNED_WPF_AUTOMATION target=EXACT_OBSERVED_DESCRIPTION before="+ReferenceDcaStateInspection.Encode((string)observed)+" requested="+ReferenceDcaStateInspection.Encode(ReferenceDcaStateEdit.FixtureText)+" encoding=UTF8_BASE64 SDK-write-checks=ORIGINAL bus-capability=NONE capture=NOT_RUN");
+        int eventCount=0;bool cellCommitEvent=false,rowCommitEvent=false,cancelObserved=false;EventHandler<System.Windows.Controls.DataGridCellEditEndingEventArgs> cellEnding=delegate(object sender,System.Windows.Controls.DataGridCellEditEndingEventArgs e){
+            if(Object.ReferenceEquals(e.Row,target.Row)&&Object.ReferenceEquals(e.Column,target.Column)){if(e.EditAction==System.Windows.Controls.DataGridEditAction.Commit&&!e.Cancel)cellCommitEvent=true;else cancelObserved=true;}
+            if(eventCount<4){eventCount++;Record("DCA_STATE_UI_EDIT_EVENT kind=CELL_ENDING action="+e.EditAction+" cancel-as-observed="+e.Cancel+" exact-row="+Object.ReferenceEquals(e.Row,target.Row)+" exact-column="+Object.ReferenceEquals(e.Column,target.Column)+" handler-order=ADDED_AFTER_CONSTRUCTION cancel-modified=False");}
+        };
+        EventHandler<System.Windows.Controls.DataGridRowEditEndingEventArgs> rowEnding=delegate(object sender,System.Windows.Controls.DataGridRowEditEndingEventArgs e){if(Object.ReferenceEquals(e.Row,target.Row)){if(e.EditAction==System.Windows.Controls.DataGridEditAction.Commit&&!e.Cancel)rowCommitEvent=true;else cancelObserved=true;}if(eventCount<4){eventCount++;Record("DCA_STATE_UI_EDIT_EVENT kind=ROW_ENDING action="+e.EditAction+" cancel-as-observed="+e.Cancel+" exact-row="+Object.ReferenceEquals(e.Row,target.Row)+" cancel-modified=False");}};
+        target.Grid.CellEditEnding+=cellEnding;target.Grid.RowEditEnding+=rowEnding;
+        try{
+            host.IsEnabled=true;target.Grid.CurrentCell=new System.Windows.Controls.DataGridCellInfo(target.Source,target.Column);began=target.Grid.BeginEdit();ProbeFiles.Require(began,"STATE_EDIT_BEGIN_REJECTED");
+            editor=target.Column.GetCellContent(target.Source) as System.Windows.Controls.TextBox;
+            ProbeFiles.Require(editor!=null&&editor.GetType()==typeof(System.Windows.Controls.TextBox)&&editor.IsVisible&&editor.IsEnabled&&!editor.IsReadOnly&&editor.Dispatcher==view.Dispatcher&&(editor.MaxLength==0||editor.MaxLength>=ReferenceDcaStateEdit.FixtureText.Length),"STATE_EDIT_ORIGINAL_GENERATED_TEXTBOX");
+            var binding=System.Windows.Data.BindingOperations.GetBindingExpression(editor,System.Windows.Controls.TextBox.TextProperty);
+            ProbeFiles.Require(binding!=null&&Object.ReferenceEquals(binding.ResolvedSource,target.Source)&&binding.ResolvedSourcePropertyName=="Description"&&binding.ParentBinding.Mode==System.Windows.Data.BindingMode.TwoWay&&binding.ParentBinding.Converter==null&&String.IsNullOrEmpty(binding.ParentBinding.StringFormat)&&!binding.ParentBinding.IsAsync&&binding.ParentBinding.Delay==0&&binding.ParentBinding.UpdateSourceTrigger!=System.Windows.Data.UpdateSourceTrigger.Explicit&&editor.Text==(string)observed&&!System.Windows.Controls.Validation.GetHasError(editor),"STATE_EDIT_GENERATED_BINDING_AND_BEFORE");
+            Window ownerWindow=Window.GetWindow(view);ProbeFiles.Require(ownerWindow!=null&&ownerWindow.IsVisible&&Object.ReferenceEquals(ownerWindow.Content,host),"STATE_EDIT_OWNED_VISIBLE_WINDOW");bool activated=ownerWindow.Activate(),focusRequested=false,focusReturned=false;
+            editor.Dispatcher.Invoke(delegate{
+                ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&SdkWrapperEligible()&&contextLifetime&&host.IsEnabled&&view.IsVisible&&editor.Dispatcher.CheckAccess(),"STATE_EDIT_FOCUS_SCOPE");
+                focusRequested=editor.Focus();focusReturned=Object.ReferenceEquals(System.Windows.Input.Keyboard.Focus(editor),editor);
+            },DispatcherPriority.Input,CancellationToken.None,TimeSpan.FromSeconds(2));
+            bool editorFocused=Object.ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement,editor)&&editor.IsKeyboardFocusWithin,sameCell=target.Grid.CurrentCell.IsValid&&Object.ReferenceEquals(target.Grid.CurrentCell.Item,target.Source)&&Object.ReferenceEquals(target.Grid.CurrentCell.Column,target.Column)&&Object.ReferenceEquals(target.Column.GetCellContent(target.Source),editor);
+            Record("DCA_STATE_UI_EDIT_FOCUS activate-return="+activated+" window-active="+ownerWindow.IsActive+" focus-request="+focusRequested+" focus-return="+focusReturned+" actual-editor-focused="+editorFocused+" grid-focus-within="+target.Grid.IsKeyboardFocusWithin+" exact-cell="+sameCell+" dispatcher-cycle=INPUT wait-timeout-seconds=2 SDK-write-checks=UNCHANGED");
+            ProbeFiles.Require(ReferenceDcaStateEdit.FocusReady(ownerWindow.IsActive,editorFocused,target.Grid.IsKeyboardFocusWithin,sameCell)&&target.Row.IsEditing&&Object.ReferenceEquals(binding.ResolvedSource,target.Source)&&editor.Text==(string)observed&&!System.Windows.Controls.Validation.GetHasError(editor),"STATE_EDIT_REAL_KEYBOARD_FOCUS_REQUIRED");
+            DependencyObject cellAncestor=editor;for(int depth=0;cellAncestor!=null&&!(cellAncestor is System.Windows.Controls.DataGridCell)&&depth<8;depth++)cellAncestor=System.Windows.Media.VisualTreeHelper.GetParent(cellAncestor);var actualCell=cellAncestor as System.Windows.Controls.DataGridCell;
+            editor.SelectAll();editor.SelectedText=ReferenceDcaStateEdit.FixtureText;
+            Record("DCA_STATE_UI_EDIT_INPUT text="+ReferenceDcaStateEdit.DiagnosticText(editor.Text)+" text-is-requested="+(editor.Text==ReferenceDcaStateEdit.FixtureText)+" cell-container="+(actualCell!=null)+" cell-editing="+(actualCell!=null&&actualCell.IsEditing)+" binding-status="+binding.Status+" update-trigger="+binding.ParentBinding.UpdateSourceTrigger+" dirty="+binding.IsDirty+" source-updated-notification="+binding.ParentBinding.NotifyOnSourceUpdated+" encoding=UTF8_BASE64");
+            editor.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible()&&Object.ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement,editor),"STATE_EDIT_ENTER_READY");},DispatcherPriority.Background,CancellationToken.None,TimeSpan.FromSeconds(2));
+            ProbeFiles.Require(System.Windows.Input.Keyboard.Modifiers==System.Windows.Input.ModifierKeys.None,"STATE_EDIT_ENTER_NO_MODIFIERS");PresentationSource inputSource=PresentationSource.FromVisual(editor);ProbeFiles.Require(inputSource!=null&&sdkStateEnterEvent==null,"STATE_EDIT_REAL_PRESENTATION_SOURCE");
+            bool inputHandled=false;
+            try{
+                sdkStateEnterEvent=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,inputSource,Environment.TickCount,System.Windows.Input.Key.Enter){RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyDownEvent};inputHandled=System.Windows.Input.InputManager.Current.ProcessInput(sdkStateEnterEvent);
+                sdkStateEnterEvent=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,inputSource,Environment.TickCount,System.Windows.Input.Key.Enter){RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyUpEvent};System.Windows.Input.InputManager.Current.ProcessInput(sdkStateEnterEvent);
+            }finally{sdkStateEnterEvent=null;}
+            editor.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible(),"STATE_EDIT_ENTER_COMPLETION_SCOPE");},DispatcherPriority.Background,CancellationToken.None,TimeSpan.FromSeconds(2));
+            cell=actualCell!=null&&ReferenceDcaStateEdit.EndedFromEvents(actualCell.IsEditing,cellCommitEvent,cancelObserved);row=ReferenceDcaStateEdit.EndedFromEvents(target.Row.IsEditing||editView.IsEditingItem,rowCommitEvent,cancelObserved);
+            Record("DCA_STATE_UI_ENTER_RETURN source=OWNED_WPF_INPUT_MANAGER input-handled="+inputHandled+" cell-commit-event="+cellCommitEvent+" row-commit-event="+rowCommitEvent+" cancel-observed="+cancelObserved+" actual-human-input=False direct-CommitEdit=NOT_CALLED");
+            Record("DCA_STATE_UI_EDIT_ENTER_OUTCOME cell="+cell+" row="+row+" observed-events="+eventCount+" cell-editing="+(actualCell!=null&&actualCell.IsEditing)+" editor-text-is-requested="+(editor.Text==ReferenceDcaStateEdit.FixtureText)+" binding-status="+binding.Status+" dirty="+binding.IsDirty);
+            valid=!System.Windows.Controls.Validation.GetHasError(editor)&&!System.Windows.Controls.Validation.GetHasError(target.Row)&&!System.Windows.Controls.Validation.GetHasError(target.Grid)&&!editView.IsEditingItem;
+            object after=target.Read.Invoke(target.Parameter,new object[0]);ProbeFiles.Require(Object.Equals(target.Identity.Invoke(target.Parameter,new object[0]),target.Id)&&Object.ReferenceEquals(target.Parent.Invoke(target.Parameter,new object[0]),target.Device),"STATE_EDIT_SDK_IDENTITY_UNCHANGED");if(!(after is string&&ReferenceDcaStateEdit.Changed(began,cell,row,valid,(string)after)))DiagnoseStateEditCommit(target,editor,binding,editView,cell,row,observed,after,actualCell);ProbeFiles.Require(after is string&&ReferenceDcaStateEdit.Changed(began,cell,row,valid,(string)after),"STATE_EDIT_ORIGINAL_COMMIT_AND_SDK_READBACK");sdkStateEditChanged=true;
+            Record("DCA_STATE_UI_EDIT_END began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-after="+ReferenceDcaStateInspection.Encode((string)after)+" encoding=UTF8_BASE64 changed=True path=ORIGINAL_WPF_TEXTBOX_AND_ENTER SDK-read=060013CC direct-SDK-setter=NOT_CALLED capture=NOT_RUN persistence=NOT_ESTABLISHED restart=NOT_RUN hardware=NOT_RUN");
+        }catch{Record("DCA_STATE_UI_EDIT_FAILED began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-change=UNKNOWN_IF_PARTIAL rollback=NOT_ASSERTED");throw;}
+        finally{host.IsEnabled=false;target.Grid.CellEditEnding-=cellEnding;target.Grid.RowEditEnding-=rowEnding;GC.KeepAlive(editor);GC.KeepAlive(target);}
+    }
+    static void InspectOriginalStateBindings(FrameworkElement view,object device,System.Windows.Controls.Border inspectionHost)
     {
         ProbeFiles.Require(sdkStateInspection&&SdkUiRequested&&sdkProductUiActive&&SdkWrapperEligible()&&contextLifetime&&view.IsVisible&&view.Dispatcher.CheckAccess(),"STATE_INSPECTION_RENDERED_OWNER_PHASE");
         Assembly dca=sdkDcaInstance.GetType().Assembly,sdk=device.GetType().Assembly;
@@ -4824,7 +4923,7 @@ internal static class ProjectConstructorProbe
         MethodInfo mapping=SdkDeviceMethod(owner,0x06000152),item=SdkDeviceMethod(parameters,0x06000233),parent=SdkDeviceMethod(instance,0x060013ca),unique=SdkDeviceMethod(instance,0x060013d0),name=SdkDeviceMethod(instance,0x060013d1),value=SdkDeviceMethod(instance,0x060013cc);
         ProbeFiles.Require(dca.FullName==Identities[0]&&sdk.FullName==Identities[1]&&owner.MetadataToken==0x0200001b&&parameters.MetadataToken==0x02000020&&instance.MetadataToken==0x020001ca&&mapping.ReturnType==parameters&&mapping.GetParameters().Length==0&&item.ReturnType==instance&&item.GetParameters().Length==1&&item.GetParameters()[0].ParameterType==typeof(string)&&parent.ReturnType==device.GetType()&&unique.ReturnType==typeof(string)&&name.ReturnType==typeof(string)&&value.ReturnType==typeof(object),"STATE_INSPECTION_ORIGINAL_PUBLIC_ABI");
         var pending=new Stack<Tuple<DependencyObject,int>>();var queue=new Queue<Tuple<DependencyObject,int>>();if(sdkStateEditors)queue.Enqueue(Tuple.Create((DependencyObject)view,0));else pending.Push(Tuple.Create((DependencyObject)view,0));
-        var sources=new List<object>();var properties=new List<string>();int visited=0,mapped=0,editorMappings=0,columnMappings=0,textBoxes=0,gridRows=0;bool limited=false;int detailChars=0;int candidateMaximum=ReferenceDcaStateInspection.CandidateLimit(sdkStateEditors);
+        StateEditTarget editTarget=null;System.Windows.Controls.DataGrid currentGrid=null;System.Windows.Controls.DataGridRow currentRow=null;System.Windows.Controls.DataGridTextColumn currentColumn=null;var sources=new List<object>();var properties=new List<string>();int visited=0,mapped=0,editorMappings=0,columnMappings=0,textBoxes=0,gridRows=0;bool limited=false;int detailChars=0;int candidateMaximum=ReferenceDcaStateInspection.CandidateLimit(sdkStateEditors);
         Func<string,bool> emit=delegate(string line){if(!ReferenceDcaStateInspection.EmitProfile(sdkStateEditors,detailChars,line.Length+40)){limited=true;return false;}Record(line);detailChars+=line.Length+40;return true;};
         Func<object,string,string,string,string,bool> inspect=delegate(object source,string member,string control,string modeLabel,string offer){
             if(sources.Count>=candidateMaximum||!ReferenceDcaStateInspection.Candidate(sources.Count,member)||source==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(source)||source.GetType().Module!=owner.Module||!owner.IsInstanceOfType(source))return true;
@@ -4838,6 +4937,7 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(parameter)&&parameter.GetType()==instance&&Object.ReferenceEquals(parent.Invoke(parameter,new object[0]),device),"STATE_INSPECTION_REAL_SAME_DEVICE_PARAMETER");
             object actual=value.Invoke(parameter,new object[0]);ProbeFiles.Require(actual==null||actual.GetType()==typeof(string),"STATE_INSPECTION_STRING_VALUE_ONLY");string id=unique.Invoke(parameter,new object[0]) as string,internalName=name.Invoke(parameter,new object[0]) as string;
             if(!emit(prefix+"SDK-parameter=GENUINE unique-id="+ReferenceDcaStateInspection.Encode(id)+" internal-name="+ReferenceDcaStateInspection.Encode(internalName)+" value-kind="+(actual==null?"NULL":"STRING")+" value="+ReferenceDcaStateInspection.Encode(actual==null?String.Empty:(string)actual)+" encoding=UTF8_BASE64 selection=CANDIDATE_NOT_YET_EDIT_QUALIFIED"))return false;
+            if(sdkStateEdit&&control=="DataGridTextColumn"&&ReferenceDcaStateEdit.Target(id,internalName,source.GetType().MetadataToken,member,actual as string))editTarget=new StateEditTarget{Grid=currentGrid,Row=currentRow,Column=currentColumn,Source=source,Parameter=parameter,Device=device,Read=value,Identity=unique,Parent=parent,Id=id,Name=internalName};
             mapped++;if(offer=="TEXTBOX_TWO_WAY")editorMappings++;if(offer=="GRID_COLUMN_METADATA_TWO_WAY")columnMappings++;return true;
         };
         int maximum=sdkStateEditors?8192:512;
@@ -4860,6 +4960,7 @@ internal static class ProjectConstructorProbe
                         var binding=column.Binding as System.Windows.Data.Binding;if(binding==null||binding.Path==null)continue;
                         if(!ReferenceDcaStateInspection.DefaultRowBinding(binding.ShouldSerializeSource()||binding.Source!=null,binding.RelativeSource!=null,binding.ElementName,binding.XPath))continue;
                         string label=binding.Mode==System.Windows.Data.BindingMode.TwoWay?"GRID_COLUMN_METADATA_TWO_WAY":"GRID_COLUMN_METADATA_MODE_NOT_QUALIFIED";
+                        currentGrid=grid;currentRow=row;currentColumn=column;
                         if(!inspect(row.Item,binding.Path.Path,"DataGridTextColumn",binding.Mode.ToString(),label)){limited=true;break;}
                     }
                 }
@@ -4870,6 +4971,7 @@ internal static class ProjectConstructorProbe
             else for(int i=children-1;i>=0;i--)pending.Push(Tuple.Create(System.Windows.Media.VisualTreeHelper.GetChild(node,i),next.Item2+1));
         }
         Record("DCA_STATE_INSPECTION_END visited="+visited+" bindings="+sources.Count+" mapped="+mapped+" textbox-two-way-mappings="+editorMappings+" grid-column-metadata-mappings="+columnMappings+" visible-textboxes="+textBoxes+" visible-grid-rows="+gridRows+" limited="+limited+" detail-chars="+detailChars+" outcome="+(mapped==0?"INCONCLUSIVE_NO_VISIBLE_MAPPING":sdkStateEditors?(editorMappings>0?"READ_ONLY_TEXTBOX_BINDING_OBSERVED":columnMappings>0?"READ_ONLY_GRID_COLUMN_METADATA":"INCONCLUSIVE_NO_EDIT_OFFER"):"READ_ONLY_CANDIDATES_OBSERVED")+" outer-container=DISABLED grid-edit=NOT_ATTEMPTED original-setters=NOT_CALLED change=NOT_RUN capture=NOT_RUN reload=NOT_RUN hardware=NOT_RUN");
+        if(sdkStateEdit)AttemptOriginalGridEdit(editTarget,view,inspectionHost);
     }
     static int sdkUiBoundaryEntries;
     static void RunMissingSdkDeviceNegative(object actualDevice)
@@ -4915,10 +5017,11 @@ internal static class ProjectConstructorProbe
             sdkProductImport.Audit("DCA_UI_RETURNED");
             Record("DCA_UI_RETURNED genuine-original-view=True view-type="+Text(view.GetType().FullName)+" device-qualified=NOT_ASSERTED");TraceDependencyGuard(unexpected,rejected,"DCA_UI_RETURNED");
             object hosted=view;if(sdkStateInspection){inspectionHost=new System.Windows.Controls.Border{Child=view,IsEnabled=false};hosted=inspectionHost;}
-            window=new Window{Title=sdkStateInspection?"OpenKNX Studio - original MDT DALI UI - read-only inspection":"OpenKNX Studio - original MDT DALI UI - offline fixture",Content=hosted,Width=1200,Height=800};
+            window=new Window{Title=sdkStateEdit?"OpenKNX Studio - original MDT DALI UI - guarded local fixture edit":sdkStateInspection?"OpenKNX Studio - original MDT DALI UI - read-only inspection":"OpenKNX Studio - original MDT DALI UI - offline fixture",Content=hosted,Width=1200,Height=800};
+            if(sdkStateEdit){window.IsHitTestVisible=false;window.PreviewKeyDown+=delegate(object sender,System.Windows.Input.KeyEventArgs e){if(!ReferenceDcaStateEdit.OwnedInput(sdkStateEnterEvent,e,e.Key==System.Windows.Input.Key.Enter))e.Handled=true;};window.PreviewKeyUp+=delegate(object sender,System.Windows.Input.KeyEventArgs e){if(!ReferenceDcaStateEdit.OwnedInput(sdkStateEnterEvent,e,e.Key==System.Windows.Input.Key.Enter))e.Handled=true;};window.PreviewTextInput+=delegate(object sender,System.Windows.Input.TextCompositionEventArgs e){e.Handled=true;};}
             timer=new DispatcherTimer(DispatcherPriority.Normal,Dispatcher.CurrentDispatcher);timer.Interval=TimeSpan.FromSeconds(sdkUiSeconds);
             timer.Tick+=delegate{timer.Stop();expired=true;Record("DCA_UI_HOLD_EXPIRED seconds="+sdkUiSeconds+" action=CLOSE_OWNED_WINDOW");window.Close();};
-            window.ContentRendered+=delegate{if(visible)return;ProbeFiles.Require(window.IsVisible&&view.IsVisible&&window.Dispatcher.CheckAccess(),"DCA_UI_VISIBLE_RENDERED_REQUIRED");visible=true;sdkUiRendered=true;Record("DCA_UI_VISIBLE original-control=True rendered=True hold-seconds="+sdkUiSeconds+" close=USER_OR_DEADLINE hardware=NOT_RUN application-match=NOT_QUALIFIED");if(sdkStateInspection){try{InspectOriginalStateBindings(view,device);}catch(Exception error){sdkStateInspectionFault=true;Errors(error);window.Close();return;}}timer.Start();};
+            window.ContentRendered+=delegate{if(visible)return;ProbeFiles.Require(window.IsVisible&&view.IsVisible&&window.Dispatcher.CheckAccess(),"DCA_UI_VISIBLE_RENDERED_REQUIRED");visible=true;sdkUiRendered=true;Record("DCA_UI_VISIBLE original-control=True rendered=True hold-seconds="+sdkUiSeconds+" close=USER_OR_DEADLINE hardware=NOT_RUN application-match=NOT_QUALIFIED");if(sdkStateInspection){try{InspectOriginalStateBindings(view,device,inspectionHost);}catch(Exception error){sdkStateInspectionFault=true;Errors(error);window.Close();return;}}timer.Start();};
             window.Closed+=delegate{closed=true;sdkUiWindowClosed=true;timer.Stop();};
             window.ShowDialog();
             ProbeFiles.Require(visible&&closed&&!diagnosticFault&&!sdkStateInspectionFault,"DCA_UI_VISIBLE_CLOSED_DIAGNOSTICS");TraceDependencyGuard(unexpected,rejected,"DCA_UI_CLOSED");
@@ -6185,7 +6288,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-state-edit"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -6195,7 +6298,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--ui-state-edit"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -6256,8 +6359,8 @@ internal static class ProjectConstructorProbe
             }
             CheckUndoProvider("PROCESS_FINAL"); CheckUndoFactory("PROCESS_FINAL"); CheckCache("PROCESS_FINAL"); CheckContextArguments("PROCESS_FINAL");
             ProbeFiles.Require(!unexpected && !rejected, "PROJECT_DEPENDENCY_BLOCKER");
-            if(CompactProductDiagnostics())Record("HEALTHY_DIAGNOSTIC_SUMMARY distinct-known-records="+healthyLog.Kinds+" repeated-healthy-records-omitted="+healthyLog.Omitted+" first-provenance=RETAINED errors-and-validation=UNCHANGED");
-            Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui="+UiOutcome()+" state=NOT_RUN hardware=NOT_RUN");
+            if(CompactProductDiagnostics())Record("HEALTHY_DIAGNOSTIC_SUMMARY distinct-known-records="+healthyLog.Kinds+" repeated-healthy-records-omitted="+healthyLog.Omitted+" first-provenance="+(sdkStateEdit?"RETAINED_EXCEPT_EDIT_HEALTHY_DETAILS":"RETAINED")+" edit-healthy-reply-details-omitted="+sdkEditHealthyRepliesOmitted+" errors-and-validation=UNCHANGED");
+            Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui="+UiOutcome()+" state="+(sdkStateEditChanged?"UI_EDIT_OBSERVED_NOT_CAPTURED":sdkStateEditAttempted?"UI_EDIT_ATTEMPT_NOT_CONFIRMED":"NOT_RUN")+" hardware=NOT_RUN");
             if(CompactProductDiagnostics())sdkUiMainCoreFinalRecorded=true;
             return result;
         } catch (Exception error) { if (log != null) { try { Errors(error); } catch (IOException) { } } Console.WriteLine("PROJECT_FAILURE " + error.GetType().FullName + " " + Text(error.Message)+" ui="+UiOutcome()); return 2; }

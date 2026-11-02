@@ -90,3 +90,15 @@ ended normally and observed one default-row TwoWay Description column linked
 to a genuine fixture parameter. No grid edit or state capture was attempted.
 The earlier `dca012e11101` diagnostic failed its global log limit and had an
 unqualified source attribution; see Task-012 for both runs and hashes.
+
+The separate opt-in `--ui-state-edit 600` diagnostic attempts one exact empty
+fixture description through the original grid editor and synthetic WPF Enter.
+It validates the target, observes the normal commit and reads the original SDK
+parameter; it does not call the SDK setter directly. This is an automated
+fixture attempt, not a human edit or a persistence implementation. Windows
+run `dca012e11801` reached the SDK and failed because the host does not yet
+support `IDispatcher.EnableDefer`; the SDK value remained unchanged. The
+original `DispatcherDeferrer` pairs EnableDefer with DisableDefer, but the
+actual provider's event and nesting semantics are not yet established. No
+placeholder is substituted. The task record contains earlier failed attempts
+and exact evidence hashes; capture and restart remain NOT RUN.

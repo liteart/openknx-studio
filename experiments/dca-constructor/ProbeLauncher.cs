@@ -60,7 +60,7 @@ internal static class ProbeLauncher
             bool stableIdentity=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-stable-identity"&&args[9]=="observe";
             bool parameterNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-parameter-negative"&&args[9]=="missing-definition";
             bool selectionNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-selection-negative"&&(args[9]=="actual-product"||args[9]=="missing-context");
-            bool stateInspection=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&(args[8]=="--ui-state-inspect"||args[8]=="--ui-state-editors")&&args[9]=="600";
+            bool stateInspection=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&(args[8]=="--ui-state-inspect"||args[8]=="--ui-state-editors"||args[8]=="--ui-state-edit")&&args[9]=="600";
             bool interactiveProductUi=stateInspection||(args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-seconds"&&args[9]=="600");
             int seconds;
             ProbeFiles.Require((args.Length == 8 || args.Length == 10) && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= (interactiveProductUi ? 660 : args[3] == "original-sdk-product-store-fixture" ? 45 : 30) && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
