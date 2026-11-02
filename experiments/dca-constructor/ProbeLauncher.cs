@@ -56,6 +56,7 @@ internal static class ProbeLauncher
         Process child = null; bool started = false, confirmed = false;
         string productTemp=null,productToken=null,productEvidence=null;
         try {
+            bool stableIdentity=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-stable-identity"&&args[9]=="observe";
             bool parameterNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-parameter-negative"&&args[9]=="missing-definition";
             bool selectionNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-selection-negative"&&(args[9]=="actual-product"||args[9]=="missing-context");
             bool interactiveProductUi=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-seconds"&&args[9]=="600";
@@ -77,7 +78,7 @@ internal static class ProbeLauncher
             bool selectedCacheCase = args.Length == 10 && mode == "owned-project-large-string-cache-denied" && args[8] == "--owned-cache-case" && Array.IndexOf(cacheCases, args[9]) >= 0;
             bool selectedFactoryCase = args.Length == 10 && mode == "owned-project-undo-provider-factory" && args[8] == "--owned-factory-case" && Array.IndexOf(factoryCases, args[9]) >= 0;
             bool selectedUndoCase = args.Length == 10 && mode == "owned-project-undo-provider-denied" && args[8] == "--owned-undo-case" && Array.IndexOf(undoCases, args[9]) >= 0;
-            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative && !parameterNegative;
+            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative && !parameterNegative && !stableIdentity;
             ProbeFiles.Require(!selectedResourceCase || (mode == "owned-project-genuine-factory-resources" && args[8] == "--owned-resource-case"
                 && Array.IndexOf(resourceCases, args[9]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
             ProbeFiles.Require(!selectionNegative||seconds<=15,"SELECTION_NEGATIVE_DEADLINE");
@@ -100,6 +101,7 @@ internal static class ProbeLauncher
             ProbeFiles.Require(!interactiveProductUi||seconds==660,"PRODUCT_UI_EXPLICIT_DEADLINE");
             if(interactiveProductUi)child.StartInfo.Arguments+=" --ui-seconds 600";
             if(parameterNegative)child.StartInfo.Arguments+=" --owned-parameter-negative missing-definition";
+            if(stableIdentity)child.StartInfo.Arguments+=" --owned-stable-identity observe";
             if(selectionNegative)child.StartInfo.Arguments+=" --owned-selection-negative "+ProbeFiles.Quote(args[9]);
             if (selectedExistsCase) child.StartInfo.Arguments += " --owned-exists-case " + ProbeFiles.Quote(args[9]);
             if (selectedContentDiagnosticCase) child.StartInfo.Arguments += " --owned-content-diagnostic-case " + ProbeFiles.Quote(args[9]);

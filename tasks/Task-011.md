@@ -544,3 +544,27 @@ The generic collector subsequently attempted to fetch a smoke-only file absent
 from the full suite; the complete captured output and status precede that error.
 Source audit104 SHA-256
 `446650ad76d56a132290766c4b101850fafd6bd0044de46f52078aacdf280964`.
+
+
+## Stable reference fixture identity — 2026-11-02
+
+Source108 Windows run `16cb552daed0` created two fresh processes with the same
+empty synthetic project and installation fixture and the original SDK Bind and
+ID creator. Both returned equal public project, installation and device IDs;
+repeated context callbacks returned the same retained project, installation and
+creator references, and `GetNextPuid` returned the same consecutive pair in
+each process. Both children and the suite exited 0; GetDcaUi and hardware were
+not run in this test. Original input pins were intact in the subsequent positive
+UI run on the same build, which rendered, closed and exited 0.
+
+These are synthetic fixture identities for a fixed creation order. ProjectGuid,
+reload/persistence, arbitrary ordering and physical device identity were not
+tested. Evidence is in private run `run-16cb552daed0`; source audit SHA-256
+`7b9850853bb2f150ffd2eb8ddc8a6c2bd72e6049cfdecbd6e841b09afda912aa`.
+
+
+The full owned Windows constructor suite for Source108 ran as `0c0abe25f4db`:
+423 case PASS records and scheduled result 0. The complete suite output was saved;
+the generic collector then requested an absent smoke-only file and failed, which
+does not change the recorded full-suite result. Independent review found no
+blocking issue in the bounded identity observation.
