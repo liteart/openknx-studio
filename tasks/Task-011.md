@@ -96,11 +96,11 @@ latest checkpoint below and the linked component contract.
 | Field | Current value |
 |---|---|
 | Implementation / report status | In progress; genuine product import and original UI observed; identity qualification and negative tests pending |
-| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68 |
-| Tests executed | Source89 original UI and clean exit PASS; 423 owned cases PASS; identity and missing-context negatives pending |
-| Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-56aa362ec007 and run-60e2151ed943 |
+| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68; 4c753441277e204270aad75c467a8753b1b92156; d6ac3fe (selection negative checks) |
+| Tests executed | Source91 original UI and clean exit PASS; 423 owned cases PASS; wrong-product and missing-context preflight negatives PASS; missing-parameter/vendor UI negative pending |
+| Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-1ff189d478a2 and run-d372a1e54c78 |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Genuine imported product and SDK device supplied; DCA/application match unqualified |
+| Technical outcome | Original SDK projection and owned reference-rule match observed; original ETS predicate and vendor missing-parameter behavior not executed |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Independent agent review of Source88 and Source89 fixes completed; maintainer acceptance pending |
 
