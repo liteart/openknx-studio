@@ -42,6 +42,25 @@ internal static class ReferenceDcaManifestSelection
     }
 }
 
+// Task012 inspection limits are diagnostic only; no state write or acceptance API.
+internal static class ReferenceDcaStateInspection
+{
+    internal static bool Visit(int count,int depth){return count>=0&&count<512&&depth>=0&&depth<=32;}
+    internal static bool VisitEditors(int count,int depth){return count>=0&&count<8192&&depth>=0&&depth<=64;}
+    internal static bool Pending(int count,int children,int maximum){return count>=0&&children>=0&&maximum>0&&count<=maximum&&children<=maximum-count;}
+    internal static bool Editor(bool readOnly,bool twoWay){return !readOnly&&twoWay;}
+    internal static bool DefaultRowBinding(bool source,bool relative,string element,string xpath)
+    {return !source&&!relative&&String.IsNullOrEmpty(element)&&String.IsNullOrEmpty(xpath);}
+    internal static int CandidateLimit(bool editors){return editors?1:8;}
+    internal static int DetailLimit(bool editors){return editors?1024:4096;}
+    internal static bool EmitProfile(bool editors,int used,int length)
+    {return Emit(used,length)&&used<=DetailLimit(editors)-length;}
+    internal static bool Candidate(int count,string property){return count>=0&&count<8&&(property=="Name"||property=="Description");}
+    internal static bool Emit(int used,int length){return used>=0&&length>=0&&length<=1536&&used<=4096-length;}
+    internal static string Encode(string value)
+    {if(value==null||value.Length>256)throw new InvalidDataException("STATE_INSPECTION_STRING_BOUND");return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(value));}
+}
+
 // An absent device is rejected at the owned entry to the real GetDcaUi path.
 internal static class ReferenceDcaRequiredDevice
 {
@@ -4131,6 +4150,7 @@ internal static class ProjectConstructorProbe
             :sdkUiCallReturned?"RETURNED_WITHOUT_ORIGINAL_VIEW":"CALL_NOT_RETURNED";
         return observed+(sdkUiLifecycleFault?"_WITH_FAILURE":String.Empty);
     }
+    static bool sdkStateInspection,sdkStateInspectionFault,sdkStateEditors;
     static bool SdkUiRequested{get{return SdkProductMode&&sdkUiSeconds==600;}}
     internal static bool ProductUiFixtureMode(){return SdkUiRequested;}
     internal static bool CompactProductDiagnostics(){return FixtureObservationProfile()||ReferenceDcaRequiredParameters.CompactDiagnostics(ProductUiFixtureMode(),ParameterNegativeProfile());}
@@ -4796,6 +4816,61 @@ internal static class ProjectConstructorProbe
         Record("OWNED_PARAMETER_DEFINITION_NEGATIVE_PASS genuine-SDK-definition-control=1 omission=OWNED_CONTEXT_VIEW_ONLY rejection=DCA_REQUIRED_PARAMETER_DEFINITION_MISSING original-GetDcaUi-attempts=0 UI-config-action-entries=0 model-fixture=ALREADY_CONSTRUCTED vendor-missing-definition-behavior=NOT_RUN original-data=UNCHANGED");
         GC.KeepAlive(actualDefinition);
     }
+    static void InspectOriginalStateBindings(FrameworkElement view,object device)
+    {
+        ProbeFiles.Require(sdkStateInspection&&SdkUiRequested&&sdkProductUiActive&&SdkWrapperEligible()&&contextLifetime&&view.IsVisible&&view.Dispatcher.CheckAccess(),"STATE_INSPECTION_RENDERED_OWNER_PHASE");
+        Assembly dca=sdkDcaInstance.GetType().Assembly,sdk=device.GetType().Assembly;
+        Type owner=dca.GetType("Dali.DcaApp.ControllerItem",true),parameters=dca.GetType("Dali.DcaApp.ETSParameters",true),instance=sdk.GetType("Knx.Ets.Sdk.Project.ParameterInstanceRef",true);
+        MethodInfo mapping=SdkDeviceMethod(owner,0x06000152),item=SdkDeviceMethod(parameters,0x06000233),parent=SdkDeviceMethod(instance,0x060013ca),unique=SdkDeviceMethod(instance,0x060013d0),name=SdkDeviceMethod(instance,0x060013d1),value=SdkDeviceMethod(instance,0x060013cc);
+        ProbeFiles.Require(dca.FullName==Identities[0]&&sdk.FullName==Identities[1]&&owner.MetadataToken==0x0200001b&&parameters.MetadataToken==0x02000020&&instance.MetadataToken==0x020001ca&&mapping.ReturnType==parameters&&mapping.GetParameters().Length==0&&item.ReturnType==instance&&item.GetParameters().Length==1&&item.GetParameters()[0].ParameterType==typeof(string)&&parent.ReturnType==device.GetType()&&unique.ReturnType==typeof(string)&&name.ReturnType==typeof(string)&&value.ReturnType==typeof(object),"STATE_INSPECTION_ORIGINAL_PUBLIC_ABI");
+        var pending=new Stack<Tuple<DependencyObject,int>>();var queue=new Queue<Tuple<DependencyObject,int>>();if(sdkStateEditors)queue.Enqueue(Tuple.Create((DependencyObject)view,0));else pending.Push(Tuple.Create((DependencyObject)view,0));
+        var sources=new List<object>();var properties=new List<string>();int visited=0,mapped=0,editorMappings=0,columnMappings=0,textBoxes=0,gridRows=0;bool limited=false;int detailChars=0;int candidateMaximum=ReferenceDcaStateInspection.CandidateLimit(sdkStateEditors);
+        Func<string,bool> emit=delegate(string line){if(!ReferenceDcaStateInspection.EmitProfile(sdkStateEditors,detailChars,line.Length+40)){limited=true;return false;}Record(line);detailChars+=line.Length+40;return true;};
+        Func<object,string,string,string,string,bool> inspect=delegate(object source,string member,string control,string modeLabel,string offer){
+            if(sources.Count>=candidateMaximum||!ReferenceDcaStateInspection.Candidate(sources.Count,member)||source==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(source)||source.GetType().Module!=owner.Module||!owner.IsInstanceOfType(source))return true;
+            for(int i=0;i<sources.Count;i++)if(Object.ReferenceEquals(source,sources[i])&&member==properties[i])return true;sources.Add(source);properties.Add(member);
+            FieldInfo key=parameters.GetField(member=="Name"?"NORM_PARAM_NAME":"NORM_PARAM_DESCRIPTION",BindingFlags.Public|BindingFlags.Static|BindingFlags.DeclaredOnly);
+            ProbeFiles.Require(key!=null&&key.DeclaringType==parameters&&key.Module==owner.Module&&key.MetadataToken==(member=="Name"?0x040000ee:0x040000ef)&&(int)key.Attributes==54&&key.FieldType==typeof(string),"STATE_INSPECTION_ORIGINAL_PUBLIC_KEY");
+            string originalKey=key.GetValue(null) as string;ProbeFiles.Require(!String.IsNullOrEmpty(originalKey)&&originalKey.Length<=256,"STATE_INSPECTION_ORIGINAL_KEY_BOUND");
+            object map=mapping.Invoke(source,new object[0]);ProbeFiles.Require(map!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(map)&&map.GetType()==parameters,"STATE_INSPECTION_REAL_PARAMETER_MAP");object parameter=item.Invoke(map,new object[]{originalKey});
+            string prefix="DCA_STATE_BINDING candidate="+sources.Count+" control="+control+" member="+member+" binding-mode="+modeLabel+" original-source-token="+source.GetType().MetadataToken.ToString("X8")+" visibility="+(sdkStateEditors?(control=="DataGridTextColumn"?"ROW_VISIBLE_COLUMN_METADATA":"TEXTBOX_VISIBLE_OUTER_DISABLED"):"BASELINE_NOT_FILTERED")+" binding-source="+(control=="DataGridTextColumn"?"DEFAULT_ROW_CONTEXT":"RESOLVED_BINDING_SOURCE")+" editable-in-inspection=False edit-offer="+offer+" ";
+            if(parameter==null)return emit(prefix+"SDK-parameter=ABSENT selection=INCONCLUSIVE_MODEL_ONLY");
+            ProbeFiles.Require(!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(parameter)&&parameter.GetType()==instance&&Object.ReferenceEquals(parent.Invoke(parameter,new object[0]),device),"STATE_INSPECTION_REAL_SAME_DEVICE_PARAMETER");
+            object actual=value.Invoke(parameter,new object[0]);ProbeFiles.Require(actual==null||actual.GetType()==typeof(string),"STATE_INSPECTION_STRING_VALUE_ONLY");string id=unique.Invoke(parameter,new object[0]) as string,internalName=name.Invoke(parameter,new object[0]) as string;
+            if(!emit(prefix+"SDK-parameter=GENUINE unique-id="+ReferenceDcaStateInspection.Encode(id)+" internal-name="+ReferenceDcaStateInspection.Encode(internalName)+" value-kind="+(actual==null?"NULL":"STRING")+" value="+ReferenceDcaStateInspection.Encode(actual==null?String.Empty:(string)actual)+" encoding=UTF8_BASE64 selection=CANDIDATE_NOT_YET_EDIT_QUALIFIED"))return false;
+            mapped++;if(offer=="TEXTBOX_TWO_WAY")editorMappings++;if(offer=="GRID_COLUMN_METADATA_TWO_WAY")columnMappings++;return true;
+        };
+        int maximum=sdkStateEditors?8192:512;
+        Record("DCA_STATE_INSPECTION_BEGIN operation=READ_ONLY_BINDINGS outer-container=DISABLED traversal="+(sdkStateEditors?"BREADTH_FIRST_EDITORS":"DEPTH_FIRST_BASELINE")+" nodes-max="+maximum+" pending-max="+maximum+" children-max="+maximum+" depth-max="+(sdkStateEditors?64:32)+" candidates-max="+candidateMaximum+" field-chars-max=256 detail-log-chars-max="+ReferenceDcaStateInspection.DetailLimit(sdkStateEditors)+" setters=NOT_CALLED persistence=NOT_RUN");
+        while(sdkStateEditors?queue.Count!=0:pending.Count!=0){
+            var next=sdkStateEditors?queue.Dequeue():pending.Pop();if(!(sdkStateEditors?ReferenceDcaStateInspection.VisitEditors(visited,next.Item2):ReferenceDcaStateInspection.Visit(visited,next.Item2))){limited=true;break;}visited++;
+            DependencyObject node=next.Item1;var element=node as UIElement;bool visible=element!=null&&element.IsVisible;DependencyProperty property=null;string control=null,offer="DISPLAY_ONLY";
+            var textBox=node as System.Windows.Controls.TextBox;
+            if(textBox!=null){if(visible)textBoxes++;if(!sdkStateEditors||!textBox.IsReadOnly){property=System.Windows.Controls.TextBox.TextProperty;control="TextBox";}}
+            else if(!sdkStateEditors&&node is System.Windows.Controls.TextBlock){property=System.Windows.Controls.TextBlock.TextProperty;control="TextBlock";}
+            if(property!=null&&(!sdkStateEditors||visible)){
+                System.Windows.Data.BindingExpression binding=System.Windows.Data.BindingOperations.GetBindingExpression(node,property);
+                if(binding!=null){if(textBox!=null)offer=ReferenceDcaStateInspection.Editor(textBox.IsReadOnly,binding.ParentBinding.Mode==System.Windows.Data.BindingMode.TwoWay)?"TEXTBOX_TWO_WAY":"TEXTBOX_NOT_TWO_WAY_QUALIFIED";
+                    if(!inspect(binding.ResolvedSource,binding.ResolvedSourcePropertyName,control,binding.ParentBinding.Mode.ToString(),offer))break;}
+            }
+            var row=node as System.Windows.Controls.DataGridRow;
+            if(sdkStateEditors&&visible&&row!=null){gridRows++;var grid=System.Windows.Controls.ItemsControl.ItemsControlFromItemContainer(row) as System.Windows.Controls.DataGrid;
+                if(grid!=null&&!grid.IsReadOnly){ProbeFiles.Require(grid.Columns.Count<=128,"STATE_INSPECTION_GRID_COLUMN_BOUND");
+                    for(int i=0;i<grid.Columns.Count&&sources.Count<candidateMaximum;i++){var column=grid.Columns[i] as System.Windows.Controls.DataGridTextColumn;if(column==null||column.Visibility!=Visibility.Visible||column.IsReadOnly)continue;
+                        var binding=column.Binding as System.Windows.Data.Binding;if(binding==null||binding.Path==null)continue;
+                        if(!ReferenceDcaStateInspection.DefaultRowBinding(binding.ShouldSerializeSource()||binding.Source!=null,binding.RelativeSource!=null,binding.ElementName,binding.XPath))continue;
+                        string label=binding.Mode==System.Windows.Data.BindingMode.TwoWay?"GRID_COLUMN_METADATA_TWO_WAY":"GRID_COLUMN_METADATA_MODE_NOT_QUALIFIED";
+                        if(!inspect(row.Item,binding.Path.Path,"DataGridTextColumn",binding.Mode.ToString(),label)){limited=true;break;}
+                    }
+                }
+            }
+            if(limited||sources.Count>=candidateMaximum){limited=true;break;}
+            int children=System.Windows.Media.VisualTreeHelper.GetChildrenCount(node),count=sdkStateEditors?queue.Count:pending.Count;if(!ReferenceDcaStateInspection.Pending(count,children,maximum)){limited=true;break;}
+            if(sdkStateEditors){for(int i=0;i<children;i++)queue.Enqueue(Tuple.Create(System.Windows.Media.VisualTreeHelper.GetChild(node,i),next.Item2+1));}
+            else for(int i=children-1;i>=0;i--)pending.Push(Tuple.Create(System.Windows.Media.VisualTreeHelper.GetChild(node,i),next.Item2+1));
+        }
+        Record("DCA_STATE_INSPECTION_END visited="+visited+" bindings="+sources.Count+" mapped="+mapped+" textbox-two-way-mappings="+editorMappings+" grid-column-metadata-mappings="+columnMappings+" visible-textboxes="+textBoxes+" visible-grid-rows="+gridRows+" limited="+limited+" detail-chars="+detailChars+" outcome="+(mapped==0?"INCONCLUSIVE_NO_VISIBLE_MAPPING":sdkStateEditors?(editorMappings>0?"READ_ONLY_TEXTBOX_BINDING_OBSERVED":columnMappings>0?"READ_ONLY_GRID_COLUMN_METADATA":"INCONCLUSIVE_NO_EDIT_OFFER"):"READ_ONLY_CANDIDATES_OBSERVED")+" outer-container=DISABLED grid-edit=NOT_ATTEMPTED original-setters=NOT_CALLED change=NOT_RUN capture=NOT_RUN reload=NOT_RUN hardware=NOT_RUN");
+    }
     static int sdkUiBoundaryEntries;
     static void RunMissingSdkDeviceNegative(object actualDevice)
     {
@@ -4823,7 +4898,7 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(method!=null&&method.DeclaringType==sdkDcaInstance.GetType()&&method.Module.Assembly.FullName==Identities[0]&&method.Name=="GetDcaUi"&&method.IsPublic&&!method.IsStatic&&!method.IsGenericMethod&&method.ReturnType==typeof(FrameworkElement)&&method.GetParameters().Length==1&&method.GetParameters()[0].ParameterType==sequence,"DCA_UI_ORIGINAL_TYPED_ABI");
         Array devices=Array.CreateInstance(deviceType,1);devices.SetValue(device,0);
         int owner=Thread.CurrentThread.ManagedThreadId,firstChance=0;bool recording=false,diagnosticFault=false,visible=false,expired=false,closed=false;Window window=null;FrameworkElement view=null;
-        DispatcherTimer timer=null;
+        DispatcherTimer timer=null;System.Windows.Controls.Border inspectionHost=null;
         EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> observe=delegate(object sender,System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs args){
             if(Thread.CurrentThread.ManagedThreadId!=owner||recording)return;recording=true;
             try{if(firstChance<9)firstChance++;if(firstChance<=8){Exception error=args.Exception;MethodBase site=error.TargetSite;Record("DCA_UI_FIRST_CHANCE number="+firstChance+" type="+Text(error.GetType().FullName)+" message="+Text(error.Message)+" owner="+Text(site==null||site.DeclaringType==null?"UNKNOWN":site.DeclaringType.FullName)+" token="+(site==null?"UNKNOWN":site.MetadataToken.ToString("X8"))+" method="+Text(site==null?"UNKNOWN":site.Name));}}
@@ -4839,18 +4914,19 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(view!=null&&view.GetType().Assembly==sdkDcaInstance.GetType().Assembly&&view.Parent==null,"DCA_UI_ORIGINAL_VIEW_REQUIRED");sdkUiOriginalViewReturned=true;
             sdkProductImport.Audit("DCA_UI_RETURNED");
             Record("DCA_UI_RETURNED genuine-original-view=True view-type="+Text(view.GetType().FullName)+" device-qualified=NOT_ASSERTED");TraceDependencyGuard(unexpected,rejected,"DCA_UI_RETURNED");
-            window=new Window{Title="OpenKNX Studio - original MDT DALI UI - offline fixture",Content=view,Width=1200,Height=800};
+            object hosted=view;if(sdkStateInspection){inspectionHost=new System.Windows.Controls.Border{Child=view,IsEnabled=false};hosted=inspectionHost;}
+            window=new Window{Title=sdkStateInspection?"OpenKNX Studio - original MDT DALI UI - read-only inspection":"OpenKNX Studio - original MDT DALI UI - offline fixture",Content=hosted,Width=1200,Height=800};
             timer=new DispatcherTimer(DispatcherPriority.Normal,Dispatcher.CurrentDispatcher);timer.Interval=TimeSpan.FromSeconds(sdkUiSeconds);
             timer.Tick+=delegate{timer.Stop();expired=true;Record("DCA_UI_HOLD_EXPIRED seconds="+sdkUiSeconds+" action=CLOSE_OWNED_WINDOW");window.Close();};
-            window.ContentRendered+=delegate{if(visible)return;ProbeFiles.Require(window.IsVisible&&view.IsVisible&&window.Dispatcher.CheckAccess(),"DCA_UI_VISIBLE_RENDERED_REQUIRED");visible=true;sdkUiRendered=true;Record("DCA_UI_VISIBLE original-control=True rendered=True hold-seconds="+sdkUiSeconds+" close=USER_OR_DEADLINE hardware=NOT_RUN application-match=NOT_QUALIFIED");timer.Start();};
+            window.ContentRendered+=delegate{if(visible)return;ProbeFiles.Require(window.IsVisible&&view.IsVisible&&window.Dispatcher.CheckAccess(),"DCA_UI_VISIBLE_RENDERED_REQUIRED");visible=true;sdkUiRendered=true;Record("DCA_UI_VISIBLE original-control=True rendered=True hold-seconds="+sdkUiSeconds+" close=USER_OR_DEADLINE hardware=NOT_RUN application-match=NOT_QUALIFIED");if(sdkStateInspection){try{InspectOriginalStateBindings(view,device);}catch(Exception error){sdkStateInspectionFault=true;Errors(error);window.Close();return;}}timer.Start();};
             window.Closed+=delegate{closed=true;sdkUiWindowClosed=true;timer.Stop();};
             window.ShowDialog();
-            ProbeFiles.Require(visible&&closed&&!diagnosticFault,"DCA_UI_VISIBLE_CLOSED_DIAGNOSTICS");TraceDependencyGuard(unexpected,rejected,"DCA_UI_CLOSED");
+            ProbeFiles.Require(visible&&closed&&!diagnosticFault&&!sdkStateInspectionFault,"DCA_UI_VISIBLE_CLOSED_DIAGNOSTICS");TraceDependencyGuard(unexpected,rejected,"DCA_UI_CLOSED");
             Record("DCA_UI_CLOSED visible=True reason="+(expired?"HOLD_DEADLINE":"USER_OR_ORIGINAL_CLOSE")+" original-ui=True configuration-acceptance=NOT_ESTABLISHED");
         }finally{
             sdkProductUiActive=false;
             AppDomain.CurrentDomain.FirstChanceException-=observe;
-            if(timer!=null)timer.Stop();if(window!=null){try{if(window.IsVisible)window.Close();}finally{window.Content=null;}}
+            if(timer!=null)timer.Stop();if(window!=null){try{if(window.IsVisible)window.Close();}finally{window.Content=null;}}if(inspectionHost!=null)inspectionHost.Child=null;
             IDisposable dispose=view as IDisposable;if(dispose!=null){Record("DCA_UI_VIEW_DISPOSE_BEGIN owner=HOST_RETURNED_VIEW");try{dispose.Dispose();}finally{Record("DCA_UI_VIEW_DISPOSE_END attempted=True");}}
             GC.KeepAlive(view);GC.KeepAlive(device);GC.KeepAlive(devices);
         }
@@ -6109,7 +6185,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -6119,7 +6195,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.

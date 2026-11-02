@@ -9,7 +9,7 @@ Round-trip one original DCA configuration change
 | Field | Value |
 |---|---|
 | Task ID | Task-012 |
-| Status | Not started |
+| Status | In progress |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host state bridge |
@@ -81,12 +81,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
+| Implementation / report status | In progress; read-only original UI inspection only |
+| Source commit(s) | Worktree based on `1325a53`; source audit below |
+| Tests executed | Windows read-only inspections and owned regression; required TEST-001–003 NOT RUN |
+| Evidence location | Private run `4913a4b620f9` and source audit below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Technical outcome | Two SDK parameter mappings observed; editable operation and round-trip not established |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Unassigned |
 
@@ -95,7 +95,7 @@ Update this record only with observed results. Follow the task-scoped branch/com
 
 ## Read-only readiness checkpoint — 2026-11-02
 
-Task011 remains in progress, so Task012 is not ready. Source103 original UI run
+At this checkpoint Task011 remained in progress. Source103 original UI run
 `54b41270cd58` rendered and closed, but recorded parameter values not read,
 configuration acceptance not established, a transient fixture-only writer and
 `state=NOT_RUN`. These observations do not establish a user configuration change
@@ -104,3 +104,56 @@ is one actually offered non-bus editable value and its genuine before/after
 read, write and save path; only then can the file envelope and restart/reload
 requirements be implemented. Hardware and bus operations are not required for
 that first investigation.
+
+## Read-only Windows inspection — 2026-11-03
+
+Task011 is now Done for the fixed reference fixture at `1325a53`. On Windows
+dev host `.60`, original DCA inspection run `4913a4b620f9` rendered and closed
+normally (exit 0). Its bounded visual traversal visited 512 nodes and reached
+its limit. Two original `Description` bindings on `TextBlock` controls mapped
+to genuine SDK parameters of the fixture device; this does not establish that
+either control is visible or editable. No setter, change, capture or reload was
+performed. The input audit passed for 42 pinned files and two OS files; the
+test process and its scheduled task were gone at collection.
+
+Private evidence: `private/evidence/task010-sdk-wrapper/iteration01/`
+`run-4913a4b620f9/original.log` (SHA-256
+`6a26bb02c8e98449b0f819265ab7a842e781d21c6e7041267d3f0b6704da8dcc`)
+and `source-audit110.json` (SHA-256
+`481802e6f97fde01b26daf078f0efc246d27ba3c49e8ed9433512644330c83d5`).
+The source was an uncommitted worktree based on `1325a53`, pinned by that
+audit. TEST-001, TEST-002 and TEST-003 remain NOT RUN; no acceptance criterion
+is claimed. The next step is to identify an offered, editable non-bus action.
+
+Follow-up diagnostic run `dca012e11101` observed eight candidate
+`DataGridTextColumn` Description metadata entries and no actual text editor.
+The scanner did not verify that each column binding uses the row as its source;
+therefore the reported SDK mappings are unqualified candidates. The run exited
+2 with `PROJECT_LOG_LIMIT` after inspection, not PASS. Original inputs still
+passed the post-run hash check and the test process and task were removed.
+Private log SHA-256:
+`be450b7c021a15eb84bb3b37d05df1105a1b9024e627c6c338b3535e43c7fbe4`;
+source audit SHA-256:
+`1dab4f010486655820dc58e5fa51f22ec8b45116cdd6e5e8072672bd0ed9b7f8`.
+The next diagnostic must qualify binding sources, accurately label visibility,
+and leave room for the bounded final log before repeating the observation.
+
+Corrected run `dca012e11201` exited 0 and retained the unchanged input pins.
+It observed one genuine SDK parameter associated with a visible row and a
+non-read-only `DataGridTextColumn` declaring a TwoWay Description binding with
+default row context. It did not enter edit mode or prove a visible cell editor.
+The one-candidate limit was reached. Private original log SHA-256:
+`dc3165b5d9f1d0875b73bc769086bf8cd175635d8b2c630340e73f46f657d097`;
+source audit SHA-256:
+`4c2782fa0053ca88cba28f7a93c7dcae018b89205f017eec503fd2551a6a5f13`.
+
+Verification of this source snapshot: `Test-StateInspection.ps1` passed its
+owned policy tests; `scripts/check_project_scope.py`, `cargo fmt --all --
+--check`, `cargo clippy --workspace --all-targets --locked -- -D warnings`,
+`cargo test --workspace --locked`, and `git diff --check` passed. The Rust
+workspace currently contains zero tests. Windows owned run `dca012f11201`
+reported 423 `OWNED_CASE PASS` entries, `OWNED_SUITE PASS`, task exit 0, and
+zero remaining owned processes. Its collector failed afterward because it
+expected a `sdk-project.log` file not produced by this suite; the driver output
+was inspected separately and the completed scheduled task was removed. This
+owned regression does not execute the original DCA or prove state round-trip.
