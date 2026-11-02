@@ -120,3 +120,10 @@ projection for this fixture, not execution of the original ETS predicate,
 production configuration rejection, or general culture-independent matching.
 Private source audit SHA-256
 `743fb034b967df7ea0dd0e9577944c56e662ed2abf90b8d6b13402435caa268c`.
+
+
+Source91 Windows negative checks also rejected a different actual product's
+original SDK projection and a missing context before the project constructor,
+with no factory, project, configuration or UI creation. The missing-context case
+is an owned preflight and is not a test of missing parameter definitions inside
+the vendor UI. The precise fixture hashes and private evidence are in Task011.

@@ -36,3 +36,23 @@ foreach($case in $cases){
  Write-Output ('MANIFEST_SELECTION PASS case='+$case.name+' selected='+$case.selected+' mutations='+$state.Mutations)
 }
 Write-Output 'OWNED_MANIFEST_RULE_SUITE PASS projection=OWNED_TEST_INPUT actual-SDK-projection=NOT_RUN configuration-mutation=SENTINEL_ONLY vendor-runtime=NOT_RUN'
+# Owned frontdoor sentinels: these do not execute an original SDK constructor.
+$contextBefore=$type.GetMethod('BeforeContextMutation',$flags)
+foreach($case in @(
+ @{name='missing-selected-context';context=$null;projection=$projection;error='DCA_REQUIRED_PRODUCT_CONTEXT_MISSING'},
+ @{name='wrong-context-projection';context=[object]::new();projection='M-0083_A-00B1-32';error='DCA_MANIFEST_APPLICATION_MISMATCH'}
+)){
+ $state=[pscustomobject]@{ConstructorPathEntries=0}
+ $tripwire=[Action]{$state.ConstructorPathEntries++;throw 'OWNED_CONSTRUCTOR_TRIPWIRE'}
+ $rejected=$false
+ try{$null=$contextBefore.Invoke($null,[object[]]@($case.context,$declarations,$case.projection,$tripwire))}
+ catch{if($_.Exception.GetBaseException() -isnot [IO.InvalidDataException] -or $_.Exception.GetBaseException().Message -cne $case.error){throw};$rejected=$true}
+ if(-not $rejected -or $state.ConstructorPathEntries -ne 0){throw ('CONTEXT_PREMUTATION_NEGATIVE_FAIL '+$case.name)}
+ Write-Output ('MANIFEST_CONTEXT PASS case='+$case.name+' constructor-path-entries=0 proof=OWNED_SENTINEL vendor-missing-parameter-behavior=NOT_RUN')
+}
+$state=[pscustomobject]@{ConstructorPathEntries=0}
+$accepted=[Action]{$state.ConstructorPathEntries++}
+$null=$contextBefore.Invoke($null,[object[]]@([object]::new(),$declarations,$projection,$accepted))
+if($state.ConstructorPathEntries -ne 1){throw 'CONTEXT_POSITIVE_GUARD_MUTANT'}
+Write-Output 'MANIFEST_CONTEXT PASS case=valid-context-control constructor-path-entries=1 proof=OWNED_SENTINEL'
+Write-Output 'OWNED_SELECTION_PREFLIGHT_SUITE PASS rule-cases=12 context-cases=3 context-mutation=OWNED_SENTINEL actual-SDK-negative=NOT_RUN vendor-UI-missing-parameter-behavior=NOT_RUN'

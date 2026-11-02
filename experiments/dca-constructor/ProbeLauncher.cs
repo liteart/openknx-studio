@@ -56,6 +56,7 @@ internal static class ProbeLauncher
         Process child = null; bool started = false, confirmed = false;
         string productTemp=null,productToken=null,productEvidence=null;
         try {
+            bool selectionNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-selection-negative"&&(args[9]=="actual-product"||args[9]=="missing-context");
             bool interactiveProductUi=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-seconds"&&args[9]=="600";
             int seconds;
             ProbeFiles.Require((args.Length == 8 || args.Length == 10) && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= (interactiveProductUi ? 660 : args[3] == "original-sdk-product-store-fixture" ? 45 : 30) && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
@@ -75,9 +76,10 @@ internal static class ProbeLauncher
             bool selectedCacheCase = args.Length == 10 && mode == "owned-project-large-string-cache-denied" && args[8] == "--owned-cache-case" && Array.IndexOf(cacheCases, args[9]) >= 0;
             bool selectedFactoryCase = args.Length == 10 && mode == "owned-project-undo-provider-factory" && args[8] == "--owned-factory-case" && Array.IndexOf(factoryCases, args[9]) >= 0;
             bool selectedUndoCase = args.Length == 10 && mode == "owned-project-undo-provider-denied" && args[8] == "--owned-undo-case" && Array.IndexOf(undoCases, args[9]) >= 0;
-            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi;
+            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative;
             ProbeFiles.Require(!selectedResourceCase || (mode == "owned-project-genuine-factory-resources" && args[8] == "--owned-resource-case"
                 && Array.IndexOf(resourceCases, args[9]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
+            ProbeFiles.Require(!selectionNegative||seconds<=15,"SELECTION_NEGATIVE_DEADLINE");
             bool productImport = mode == "original-sdk-product-store-fixture";
             bool emptyContainer = productImport || mode == "original-sdk-device-fixture" || mode == "original-sdk-initialize-project" || mode == "original-sdk-project-fixture" || mode == "owned-sdk-project-fixture" || mode == "original-project-guid-fixture" || mode == "owned-project-guid-fixture" || mode == "original-project-content-store-exists-fixture" || mode == "owned-project-content-store-exists-fixture" || mode == "original-project-content-store-diagnostics" || mode == "owned-project-content-store-diagnostics" || mode == "original-project-content-store-reference" || mode == "owned-project-content-store-reference" || mode == "original-project-context-xml-registration" || mode == "owned-project-context-xml-registration" || mode == "original-project-context-denied" || mode == "owned-project-context-denied" || mode == "original-factory-empty-container" || mode == "owned-factory-empty-container" || mode == "original-trace-encryptor" || mode == "owned-trace-encryptor" || mode == "original-factory-registered-trace" || mode == "owned-factory-registered-trace" || mode == "original-project-genuine-factory" || mode == "owned-project-genuine-factory" || mode == "original-project-genuine-factory-resources" || mode == "owned-project-genuine-factory-resources" || mode == "original-project-undo-provider-denied" || mode == "owned-project-undo-provider-denied" || mode == "original-project-undo-provider-factory" || mode == "owned-project-undo-provider-factory" || mode == "original-project-large-string-cache-denied" || mode == "owned-project-large-string-cache-denied";
             bool factoryBinding = mode == "original-factory-bcl9" || mode == "owned-factory-bcl9";
@@ -96,6 +98,7 @@ internal static class ProbeLauncher
                 : "--mode " + ProbeFiles.Quote(mode) + " --input " + ProbeFiles.Quote(input) + " --log " + ProbeFiles.Quote(log);
             ProbeFiles.Require(!interactiveProductUi||seconds==660,"PRODUCT_UI_EXPLICIT_DEADLINE");
             if(interactiveProductUi)child.StartInfo.Arguments+=" --ui-seconds 600";
+            if(selectionNegative)child.StartInfo.Arguments+=" --owned-selection-negative "+ProbeFiles.Quote(args[9]);
             if (selectedExistsCase) child.StartInfo.Arguments += " --owned-exists-case " + ProbeFiles.Quote(args[9]);
             if (selectedContentDiagnosticCase) child.StartInfo.Arguments += " --owned-content-diagnostic-case " + ProbeFiles.Quote(args[9]);
             if (selectedContentCase) child.StartInfo.Arguments += " --owned-content-store-case " + ProbeFiles.Quote(args[9]);
@@ -107,7 +110,7 @@ internal static class ProbeLauncher
             if (selectedUndoCase) child.StartInfo.Arguments += " --owned-undo-case " + ProbeFiles.Quote(args[9]);
             if (selectedResourceCase) child.StartInfo.Arguments += " --owned-resource-case " + ProbeFiles.Quote(args[9]);
             child.StartInfo.WorkingDirectory = productImport ? ProbeFiles.Local(Environment.CurrentDirectory,true,true) : Path.GetDirectoryName(log);
-            if(productImport){
+            if(productImport&&!selectionNegative){
                 string userTemp=ProbeFiles.Local(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Temp"),true,true);
                 productToken=Guid.NewGuid().ToString("N");productTemp=ProbeFiles.Local(Path.Combine(userTemp,"kc-"+productToken.Substring(0,12)),false,true);
                 productEvidence=ProbeFiles.Local(Path.Combine(child.StartInfo.WorkingDirectory,"conversion-temp-evidence.txt"),false,false);

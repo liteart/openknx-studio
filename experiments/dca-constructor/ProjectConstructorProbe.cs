@@ -29,6 +29,11 @@ internal static class ReferenceDcaManifestSelection
         foreach(string declaration in declarations){if(declaration==null)continue;if(!BoundedAscii(declaration))return false;if(declaration.StartsWith(originalProjection,StringComparison.Ordinal))selected=true;}
         return selected;
     }
+    internal static void BeforeContextMutation(object selectedApplication,string[] declarations,string originalProjection,Action mutation)
+    {
+        if(selectedApplication==null)throw new InvalidDataException("DCA_REQUIRED_PRODUCT_CONTEXT_MISSING");
+        BeforeMutation(declarations,originalProjection,mutation);
+    }
     internal static void BeforeMutation(string[] declarations,string originalProjection,Action mutation)
     {
         if(mutation==null)throw new ArgumentNullException("mutation");
@@ -4844,29 +4849,50 @@ internal static class ProjectConstructorProbe
         // Local ownership survives Project cleanup; it never depends on the global diagnostic field.
         try { use(factory); } finally { GC.KeepAlive(factory); }
     }
-    static string OriginalReferenceApplicationProjection()
+    static string ownedSelectionNegativeCase;
+    static int selectionConstructorPathEntries;
+    // Metadata snapshot from the immutable unrelated MDT Binary Input archive, not an imported model.
+    const string NegativeHardware2ProgramId="M-0083_H-177-0_HP-00B1-32-7488";
+    const string NegativeProductArchiveHash="51ebce4f5e8b3adb364be0f8681d5d91d08ab11e8608703eb8973baf3a5e1709";
+    static string OriginalReferenceApplicationProjection(out object application)
     {
         ProbeFiles.Require(SdkProductMode&&ProductDependencyComplete&&containerInputsReady,"DCA_MANIFEST_COMPLETE_PINNED_PROFILE");
         Assembly ids=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Ids.dll"));
         ProbeFiles.Require(ids.FullName==Identities[11]&&!ids.IsDynamic&&!ids.ReflectionOnly&&!ids.GlobalAssemblyCache&&ProbeFiles.Same(ids.Location,Path.Combine(stage,"Knx.Ets.Ids.dll")),"DCA_MANIFEST_ORIGINAL_IDS_OWNER");
-        object hp=SdkReferenceId(ids,"Knx.Ets.Ids.Product.Hardware2ProgramId",0x0200004c,0x060003ab,ReferenceDcaManifestSelection.Hardware2ProgramId);
+        object hp=SdkReferenceId(ids,"Knx.Ets.Ids.Product.Hardware2ProgramId",0x0200004c,0x060003ab,ownedSelectionNegativeCase=="actual-product"?NegativeHardware2ProgramId:ReferenceDcaManifestSelection.Hardware2ProgramId);
         MethodInfo applicationGetter=SdkDeviceMethod(hp.GetType(),0x060003a5);Type applicationType=ids.GetType("Knx.Ets.Ids.Product.ApplicationProgramId",true,false);
         ProbeFiles.Require(applicationGetter.Name=="get_ApplicationProgramId"&&applicationGetter.GetParameters().Length==0&&applicationGetter.ReturnType==applicationType&&applicationType.Module==ids.ManifestModule&&applicationType.MetadataToken==0x0200003a&&(int)applicationType.Attributes==1056769,"DCA_MANIFEST_APPLICATION_ID_API");
-        object application=applicationGetter.Invoke(hp,new object[0]);ProbeFiles.Require(application!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(application)&&application.GetType()==applicationType,"DCA_MANIFEST_GENUINE_APPLICATION_ID");
+        application=applicationGetter.Invoke(hp,new object[0]);ProbeFiles.Require(application!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(application)&&application.GetType()==applicationType,"DCA_MANIFEST_GENUINE_APPLICATION_ID");
         MethodInfo projection=SdkDeviceMethod(applicationType,0x06000299);ProbeFiles.Require(projection.Name=="ToStringWithoutFingerprintAndOrigManuf"&&projection.ReturnType==typeof(string)&&projection.GetParameters().Length==0&&(int)projection.Attributes==134,"DCA_MANIFEST_ORIGINAL_PROJECTION_API");
         string value=projection.Invoke(application,new object[0]) as string;ProbeFiles.Require(!String.IsNullOrEmpty(value)&&value.Length<=128,"DCA_MANIFEST_ORIGINAL_PROJECTION_RESULT");return value;
     }
     static void OriginalContextConstruction()
     {
         if(!SdkProductMode){OriginalContextConstructionCore();return;}
-        string projection=OriginalReferenceApplicationProjection();
-        ReferenceDcaManifestSelection.BeforeMutation(ReferenceDcaManifestSelection.Declarations(),projection,delegate{
+        object application=null;
+        string projection=ownedSelectionNegativeCase=="missing-context"?null:OriginalReferenceApplicationProjection(out application);
+        if(ownedSelectionNegativeCase!=null)Record("SELECTION_NEGATIVE_INPUT case="+ownedSelectionNegativeCase+" original-Ids-projection="+(application!=null)+" projection="+(projection==null?"ABSENT":Text(projection))+" product-metadata=VERIFIED_IMMUTABLE_SNAPSHOT archive-sha256="+NegativeProductArchiveHash+" manifest-sha256="+ReferenceDcaManifestSelection.ManifestHash+" vendor-UI-missing-parameter-test=NOT_RUN");
+        ReferenceDcaManifestSelection.BeforeContextMutation(application,ReferenceDcaManifestSelection.Declarations(),projection,delegate{
             Record("DCA_MANIFEST_SELECTION selected=True rule=DECLARATION_STARTS_WITH_ORIGINAL_PROJECTION comparison=ORDINAL_ASCII_REFERENCE projection="+Text(projection)+" manifest-sha256="+ReferenceDcaManifestSelection.ManifestHash+" mutations=NOT_STARTED qualification=OWNED_RULE_ORIGINAL_IDS_API");
             OriginalContextConstructionCore();
         });
     }
+    static void RunSelectionNegative()
+    {
+        ProbeFiles.Require(SdkProductMode&&sdkUiSeconds==0&&(ownedSelectionNegativeCase=="actual-product"||ownedSelectionNegativeCase=="missing-context"),"SELECTION_NEGATIVE_PROFILE");
+        bool rejectedBeforeMutation=false;
+        string expected=ownedSelectionNegativeCase=="actual-product"?"DCA_MANIFEST_APPLICATION_MISMATCH":"DCA_REQUIRED_PRODUCT_CONTEXT_MISSING";
+        try{OriginalContextConstruction();}
+        catch(InvalidDataException error){if(error.Message!=expected)throw;rejectedBeforeMutation=true;}
+        ProbeFiles.Require(rejectedBeforeMutation&&selectionConstructorPathEntries==0&&contextGenuineFactory==null&&contextRetained==null&&!contextLifetime
+            &&sdkRetained==null&&sdkDeviceRetained==null&&sdkProductImport==null&&sdkDcaInstance==null&&sdkModelRoot==null&&activeCache==null&&activeValidator==null
+            &&!unexpected&&!rejected,"SELECTION_NEGATIVE_BEFORE_CONSTRUCTION");
+        Record("OWNED_SELECTION_NEGATIVE_PASS case="+ownedSelectionNegativeCase+" rejection="+expected+" constructor-path-entries=0 host-factory=NOT_CREATED host-project=NOT_CREATED configuration=NOT_CREATED UI=NOT_RUN qualification=OWNED_PREFLIGHT original-Ids-API="+(ownedSelectionNegativeCase=="actual-product")+" caller-receipt=UNKNOWN vendor-missing-parameter-behavior=NOT_RUN");
+    }
     static void OriginalContextConstructionCore()
     {
+        // Negative-only tripwire: a regressed selection guard must never enter any constructor setup.
+        if(ownedSelectionNegativeCase!=null){selectionConstructorPathEntries++;throw new InvalidDataException("DCA_NEGATIVE_CONSTRUCTOR_GUARD_BYPASS");}
         ProbeFiles.Require(ProjectScopeOriginal && containerInputsReady, "PROJECT_SCOPE_COMPLETE_PROFILE");
         Assembly om = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.ObjectModel.dll")), common = Assembly.LoadFrom(Path.Combine(stage, "Knx.Ets.Common.dll"));
         Assembly autofac = Assembly.LoadFrom(Path.Combine(stage, "Autofac.dll")), kim = Assembly.LoadFrom(Path.Combine(stage, "Knx.Kim.DataProvider.dll"));
@@ -5758,7 +5784,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -5768,7 +5794,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){sdkUiSeconds=600;}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
@@ -5802,7 +5828,8 @@ internal static class ProjectConstructorProbe
             AppDomain.CurrentDomain.AssemblyLoad += delegate(object sender, AssemblyLoadEventArgs e) { Audit(e.LoadedAssembly); };
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) Audit(assembly);
             ProbeFiles.Require(!unexpected, "UNEXPECTED_BASELINE_ASSEMBLY");
-            if (EnumOnly) {
+            if(ownedSelectionNegativeCase!=null){RunSelectionNegative();result=0;}
+            else if (EnumOnly) {
                 Assembly assembly = Assembly.ReflectionOnlyLoadFrom(Path.Combine(stage, "Knx.Ets.Common.Types.dll"));
                 ProbeFiles.Require(assembly.ReflectionOnly && assembly.FullName == CommonIdentity, "PROJECT_REFLECTION_IDENTITY");
                 EnumFields(assembly.GetType(EnumName, true, false), Record);

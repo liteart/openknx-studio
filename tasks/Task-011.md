@@ -455,3 +455,31 @@ result 0 and no owned process. The full suite does not create the focused smoke
 file expected by the generic collector; its subsequent missing-file error does
 not alter the saved complete suite output or its result. This owned test does not
 execute the original ETS manifest predicate or prove production state behavior.
+
+
+## Reference context negative checks — 2026-11-02
+
+Source91 Windows run `1ff189d478a2` tested two explicit preflight cases. An
+unrelated actual product snapshot, projected by the original SDK Ids API to
+`M-0083_A-00B1-32`, was rejected as `DCA_MANIFEST_APPLICATION_MISMATCH`. A
+missing context was rejected as `DCA_REQUIRED_PRODUCT_CONTEXT_MISSING`. Both
+reported zero entries into the project constructor and no factory, project,
+configuration or UI creation. The wrong-product snapshot archive SHA-256 is
+`51ebce4f5e8b3adb364be0f8681d5d91d08ab11e8608703eb8973baf3a5e1709`; the
+manifest hash is recorded above. An initial non-interactive attempt correctly
+stopped at `INTERACTIVE_SESSION_REQUIRED`; the interactive retry passed both.
+The normal original UI run on the same build rendered, closed and exited 0;
+42+2 pins remained intact. Private audit SHA-256
+`68da549db9676f57dc752d53b7386b512771b18099467346d82fe4998ecd739e`; evidence
+under `private/evidence/task010-sdk-wrapper/iteration01/run-1ff189d478a2`.
+These are owned preflight checks using genuine ID projection; they do not execute
+the vendor UI with missing parameters, nor prove an original ETS selector call.
+
+
+The full owned Windows constructor regression for Source91 ran as
+`d372a1e54c78` and recorded 423 passing cases, `OWNED_SUITE PASS` and scheduled
+result 0. Its complete driver output was collected before the generic collector
+attempted to retrieve an absent smoke-only file; that collector error does not
+change the saved suite outcome. The original DCA was not executed by this suite.
+An independent source91 review found no blocking issue, and separately confirmed
+the two negative runs and the normal original UI run described above.
