@@ -108,6 +108,13 @@ documentation issue. The retained-response retarget diagnostic remains ignored
 as a known limitation and was not counted as passing. The current revision's
 gateway operation remains NOT RUN; these checks do not complete Task-017.
 
+An additional run at the same fork revision, `cargo test --locked --test
+test_connection_rejection --test test_tunnel_connect_validation --example
+readonly_gateway_lifecycle`, passed 32 tests: seven connection preflight and
+state cases, 19 tunnel connection-validation cases and six owned-loopback
+lifecycle cases. The Secure-required rejection tests exercised a disabled
+feature; Secure was not enabled. No real gateway or device was contacted.
+
 Parallel fork branch `task/Task-017-tunnel` contains `e4ea7c1`; it branches
 from an older baseline and is not a replacement for the primary history. No
 fork remote was pushed. On macOS, `cargo test --locked --test
