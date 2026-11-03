@@ -86,7 +86,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked on original-reference activation and module-allocation evidence; reviewed byte core and fail-closed boundary remain implemented |
-| Source commit(s) | Baseline `8fc4eb51d3c514432637f095a9592b3dc62cb08f`; reviewed partial increment `11619d9a057e4abdaf0ea86318a2e096c2d755e9` |
+| Source commit(s) | Historical baseline `8fc4eb51d3c514432637f095a9592b3dc62cb08f`; reviewed partial increment `11619d9a057e4abdaf0ea86318a2e096c2d755e9`; main integration `bf6394e5d14294ff3dad0a2a154b245a3efd50d0` |
 | Tests executed | Format/Clippy PASS; six byte-core unit and 39 synthetic integration tests PASS; one explicit pinned private original rejection test PASS; three private tests ignored in the default suite |
 | Evidence location | [Parameter encoding contract/evidence](../docs/POC-C-PARAMETER-ENCODING.md) |
 | Acceptance criteria met | All criteria pending; synthetic byte vectors and rejection tests do not qualify original-reference encoding or a complete image |
