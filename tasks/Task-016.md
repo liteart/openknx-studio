@@ -9,7 +9,7 @@ Build a tiny deterministic KNX management peer simulator
 | Field | Value |
 |---|---|
 | Task ID | Task-016 |
-| Status | Not started |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / tests and test support |
@@ -37,9 +37,9 @@ Create only the simulator/fault injection needed to test the selected management
 
 ## Acceptance Criteria
 
-- [ ] AC-001: Tests run offline and deterministically.
-- [ ] AC-002: Each supported injected fault produces an observable expected result.
-- [ ] AC-003: The simulator is not advertised as a compliant real KNX device or hardware proof.
+- [x] AC-001: Tests run offline and deterministically.
+- [x] AC-002: Each supported injected fault produces an observable expected result.
+- [x] AC-003: The simulator is not advertised as a compliant real KNX device or hardware proof.
 
 ## Dependencies to Other Tasks
 
@@ -81,13 +81,39 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Implementation / report status | Done for the bounded synthetic peer; no hardware or wire-conformance claim |
+| Source commit(s) | Fork `ca45fa6d7f5e3f23f27d275830bf425c87385550`, based on `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e` |
+| Tests executed | TEST-001–003 PASS; 14 named target tests, including loopback client |
+| Evidence location | Fork commit and reproduction details below |
+| Acceptance criteria met | AC-001–003 for the explicitly simulated scope |
+| Technical outcome | Deterministic tunnel/session peer, bounded fault script and synthetic property/memory fixtures |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Reviewer | Independent agent review; maintainer acceptance not asserted |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Completion evidence — 2026-11-03
+
+The fork commit is local on `task/Task-016-simulator`; it has not been pushed
+or published. Its new test-support files are Apache-2.0 and retain the fork's
+existing MIT license and upstream notices. Source SHA-256:
+
+- `SIMULATOR.md`: `4f9695c212fca439fd528dcdf3bb1fb353561db7f27e80314a71f53ee476b125`
+- `tests/support/management_peer.rs`: `cd7589bc0f975c58dac723d485720de59543c37620503bc970fa13b8e4358cd4`
+- `tests/test_management_peer.rs`: `8a0b53830d1a37fa4fc14cdadf737c7e0a86a7e023ad8105bb3bec0ba71afcc7`
+
+On macOS with the pinned toolchain and offline cache, `cargo test --locked
+--test test_management_peer` passed all 14 tests, including the existing
+non-secure client against a loopback-only peer. The initial sandboxed loopback
+bind was denied; the explicitly local rerun with sandbox escalation passed.
+`cargo clippy --locked --offline --no-default-features --features dpt --test
+test_management_peer -- -D warnings`, `cargo fmt --all -- --check`, and
+`git diff --check` passed. The reviewer independently checked 13 socket-free
+tests and the corrected malformed-frame regression; the reviewer's loopback
+attempt was sandbox-denied and is not counted as a separate pass.
+
+The property and memory values are bounded synthetic in-process fixtures;
+their wire encodings are not implemented or qualified here. Existing codecs
+are reused rather than independently validated against a specification. No
+discovery, external gateway, Secure feature, real device, hardware access or
+KNX wire-conformance proof was exercised.
