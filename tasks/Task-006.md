@@ -83,7 +83,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Observed result |
 |---|---|
 | Implementation / report status | Done; bounded Rust inspection independently verified and critically reviewed PASS |
-| Source baseline | `be5b4090740151ecf7cd0b3e66d9a7f445a863ac` on `task/Task-006-dca-inspect`; reviewed implementation `607bd5f760104e1f79799dc524b4df17957ea7e8` |
+| Source baseline | `be5b4090740151ecf7cd0b3e66d9a7f445a863ac` on `task/Task-006-dca-inspect`; reviewed implementation `607bd5f760104e1f79799dc524b4df17957ea7e8`; main integration `d2b3642f9cbfd606f9039095051a6413051ad1f2` |
 | Predecessor readiness | Tasks 001/002/004 Done; Task-003 current completion record Done with final reviewed evidence `a764f260a66db52d19b921c9beab0ba94665e00f`; coordinator supplied accepted readiness; no phase gate required |
 | Platform / toolchain | macOS 27.0 build 26A428, aarch64-apple-darwin; rustc 1.99.1 (`58cf8f9c35b355199727627d07ae34a4e2846d67`), LLVM 23.1.1 |
 | TEST-001 | PASS: owned manifest, case-insensitive resolution, count separation, deterministic inventory and cancellation coverage |
