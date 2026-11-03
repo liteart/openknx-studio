@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 mod archive;
+mod resources;
 mod xml;
 
 use sha2::{Digest, Sha256};
@@ -150,7 +151,7 @@ impl Error {
             Self::UnsupportedConstruct => "The application contains an unknown construct.",
             Self::DuplicateId => "The product XML contains a duplicate identity.",
             Self::Reference => "A product reference is missing or has the wrong kind or scope.",
-            Self::Resource => "An embedded product resource is invalid.",
+            Self::Resource => "A product resource is invalid or unsupported.",
             Self::Metadata => "Required product metadata is missing or inconsistent.",
         }
     }
@@ -332,6 +333,19 @@ pub struct SourceMember {
     pub sha256: String,
     pub bytes: Arc<[u8]>,
 }
+/// A validated manifest declaration and its exact, uninterpreted archive payload.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalResource {
+    pub declaration: Declaration,
+    pub payload: SourceMember,
+}
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalResourceReference {
+    pub source: SourceIdentity,
+    pub element_name: String,
+    pub target_id: String,
+    pub module_scope: Option<String>,
+}
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Snapshot {
     pub ir_version: u32,
@@ -355,6 +369,8 @@ pub struct Snapshot {
     pub memory_declarations: Vec<MemoryDeclaration>,
     pub unions: Vec<UnionDeclaration>,
     pub opaque_declarations: Vec<OpaqueDeclaration>,
+    pub external_resources: Vec<ExternalResource>,
+    pub external_resource_references: Vec<ExternalResourceReference>,
     pub unverified_scope_references: Vec<UnverifiedScopeReference>,
     pub tables: Vec<Table>,
     pub load_steps: Vec<LoadStep>,
@@ -410,7 +426,7 @@ pub fn inspect_archive_with_profile(
         return Err(Error::UnsupportedApplication);
     }
     let mut snapshot = Snapshot {
-        ir_version: 2,
+        ir_version: 3,
         archive_sha256: sha256(bytes),
         namespace: NAMESPACE.into(),
         catalog_id: identity.catalog.into(),
@@ -431,6 +447,8 @@ pub fn inspect_archive_with_profile(
         memory_declarations: Vec::new(),
         unions: Vec::new(),
         opaque_declarations: Vec::new(),
+        external_resources: Vec::new(),
+        external_resource_references: Vec::new(),
         unverified_scope_references: Vec::new(),
         tables: Vec::new(),
         load_steps: Vec::new(),
@@ -664,6 +682,9 @@ pub fn inspect_archive_with_profile(
         .collect();
     if snapshot.compilation_blockers.is_empty() {
         return Err(Error::Metadata);
+    }
+    if profile == InspectionProfile::GlassV31 {
+        resources::inspect(doc, &members, limits, cancelled, &mut snapshot)?;
     }
     Ok(snapshot)
 }

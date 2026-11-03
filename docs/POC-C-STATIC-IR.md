@@ -16,8 +16,9 @@ memory distinguishes a parameter ID from an anonymous union source. Existing
 `owner_id` remains the optional literal parent XML ID.
 
 Known Glass picture/baggage/rename declarations retain opaque names, attributes,
-source ranges and scope. External baggage payload completeness and rename
-semantics are unverified. Load controls retain opaque attributes, source ranges
+source ranges and scope. IR version 3 adds validated external baggage resources
+and references for the Glass profile, as specified below. Rename
+semantics remain unverified. Load controls retain opaque attributes, source ranges
 and order. No numeric field is interpreted as KNX wire data. Absent segment Data
 is `None`; inspection never supplies zeros or infers transfer behavior.
 
@@ -44,3 +45,49 @@ The original limits remain 2 MiB compressed/member, 8 MiB expanded, 16 entries,
 The compression-ratio cap stays 64. Glass alone permits internal ASCII spaces
 in flat `M-0083/Baggages/*.png` leaves; leading/trailing spaces, nested paths,
 traversal, case collisions, symlinks and CRC failures remain rejected.
+
+## IR version 3 external resources
+
+Both profiles report IR version 3. The default profile keeps its existing
+inspection behavior and has empty `external_resources` and
+`external_resource_references`. Glass with no external references also needs no
+baggage document; unreferenced documents are not interpreted. When a Glass
+application has any `TypePicture/@RefId` or `Extension/Baggage/@RefId`, inspection
+requires `M-0083/Baggages.xml` and validates every declaration in that document.
+The existing bounded namespace-aware XML parser, cancellation checkpoints,
+archive limits, path checks and CRC checks apply to the additional input.
+
+Only the observed project/20 hierarchy is supported:
+`KNX/ManufacturerData/Manufacturer/Baggages/Baggage/FileInfo`, with exactly one
+manufacturer `M-0083`, one baggage container and one FileInfo per declaration.
+Baggage attributes are `Id`, `TargetPath` and `Name`; FileInfo permits only the
+observed `TimeInfo` metadata, retained without date interpretation in the source
+bytes. Unknown elements/attributes, invalid cardinality, non-whitespace text,
+duplicate IDs, missing/wrong-kind reference targets and ambiguous payload paths
+fail inspection. Unobserved `FileIntegrity` and other FileInfo attributes are
+unsupported, even when the broader schema permits them.
+
+The sole supported mapping has an explicitly empty `TargetPath` and a safe flat
+ASCII PNG `Name`, resolving exactly and case-sensitively to
+`M-0083/Baggages/{Name}`. Nested paths and inferred mappings are unsupported.
+Each declaration must resolve to an archive member. Multiple declarations cannot
+map to the same path, including case variants. Payload bytes remain immutable
+and uninterpreted; no PNG decoding or execution occurs.
+
+`external_resources` preserves manifest declaration order, exact declaration
+attributes/range and the payload member name, bytes and SHA-256. Its declaration
+range indexes the manifest appended to `sources` after the original three
+members. Payload length is `payload.bytes.len()`; archive declared/actual lengths
+and CRC are checked by the existing reader. The observed manifest declares no
+payload length/checksum: computed hashes identify inspected bytes and do not
+claim vendor authentication or FileIntegrity verification.
+`external_resource_references` preserves each application reference in source
+order, including duplicates, with element name, exact target ID, module scope
+and immutable application source identity. Each target is checked against a
+Baggage declaration before inspection succeeds.
+
+Opaque UI declarations and `ExternalResourceReference`, rename, global-condition
+and load-procedure compilation blockers remain. This validates the bounded
+reference/payload inventory, not external-resource interpretation, a complete
+device image, runtime behavior or a download plan. Optional segment Data remains
+`None`; neither zero fill nor transfer behavior is inferred.

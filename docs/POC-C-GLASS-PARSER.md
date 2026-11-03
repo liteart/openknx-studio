@@ -143,3 +143,96 @@ nonempty compilation blockers. No vendor code was executed, network contacted,
 hardware operated, input redistributed, license changed, gate approved or
 publication performed. The reviewed bounded diff does not resolve the separate
 semantic/profile resource dependencies or unlock the compiler tasks.
+
+## Task-023 external baggage validation, 2026-10-22
+
+The bounded follow-up uses source baseline
+`54fff13475b7b4b91942f96859b5cff36978f370` on the assigned
+`task/Task-023-resource-qualification` branch. Task-003/004 prerequisite evidence
+and the accepted Task-145 inspection profile remain the basis for offline work;
+no phase gate is required. This is an uncommitted implementation handoff pending
+independent verification, critical review and coordinator acceptance. Task-023
+is not accepted by this record.
+
+The original project/20 schema slice identified in Task-023 confirms optional
+segment Data; absence is retained as None. The same slice declares required
+Baggage Id/TargetPath/Name and FileInfo. The broader optional FileIntegrity and
+FileInfo fields are not interpreted or enabled. The observed input has only
+FileInfo TimeInfo, no declared payload size/checksum and empty TargetPath in
+every declaration. The mapping below is selected-reference evidence, not a
+universal baggage format claim.
+
+IR version 3 now rejects dangling external references before inspection success.
+It requires the observed manifest hierarchy and exact ID-to-Baggage kind checks,
+validates each empty-TargetPath/flat-PNG declaration, rejects duplicate or
+case-ambiguous mappings and retains immutable payload bytes, lengths and SHA-256.
+Each application reference retains its exact target, module scope and source
+range/hash. The [static IR contract](POC-C-STATIC-IR.md) defines the public fields
+and supported subset. Default-profile behavior is unchanged apart from version 3
+and empty added fields. Glass with no external references needs no manifest.
+
+The independently observed private inventory is
+`private/evidence/task023-resource-inventory/smart-glass-baggage-inventory.json`;
+the separately reproduced vector is recorded in `resource-vector-digest.json`
+in that directory. Neither file contains original PNG/XML payload bytes.
+
+| Private input or oracle | Value |
+|---|---|
+| Archive SHA-256 | `b5ea5653091bf95d3650216eafbc26c080b3d6c14924bc315c2dfdcfaa63530d` |
+| Baggages.xml bytes / SHA-256 | 9,400 / `550d7f910f7091a5cfc78c9dc4bfe3bd7ce08fb7f934f28d3846212325e0d6e1` |
+| TypePicture / Baggage application references | 48 / 45 |
+| Unique manifest IDs / payloads | 48 / 48 |
+| Total payload bytes | 56,378 |
+| Sorted resource vector bytes / SHA-256 | 7,090 / `97fb12d42558d742119cc098cfdcd8ec693f29accf1fa00222db51fd9c9959ab` |
+
+The vector has one UTF-8 row per manifest ID, sorted by exact ID:
+`id TAB member TAB decimal_length TAB lowercase_sha256 LF`. The ignored private
+fixture test compares this independent digest, covering every payload identity,
+length and hash without committing manufacturer content. It also checks the
+manifest pin and all 93 retained application references. The existing selected
+XML pin, segment Data lengths, opaque declarations and blockers still match.
+
+Initial regression command (expected FAIL, exit 101):
+
+```sh
+cargo test --manifest-path poc/product-download/Cargo.toml --locked --offline --no-default-features glass_external_reference_requires_baggage_document
+```
+
+It observed an Ok snapshot for a synthetic dangling baggage reference instead of
+MissingMember before implementation. Final commands used the same pinned local
+toolchain environment described above, with isolated ignored target directory
+`private/targets/task023-resource-implementation`:
+
+```sh
+cargo fmt --manifest-path poc/product-download/Cargo.toml --all -- --check
+cargo clippy --manifest-path poc/product-download/Cargo.toml --workspace --all-targets --locked --offline --no-default-features -- -D warnings
+cargo test --manifest-path poc/product-download/Cargo.toml --workspace --locked --offline --no-default-features
+cargo test --manifest-path poc/product-download/Cargo.toml --locked --offline --no-default-features registered_glass_private_fixture_matches_independent_inventory -- --ignored --nocapture
+python3 scripts/check_project_scope.py
+git diff --check
+shasum -a 256 poc/product-download/src/lib.rs poc/product-download/src/resources.rs poc/product-download/tests/parser.rs poc/product-download/Cargo.lock
+```
+
+Platform: macOS 27.0 build 26A428, Darwin arm64. Explicit
+KNXPROD_GLASS_FIXTURE selected the registered private Glass archive. Format and
+Clippy PASS; synthetic tests PASS (38, two private tests ignored); explicit Glass
+private inventory PASS (one). Scope and whitespace checks PASS. The original
+BE-04000.02 private fixture was NOT RUN for this increment. Windows, DCA, vendor
+execution, compiler, image download and hardware are NOT RUN. No dependencies,
+features, toolchain pins or lockfile changed.
+
+| Frozen implementation file | SHA-256 |
+|---|---|
+| src/lib.rs | `f02113761139b97b9e2f75f6231423541de8550294bebe37d0c0a69f04cd8521` |
+| src/resources.rs | `cb941e2dc57dda13568c099111dbabb82ded8dca522ec66eafced74dd18d95c3` |
+| tests/parser.rs | `1ffae0523e8534ea20942f7378446a2fdd61b535e05b9c90fc54c187481f3310` |
+| Unchanged Cargo.lock | `b4a04ff0e1f3003ee0304fdb3b69161dc113cc9f66ee920c57e04264a5c6310f` |
+
+Paths are relative to `poc/product-download/`. Technical outcome: PASS for the
+bounded static baggage reference/payload inventory. Acceptance remains with the
+coordinator after independent verification and review. No claim is made about
+PNG validity, vendor authentication, UI interpretation, image compilation,
+initial RAM contents, load-procedure semantics or real device compatibility.
+All compilation blockers remain, including 93 external-resource occurrences,
+12 rename occurrences and 7,310 unverified global-condition edges. No gate or
+downstream task is unlocked by this implementation handoff.

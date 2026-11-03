@@ -45,7 +45,10 @@ fn archive(app: &str, extra: Option<(&str, &[u8])>) -> Vec<u8> {
 #[test]
 fn selected_static_application_can_be_inspected() {
     let data = archive(&application(""), None);
-    assert!(inspect_archive(&data, APPLICATION_ID, &AtomicBool::new(false)).is_ok());
+    let snapshot = inspect_archive(&data, APPLICATION_ID, &AtomicBool::new(false)).unwrap();
+    assert_eq!(snapshot.sources.len(), 3);
+    assert!(snapshot.external_resources.is_empty());
+    assert!(snapshot.external_resource_references.is_empty());
 }
 #[test]
 fn alternative_application_is_rejected() {
@@ -713,6 +716,232 @@ fn inspect_glass(
         &AtomicBool::new(false),
     )
 }
+fn baggage_manifest(declarations: &str) -> String {
+    xml(&format!("<Baggages>{declarations}</Baggages>"))
+}
+const BAGGAGE_DECLARATION: &str = r#"<Baggage Id="external" TargetPath="" Name="owned symbol.png"><FileInfo TimeInfo="2026-10-22T00:00:00Z"/></Baggage>"#;
+fn glass_resource_archive(app: &str, manifest: &str, payloads: &[(&str, &[u8])]) -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new_append(Cursor::new(glass_archive(app, None))).unwrap();
+    for (name, content) in std::iter::once(("M-0083/Baggages.xml", manifest.as_bytes()))
+        .chain(payloads.iter().copied())
+    {
+        writer
+            .start_file(
+                name,
+                SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored),
+            )
+            .unwrap();
+        writer.write_all(content).unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+#[test]
+fn glass_external_reference_requires_baggage_document() {
+    use knx_selected_product_parser::Error;
+    let app = application(r#"<Extension><Baggage RefId="external"/></Extension>"#);
+    assert_eq!(
+        inspect_glass(&glass_archive(&app, None)),
+        Err(Error::MissingMember)
+    );
+}
+#[test]
+fn glass_external_resources_preserve_identity_lengths_hashes_and_reference_sources() {
+    use knx_selected_product_parser::{UnsupportedFeature, sha256};
+    let app = application(r#"<Extension><Baggage RefId="external"/></Extension>"#)
+        .replace("</ParameterTypes>", r#"<ParameterType Id="picture"><TypePicture RefId="external"/></ParameterType></ParameterTypes>"#);
+    let manifest = baggage_manifest(BAGGAGE_DECLARATION);
+    let payload = b"uninterpreted owned fixture";
+    let bytes = glass_resource_archive(
+        &app,
+        &manifest,
+        &[("M-0083/Baggages/owned symbol.png", payload)],
+    );
+    let snapshot = inspect_glass(&bytes).unwrap();
+    assert_eq!(snapshot, inspect_glass(&bytes).unwrap());
+    assert_eq!(snapshot.archive_sha256, sha256(&bytes));
+    assert_eq!(snapshot.sources.len(), 4);
+    assert_eq!(snapshot.sources[3].sha256, sha256(manifest.as_bytes()));
+    let resource = &snapshot.external_resources[0];
+    assert_eq!(resource.declaration.id, "external");
+    assert_eq!(resource.declaration.module_scope, None);
+    assert_eq!(resource.payload.bytes.len(), payload.len());
+    assert_eq!(resource.payload.bytes.as_ref(), payload);
+    assert_eq!(resource.payload.sha256, sha256(payload));
+    assert_eq!(
+        &snapshot.sources[3].bytes[resource.declaration.source_range.clone()],
+        BAGGAGE_DECLARATION.as_bytes()
+    );
+    assert_eq!(snapshot.external_resource_references.len(), 2);
+    for reference in &snapshot.external_resource_references {
+        assert_eq!(reference.target_id, "external");
+        assert_eq!(reference.source.member_sha256, snapshot.sources[2].sha256);
+        let raw = &snapshot.sources[2].bytes[reference.source.source_range.clone()];
+        assert!(
+            std::str::from_utf8(raw)
+                .unwrap()
+                .contains("RefId=\"external\"")
+        );
+    }
+    assert!(
+        snapshot.compilation_blockers.iter().any(|b| b.feature
+            == UnsupportedFeature::ExternalResourceReference
+            && b.occurrences == 2)
+    );
+    // No PNG decoding is implied; an empty payload still has an exact identity.
+    let empty = inspect_glass(&glass_resource_archive(
+        &app,
+        &manifest,
+        &[("M-0083/Baggages/owned symbol.png", b"")],
+    ))
+    .unwrap();
+    assert_eq!(empty.external_resources[0].payload.bytes.len(), 0);
+    assert_eq!(empty.external_resources[0].payload.sha256, sha256(b""));
+    assert_ne!(snapshot.archive_sha256, empty.archive_sha256);
+}
+#[test]
+fn glass_external_references_reject_missing_wrong_kind_and_missing_payload() {
+    use knx_selected_product_parser::Error;
+    let manifest = baggage_manifest(BAGGAGE_DECLARATION);
+    for kind in ["Baggage", "TypePicture"] {
+        let app = if kind == "Baggage" {
+            application(r#"<Extension><Baggage RefId="external"/></Extension>"#)
+        } else {
+            application("").replace("</ParameterTypes>", r#"<ParameterType Id="picture"><TypePicture RefId="external"/></ParameterType></ParameterTypes>"#)
+        };
+        assert!(matches!(
+            inspect_glass(&glass_resource_archive(&app, &manifest, &[])),
+            Err(Error::MissingMember)
+        ));
+        for target in ["absent", "p", "t"] {
+            assert!(matches!(
+                inspect_glass(&glass_resource_archive(
+                    &app.replace("RefId=\"external\"", &format!("RefId=\"{target}\"")),
+                    &manifest,
+                    &[("M-0083/Baggages/owned symbol.png", b"fixture")],
+                )),
+                Err(Error::Reference)
+            ));
+        }
+    }
+}
+#[test]
+fn glass_baggage_declarations_reject_ambiguous_id_and_payload_mapping() {
+    use knx_selected_product_parser::Error;
+    let app = application(r#"<Extension><Baggage RefId="external"/></Extension>"#);
+    for (declarations, error) in [
+        (BAGGAGE_DECLARATION.repeat(2), Error::DuplicateId),
+        (
+            format!(
+                "{BAGGAGE_DECLARATION}{}",
+                BAGGAGE_DECLARATION.replace("Id=\"external\"", "Id=\"second\"")
+            ),
+            Error::Resource,
+        ),
+        (
+            format!(
+                "{BAGGAGE_DECLARATION}{}",
+                BAGGAGE_DECLARATION
+                    .replace("Id=\"external\"", "Id=\"second\"")
+                    .replace("owned symbol.png", "Owned symbol.png")
+            ),
+            Error::Resource,
+        ),
+    ] {
+        assert!(matches!(inspect_glass(&glass_resource_archive(
+            &app, &baggage_manifest(&declarations),
+            &[("M-0083/Baggages/owned symbol.png", b"fixture")],
+        )), Err(actual) if actual == error));
+    }
+}
+#[test]
+fn glass_baggage_mapping_is_only_empty_target_path_and_safe_flat_png() {
+    use knx_selected_product_parser::Error;
+    let app = application(r#"<Extension><Baggage RefId="external"/></Extension>"#);
+    for declaration in [
+        BAGGAGE_DECLARATION.replace("TargetPath=\"\"", "TargetPath=\"nested\""),
+        BAGGAGE_DECLARATION.replace(" TargetPath=\"\"", ""),
+        BAGGAGE_DECLARATION.replace("owned symbol.png", "nested/owned.png"),
+        BAGGAGE_DECLARATION.replace("owned symbol.png", "../owned.png"),
+        BAGGAGE_DECLARATION.replace("owned symbol.png", " owned.png"),
+        BAGGAGE_DECLARATION.replace("owned symbol.png", "owned.png "),
+        BAGGAGE_DECLARATION.replace("owned symbol.png", "owned.bin"),
+        BAGGAGE_DECLARATION.replace("owned symbol.png", "owned\\symbol.png"),
+    ] {
+        assert!(matches!(
+            inspect_glass(&glass_resource_archive(
+                &app,
+                &baggage_manifest(&declaration),
+                &[("M-0083/Baggages/owned symbol.png", b"fixture")],
+            )),
+            Err(Error::Resource)
+        ));
+    }
+    // Case-sensitive lookup: a differently cased declaration cannot resolve.
+    assert!(matches!(
+        inspect_glass(&glass_resource_archive(
+            &app,
+            &baggage_manifest(&BAGGAGE_DECLARATION.replace("owned symbol.png", "Owned symbol.png")),
+            &[("M-0083/Baggages/owned symbol.png", b"fixture")],
+        )),
+        Err(Error::MissingMember)
+    ));
+}
+#[test]
+fn glass_baggage_xml_reuses_xml_safety_and_rejects_unobserved_structure() {
+    use knx_selected_product_parser::Error;
+    let app = application(r#"<Extension><Baggage RefId="external"/></Extension>"#);
+    let manifest = baggage_manifest(BAGGAGE_DECLARATION);
+    for (invalid, error) in [
+        (
+            manifest.replace("project/20", "project/21"),
+            Error::Namespace,
+        ),
+        (
+            format!("<!DOCTYPE KNX [<!ENTITY ext SYSTEM 'file:///private/input'>]>{manifest}"),
+            Error::Xml,
+        ),
+        (manifest.replace("</Baggages>", "</Wrong>"), Error::Xml),
+        (
+            manifest.replace("RefId=\"M-0083\"", "RefId=\"M-0084\""),
+            Error::Metadata,
+        ),
+        (
+            manifest.replace("Name=", "Unknown=\"1\" Name="),
+            Error::UnsupportedConstruct,
+        ),
+        (
+            manifest.replace("Name=", "FileIntegrity=\"00000000\" Name="),
+            Error::UnsupportedConstruct,
+        ),
+        (
+            manifest.replace("<FileInfo", "<Unknown"),
+            Error::UnsupportedConstruct,
+        ),
+        (
+            manifest.replace("<FileInfo", "<FileInfo Version=\"1.0.0.0\""),
+            Error::UnsupportedConstruct,
+        ),
+        (
+            manifest.replace("<Baggages>", "<Baggages>text"),
+            Error::Metadata,
+        ),
+        (
+            manifest.replace("<Baggages>", "<Baggages><Baggages/>"),
+            Error::UnsupportedConstruct,
+        ),
+        (
+            manifest.replace("<FileInfo TimeInfo=\"2026-10-22T00:00:00Z\"/>", ""),
+            Error::Metadata,
+        ),
+    ] {
+        assert!(
+            matches!(inspect_glass(&glass_resource_archive(
+            &app, &invalid, &[("M-0083/Baggages/owned symbol.png", b"fixture")],
+        )), Err(actual) if actual == error),
+            "expected {error:?}"
+        );
+    }
+}
 #[test]
 fn glass_is_explicit_and_identity_is_exact() {
     use knx_selected_product_parser::{
@@ -720,7 +949,7 @@ fn glass_is_explicit_and_identity_is_exact() {
     };
     let bytes = glass_archive(&application(""), None);
     let snapshot = inspect_glass(&bytes).unwrap();
-    assert_eq!(snapshot.ir_version, 2);
+    assert_eq!(snapshot.ir_version, 3);
     assert_eq!(snapshot.application_id, GLASS_APPLICATION_ID);
     assert_eq!(snapshot.application_number, 395);
     assert_eq!(snapshot.application_version, 49);
@@ -826,7 +1055,12 @@ fn glass_additions_are_opaque_blocked_and_isolated_from_default() {
         .replace("</ParameterTypes>", r#"<ParameterType Id="picture"><TypePicture RefId="external"/></ParameterType><ParameterType Id="float"><TypeFloat Encoding="DPT 9" Increment="1"/></ParameterType></ParameterTypes>"#)
         .replace("<ComObjectRef Id=", "<ComObjectRef InternalDescription=\"opaque\" Id=")
         .replace("<Dynamic><ParameterRefRef", r#"<Dynamic><ParameterBlock Id="pb"/><Channel Id="c"><choose ParamRefId="pr"><when test="1"><ParameterBlock Id="nested"><ComObjectRefRef RefId="or"/></ParameterBlock><Rename Id="rename" RefId="pb" Text="opaque"/></when></choose></Channel><ParameterRefRef"#);
-    let snapshot = inspect_glass(&glass_archive(&app, None)).unwrap();
+    let snapshot = inspect_glass(&glass_resource_archive(
+        &app,
+        &baggage_manifest(BAGGAGE_DECLARATION),
+        &[("M-0083/Baggages/owned symbol.png", b"opaque owned payload")],
+    ))
+    .unwrap();
     assert_eq!(
         snapshot
             .opaque_declarations
@@ -929,6 +1163,62 @@ fn registered_glass_private_fixture_matches_independent_inventory() {
     assert_eq!(
         snapshot.sources[2].sha256,
         "f5bfbf9edb0ec799d2182f6962b20195b72d19268bbbe4c7dbe3458b7c0e0f6e"
+    );
+    assert_eq!(snapshot.sources[3].name, "M-0083/Baggages.xml");
+    assert_eq!(snapshot.sources[3].bytes.len(), 9_400);
+    assert_eq!(
+        snapshot.sources[3].sha256,
+        "550d7f910f7091a5cfc78c9dc4bfe3bd7ce08fb7f934f28d3846212325e0d6e1"
+    );
+    assert_eq!(snapshot.external_resources.len(), 48);
+    assert_eq!(snapshot.external_resource_references.len(), 93);
+    assert_eq!(
+        snapshot
+            .external_resource_references
+            .iter()
+            .filter(|r| r.element_name == "TypePicture")
+            .count(),
+        48
+    );
+    assert_eq!(
+        snapshot
+            .external_resource_references
+            .iter()
+            .filter(|r| r.element_name == "Baggage")
+            .count(),
+        45
+    );
+    assert_eq!(
+        snapshot
+            .external_resources
+            .iter()
+            .map(|r| r.payload.bytes.len())
+            .sum::<usize>(),
+        56_378
+    );
+    // Independently observed Python ZIP/XML inventory; every identity/length/hash
+    // contributes, sorted by exact baggage ID with a final LF on each row.
+    let inventory: std::collections::BTreeMap<_, _> = snapshot
+        .external_resources
+        .iter()
+        .map(|r| {
+            (
+                r.declaration.id.as_str(),
+                format!(
+                    "{}\t{}\t{}\t{}\n",
+                    r.declaration.id,
+                    r.payload.name,
+                    r.payload.bytes.len(),
+                    r.payload.sha256
+                ),
+            )
+        })
+        .collect();
+    let vector = inventory.values().map(String::as_str).collect::<String>();
+    assert_eq!(vector.len(), 7_090);
+    assert_eq!(
+        knx_selected_product_parser::sha256(vector.as_bytes()),
+        "97fb12d42558d742119cc098cfdcd8ec693f29accf1fa00222db51fd9c9959ab"
     );
     assert_eq!(snapshot.element_counts.values().sum::<usize>(), 90_988);
     assert_eq!(snapshot.parameter_types.len(), 213);
