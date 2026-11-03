@@ -38,7 +38,7 @@ Provide the smallest reliable discovery/connect/disconnect path needed for the s
 ## Acceptance Criteria
 
 - [ ] AC-001: Offline tests and the approved gateway connection produce a valid non-secure tunnel and clean disconnect.
-- [ ] AC-002: Wrong/delayed replies cannot be accepted for another session.
+- [ ] AC-002: Reject malformed and wrong-peer replies, correlate replies with the active channel where supplied, and prevent local UDP port reuse within the documented reservation registry lifetime and capacity. Document the remaining cross-attempt replay limitation; see [ADR-017](../docs/ADR-017-bounded-tunnel-response-correlation.md).
 - [ ] AC-003: Secure-required and invalid endpoint requests fail explicitly.
 
 ## Dependencies to Other Tasks
@@ -75,6 +75,8 @@ No routing, USB, RF, keys, application download, or editor-specific session poli
 ## Risks and Blockers
 
 Hardware connection evidence requires the registered lab gateway; offline success alone is not hardware qualification.
+Non-secure responses do not authenticate the peer or carry an attempt nonce;
+retargeted retained replies remain an acknowledged limitation under ADR-017.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -94,6 +96,17 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
 ## Offline hardening checkpoint — 2026-11-03
+
+Following the owner's bounded-correlation decision in ADR-017, the primary fork
+revision `c62a89ac03005e415bcba72c19d6242ebc683c4d` was tested on macOS using
+the pinned offline Rust toolchain and loopback-only sockets. `cargo test --locked
+--test test_tunnel_endpoint_reservations --test test_tunnel_connect_hpai_validation
+--test test_tunnel_disconnect_validation` passed 36 tests. `cargo test --locked
+--lib udp_port_reservations` passed 12 focused unit tests. A review of the ADR
+and revised acceptance criterion against the fork source found no blocking
+documentation issue. The retained-response retarget diagnostic remains ignored
+as a known limitation and was not counted as passing. The current revision's
+gateway operation remains NOT RUN; these checks do not complete Task-017.
 
 Parallel fork branch `task/Task-017-tunnel` contains `e4ea7c1`; it branches
 from an older baseline and is not a replacement for the primary history. No
@@ -139,7 +152,9 @@ physical gateway model/bench isolation have not been requalified.
 The later primary history includes a retained-response retarget diagnostic at
 `777fd6d48418b6556cdfef5ff87188037c8ae11b` that reproduced a cross-attempt
 ambiguity. Local endpoint reservation at `c62a89a` is a bounded improvement,
-not proof that the ambiguity is eliminated. AC-002 remains unchecked; the
+not proof that the ambiguity is eliminated. The owner accepted a bounded
+requirement on 2026-11-03; see ADR-017. AC-002 remains unchecked pending review
+of the revised criteria and actual tests; the
 diagnostic and source history are retained in the private Task017 evidence and
 historical editor branch `task/Task-017-endpoint-reservation-evidence`. The
 parallel `e4ea7c1` must not be overlaid wholesale on this primary history,
