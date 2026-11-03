@@ -233,6 +233,20 @@ internal sealed class ParameterReadPublication
     }
 }
 
+// Accounting for an always-denied interface; latched denial is never cleared.
+internal sealed class OfflineBusDenialState
+{
+    readonly object sync=new object();readonly int owner=System.Threading.Thread.CurrentThread.ManagedThreadId;int lifetime,entries,inflight;bool fault,broken;
+    internal void Begin(){lock(sync){if(lifetime!=0||owner!=System.Threading.Thread.CurrentThread.ManagedThreadId){broken=true;throw new InvalidOperationException("BUS_DENIAL_BEGIN");}lifetime=1;}}
+    internal bool Deny(out bool inspect){lock(sync){if(entries<17)entries++;fault=true;if(lifetime!=1||entries>16)broken=true;bool tracked=inflight<17;if(tracked)inflight++;else broken=true;inspect=entries==1&&lifetime==1&&!broken;return tracked;}}
+    internal void Exit(bool tracked){lock(sync){if(tracked){if(inflight<=0){broken=true;throw new InvalidOperationException("BUS_DENIAL_EXIT");}inflight--;}}}
+    internal void Break(){lock(sync){broken=true;}}
+    internal void Close(){lock(sync){if(lifetime!=1||owner!=System.Threading.Thread.CurrentThread.ManagedThreadId)broken=true;lifetime=2;if(inflight!=0)broken=true;}}
+    internal int Entries{get{lock(sync)return entries;}}internal int Inflight{get{lock(sync)return inflight;}}internal int Lifetime{get{lock(sync)return lifetime;}}
+    internal bool Faulted{get{lock(sync)return fault;}}internal bool Broken{get{lock(sync)return broken;}}
+    internal void Verify(int expected,bool final){lock(sync){if(broken||entries!=expected||entries>16||inflight!=0||fault!=(entries!=0)||final&&lifetime!=2)throw new InvalidOperationException("BUS_DENIAL_FINAL_AUDIT");}}
+}
+
 internal sealed class ProjectDenyProxy : RealProxy
 {
     readonly Action<string> record;
@@ -1470,6 +1484,19 @@ internal sealed class SdkDevicePluginDenyHolder
 }
 
 // Explicit transient lock/dirty fixture; never an accepted configuration backend.
+// Exact typed host contract, no connection, return value, argument read or driver.
+internal sealed class OfflineHostContextProxy:RealProxy
+{
+    readonly Type contract;readonly Action<string> record;internal readonly OfflineBusDenialState State=new OfflineBusDenialState();
+    internal OfflineHostContextProxy(Type type,Action<string> output):base(type){ProbeFiles.Require(type.IsInterface&&!type.IsGenericType&&!type.ContainsGenericParameters&&output!=null,"BUS_DENIAL_INTERFACE");contract=type;record=output;}
+    public override IMessage Invoke(IMessage message)
+    {
+        bool inspect;bool tracked=State.Deny(out inspect);
+        try{if(inspect){try{MethodInfo method;string descriptor=ProjectContentDenyProxy.ContentMessageDescriptor(message,contract,out method);record("DCA_BUS_OFFLINE_DENIED "+descriptor+" value=NOT_PROVIDED arguments=NOT_INSPECTED driver=NOT_CREATED");}catch{State.Break();throw;}}throw new NotSupportedException("DCA_BUS_OFFLINE_UNSUPPORTED");}
+        finally{State.Exit(tracked);}
+    }
+}
+
 internal sealed class SdkWriteContextProxy : RealProxy
 {
     readonly object sync=new object(),project;readonly Type contract;readonly MethodInfo wait,setDirty,iamDirty,isLockedForWriting,writeScope;
@@ -4299,6 +4326,7 @@ internal static class ProjectConstructorProbe
             :sdkUiCallReturned?"RETURNED_WITHOUT_ORIGINAL_VIEW":"CALL_NOT_RETURNED";
         return observed+(sdkUiLifecycleFault?"_WITH_FAILURE":String.Empty);
     }
+    static bool ownedHostBusDenial,originalHostBusDenial,originalHostBusProbePassed;static OfflineHostContextProxy sdkOfflineHost;
     static bool sdkStateInspection,sdkStateInspectionFault,sdkStateEditors,sdkStateEdit,sdkStateEditAttempted,sdkStateEditChanged,sdkStateCapture,sdkStateReload,sdkRestoreActive,sdkRestoreApplied,sdkRestoreDisplayVerified;
     static ReferenceDcaStateRestore sdkRestore;static FileStream sdkRestoreInput;static string sdkRestoreHash;static object sdkRestoredParameter;
     static object sdkCaptureProject;static byte[] sdkCaptureBytes;static string sdkCapturePath;
@@ -4369,15 +4397,52 @@ internal static class ProjectConstructorProbe
         if(original)ProbeFiles.Require(addin.Module==root.Module&&addin.MetadataToken==0x02000007&&(int)addin.Attributes==1048576&&executionCtor.MetadataToken==0x06000015&&valid.MetadataToken==0x0600001a,"SDK_EXECUTION_ORIGINAL_TOKENS");
         return new SdkProjectApi{Root=root,Collection=collection,Project=project,Execution=addin,Constructor=ctor,ExecutionConstructor=executionCtor,Projects=projects,Item=item,ValidProject=valid};
     }
+    static object ConstructOfflineExecutionContext(SdkProjectApi api,object project,string scope)
+    {
+        ProbeFiles.Require(originalHostBusDenial&&SdkOriginal&&sdkOfflineHost==null&&contextLifetime&&SdkWrapperEligible(),"BUS_DENIAL_ORIGINAL_SCOPE");
+        Type contract=api.Root.Assembly.GetType("Knx.Ets.Sdk.IHostContext",true);ProbeFiles.Require(PublicInterface(contract)&&!contract.IsGenericType&&contract.Module==api.Root.Module&&contract.MetadataToken==0x0200001c,"BUS_DENIAL_PINNED_CONTRACT");
+        int[] tokens={0x06000178,0x0600017f,0x06000180,0x06000181,0x06000182};string[] names={"StartDownload","QueryFalconConnection","QueryFalconConnection","QueryFalconConnection","IsConnectionAvailable"};int[] arity={3,1,1,1,1};
+        for(int i=0;i<tokens.Length;i++){MethodInfo method=SdkDeviceMethod(contract,tokens[i]);ProbeFiles.Require(method.Name==names[i]&&method.GetParameters().Length==arity[i]&&(int)method.Attributes==1478,"BUS_DENIAL_OBSERVED_MEMBER_ABI");}
+        ConstructorInfo constructor=api.Execution.GetConstructor(BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance,null,new Type[]{project.GetType(),typeof(object),typeof(string)},null);
+        ProbeFiles.Require(constructor!=null&&constructor.DeclaringType==api.Execution&&constructor.Module==api.Root.Module&&constructor.MetadataToken==0x06000013&&(int)constructor.Attributes==6275&&!constructor.IsStatic,"BUS_DENIAL_ORIGINAL_CONTEXT_CONSTRUCTOR");
+        sdkOfflineHost=new OfflineHostContextProxy(contract,Record);sdkOfflineHost.State.Begin();object reference=sdkOfflineHost.GetTransparentProxy();
+        object execution=constructor.Invoke(new object[]{project,reference,scope});MethodInfo host=api.Root.Module.ResolveMethod(0x0600015a) as MethodInfo;
+        ProbeFiles.Require(execution!=null&&execution.GetType()==api.Execution&&host!=null&&host.Name=="get_HostContextContract"&&host.ReturnType==contract&&host.GetParameters().Length==0&&Object.ReferenceEquals(host.Invoke(execution,new object[0]),reference),"BUS_DENIAL_ORIGINAL_CONTEXT_RETAINS_REFERENCE");sdkOfflineHost.State.Verify(0,false);
+        Record("DCA_BUS_DENIAL_CONTEXT_READY contract=ORIGINAL_IHostContext constructor=06000013 behavior=ALWAYS_THROW_NO_ARGUMENT_READ network-isolation=NOT_VERIFIED_BY_HOST Falcon=NOT_ADMITTED");return execution;
+    }
+    static void ProbeOriginalOfflineBus(object device)
+    {
+        ProbeFiles.Require(originalHostBusDenial&&sdkOfflineHost!=null&&!originalHostBusProbePassed&&SdkWrapperEligible()&&contextLifetime&&sdkRetained!=null&&!sdkUiCallAttempted,"BUS_DENIAL_ORIGINAL_PROBE_ONCE");sdkOfflineHost.State.Verify(0,false);
+        MethodInfo method=SdkDeviceMethod(sdkRetained[0].GetType(),0x060002af);ProbeFiles.Require(method.Name=="IsConnectionAvailable"&&method.ReturnType==typeof(bool)&&method.GetParameters().Length==1&&method.GetParameters()[0].ParameterType==device.GetType(),"BUS_DENIAL_ORIGINAL_AVAILABILITY_ABI");
+        bool denied=false;try{method.Invoke(sdkRetained[0],new object[]{device});}catch(TargetInvocationException error){var cause=error.InnerException as NotSupportedException;if(cause==null||cause.Message!="DCA_BUS_OFFLINE_UNSUPPORTED")throw;denied=true;}
+        ProbeFiles.Require(denied,"BUS_DENIAL_NO_SUCCESS_RETURN");sdkOfflineHost.State.Verify(1,false);originalHostBusProbePassed=true;
+        Record("DCA_BUS_ORIGINAL_SDK_DENIAL_PASS token=060002AF callback=06000182 requests=1 returned-value=NONE sticky-denial=True original-DCA-UI-trigger=NOT_RUN network-observation=NOT_PROVIDED");
+    }
+    static void CheckOfflineBusDenial(string phase)
+    {
+        if(sdkOfflineHost==null)return;bool final=phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP";
+        try{sdkOfflineHost.State.Verify(originalHostBusProbePassed?1:0,final);}
+        finally{if(final||sdkOfflineHost.State.Broken)Record("DCA_BUS_DENIAL_AUDIT phase="+phase+" entries="+sdkOfflineHost.State.Entries+" in-flight="+sdkOfflineHost.State.Inflight+" lifetime="+sdkOfflineHost.State.Lifetime+" denied-latched="+sdkOfflineHost.State.Faulted+" broken="+sdkOfflineHost.State.Broken+" value-replies=0 driver-created=0");GC.KeepAlive(sdkOfflineHost);}
+    }
+    static void OwnedHostBusDenial()
+    {
+        ProbeFiles.Require(ownedHostBusDenial&&SdkOwned,"OWNED_BUS_DENIAL_SCOPE");Assembly assembly=Assembly.LoadFrom(fixture);Type contract=assembly.GetType("Owned.Task013.IHostBusContextFixture",true),control=assembly.GetType("Owned.Task013.HostBusContextFixture",true);MethodInfo invoke=control.GetMethod("Invoke",BindingFlags.Public|BindingFlags.Static);ProbeFiles.Require(contract.IsInterface&&contract.IsPublic&&contract.Module==control.Module&&invoke!=null,"OWNED_BUS_DENIAL_TYPES");
+        string[] cases={"start-download","query-device","query-segment","query-address","availability","unregistered"};
+        for(int i=0;i<cases.Length;i++){var proxy=new OfflineHostContextProxy(contract,Record);proxy.State.Begin();bool denied=false;try{invoke.Invoke(null,new object[]{proxy.GetTransparentProxy(),i});}catch(TargetInvocationException error){var cause=error.InnerException as NotSupportedException;if(cause==null||cause.Message!="DCA_BUS_OFFLINE_UNSUPPORTED")throw;denied=true;}finally{proxy.State.Close();}ProbeFiles.Require(denied,"OWNED_BUS_DENIAL_NO_RETURN");proxy.State.Verify(1,true);Record("OWNED_HOST_BUS_DENIAL_CASE_PASS case="+cases[i]+" typed-CLR=True returned-value=NONE sticky-denial=True");}
+        var cap=new OfflineHostContextProxy(contract,delegate{});cap.State.Begin();for(int i=0;i<17;i++){try{cap.Invoke(null);}catch(NotSupportedException){}}cap.State.Close();bool capDenied=false;try{cap.State.Verify(17,true);}catch(InvalidOperationException){capDenied=true;}ProbeFiles.Require(capDenied&&cap.State.Broken,"OWNED_BUS_DENIAL_CAP_FATAL");
+        var late=new OfflineHostContextProxy(contract,delegate{});late.State.Begin();late.State.Close();try{late.Invoke(null);}catch(NotSupportedException){}ProbeFiles.Require(late.State.Broken&&late.State.Faulted,"OWNED_BUS_DENIAL_LATE_FATAL");
+        var recorder=new OfflineHostContextProxy(contract,delegate{throw new IOException("OWNED_BUS_RECORDER");});recorder.State.Begin();try{recorder.Invoke(null);}catch(IOException error){if(error.Message!="OWNED_BUS_RECORDER")throw;}finally{recorder.State.Close();}ProbeFiles.Require(recorder.State.Broken&&recorder.State.Faulted,"OWNED_BUS_DENIAL_RECORDER_FATAL");
+        Record("OWNED_HOST_BUS_DENIAL_SUITE_PASS typed-cases=6 synthetic-cases=3 vendor-runtime=NOT_RUN driver=NOT_CREATED network-isolation=NOT_PROVEN");
+    }
     static object[] ConstructSdkRoute(SdkProjectApi api,object project,object store)
     {
         const string fixtureScope="OpenKNXStudio.OfflineSdkFixture";
         Record("SDK_EXECUTION_CONTEXT_BEGIN token="+api.ExecutionConstructor.MetadataToken.ToString("X8")+" scope=OWNED_OFFLINE_FIXTURE_NOT_DCA_DEVICE_APPLICATION_ID");
-        object execution=api.ExecutionConstructor.Invoke(new object[]{project,fixtureScope});
+        object execution=originalHostBusDenial?ConstructOfflineExecutionContext(api,project,fixtureScope):api.ExecutionConstructor.Invoke(new object[]{project,fixtureScope});
         ProbeFiles.Require(execution!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(execution)&&execution.GetType()==api.Execution,"SDK_EXECUTION_EXACT_RETURN");
         sdkRetained=new object[]{null,null,null,execution};
         ProbeFiles.Require(Object.Equals(api.ValidProject.Invoke(execution,new object[]{project}),true),"SDK_GENUINE_EXECUTION_PROJECT_FILTER");
-        Record("SDK_EXECUTION_CONTEXT_END returned=True genuine-project-filter=True host-context=SDK_TWO_ARGUMENT_OVERLOAD_DEFAULT");
+        Record("SDK_EXECUTION_CONTEXT_END returned=True genuine-project-filter=True host-context="+(originalHostBusDenial?"EXPLICIT_TYPED_DENY_ONLY":"SDK_TWO_ARGUMENT_OVERLOAD_DEFAULT"));
         Record("SDK_ROOT_BEGIN token="+api.Constructor.MetadataToken.ToString("X8")+" execution-context=GENUINE_ADDIN_CONTEXT plugin-default=VERIFIED_TYPE_MISSING window=0");
         object root=api.Constructor.Invoke(new object[]{project,store,execution,Type.Missing});
         ProbeFiles.Require(root!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(root)&&root.GetType()==api.Root,"SDK_ROOT_EXACT_RETURN");
@@ -4849,6 +4914,7 @@ internal static class ProjectConstructorProbe
         object sdkDevices=SdkDeviceMethod(sdkInstallationType,0x06001308).Invoke(sdkInstallation,new object[0]);ProbeFiles.Require(sdkDevices!=null,"SDK_DEVICE_SDK_DEVICE_COLLECTION");sdkDevice=SdkSingleReferenceItem(sdkDevices,sdkDeviceType,0x060011af);
         sdkDeviceRetained[4]=sdkCollection;sdkDeviceRetained[5]=sdkInstallation;sdkDeviceRetained[6]=sdkDevice;Record("SDK_REFERENCE_DEVICE_OBTAINED exact-genuine-wrapper=True before-dependency-postcondition=True dependency-clean=NOT_ASSERTED GetDcaUi=NOT_RUN");TraceDependencyGuard(unexpected,rejected,"SDK_REFERENCE_DEVICE_POST");
         Record("SDK_REFERENCE_DEVICE_END returned=True exact-genuine-wrapper=True original-product-lookups=NOT_QUALIFIED GetDcaUi=NOT_RUN hardware=NOT_RUN");
+        if(originalHostBusDenial){ProbeOriginalOfflineBus(sdkDevice);return;}
         if(ownedStableIdentity){ObserveStableFixtureIdentity(project,installation,device,installations,devices);return;}
         if(ownedMissingDevice){RunMissingSdkDeviceNegative(sdkDevice);return;}
         MethodInfo productGetter=SdkDeviceMethod(sdkDeviceType,0x060010e2);ProbeFiles.Require(productGetter.GetParameters().Length==0&&productGetter.ReturnType.Module==sdkDeviceType.Module&&productGetter.ReturnType.FullName=="Knx.Ets.Sdk.Product.Product","SDK_DEVICE_REFERENCE_PRODUCT_READ_ABI");
@@ -5443,7 +5509,8 @@ internal static class ProjectConstructorProbe
     }
     static void CheckContextArguments(string phase)
     {
-        try { if(activeValidator!=null)activeValidator.Audit(phase,Record); }
+        try {try { if(activeValidator!=null)activeValidator.Audit(phase,Record); }
+        finally { CheckOfflineBusDenial(phase); }}
         finally {try{if(SdkProductMode&&sdkProductImport!=null)sdkProductImport.Audit(phase);}finally{try{if(SdkOriginal)CheckSdkFixture(phase);}finally{CheckContextDenials(phase);}} }
     }
     static void CheckContextDenials(string phase)
@@ -5458,7 +5525,7 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(ContextMode && !contextLifetime, "CONTEXT_LIFETIME_ONCE"); contextLifetime = true;
         try { if(activeValidator!=null)activeValidator.Begin();if(SdkOriginal){sdkMapping.Begin();sdkKim.Begin();sdkRootData.Begin();sdkUi.Begin();sdkUiHolder.Begin();}run(); }
         finally {
-            if(activeValidator!=null)activeValidator.Close();if(SdkOriginal){sdkMapping.Close();sdkKim.Close();sdkRootData.Close();sdkUi.Close();sdkUiHolder.Close();if(sdkWriteFixture!=null)sdkWriteFixture.Close();}
+            if(activeValidator!=null)activeValidator.Close();if(SdkOriginal){sdkMapping.Close();sdkKim.Close();sdkRootData.Close();sdkUi.Close();sdkUiHolder.Close();if(sdkWriteFixture!=null)sdkWriteFixture.Close();if(sdkOfflineHost!=null)sdkOfflineHost.State.Close();}
             contextLifetime = false;
             try { if (ContextOwned) { if (ownedContextCase == "dispose-begin-log-fault") OwnedContextDisposeLogProof(); OwnedContextPoint("late"); } }
             finally { try { CheckContextArguments("AFTER_ALL_MANAGED_CLEANUP"); } finally { GC.KeepAlive(contextRetained); } }
@@ -6526,6 +6593,7 @@ internal static class ProjectConstructorProbe
     [STAThread]
     internal static int Main(string[] args)
     {
+        if(ProbeFiles.OriginalBusProbeBlocked(args)){Console.WriteLine("PROJECT_FAILURE OFFLINE_BUS_ISOLATION_CAPABILITY_REQUIRED MainCore=NOT_RUN vendor-runtime=NOT_RUN");return 2;}
         int outcome = 2;
         try { outcome = MainCore(args); }
         finally {
@@ -6551,7 +6619,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-state-reload"&&ReferenceDcaStateRestore.Hash(args[7])) || (SdkProductMode&&args[6]=="--ui-state-capture"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-edit"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkOwned&&args[6]=="--owned-host-bus-denial"&&args[7]=="check") || (SdkProductMode&&args[6]=="--offline-host-bus-denial"&&args[7]=="probe") || (SdkProductMode&&args[6]=="--ui-state-reload"&&ReferenceDcaStateRestore.Hash(args[7])) || (SdkProductMode&&args[6]=="--ui-state-capture"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-edit"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -6561,7 +6629,7 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-state-reload"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateCapture=true;sdkStateReload=true;sdkRestoreHash=args[7];}else if(args[6]=="--ui-state-capture"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;sdkStateCapture=true;}else if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--ui-state-edit"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkOwned&&args[6]=="--owned-host-bus-denial")ownedHostBusDenial=true;else if(SdkProductMode&&args[6]=="--offline-host-bus-denial")originalHostBusDenial=true;else if(SdkProductMode){if(args[6]=="--ui-state-reload"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateCapture=true;sdkStateReload=true;sdkRestoreHash=args[7];}else if(args[6]=="--ui-state-capture"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;sdkStateCapture=true;}else if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--ui-state-edit"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             if(sdkStateCapture)sdkCapturePath=ProbeFiles.Local(log.Name+".candidate.json",false,false);
             if(sdkStateReload)LoadStateRestoreProjection();
@@ -6609,7 +6677,7 @@ internal static class ProjectConstructorProbe
                 app.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(delegate {
                     try {
                         ProbeFiles.Require(Thread.CurrentThread.ManagedThreadId == thread && Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "STA_DISPATCHER_REQUIRED");
-                        if (ProjectScope) { if(SdkOwned)OwnedSdkFixture();else if (GuidOwned) OwnedGuidFixture(); else if (ExistsOwned) OwnedExistsFixture(); else if (ContentDiagnosticsOwned && ownedContentDiagnosticCase != null) OwnedContentDiagnostics(); else if (ContentOwned) { if (ownedContentCase == null) OwnedContentContextConstruction(); else OwnedContentCasesRun(); } else if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
+                        if (ProjectScope) { if(SdkOwned){if(ownedHostBusDenial)OwnedHostBusDenial();else OwnedSdkFixture();}else if (GuidOwned) OwnedGuidFixture(); else if (ExistsOwned) OwnedExistsFixture(); else if (ContentDiagnosticsOwned && ownedContentDiagnosticCase != null) OwnedContentDiagnostics(); else if (ContentOwned) { if (ownedContentCase == null) OwnedContentContextConstruction(); else OwnedContentCasesRun(); } else if (XmlRegistrationOwned && ownedStoreDiagnosticCase != null) OwnedStoreRequestDiagnostics(); else if (XmlRegistrationOwned && ownedXmlPinCase != null) OwnedXmlRegistrationPinNegative(); else if (ContextMode) { if (ContextOriginal) OriginalContextConstruction(); else OwnedContextConstruction(); } else if (ProjectScopeOriginal) OriginalProjectScope(); else if (CacheOwned) OwnedCacheProvider(); else if (UndoFactoryOwned) OwnedUndoFactoryProvider(); else if (UndoDeniedOwned) OwnedUndoProvider(); else if (ProjectResourcesOwned) OwnedProjectResources(); else OwnedProjectScope(); }
                         else if (RegisteredTrace) { if (RegisteredOriginal) OriginalRegisteredTrace(); else OwnedRegisteredTrace(); }
                         else if (TraceOnly) { if (TraceOriginal) OriginalTraceEncryptor(); else OwnedTraceEncryptor(); }
                         else if (EmptyContainer) { if (FactoryOriginal) OriginalEmptyContainer(); else OwnedEmptyContainer(); }

@@ -13,6 +13,14 @@ using System.Windows.Threading;
 
 internal static class ProbeFiles
 {
+    // No isolation capability exists yet. Never infer authorization from flags or files.
+    internal static bool OriginalBusProbeBlocked(string[] args)
+    {
+        if(args==null)return false;if(args.Length>16)return true;
+        foreach(string arg in args)if(String.Equals(arg,"--offline-host-bus-denial",StringComparison.Ordinal))return true;
+        return false;
+    }
+
     internal const string ConfigText = "<configuration><startup><supportedRuntime version=\"v4.0\" sku=\".NETFramework,Version=v4.8\"/></startup><runtime><assemblyBinding xmlns=\"urn:schemas-microsoft-com:asm.v1\">"
         + "<dependentAssembly><assemblyIdentity name=\"Knx.Ets.Sdk\" publicKeyToken=\"61439873ec5e1159\" culture=\"neutral\"/><bindingRedirect oldVersion=\"5.7.554.37315\" newVersion=\"6.4.8718.0\"/></dependentAssembly>"
         + "<dependentAssembly><assemblyIdentity name=\"Knx.Ets.Sdk.AddIns.AddInViews\" publicKeyToken=\"61439873ec5e1159\" culture=\"neutral\"/><bindingRedirect oldVersion=\"5.7.554.37315\" newVersion=\"6.4.8718.0\"/></dependentAssembly>"

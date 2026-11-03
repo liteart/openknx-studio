@@ -54,9 +54,12 @@ internal static class ProbeLauncher
     static bool StateReloadHash(string value){if(value==null||value.Length!=64)return false;foreach(char c in value)if(!(c>='0'&&c<='9'||c>='a'&&c<='f'))return false;return true;}
     internal static int Main(string[] args)
     {
+        if(ProbeFiles.OriginalBusProbeBlocked(args)){Console.WriteLine("LAUNCH_FAILURE OFFLINE_BUS_ISOLATION_CAPABILITY_REQUIRED child-started=False vendor-runtime=NOT_RUN");return 2;}
         Process child = null; bool started = false, confirmed = false;
         string productTemp=null,productToken=null,productEvidence=null;
         try {
+            bool ownedHostBus=args.Length==10&&args[3]=="owned-sdk-project-fixture"&&args[8]=="--owned-host-bus-denial"&&args[9]=="check";
+            bool originalHostBus=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--offline-host-bus-denial"&&args[9]=="probe";
             bool missingDevice=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-ui-context-negative"&&args[9]=="missing-device";
             bool stableIdentity=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-stable-identity"&&args[9]=="observe";
             bool parameterNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-parameter-negative"&&args[9]=="missing-definition";
@@ -82,7 +85,7 @@ internal static class ProbeLauncher
             bool selectedCacheCase = args.Length == 10 && mode == "owned-project-large-string-cache-denied" && args[8] == "--owned-cache-case" && Array.IndexOf(cacheCases, args[9]) >= 0;
             bool selectedFactoryCase = args.Length == 10 && mode == "owned-project-undo-provider-factory" && args[8] == "--owned-factory-case" && Array.IndexOf(factoryCases, args[9]) >= 0;
             bool selectedUndoCase = args.Length == 10 && mode == "owned-project-undo-provider-denied" && args[8] == "--owned-undo-case" && Array.IndexOf(undoCases, args[9]) >= 0;
-            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative && !parameterNegative && !stableIdentity && !missingDevice;
+            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative && !parameterNegative && !stableIdentity && !missingDevice && !ownedHostBus && !originalHostBus;
             ProbeFiles.Require(!selectedResourceCase || (mode == "owned-project-genuine-factory-resources" && args[8] == "--owned-resource-case"
                 && Array.IndexOf(resourceCases, args[9]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
             ProbeFiles.Require(!selectionNegative||seconds<=15,"SELECTION_NEGATIVE_DEADLINE");
@@ -106,6 +109,8 @@ internal static class ProbeLauncher
                 : "--mode " + ProbeFiles.Quote(mode) + " --input " + ProbeFiles.Quote(input) + " --log " + ProbeFiles.Quote(log);
             ProbeFiles.Require(!interactiveProductUi||seconds==660,"PRODUCT_UI_EXPLICIT_DEADLINE");
             if(interactiveProductUi)child.StartInfo.Arguments+=stateReload?" --ui-state-reload "+ProbeFiles.Quote(args[9]):stateInspection?" "+ProbeFiles.Quote(args[8])+" 600":" --ui-seconds 600";
+            if(ownedHostBus)child.StartInfo.Arguments+=" --owned-host-bus-denial check";
+            if(originalHostBus)child.StartInfo.Arguments+=" --offline-host-bus-denial probe";
             if(parameterNegative)child.StartInfo.Arguments+=" --owned-parameter-negative missing-definition";
             if(stableIdentity)child.StartInfo.Arguments+=" --owned-stable-identity observe";
             if(missingDevice)child.StartInfo.Arguments+=" --owned-ui-context-negative missing-device";

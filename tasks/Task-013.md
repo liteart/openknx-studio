@@ -9,7 +9,7 @@ Demonstrate fail-closed PoC DCA bus isolation
 | Field | Value |
 |---|---|
 | Task ID | Task-013 |
-| Status | Not started |
+| Status | In progress |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host test harness |
@@ -81,13 +81,46 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
+| Implementation / report status | In progress; owned deny-only profile and pre-start isolation guard only |
+| Source commit(s) | Host worktree based on `1d0a8e5`; source audit below |
+| Tests executed | Owned Windows denial/entry tests PASS; TEST-001–002 NOT RUN, TEST-003 owned fixture PASS |
+| Evidence location | Private Task013 evidence below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Technical outcome | Known and unregistered owned host callbacks deny; original runtime/network isolation not established |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Unassigned |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Bounded denial checkpoint — 2026-11-03
+
+Original metadata shows that the reference DCA connection path can reach an
+authorization operation; it is not treated as a harmless live-device action.
+The genuine SDK `AddinExecutionContext` exposes an `IHostContext` seam. The
+new owned deny-only proxy throws for known connection/download calls and any
+unregistered callback, without reading arguments or returning a connection.
+It records bounded denial/lifetime evidence. The experimental original SDK
+probe is unconditionally refused at the launcher and direct child entry before
+vendor effects until a verifiable isolated execution capability exists.
+
+Windows owned run `b13502` passed six typed denials and three synthetic
+negative guards, and proved the original probe is blocked before child start
+even with a nonexistent input path. Scheduled task exit 0; the test task was
+removed. No original vendor code, driver, network or hardware was exercised.
+The preceding SSH-session attempt `b13401` exited 4 because an interactive
+session was required; the subsequent `b13402` run passed in the interactive
+session. Private `b13502` owned log SHA-256:
+`1b57a0f0ce7ada9623b6de141193fde46c8764c386cb1c075401939d0e9e5919`;
+driver output SHA-256:
+`570035f21232af3b3fcbe692f10dd968fdcbdb9ecb82e3487d40d6a16920abfa`;
+source audit SHA-256:
+`91fc1cbd927db35ea8a48c8878e2907bad71b029d3d98ca09b733fccb09e84a3`.
+Focused local policy, compilation and parser checks passed. This establishes
+the owned negative behavior only. An actual SDK/UI denial, absence of every
+route to real KNX interfaces, and direct-vendor bypass observation remain
+NOT RUN; no network-isolation or hardware safety claim is made.
+
+Windows owned regression `dca013b13501` also reported 423 passing cases and
+task exit 0. Its collector expected an absent `sdk-project.log`; the driver
+output was checked separately, no owned processes remained, and the finished
+task was removed. This regression did not execute original vendor code.

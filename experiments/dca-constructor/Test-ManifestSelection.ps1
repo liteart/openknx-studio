@@ -26,7 +26,7 @@ public static class ParameterFenceProof
  }
 }
 '@
-$compiled=Add-Type -TypeDefinition ('using System; using System.IO; using System.Threading; using System.Collections.Generic;'+$source.Substring($start,$end-$start)+$fenceProof) -PassThru
+$compiled=Add-Type -TypeDefinition ('using System; using System.IO; using System.Text; using System.Threading; using System.Collections.Generic;'+$source.Substring($start,$end-$start)+$fenceProof) -PassThru
 $type=$compiled|Where-Object FullName -CEQ 'ReferenceDcaManifestSelection'
 if($null -eq $type){throw 'MANIFEST_RULE_TYPE_NOT_FOUND'}
 $flags=[Reflection.BindingFlags]'NonPublic,Static'

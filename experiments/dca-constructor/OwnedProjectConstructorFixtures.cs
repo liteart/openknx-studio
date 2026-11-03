@@ -1171,3 +1171,27 @@ namespace Owned.Task009
         public SdkModelCollectionFixture Projects{get{return projects;}}
     }
 }
+
+// Independent owned negative shapes; not SDK/driver implementations or physical identities.
+namespace Owned.Task013
+{
+    public sealed class HostDeviceFixture{}public sealed class HostSegmentFixture{}
+    public enum HostLoadOptionsFixture{None=0}
+    public interface IHostBusContextFixture
+    {
+        void StartDownload(HostDeviceFixture device,HostLoadOptionsFixture options,bool flag);
+        object QueryFalconConnection(HostDeviceFixture device);
+        object QueryFalconConnection(HostSegmentFixture segment);
+        object QueryFalconConnection(ushort address);
+        bool IsConnectionAvailable(HostDeviceFixture device);
+        void UnregisteredCallback();
+    }
+    public static class HostBusContextFixture
+    {
+        public static void Invoke(IHostBusContextFixture context,int selected)
+        {
+            switch(selected){case 0:context.StartDownload(null,HostLoadOptionsFixture.None,false);break;case 1:context.QueryFalconConnection((HostDeviceFixture)null);break;case 2:context.QueryFalconConnection((HostSegmentFixture)null);break;case 3:context.QueryFalconConnection((ushort)0);break;case 4:context.IsConnectionAvailable(null);break;case 5:context.UnregisteredCallback();break;default:throw new System.InvalidOperationException("OWNED_HOST_BUS_CASE");}
+            throw new System.InvalidOperationException("OWNED_HOST_BUS_FAKE_SUCCESS");
+        }
+    }
+}
