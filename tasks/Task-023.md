@@ -83,7 +83,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Done for selected GlassV31/project20 structural import; current-main reconciliation independently reviewed |
-| Source commit(s) | Accepted profile `426110e6cc958bd87043906b51842b9817ee16aa`; resource validation `3a1d5db5609c7c4aee4997b5127e1858a58c5426` |
+| Source commit(s) | Accepted profile `426110e6cc958bd87043906b51842b9817ee16aa`; historical resource validation `3a1d5db5609c7c4aee4997b5127e1858a58c5426`; main integration `6fa2cac29db347ec6925d7bf4d7922d1e17f483d` |
 | Tests executed | Format, Clippy warnings denied, 38 synthetic tests and both registered private inventories PASS; scope and whitespace PASS |
 | Evidence location | [Glass parser evidence](../docs/POC-C-GLASS-PARSER.md), [reference/schema evidence](../docs/REFERENCE-BE-GT20S-02S.md), private/evidence/task023-resource-inventory/final-verifier/ |
 | Acceptance criteria met | AC-001, AC-002 and AC-003 PASS for structural inspection only |
