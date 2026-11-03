@@ -83,8 +83,8 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; bounded offline tunnel hardening only |
-| Source commit(s) | Local fork `e4ea7c198350d8a0fb819cd5d215a7b2f03ef6a4`, based on Task016 `ca45fa6d7f5e3f23f27d275830bf425c87385550` |
-| Tests executed | TEST-001 and secure-selection negative PASS in named offline tests; TEST-002 hardware NOT RUN |
+| Source commit(s) | Primary local fork `c62a89ac03005e415bcba72c19d6242ebc683c4d`; parallel experiment `e4ea7c198350d8a0fb819cd5d215a7b2f03ef6a4` is not the primary baseline |
+| Tests executed | Offline tests PASS; earlier specifically authorized gateway lifecycle PASS at `e01d5395c1d79386eed47cd8298510deed130eab`; current-source hardware NOT RUN |
 | Evidence location | Fork commit and checkpoint below |
 | Acceptance criteria met | None asserted |
 | Technical outcome | Invalid/malformed endpoints and replies rejected; stale transport retired in tested paths; hardware and protocol timing unqualified |
@@ -95,7 +95,8 @@ Update this record only with observed results. Follow the task-scoped branch/com
 
 ## Offline hardening checkpoint — 2026-11-03
 
-Local fork branch `task/Task-017-tunnel` contains the source commit above; no
+Parallel fork branch `task/Task-017-tunnel` contains `e4ea7c1`; it branches
+from an older baseline and is not a replacement for the primary history. No
 fork remote was pushed. On macOS, `cargo test --locked --test
 test_tunnel_session --test test_management_peer` passed 15 tunnel tests and 14
 simulator tests using only loopback sockets. The sandbox initially restricts
@@ -105,14 +106,14 @@ test_management_peer -- -D warnings`, `cargo fmt --all -- --check`, and
 `git diff --check` passed. Independent review reproduced and verified fixes
 for a short-length frame panic and malformed successful connection responses.
 
-This increment checks the selected tunnel response's exact CRD, correlates
+This parallel increment checks the selected tunnel response's exact CRD, correlates
 disconnect replies with the active channel, rejects malformed frames and
 invalid endpoints/timeouts, and retires tested stale transport paths. It does
-not establish primary-source protocol timing/retry values, cancellation or
+not itself establish primary-source protocol timing/retry values, cancellation or
 shared-close behavior, or hardware qualification. The required approved
-read-only gateway connection/disconnect remains NOT RUN and no device was
-contacted. Task017 remains In progress; no physical-operation approval is
-implied by the simulator tests.
+read-only gateway connection/disconnect was NOT RUN for this parallel revision.
+Task017 remains In progress; no physical-operation approval is implied by the
+simulator tests.
 
 Source SHA-256: `src/protocol/knxip.rs`
 `3b9f1c3d8dffb65956a7c356f67d9ae288d47bb5df022926aecad326515f74d0`;
@@ -120,3 +121,26 @@ Source SHA-256: `src/protocol/knxip.rs`
 `7ef941cedfa66dc1f9e07dceb5eeff996daca2ee62696a5d7032030647337ab8`;
 `tests/test_tunnel_session.rs`
 `db5fde62c3684858187a6953dcc7d88892a06f7e3c25f252a7fe6f9cc5a49696`.
+
+## Earlier primary history and gateway observation
+
+The more complete local fork branch `task/Task-017-endpoint-reservations` ends
+at `c62a89ac03005e415bcba72c19d6242ebc683c4d`, preserving the previously
+reviewed simulator, frame bounds, tunnel timeout, response-matching and worker
+lifecycle increments. An independently reviewed one-run human authorization
+permitted a single non-secure connection, correlated heartbeat and disconnect
+of that same channel, with no application telegrams or device writes. That
+operation passed on 2026-10-23 at fork source
+`e01d5395c1d79386eed47cd8298510deed130eab`; exit 0 and remote cleanup were
+confirmed in private `task017-readonly-gateway/hardware-result.json`. The
+grant applied only to that one operation, not a repeat. The current source and
+physical gateway model/bench isolation have not been requalified.
+
+The later primary history includes a retained-response retarget diagnostic at
+`777fd6d48418b6556cdfef5ff87188037c8ae11b` that reproduced a cross-attempt
+ambiguity. Local endpoint reservation at `c62a89a` is a bounded improvement,
+not proof that the ambiguity is eliminated. AC-002 remains unchecked; the
+diagnostic and source history are retained in the private Task017 evidence and
+historical editor branch `task/Task-017-endpoint-reservation-evidence`. The
+parallel `e4ea7c1` must not be overlaid wholesale on this primary history,
+because doing so would discard prior verified timing and response-handling work.
