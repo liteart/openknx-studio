@@ -79,6 +79,13 @@ not those compiler semantics. Original-reference encoding fails closed until the
 missing evidence and qualifier implementation are reviewed. See the
 [bounded encoding contract and evidence](../docs/POC-C-PARAMETER-ENCODING.md).
 
+On 2026-11-03 Simon identified the ETS project on host `.94` as a production
+project and deferred its examination and the proposed passive KNX capture of a
+full device write to a later occasion. Neither inspection of that project nor a
+device write or capture is authorized by this task. Keep the original-reference
+compiler path blocked until separately obtained, reviewed offline evidence is
+available.
+
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
 ## Completion Record
