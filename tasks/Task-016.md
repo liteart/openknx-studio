@@ -44,6 +44,7 @@ Create only the simulator/fault injection needed to test the selected management
 ## Dependencies to Other Tasks
 
 - [Task-015](Task-015.md): Audit the pinned knust fork against the PoC operations. Required predecessor behavior/evidence must be accepted.
+- [Task-149](Task-149.md): Preserve the mandatory cEMI TPCI control octet in the primary simulator's fork base.
 
 **Required phase gate:** None; execute only satisfied prerequisites and approved lab actions.
 
@@ -82,8 +83,8 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Done for the bounded synthetic peer; no hardware or wire-conformance claim |
-| Source commit(s) | Fork `ca45fa6d7f5e3f23f27d275830bf425c87385550`, based on `f85e40d8709d0ad31f029b3eab7b0b6e00abd48e` |
-| Tests executed | TEST-001–003 PASS; 14 named target tests, including loopback client |
+| Source commit(s) | Primary fork `cbd3d57865df07473ce60e73b08634542c8b6679`; additional parallel simulator `ca45fa6d7f5e3f23f27d275830bf425c87385550` |
+| Tests executed | TEST-001–003 PASS; primary 16 tests and parallel 14 tests, each including loopback client |
 | Evidence location | Fork commit and reproduction details below |
 | Acceptance criteria met | AC-001–003 for the explicitly simulated scope |
 | Technical outcome | Deterministic tunnel/session peer, bounded fault script and synthetic property/memory fixtures |
@@ -92,10 +93,11 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
-## Completion evidence — 2026-11-03
+## Additional parallel simulator — 2026-11-03
 
-The fork commit is local on `task/Task-016-simulator`; it has not been pushed
-or published. Its new test-support files are Apache-2.0 and retain the fork's
+The parallel fork commit is local on `task/Task-016-simulator`; it has not been
+pushed or published. It branches from an older baseline and is not a replacement
+for the primary source recorded below. Its new test-support files are Apache-2.0 and retain the fork's
 existing MIT license and upstream notices. Source SHA-256:
 
 - `SIMULATOR.md`: `4f9695c212fca439fd528dcdf3bb1fb353561db7f27e80314a71f53ee476b125`
@@ -112,8 +114,34 @@ test_management_peer -- -D warnings`, `cargo fmt --all -- --check`, and
 tests and the corrected malformed-frame regression; the reviewer's loopback
 attempt was sandbox-denied and is not counted as a separate pass.
 
-The property and memory values are bounded synthetic in-process fixtures;
+In this parallel implementation, property and memory values are bounded synthetic in-process fixtures;
 their wire encodings are not implemented or qualified here. Existing codecs
 are reused rather than independently validated against a specification. No
 discovery, external gateway, Secure feature, real device, hardware access or
 KNX wire-conformance proof was exercised.
+
+## Earlier reviewed primary simulator
+
+The previously completed and independently reviewed Task016 simulator is
+`cbd3d57865df07473ce60e73b08634542c8b6679` on local fork branch
+`task/Task-016-offline-management-peer`, based on
+`9daccba71885b03aa13b437c200ea0028220db55`. It preserves earlier fork fixes
+and models the selected synthetic property and memory wire reads and distinct
+tunnel/transport acknowledgements. The operator-supplied private KNX Standard
+v3.0.0 references and hashes are recorded in
+[KNX-MANAGEMENT-REFERENCES.md](../docs/KNX-MANAGEMENT-REFERENCES.md), restored
+from historical editor evidence commit `619fe8c`; private reference files are
+not redistributed.
+
+The primary `cargo test --locked --offline --no-default-features --features
+dpt --test test_management_peer` was rerun on 2026-11-03: all 16 tests PASS,
+including the loopback client. The earlier independent 16-test verification
+is retained at `private/evidence/task016-peer/verifier-loopback-test.log`
+(SHA-256 `35bdc79b78771b5bd962604f2a9e976275074feee5201605d6efb698413dadda`).
+Primary fork source SHA-256: `tests/support/management_peer.rs`
+`631571df3354c0527d7c5dcf756b44799a3869b769ad15e324388de991330065`;
+`tests/test_management_peer.rs`
+`67d388be3f2014b044941d997a744bccf7e7b4b98643ceb30cf5eed7759909b5`;
+`SIMULATOR.md`
+`1abf83c0f7e03cea8a2670fcfd5e5a0b6b6c744d0514ee9c505549a35d2a07e5`.
+No simulator test constitutes hardware or full wire-conformance qualification.
