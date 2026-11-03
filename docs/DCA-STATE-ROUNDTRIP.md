@@ -122,3 +122,11 @@ Both the child process and final checks exited 0. This is an offline fixture
 proof; synthetic editor UUID/revision identify the fixture, not a physical
 device or accepted Git revision. Windows filesystem durability, production IPC,
 opaque vendor state and hardware operations remain NOT RUN.
+
+The final scalar PoC also stores the known UTF-8 value in a hash-addressed blob
+referenced by the Rust envelope. Run `dca012a13301` restored that exact
+blob-backed artifact in a fresh Windows host, with the original UI and SDK
+agreeing; a subsequent Rust import was a no-op. A missing or corrupt blob is
+rejected. This remains a synthetic-input offline fixture, not a manual edit or
+accepted production project transaction. Exact hashes and tests are recorded
+in Task-012.

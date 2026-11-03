@@ -9,7 +9,7 @@ Round-trip one original DCA configuration change
 | Field | Value |
 |---|---|
 | Task ID | Task-012 |
-| Status | In progress |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knx-editor / poc/dca-host state bridge |
@@ -37,9 +37,9 @@ Prove that a real user change in the original DCA can leave the host process and
 
 ## Acceptance Criteria
 
-- [ ] AC-001: After restart the same original DCA displays the selected changed value.
-- [ ] AC-002: The saved state is not only in memory or SQLite and its hash is recorded.
-- [ ] AC-003: A failed state capture is not reported as a successful round-trip.
+- [x] AC-001: After restart the same original DCA displays the selected changed value.
+- [x] AC-002: The saved state is not only in memory or SQLite and its hash is recorded.
+- [x] AC-003: A failed state capture is not reported as a successful round-trip.
 
 ## Dependencies to Other Tasks
 
@@ -81,14 +81,14 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; scalar edit, capture, restart and no-op observed; blob-negative work pending |
-| Source commit(s) | `2f56e6a`, `433ae95`, plus host worktree audited below |
-| Tests executed | Windows reference restart and no-op observed; 423 owned cases and focused negative checks passed; missing blob pending |
+| Implementation / report status | Done for one bounded offline reference fixture; synthetic WPF input |
+| Source commit(s) | `2f56e6a99af404b4b379d9e04db5593e81d0c1e0`, `433ae955e0f74a99064eb6d1f76ce472dcb49b2d`, `26bdef14b3518746f51caf3efdc416dae6156a14`, `61a5314c588f496c42d1c6ac33d36f46edbf932f` |
+| Tests executed | TEST-001–003 PASS for the stated fixture; 423 Windows owned cases and 19 Rust tests PASS |
 | Evidence location | Private Task012 and Windows run evidence identified below |
-| Acceptance criteria met | None asserted |
+| Acceptance criteria met | AC-001–003 for the stated reference fixture |
 | Technical outcome | One synthetic-automation reference value round-tripped across Rust/macOS and Windows; production state and hardware not qualified |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Reviewer | Independent agent review; maintainer acceptance not asserted |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
@@ -355,3 +355,43 @@ Windows owned regression `dca012f13201` reported 423 passing cases and task
 exit 0, with no owned process remaining. The collector again expected an absent
 `sdk-project.log`; the driver output was checked separately and the task was
 removed. This owned suite does not exercise the original DCA or hardware.
+
+## Blob-backed reference round-trip — 2026-11-03
+
+The Rust v2 proof stores the known SDK string as its exact UTF-8 bytes, not as
+an undocumented vendor blob. The 23-byte blob SHA-256 is
+`a29c0edaf90af21dd9128c54847eabf255c9218d5fbd8cd10628ecd278f0eb83`;
+the canonical envelope SHA-256 is
+`9cbc3ac0ca04d252724f118edac0f5caea8462530a103fd8d823746eca42ad05`.
+Rust persisted both on macOS and produced the validated restore projection
+SHA-256 `e26dc4bb95cdfd9403fcb6b61c272d91cd357363cae9121adb2046be88dc92bd`.
+Fresh Windows run `dca012a13301` loaded that projection, resolved exactly one
+original SDK module parameter, applied it via the public SDK setter and
+displayed the same value in the original DCA. Child and launcher exited 0,
+42 pinned inputs and two OS pins passed, and the task/processes were removed.
+The original capture was an automated WPF edit, not a human-input proof.
+Private Windows log SHA-256:
+`f00fb9605f0ebef5ec04626a5dd47c73f3f176b5319714d17ea316eef572ac03`;
+source audit SHA-256:
+`a2bf71cfde34741b44d63540ceab6614a532c37d6b0f78d3bdb48e4f503c0d61`.
+
+After normal closure, Rust reimported the independently validated new SDK
+candidate as `unchanged`: envelope and blob hashes, sizes, inode and mtime did
+not change. Private no-op report SHA-256:
+`76904bce41330eb1634ae76565df539355be439d6218fd5510e713273ac1ac86`.
+Nine real CLI negatives included a missing blob, corrupt blob, incorrect blob
+size/reference, invalid UTF-8, device/application mismatch and missing/corrupt
+envelope; all rejected without producing a restore projection. Private report
+SHA-256 `72a1211a28ba9e33c23bdd8c69f71a6a4bf69604bbbca31a46ed2092afa93b28`.
+Failed independently confirmed capture was also rejected without an artifact.
+
+Verification: `cargo fmt --all -- --check`, `cargo clippy --workspace
+--all-targets --locked -- -D warnings` and `cargo test --workspace --locked`
+passed offline (17 unit and two CLI tests). `Test-StateCandidate.ps1`,
+`Test-StateRestore.ps1`, `Test-StateInspection.ps1`, `scripts/check_project_scope.py`
+and `git diff --check` passed. The Windows owned regression `dca012f13201`
+reported 423 passing cases and exit 0; its collector's missing `sdk-project.log`
+failure was resolved by inspecting the driver output and removing the finished
+task, as recorded above. Power-loss/flush-fault injection, Windows filesystem
+durability, production authenticated IPC, accepted Git configuration, opaque
+DCA state, live hardware and a manual human edit were NOT RUN.
