@@ -114,6 +114,11 @@ readonly_gateway_lifecycle`, passed 32 tests: seven connection preflight and
 state cases, 19 tunnel connection-validation cases and six owned-loopback
 lifecycle cases. The Secure-required rejection tests exercised a disabled
 feature; Secure was not enabled. No real gateway or device was contacted.
+The lifecycle example was also tested with the prepared online binary's exact
+feature selection: `cargo test --locked --offline --no-default-features --features
+dpt --example readonly_gateway_lifecycle -- --test-threads=1` passed all six
+owned-loopback cases. This repeats those scenarios under the intended feature
+configuration and is not an additional hardware result.
 
 Parallel fork branch `task/Task-017-tunnel` contains `e4ea7c1`; it branches
 from an older baseline and is not a replacement for the primary history. No
