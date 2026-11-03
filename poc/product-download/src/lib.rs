@@ -1,10 +1,16 @@
 //! Bounded, offline inspection of one selected product application.
-//! This crate has no configuration evaluator, compiler, transport, or write path.
+//! Includes a staged offline byte encoder; original-reference encoding remains
+//! unqualified. There is no configuration evaluator, transport, or write path.
 #![forbid(unsafe_code)]
 
 mod archive;
+mod parameter_encoding;
 mod resources;
 mod xml;
+
+pub use parameter_encoding::{
+    ByteChange, OfflinePartialSegment, ParameterEncodingError, encode_display_timeout,
+};
 
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};

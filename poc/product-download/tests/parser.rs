@@ -51,6 +51,77 @@ fn selected_static_application_can_be_inspected() {
     assert!(snapshot.external_resource_references.is_empty());
 }
 #[test]
+fn display_timeout_public_encoding_cannot_be_unlocked_by_snapshot_labels_or_blockers() {
+    use knx_selected_product_parser::{
+        GLASS_APPLICATION_ID, GLASS_REGISTERED_SHA256, ParameterEncodingError,
+        encode_display_timeout,
+    };
+    let mut snapshot = inspect_archive(
+        &archive(&application(""), None),
+        APPLICATION_ID,
+        &AtomicBool::new(false),
+    )
+    .unwrap();
+    assert_eq!(
+        encode_display_timeout(&snapshot, 21, &AtomicBool::new(false)),
+        Err(ParameterEncodingError::UnsupportedReference)
+    );
+    // Deliberately forged labels are a negative case, never an original fixture.
+    snapshot.application_id = GLASS_APPLICATION_ID.into();
+    snapshot.archive_sha256 = GLASS_REGISTERED_SHA256.into();
+    snapshot.compilation_blockers.clear();
+    assert_eq!(
+        encode_display_timeout(&snapshot, 21, &AtomicBool::new(false)),
+        Err(ParameterEncodingError::UnverifiedReferenceContext)
+    );
+    assert_eq!(
+        encode_display_timeout(&snapshot, 61, &AtomicBool::new(false)),
+        Err(ParameterEncodingError::ValueOutOfRange)
+    );
+    assert_eq!(
+        encode_display_timeout(&snapshot, 21, &AtomicBool::new(true)),
+        Err(ParameterEncodingError::Cancelled)
+    );
+}
+
+#[test]
+#[ignore = "requires the private registered Glass archive via KNXPROD_GLASS_FIXTURE"]
+fn registered_glass_display_timeout_context_rejects_original_encoding() {
+    use knx_selected_product_parser::{
+        GLASS_REGISTERED_SHA256, ParameterEncodingError, encode_display_timeout, sha256,
+    };
+    let path =
+        std::env::var_os("KNXPROD_GLASS_FIXTURE").expect("explicit private fixture path required");
+    let bytes = std::fs::read(path).unwrap();
+    assert_eq!(sha256(&bytes), GLASS_REGISTERED_SHA256);
+    let snapshot = inspect_glass(&bytes).unwrap();
+    let original = snapshot.clone();
+    let segment = snapshot
+        .segments
+        .iter()
+        .find(|s| s.declaration.id == "M-0083_A-018B-31-369F_AS-4690")
+        .unwrap();
+    let baseline = segment.data.as_ref().unwrap();
+    assert_eq!(baseline.bytes.len(), 1_968);
+    assert_eq!(
+        baseline.sha256,
+        "66d62fbcc9a0a32c8475a69bb7ce3c1ac695c62718741c599c146fb54b26cc30"
+    );
+    assert_eq!(baseline.bytes[1_522], 20);
+    for value in [0, 20, 21, 60] {
+        assert_eq!(
+            encode_display_timeout(&snapshot, value, &AtomicBool::new(false)),
+            Err(ParameterEncodingError::UnverifiedReferenceContext)
+        );
+    }
+    assert_eq!(
+        encode_display_timeout(&snapshot, 61, &AtomicBool::new(false)),
+        Err(ParameterEncodingError::ValueOutOfRange)
+    );
+    assert_eq!(snapshot, original);
+    assert!(!snapshot.compilation_blockers.is_empty());
+}
+#[test]
 fn alternative_application_is_rejected() {
     assert!(
         inspect_archive(
