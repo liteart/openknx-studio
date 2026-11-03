@@ -9,7 +9,7 @@ Implement and verify minimum non-secure tunneling
 | Field | Value |
 |---|---|
 | Task ID | Task-017 |
-| Status | Not started |
+| Status | In progress |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / KNXnet-IP transport |
@@ -82,13 +82,41 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
+| Implementation / report status | In progress; bounded offline tunnel hardening only |
+| Source commit(s) | Local fork `e4ea7c198350d8a0fb819cd5d215a7b2f03ef6a4`, based on Task016 `ca45fa6d7f5e3f23f27d275830bf425c87385550` |
+| Tests executed | TEST-001 and secure-selection negative PASS in named offline tests; TEST-002 hardware NOT RUN |
+| Evidence location | Fork commit and checkpoint below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Technical outcome | Invalid/malformed endpoints and replies rejected; stale transport retired in tested paths; hardware and protocol timing unqualified |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Unassigned |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Offline hardening checkpoint — 2026-11-03
+
+Local fork branch `task/Task-017-tunnel` contains the source commit above; no
+fork remote was pushed. On macOS, `cargo test --locked --test
+test_tunnel_session --test test_management_peer` passed 15 tunnel tests and 14
+simulator tests using only loopback sockets. The sandbox initially restricts
+socket binding; the explicitly loopback-only run used sandbox escalation.
+`cargo clippy --locked --offline --lib --test test_tunnel_session --test
+test_management_peer -- -D warnings`, `cargo fmt --all -- --check`, and
+`git diff --check` passed. Independent review reproduced and verified fixes
+for a short-length frame panic and malformed successful connection responses.
+
+This increment checks the selected tunnel response's exact CRD, correlates
+disconnect replies with the active channel, rejects malformed frames and
+invalid endpoints/timeouts, and retires tested stale transport paths. It does
+not establish primary-source protocol timing/retry values, cancellation or
+shared-close behavior, or hardware qualification. The required approved
+read-only gateway connection/disconnect remains NOT RUN and no device was
+contacted. Task017 remains In progress; no physical-operation approval is
+implied by the simulator tests.
+
+Source SHA-256: `src/protocol/knxip.rs`
+`3b9f1c3d8dffb65956a7c356f67d9ae288d47bb5df022926aecad326515f74d0`;
+`src/transport/tunnel.rs`
+`7ef941cedfa66dc1f9e07dceb5eeff996daca2ee62696a5d7032030647337ab8`;
+`tests/test_tunnel_session.rs`
+`db5fde62c3684858187a6953dcc7d88892a06f7e3c25f252a7fe6f9cc5a49696`.
