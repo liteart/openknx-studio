@@ -73,7 +73,14 @@ No full OS sandbox, real communication, or safe-write claim.
 
 ## Risks and Blockers
 
-None beyond listed prerequisites. Unsupported or undocumented behavior must be recorded and must not be guessed.
+Before an original DCA connection test, configure and verify Windows Firewall
+blocking on the test host, as directed by Simon on 2026-11-03. The earlier
+15-minute firewall rules have expired and must not be assumed active. Firewall
+rules alone do not establish protection against a direct USB/driver path, an
+allowed management endpoint, or a privileged process changing those rules. The
+host isolation guard remains in place until the actual test environment and
+recovery are verified. Unsupported or undocumented behavior must be recorded
+and must not be guessed.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
