@@ -82,7 +82,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; owned deny-only profile and pre-start isolation guard only |
-| Source commit(s) | Host worktree based on `1d0a8e5`; source audit below |
+| Source commit(s) | `9bb5eb7dea7c3ec9e0ca77efde60f7cc13fb2065`; source audit below |
 | Tests executed | Owned Windows denial/entry tests PASS; TEST-001–002 NOT RUN, TEST-003 owned fixture PASS |
 | Evidence location | Private Task013 evidence below |
 | Acceptance criteria met | None asserted |
