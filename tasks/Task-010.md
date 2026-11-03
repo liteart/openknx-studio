@@ -77,23 +77,29 @@ No configuration persistence, DALI commissioning, firmware update, or general DC
 
 ## Risks and Blockers
 
-The original DCA initialized and rendered on the Windows dev host without an
-installed ETS; Simon reported that UI interaction and dialogs worked. The selected
-application identity is not yet qualified under Task011. Source89 completed the
-original UI lifecycle with child exit 0. One earlier interactive attempt reported
-a failed device connection. Network containment and absence of direct vendor network paths remain unproven. No live
+The original DCA initialized and rendered on Windows host 192.168.1.60, the dev
+host without ETS; 192.168.1.94 is the ETS source/provisioning host and was not the
+runtime host. Simon previously reported that the visible UI interacted and
+dialogs opened. The available machine inventory is limited to selected roots,
+registry entries, named services and processes; it does not establish absence of
+all ETS components. Task011 qualified one bounded offline application context;
+the original ETS selector and physical device identity were not qualified.
+Latest run `dca012a13301` restored a synthetic offline value into the
+original UI and closed with exit 0, but this is not a human interaction test,
+accepted configuration, or device qualification. Network isolation, descendant
+containment, and absence of direct vendor network paths remain unproven. No live
 device connection or hardware test is claimed. See the latest checkpoint below.
 
 ## Completion Record
 
 | Field | Current value |
 |---|---|
-| Implementation / report status | In progress; Source89 original UI, clean process exit, owned regression and admission negatives passed; remaining acceptance evidence pending |
-| Source commit(s) | 09cd05bf19636bb872f0c11ae24798a32d3f7c68 |
-| Tests executed | Source89 original UI and clean exit PASS; owner interaction observed; 423 owned cases and two original-profile admission negatives PASS; selected ETS host inventory negative; network path and late resolver not established |
-| Evidence location | private/evidence/task010-sdk-wrapper/iteration01/run-56aa362ec007; run-60e2151ed943; missing-original89-a15c9e8376d2 |
-| Acceptance criteria met | AC-001 has positive render and manual-interaction evidence; full task acceptance pending |
-| Technical outcome | Original DCA control rendered and clean teardown observed in Source89; product identity is not established |
+| Implementation / report status | In progress; original UI clean-close and state-restore display evidence exist; Task010 clean-machine, network-isolation, responsive human interaction, and direct-vendor-path evidence remain incomplete |
+| Source commit(s) | Source89 baseline `09cd05bf19636bb872f0c11ae24798a32d3f7c68`; latest Task012 restore host based on `26bdef14b3518746f51caf3efdc416dae6156a14` with audited uncommitted source (`source-audit.json` SHA-256 `a2bf71cfde34741b44d63540ceab6614a532c37d6b0f78d3bdb48e4f503c0d61`) |
+| Tests executed | Source89 original UI/clean close PASS; owned Windows suite 423 cases PASS; two missing-profile negatives PASS; `dca012a13301` original UI restore/display/close and child exit 0 PASS for synthetic fixture; limited ETS inventory found no selected install roots, registry entries, named services or processes; comprehensive clean-host audit and network isolation NOT ESTABLISHED |
+| Evidence location | `private/evidence/task010-sdk-wrapper/iteration01/run-56aa362ec007`; `run-60e2151ed943`; `missing-original89-a15c9e8376d2`; latest `run-dca012a13301` (private Windows log SHA-256 `f00fb9605f0ebef5ec04626a5dd47c73f3f176b5319714d17ea316eef572ac03`); inventory `private/evidence/task010-readiness/windows-clean-readiness02-stdout.txt` |
+| Acceptance criteria met | AC-001 render and clean close observed; manual interaction remains user-reported historical evidence and is not reproduced by the automated restore. AC-002 exact per-file pins and limited host inventory recorded, but complete clean-machine condition NOT ESTABLISHED. AC-003 fail-closed profile admission negatives PASS; late runtime dependency-resolution negative NOT RUN. Full task acceptance pending. |
+| Technical outcome | Original DCA rendered and closed cleanly in `dca012a13301`; it displayed a synthetic restored value. Task011 qualified the bounded offline application context; physical device identity and runtime/network isolation are not established. |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Independent agent review of Source88 and Source89 fixes completed; maintainer acceptance pending |
 
@@ -629,3 +635,29 @@ result 0 and was removed. This proves fail-closed original-profile admission,
 not a late CLR resolver failure after vendor startup (NOT RUN). Private handoff
 SHA-256 `5de5eca6f78480265ec3316261399eef6ff997257a518179bf46ddab37167221`;
 the source audit is the Source89 audit above.
+
+### Latest original UI state-restore observation — 2026-11-03
+
+Task012's fresh Windows run `dca012a13301` is also relevant to Task010's original
+UI evidence. It ran on `192.168.1.60` (dev host without ETS); `192.168.1.94` was
+used as source/provisioning only. Its source audit records base commit
+`26bdef14b3518746f51caf3efdc416dae6156a14` plus audited uncommitted source; the
+audit file is `private/evidence/task010-sdk-wrapper/iteration01/run-dca012a13301/source-audit.json`.
+The private log records the genuine original view rendered, a synthetic offline
+state value displayed in it, normal close, and `PROJECT_RESULT exit=0` with
+`qualification=NOT_ESTABLISHED`, `hardware=NOT_RUN`, and no bus capability. The
+log SHA-256 is `f00fb9605f0ebef5ec04626a5dd47c73f3f176b5319714d17ea316eef572ac03`.
+The restore projection SHA-256 is
+`e26dc4bb95cdfd9403fcb6b61c272d91cd357363cae9121adb2046be88dc92bd`; its
+synthetic fixture envelope SHA-256 is
+`9cbc3ac0ca04d252724f118edac0f5caea8462530a103fd8d823746eca42ad05`. This run
+used automated restore, not human UI input, and does not prove accepted project
+configuration or a product/device match.
+
+The 2026-11-02 inventory in `private/evidence/task010-readiness/windows-clean-readiness02-stdout.txt`
+was a bounded name/root check only. The DCA contract still records SDK internals,
+network paths and descendants as `NOT_CONTAINED`; selected body inspection is not
+a whole-runtime isolation proof. Therefore DR-004 remains NOT ESTABLISHED and
+Task010 remains In progress. Direct vendor network behavior, a comprehensive ETS
+absence audit, the late missing-runtime-dependency negative, and Task010's
+responsive benign human interaction proof remain unresolved.
