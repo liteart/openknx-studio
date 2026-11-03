@@ -29,6 +29,8 @@ pub enum Error {
     UnsupportedDurability,
     CaptureMismatch,
     UnconfirmedExit,
+    MissingBlob,
+    BlobMismatch,
 }
 
 impl Error {
@@ -48,6 +50,8 @@ impl Error {
             Self::UnsupportedDurability => "dca_state.unsupported_durability",
             Self::CaptureMismatch => "dca_state.capture_mismatch",
             Self::UnconfirmedExit => "dca_state.unconfirmed_exit",
+            Self::MissingBlob => "dca_state.missing_blob",
+            Self::BlobMismatch => "dca_state.blob_mismatch",
         }
     }
 }
@@ -134,6 +138,26 @@ pub struct State {
     content_sha256: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ValueBlob {
+    encoding: String,
+    sha256: String,
+    bytes: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct StoredEnvelope {
+    storage_format_version: u32,
+    kind: String,
+    identity: Identity,
+    originating_revision: String,
+    fixture_source: Option<FixtureSource>,
+    value_blob: ValueBlob,
+    content_sha256: String,
+}
+
 impl State {
     pub fn capture(
         identity: Identity,
@@ -184,6 +208,27 @@ impl State {
     pub fn canonical_bytes(&self) -> Result<Vec<u8>, Error> {
         self.validate()?;
         let bytes = serde_json::to_vec(self)?;
+        if bytes.len() > MAX_ENVELOPE_BYTES {
+            return Err(Error::Limit);
+        }
+        Ok(bytes)
+    }
+
+    fn storage_envelope_bytes(&self) -> Result<Vec<u8>, Error> {
+        self.validate()?;
+        let bytes = serde_json::to_vec(&StoredEnvelope {
+            storage_format_version: 2,
+            kind: "sdk-string-with-utf8-blob".into(),
+            identity: self.content.identity.clone(),
+            originating_revision: self.content.originating_revision.clone(),
+            fixture_source: self.content.fixture_source.clone(),
+            value_blob: ValueBlob {
+                encoding: "utf-8".into(),
+                sha256: digest(self.value().as_bytes()),
+                bytes: self.value().len(),
+            },
+            content_sha256: self.content_sha256.clone(),
+        })?;
         if bytes.len() > MAX_ENVELOPE_BYTES {
             return Err(Error::Limit);
         }
@@ -297,7 +342,7 @@ impl Store {
 
     pub fn load(&self, sha256: &str, expected: &Identity) -> Result<State, Error> {
         let bytes = self.read_artifact(sha256)?;
-        State::decode(&bytes, expected)
+        self.decode_stored(&bytes, expected).map(|(state, _)| state)
     }
 
     fn read_artifact(&self, sha256: &str) -> Result<Vec<u8>, Error> {
@@ -306,8 +351,15 @@ impl Store {
 
     fn read_artifact_open(&self, sha256: &str) -> Result<(Vec<u8>, File), Error> {
         hash_field(sha256, "artifact_sha256")?;
-        let path = self.path_for(sha256);
-        let metadata = fs::symlink_metadata(&path).map_err(|error| {
+        Self::read_hashed_open(&self.path_for(sha256), sha256, MAX_ENVELOPE_BYTES)
+    }
+
+    fn read_hashed_open(
+        path: &Path,
+        sha256: &str,
+        maximum: usize,
+    ) -> Result<(Vec<u8>, File), Error> {
+        let metadata = fs::symlink_metadata(path).map_err(|error| {
             if error.kind() == io::ErrorKind::NotFound {
                 Error::MissingArtifact
             } else {
@@ -317,7 +369,7 @@ impl Store {
         if !metadata.is_file() || metadata.file_type().is_symlink() {
             return Err(Error::NotRegular);
         }
-        if metadata.len() > MAX_ENVELOPE_BYTES as u64 {
+        if metadata.len() > maximum as u64 {
             return Err(Error::Limit);
         }
         let mut file = File::open(path)?;
@@ -326,9 +378,9 @@ impl Store {
         }
         let mut bytes = Vec::new();
         (&mut file)
-            .take(MAX_ENVELOPE_BYTES as u64 + 1)
+            .take(maximum as u64 + 1)
             .read_to_end(&mut bytes)?;
-        if bytes.len() > MAX_ENVELOPE_BYTES {
+        if bytes.len() > maximum {
             return Err(Error::Limit);
         }
         if digest(&bytes) != sha256 {
@@ -337,10 +389,83 @@ impl Store {
         Ok((bytes, file))
     }
 
+    fn blob_directory(&self) -> PathBuf {
+        self.root.join("configuration-blobs").join("sha256")
+    }
+
+    fn decode_stored(
+        &self,
+        bytes: &[u8],
+        expected: &Identity,
+    ) -> Result<(State, Option<File>), Error> {
+        expected.validate()?;
+        let envelope = match serde_json::from_slice::<StoredEnvelope>(bytes) {
+            Ok(envelope) => envelope,
+            // Historical v1 inline artifacts remain readable. New saves always
+            // publish v2 envelopes with a mandatory blob.
+            Err(_) => return State::decode(bytes, expected).map(|state| (state, None)),
+        };
+        if envelope.storage_format_version != 2 || envelope.kind != "sdk-string-with-utf8-blob" {
+            return Err(Error::UnsupportedVersion);
+        }
+        if &envelope.identity != expected {
+            return Err(Error::IdentityMismatch);
+        }
+        if serde_json::to_vec(&envelope)? != bytes {
+            return Err(Error::NonCanonical);
+        }
+        if envelope.value_blob.encoding != "utf-8" {
+            return Err(Error::BlobMismatch);
+        }
+        hash_field(&envelope.value_blob.sha256, "value_blob_sha256")?;
+        if envelope.value_blob.bytes > MAX_VALUE_BYTES {
+            return Err(Error::Limit);
+        }
+        for directory in [self.root.join("configuration-blobs"), self.blob_directory()] {
+            let metadata = fs::symlink_metadata(directory).map_err(|error| {
+                if error.kind() == io::ErrorKind::NotFound {
+                    Error::MissingBlob
+                } else {
+                    Error::Io(error)
+                }
+            })?;
+            if !metadata.is_dir() || metadata.file_type().is_symlink() {
+                return Err(Error::NotRegular);
+            }
+        }
+        let path = self
+            .blob_directory()
+            .join(format!("{}.bin", envelope.value_blob.sha256));
+        let (payload, file) =
+            Self::read_hashed_open(&path, &envelope.value_blob.sha256, MAX_VALUE_BYTES).map_err(
+                |error| match error {
+                    Error::MissingArtifact => Error::MissingBlob,
+                    Error::IntegrityMismatch => Error::BlobMismatch,
+                    other => other,
+                },
+            )?;
+        if payload.len() != envelope.value_blob.bytes {
+            return Err(Error::BlobMismatch);
+        }
+        let value = String::from_utf8(payload).map_err(|_| Error::BlobMismatch)?;
+        let state = State {
+            content: Content {
+                format_version: FORMAT_VERSION,
+                identity: envelope.identity,
+                originating_revision: envelope.originating_revision,
+                value,
+                fixture_source: envelope.fixture_source,
+            },
+            content_sha256: envelope.content_sha256,
+        };
+        state.validate()?;
+        Ok((state, Some(file)))
+    }
+
     pub fn save(&self, state: &State) -> Result<ArtifactReceipt, Error> {
-        let bytes = state.canonical_bytes()?;
+        let bytes = state.storage_envelope_bytes()?;
         let sha256 = digest(&bytes);
-        let outcome = self.persist(&sha256, &bytes)?;
+        let outcome = self.persist(&sha256, &bytes, state)?;
         Ok(ArtifactReceipt {
             sha256,
             bytes: bytes.len(),
@@ -349,29 +474,104 @@ impl Store {
     }
 
     #[cfg(unix)]
-    fn persist(&self, sha256: &str, bytes: &[u8]) -> Result<SaveOutcome, Error> {
-        use std::io::Write;
+    fn persist(&self, sha256: &str, bytes: &[u8], state: &State) -> Result<SaveOutcome, Error> {
         match self.read_artifact_open(sha256) {
             Ok((existing, file)) => {
                 if existing != bytes {
                     return Err(Error::IntegrityMismatch);
                 }
-                // A matching file may have been published by another writer
-                // without flushing. Sync the handle whose bytes we validated.
+                let (stored, blob) = self.decode_stored(&existing, state.identity())?;
+                if stored != *state {
+                    return Err(Error::IntegrityMismatch);
+                }
+                if let Some(blob) = blob {
+                    blob.sync_all()?;
+                }
                 file.sync_all()?;
-                File::open(&self.root)?.sync_all()?;
+                self.sync_blob_directories()?;
                 return Ok(SaveOutcome::Unchanged);
             }
             Err(Error::MissingArtifact) => {}
             Err(error) => return Err(error),
         }
-        let mut staging = tempfile::NamedTempFile::new_in(&self.root)?;
+        // Blob publication precedes the envelope. A failed envelope publication
+        // can leave only an unreferenced immutable blob, never a success receipt.
+        self.ensure_blob_directories()?;
+        Self::publish_hashed(
+            &self.blob_directory(),
+            &digest(state.value().as_bytes()),
+            "bin",
+            state.value().as_bytes(),
+            MAX_VALUE_BYTES,
+        )
+        .map_err(|error| match error {
+            Error::IntegrityMismatch => Error::BlobMismatch,
+            other => other,
+        })?;
+        Self::publish_hashed(&self.root, sha256, "json", bytes, MAX_ENVELOPE_BYTES)
+    }
+
+    #[cfg(unix)]
+    fn ensure_blob_directories(&self) -> Result<(), Error> {
+        let mut parent = self.root.clone();
+        for name in ["configuration-blobs", "sha256"] {
+            let directory = parent.join(name);
+            match fs::create_dir(&directory) {
+                Ok(()) => {}
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(error) => return Err(Error::Io(error)),
+            }
+            let metadata = fs::symlink_metadata(&directory)?;
+            if !metadata.is_dir() || metadata.file_type().is_symlink() {
+                return Err(Error::NotRegular);
+            }
+            File::open(&parent)?.sync_all()?;
+            parent = directory;
+        }
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    fn sync_blob_directories(&self) -> Result<(), Error> {
+        for directory in [
+            self.blob_directory(),
+            self.root.join("configuration-blobs"),
+            self.root.clone(),
+        ] {
+            File::open(directory)?.sync_all()?;
+        }
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    fn publish_hashed(
+        directory: &Path,
+        sha256: &str,
+        suffix: &str,
+        bytes: &[u8],
+        maximum: usize,
+    ) -> Result<SaveOutcome, Error> {
+        use std::io::Write;
+        let path = directory.join(format!("{sha256}.{suffix}"));
+        match Self::read_hashed_open(&path, sha256, maximum) {
+            Ok((existing, file)) => {
+                if existing != bytes {
+                    return Err(Error::IntegrityMismatch);
+                }
+                file.sync_all()?;
+                File::open(directory)?.sync_all()?;
+                return Ok(SaveOutcome::Unchanged);
+            }
+            Err(Error::MissingArtifact) => {}
+            Err(error) => return Err(error),
+        }
+        let mut staging = tempfile::NamedTempFile::new_in(directory)?;
         staging.write_all(bytes)?;
         staging.as_file().sync_all()?;
-        let outcome = match staging.persist_noclobber(self.path_for(sha256)) {
+        let outcome = match staging.persist_noclobber(&path) {
             Ok(_) => SaveOutcome::Created,
             Err(error) if error.error.kind() == io::ErrorKind::AlreadyExists => {
-                let (existing, file) = self.read_artifact_open(sha256)?;
+                let (existing, file) = Self::read_hashed_open(&path, sha256, maximum)?;
                 if existing != bytes {
                     return Err(Error::IntegrityMismatch);
                 }
@@ -382,12 +582,12 @@ impl Store {
         };
         // File content was flushed before publication; now persist the name.
         // Failure is returned even though the artifact may already be visible.
-        File::open(&self.root)?.sync_all()?;
+        File::open(directory)?.sync_all()?;
         Ok(outcome)
     }
 
     #[cfg(not(unix))]
-    fn persist(&self, _sha256: &str, _bytes: &[u8]) -> Result<SaveOutcome, Error> {
+    fn persist(&self, _sha256: &str, _bytes: &[u8], _state: &State) -> Result<SaveOutcome, Error> {
         // Do not acknowledge durability before platform-tested directory flush.
         Err(Error::UnsupportedDurability)
     }

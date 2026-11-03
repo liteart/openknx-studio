@@ -64,7 +64,7 @@ fn run() -> Result<(), Error> {
                 .ok_or(Error::InvalidField("artifact_sha256"))?;
             let expected = FixtureExpected::decode(&read(Path::new(&args[4]))?)?;
             let state = store.load(hash, &expected.identity)?;
-            let projection = state.fixture_restore_projection(&expected)?;
+            let projection = state.fixture_restore_projection_for_artifact(&expected, hash)?;
             let mut output = private_output(Path::new(&args[5]))?;
             output.write_all(&projection)?;
             output.sync_all()?;

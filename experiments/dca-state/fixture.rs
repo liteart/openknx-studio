@@ -192,8 +192,25 @@ impl State {
     /// Bounded projection for a separately pinned fresh Windows host. It carries
     /// the artifact hash, but does not authorize any device operation.
     pub fn fixture_restore_projection(&self, expected: &FixtureExpected) -> Result<Vec<u8>, Error> {
+        let artifact = digest(&self.storage_envelope_bytes()?);
+        self.fixture_restore_projection_for_artifact(expected, &artifact)
+    }
+
+    /// The caller has loaded this exact artifact from Store. Permit either the
+    /// historical inline representation or the current mandatory-blob envelope.
+    pub fn fixture_restore_projection_for_artifact(
+        &self,
+        expected: &FixtureExpected,
+        artifact: &str,
+    ) -> Result<Vec<u8>, Error> {
         expected.validate()?;
         self.validate()?;
+        hash_field(artifact, "artifact_sha256")?;
+        if artifact != digest(&self.storage_envelope_bytes()?)
+            && artifact != digest(&self.canonical_bytes()?)
+        {
+            return Err(Error::IntegrityMismatch);
+        }
         if self.identity() != &expected.identity
             || self.originating_revision() != expected.originating_revision
             || self.content.fixture_source.as_ref() != Some(&expected.source)
@@ -232,7 +249,7 @@ impl State {
             kind: "owned-offline-scalar-restore",
             fixture_uuid_revision_synthetic: true,
             accepted_configuration: false,
-            state_artifact_sha256: digest(&self.canonical_bytes()?),
+            state_artifact_sha256: artifact.to_owned(),
             device_uuid: &identity.device_uuid,
             originating_revision: self.originating_revision(),
             project_id: &source.project_id,

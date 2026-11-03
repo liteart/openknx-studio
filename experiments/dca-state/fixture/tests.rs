@@ -70,7 +70,10 @@ fn imports_only_confirmed_fixture_and_binds_restore_source_to_artifact() {
     let projection = state.fixture_restore_projection(&expected).unwrap();
     let object: serde_json::Value = serde_json::from_slice(&projection).unwrap();
     assert_eq!(object["project_id"], "owned-project");
-    assert_eq!(object["state_artifact_sha256"], digest(&encoded));
+    assert_eq!(
+        object["state_artifact_sha256"],
+        digest(&state.storage_envelope_bytes().unwrap())
+    );
     assert_eq!(object["fixture_uuid_revision_synthetic"], true);
     let mut wrong = expected.clone();
     wrong.source.project_id = "another-project".into();

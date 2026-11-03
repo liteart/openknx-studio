@@ -1,7 +1,7 @@
 # Task-012 scalar-state artifact proof
 
 This Rust library stores one known SDK string value as a bounded, immutable
-JSON artifact. Its fixture CLI can import a completed private SDK capture and
+JSON envelope and referenced UTF-8 blob. Its fixture CLI can import a completed private SDK capture and
 export a restore projection. It does not implement the production host bridge, accepted project
 changesets, Git transactions, an opaque vendor format, or DCA restart/reload.
 The caller must obtain the value and qualified identity through the real SDK
@@ -16,14 +16,24 @@ unsupported versions, invalid fields, oversized input and integrity mismatches
 are rejected. SHA-256 detects corruption; it does not authenticate an untrusted
 sender. The bridge must supply authorization separately.
 
-`Store` uses an existing, dedicated caller-controlled directory. Artifact names
-are SHA-256 hashes of the complete canonical envelope. On Unix, save flushes a
-same-directory temporary file before no-clobber publication, then flushes the
-directory before returning an artifact receipt. An existing valid artifact is
-an exact no-op; existing corrupt evidence is never overwritten. A flush failure
-is returned even if a file was already published. Staging cleanup is best effort
-through `tempfile`; interruption may leave an unreferenced staging file. This
-PoC does not provide a current-state pointer or multi-file transaction recovery.
+`Store` writes storage-format-version2 envelopes. They contain immutable identity
+and source metadata, the logical content hash, and `value_blob` with encoding,
+SHA-256 and byte count. The blob is exactly the known SDK string encoded as
+UTF-8; this is an owned storage representation, not an undocumented vendor format.
+It lives at `configuration-blobs/sha256/<hash>.bin` under the dedicated store.
+Historical version1 inline artifacts remain readable without being rewritten.
+
+Artifact names are hashes of their complete canonical envelopes. On Unix, save
+flushes and atomically publishes the blob before publishing the envelope. Each
+publication uses a same-directory temporary file, no-clobber publication and
+directory flush. The immutable envelope is this PoC's publication point. A
+failure returns no success receipt and may leave an unreferenced blob or staging
+file. It does not provide a current-state pointer, an accepted configuration
+transaction or Git recovery. An existing envelope is a no-op only after both
+its own bytes and mandatory blob are validated and flushed through their held
+handles. Missing/corrupt blobs fail; save does not silently heal an existing
+broken envelope or overwrite evidence. Size, hash and strict UTF-8 validation
+must all succeed before restore data can be exported.
 
 Saving on non-Unix platforms returns `dca_state.unsupported_durability` before
 writing; Windows filesystem durability is NOT RUN. Loading/encoding is portable.
@@ -50,8 +60,9 @@ the repository's pinned Rust 1.99.1. Only macOS execution is currently verified.
 
 Tests use synthetic owned identities and strings. They cover canonical encode/
 decode, all seven identity mismatches, duplicate/unknown/corrupt/noncanonical/
-oversized input, invalid capture, reopen/no-op, missing/corrupt artifact, static
-symlink rejection and concurrent identical publication. These are file/codec
+oversized input, invalid capture, reopen/no-op, missing/corrupt artifact and blob,
+declared blob size mismatch, historical reads, static symlink rejection and
+concurrent identical publication. These are file/codec
 tests, not Windows DCA or hardware tests. No actual product configuration or
 proprietary input is included.
 
