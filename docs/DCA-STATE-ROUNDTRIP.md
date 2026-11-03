@@ -106,4 +106,19 @@ failure cases remain fail-closed. Windows run `dca012e12701` completed one
 automated edit, displayed the requested value in the original grid and read
 the same value from the SDK. It ended normally. This is not a human edit or a
 durable save. The task record contains earlier failed attempts and exact
-evidence hashes; capture and restart remain NOT RUN.
+evidence hashes; durable capture and restart remain NOT RUN.
+
+The explicit `--ui-state-capture 600` profile prepares a bounded candidate
+from the actual SDK value and identities after the same successful fixture edit.
+Only after host final validation does it create a new log-sidecar candidate;
+the consumer must independently confirm the launcher exit and input integrity.
+Windows run `dca012c12801` produced such a candidate and exited 0. This is a
+private handoff candidate, not a Rust durability receipt or accepted project
+configuration. On macOS the Rust PoC verified and stored that candidate as a
+hash-addressed artifact. Fresh Windows run `dca012a13201` loaded the validated
+restore projection, resolved the exact module-scoped SDK parameter, applied
+the value through the public SDK setter, and displayed it in the original DCA.
+Both the child process and final checks exited 0. This is an offline fixture
+proof; synthetic editor UUID/revision identify the fixture, not a physical
+device or accepted Git revision. Windows filesystem durability, production IPC,
+opaque vendor state and hardware operations remain NOT RUN.

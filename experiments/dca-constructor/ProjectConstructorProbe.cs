@@ -84,6 +84,71 @@ internal static class ReferenceDcaStateEdit
     {return began&&cell&&row&&valid&&actual==FixtureText;}
 }
 
+// Private PoC candidate only. Rust supplies qualified UUID/revision and durable storage.
+internal static class ReferenceDcaStateCandidate
+{
+    internal const int MaximumBytes=16384;
+    static readonly string[] Keys={"project_id","installation_id","device_id","application_id","product_sha256","dca_sha256","dca_version","sdk_sha256","object_model_sha256","host_sha256","parameter_unique_id","parameter_internal_name","value"};
+    internal static bool CanPublish(bool requested,bool edited,int outcome,bool prepared){return requested&&edited&&outcome==0&&prepared;}
+    static string Quote(string text)
+    {
+        var result=new System.Text.StringBuilder();result.Append('"');
+        foreach(char c in text){if(c=='"'||c=='\\'){result.Append('\\');result.Append(c);}else if(c<32){result.Append("\\u");result.Append(((int)c).ToString("x4",System.Globalization.CultureInfo.InvariantCulture));}else result.Append(c);}
+        result.Append('"');return result.ToString();
+    }
+    internal static byte[] Encode(string[] fields,int process)
+    {
+        if(fields==null||fields.Length!=Keys.Length||process<=0)throw new System.IO.InvalidDataException("STATE_CANDIDATE_SHAPE");
+        var utf8=new System.Text.UTF8Encoding(false,true);var json=new System.Text.StringBuilder("{\"format_version\":1,\"kind\":\"ordinary-sdk-string\",\"host_process_id\":");json.Append(process.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        for(int i=0;i<fields.Length;i++){
+            string value=fields[i];if(value==null||utf8.GetByteCount(value)>(i==12?120:256)||value.Length>(i==12?30:256)||i!=12&&value.Length==0)throw new System.IO.InvalidDataException("STATE_CANDIDATE_FIELD_BOUND");
+            if(i==4||i==5||i==7||i==8||i==9){if(value.Length!=64)throw new System.IO.InvalidDataException("STATE_CANDIDATE_HASH");foreach(char c in value)if(!(c>='0'&&c<='9'||c>='a'&&c<='f'))throw new System.IO.InvalidDataException("STATE_CANDIDATE_HASH");}
+            json.Append(',');json.Append(Quote(Keys[i]));json.Append(':');json.Append(Quote(value));
+        }
+        json.Append(",\"host_final_validation\":\"PASS_BEFORE_EXIT\",\"requires_confirmed_exit_zero\":true,\"accepted_configuration\":false}");
+        byte[] bytes=utf8.GetBytes(json.ToString());if(bytes.Length>MaximumBytes)throw new System.IO.InvalidDataException("STATE_CANDIDATE_ENVELOPE_BOUND");return bytes;
+    }
+}
+
+// Fixed Rust PoC projection: flat compact JSON, no general object deserialization.
+internal sealed class ReferenceDcaStateRestore
+{
+    static readonly string[] Keys={"state_artifact_sha256","device_uuid","originating_revision","project_id","installation_id","device_id","application_id","product_sha256","dca_sha256","dca_version","sdk_sha256","object_model_sha256","parameter_unique_id","parameter_internal_name","value"};
+    readonly string[] fields;string source;int offset;
+    ReferenceDcaStateRestore(){fields=new string[Keys.Length];}
+    internal string Field(string name){int i=Array.IndexOf(Keys,name);if(i<0)throw new InvalidDataException("STATE_RESTORE_FIELD");return fields[i];}
+    static void Require(bool valid,string code){if(!valid)throw new InvalidDataException(code);}
+    void Take(string literal){Require(offset<=source.Length-literal.Length&&String.CompareOrdinal(source,offset,literal,0,literal.Length)==0,"STATE_RESTORE_SCHEMA");offset+=literal.Length;}
+    string Text()
+    {
+        Take("\"");var text=new StringBuilder();bool closed=false;
+        while(offset<source.Length){char c=source[offset++];if(c=='"'){closed=true;break;}Require(c>=32,"STATE_RESTORE_JSON_CONTROL");
+            if(c=='\\'){Require(offset<source.Length,"STATE_RESTORE_JSON_ESCAPE");c=source[offset++];if(c=='u'){Require(offset<=source.Length-4,"STATE_RESTORE_JSON_ESCAPE");int code=0;for(int j=0;j<4;j++){char h=source[offset++];int n=h>='0'&&h<='9'?h-'0':h>='a'&&h<='f'?h-'a'+10:h>='A'&&h<='F'?h-'A'+10:-1;Require(n>=0,"STATE_RESTORE_JSON_ESCAPE");code=code*16+n;}c=(char)code;}
+                else if(c=='b')c='\b';else if(c=='f')c='\f';else if(c=='n')c='\n';else if(c=='r')c='\r';else if(c=='t')c='\t';else Require(c=='"'||c=='\\'||c=='/',"STATE_RESTORE_JSON_ESCAPE");}
+            text.Append(c);Require(text.Length<=1024,"STATE_RESTORE_FIELD_BOUND");
+        }
+        Require(closed,"STATE_RESTORE_JSON_STRING");return text.ToString();
+    }
+    internal static bool Hash(string value){if(value==null||value.Length!=64)return false;foreach(char c in value)if(!(c>='0'&&c<='9'||c>='a'&&c<='f'))return false;return true;}
+    internal static bool ExactParameterIdentity(bool original,bool uid,bool name,bool parent){return original&&uid&&name&&parent;}
+    internal static string HeldHash(Stream stream)
+    {
+        Require(stream!=null&&stream.CanRead&&stream.CanSeek&&stream.Length>0&&stream.Length<=16384,"STATE_RESTORE_HELD_STREAM");long position=stream.Position;
+        try{stream.Position=0;using(var sha=System.Security.Cryptography.SHA256.Create())return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-",String.Empty).ToLowerInvariant();}
+        finally{stream.Position=position;}
+    }
+    internal static ReferenceDcaStateRestore Decode(byte[] bytes)
+    {
+        Require(bytes!=null&&bytes.Length>0&&bytes.Length<=16384,"STATE_RESTORE_BYTES_BOUND");var utf8=new UTF8Encoding(false,true);var result=new ReferenceDcaStateRestore();result.source=utf8.GetString(bytes);
+        result.Take("{\"format_version\":1,\"kind\":\"owned-offline-scalar-restore\",\"fixture_uuid_revision_synthetic\":true,\"accepted_configuration\":false");
+        for(int i=0;i<Keys.Length;i++){result.Take(",\""+Keys[i]+"\":");string value=result.Text();Require(value.Length<=(i==14?30:256)&&utf8.GetByteCount(value)<=(i==14?120:256)&&(i==14||value.Length!=0),"STATE_RESTORE_FIELD_BOUND");result.fields[i]=value;}
+        result.Take("}");Require(result.offset==result.source.Length,"STATE_RESTORE_TRAILING_DATA");
+        foreach(int i in new int[]{0,7,8,10,11})Require(Hash(result.fields[i]),"STATE_RESTORE_HASH");
+        Guid uuid;Require(Guid.TryParseExact(result.fields[1],"D",out uuid)&&uuid.ToString("D")==result.fields[1],"STATE_RESTORE_FIXTURE_UUID");string revision=result.fields[2];Require(revision.Length==40||revision.Length==64,"STATE_RESTORE_REVISION");foreach(char c in revision)Require(c>='0'&&c<='9'||c>='a'&&c<='f',"STATE_RESTORE_REVISION");
+        result.source=null;return result;
+    }
+}
+
 // An absent device is rejected at the owned entry to the real GetDcaUi path.
 internal static class ReferenceDcaRequiredDevice
 {
@@ -1729,7 +1794,7 @@ internal static class ProjectConstructorProbe
     static readonly ReferenceHealthyLogCoalescer healthyLog=new ReferenceHealthyLogCoalescer();
     static void Record(string value)
     {
-        if(ReferenceDcaStateEdit.OmitHealthyDetail(sdkStateEdit,value)){Interlocked.Increment(ref sdkEditHealthyRepliesOmitted);return;}
+        if(ReferenceDcaStateEdit.OmitHealthyDetail(sdkStateEdit||sdkStateReload,value)){Interlocked.Increment(ref sdkEditHealthyRepliesOmitted);return;}
         if(!(FixtureObservationProfile()?healthyLog.ShouldEmitIdentity(CompactProductDiagnostics(),value):healthyLog.ShouldEmit(CompactProductDiagnostics(),value)))return;
         byte[] bytes = Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) + " " + value + "\n");
         lock (LogLock) {
@@ -4110,7 +4175,7 @@ internal static class ProjectConstructorProbe
     static SdkModelRootApi sdkModelRootApi;
     internal static bool SdkHostPhaseEligible()
     {return SdkMode&&Thread.CurrentThread.ManagedThreadId==sdkOwner&&(SdkOwned||contextLifetime)&&projectResourceBudgetActive&&!projectResourceCallbackSuspended&&(sdkRootSetupPhase||sdkWrapperPhase||guidProjectDisposal||projectResourceWindow==2);}
-    internal static bool StateEditDispatcherEligible(){return sdkStateEdit&&sdkProductUiActive&&ProductDependencyComplete&&SdkHostPhaseEligible()&&projectResourceWindow==0;}
+    internal static bool StateEditDispatcherEligible(){return (sdkStateEdit||sdkStateReload&&sdkRestoreActive)&&sdkProductUiActive&&ProductDependencyComplete&&SdkHostPhaseEligible()&&projectResourceWindow==0;}
     static void PrepareDispatcherDeferral(Type contract)
     {
         MethodInfo[] methods={SdkDeviceMethod(contract,0x060001ad),SdkDeviceMethod(contract,0x060001ae),SdkDeviceMethod(contract,0x060001ac),SdkDeviceMethod(contract,0x060001ab)};
@@ -4131,7 +4196,7 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(root.GetType()==typeof(object).GetType()&&root.IsPublic&&root.IsClass&&!root.IsAbstract&&!root.IsGenericType&&ctor!=null&&ctor.DeclaringType==root&&ctor.IsPublic&&!ctor.IsStatic&&(int)ctor.Attributes==6278&&projects!=null&&projects.DeclaringType==root&&projects.ReturnType==collection&&projects.GetParameters().Length==0&&(int)projects.Attributes==2534,"SDK_GENUINE_MODEL_ROOT_API");
         ParameterInfo[] vector=ctor.GetParameters();ProbeFiles.Require(vector.Length==3&&vector[0].ParameterType==dataStore&&vector[1].ParameterType==factory&&vector[2].ParameterType==usage&&vector[2].IsOptional&&vector[2].HasDefaultValue&&(int)vector[2].Attributes==4112&&vector[2].RawDefaultValue==null,"SDK_MODEL_ROOT_USAGE_DEFAULT");
         if(original)ProbeFiles.Require(SdkOriginal&&root.Assembly.FullName==OmIdentity&&root.MetadataToken==0x02000093&&root.Module==collection.Module&&root.Module==dataStore.Module&&root.Module==factory.Module&&dataStore.MetadataToken==0x02000030&&stores.MetadataToken==0x060001cc&&ctor.MetadataToken==0x0600053e&&projects.MetadataToken==0x06000537&&dispatcher.Assembly.FullName==Identities[10]&&dispatcher.MetadataToken==0x0200002f&&check.MetadataToken==0x060001a5&&invoke.MetadataToken==0x060001a6,"SDK_MODEL_ROOT_ORIGINAL_TOKENS");
-        sdkRootData=new SdkHostProxy(dataStore,"DATA_STORE",stores,null,Array.CreateInstance(projectStore,0),Record);sdkUi=new SdkHostProxy(dispatcher,"DISPATCHER",check,invoke,null,Record);if(original&&sdkStateEdit)PrepareDispatcherDeferral(dispatcher);sdkModelRootApi=new SdkModelRootApi{Root=root,Collection=collection,Constructor=ctor,Projects=projects};
+        sdkRootData=new SdkHostProxy(dataStore,"DATA_STORE",stores,null,Array.CreateInstance(projectStore,0),Record);sdkUi=new SdkHostProxy(dispatcher,"DISPATCHER",check,invoke,null,Record);if(original&&(sdkStateEdit||sdkStateReload))PrepareDispatcherDeferral(dispatcher);sdkModelRootApi=new SdkModelRootApi{Root=root,Collection=collection,Constructor=ctor,Projects=projects};
         Record("SDK_MODEL_SERVICES_READY data=EXPLICIT_EMPTY_ENUMERATION dispatcher=OWNED_REAL_WPF_MARSHAL_ADAPTER usage-default=VERIFIED_NULL");
     }
     static object CreateSdkCanonicalCollection(object factory)
@@ -4234,7 +4299,9 @@ internal static class ProjectConstructorProbe
             :sdkUiCallReturned?"RETURNED_WITHOUT_ORIGINAL_VIEW":"CALL_NOT_RETURNED";
         return observed+(sdkUiLifecycleFault?"_WITH_FAILURE":String.Empty);
     }
-    static bool sdkStateInspection,sdkStateInspectionFault,sdkStateEditors,sdkStateEdit,sdkStateEditAttempted,sdkStateEditChanged;
+    static bool sdkStateInspection,sdkStateInspectionFault,sdkStateEditors,sdkStateEdit,sdkStateEditAttempted,sdkStateEditChanged,sdkStateCapture,sdkStateReload,sdkRestoreActive,sdkRestoreApplied,sdkRestoreDisplayVerified;
+    static ReferenceDcaStateRestore sdkRestore;static FileStream sdkRestoreInput;static string sdkRestoreHash;static object sdkRestoredParameter;
+    static object sdkCaptureProject;static byte[] sdkCaptureBytes;static string sdkCapturePath;
     static System.Windows.Input.KeyEventArgs sdkStateEnterEvent;
     static bool SdkUiRequested{get{return SdkProductMode&&sdkUiSeconds==600;}}
     internal static bool ProductUiFixtureMode(){return SdkUiRequested;}
@@ -4753,6 +4820,7 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(om.FullName==OmIdentity&&installationType.MetadataToken==0x02000324&&deviceType.MetadataToken==0x02000230&&contextGenuineFactory.GetType()==factoryType,"SDK_DEVICE_ORIGINAL_TYPES");
         object hp=SdkReferenceId(ids,"Knx.Ets.Ids.Product.Hardware2ProgramId",0x0200004c,0x060003ab,ReferenceDcaManifestSelection.Hardware2ProgramId);
         object product=SdkReferenceId(ids,"Knx.Ets.Ids.Product.ProductId",0x0200005f,0x060004b3,"M-0083_H-193-1-O00EF_P-SCN.2DDA641.2E04");
+        if(sdkStateCapture){ProbeFiles.Require(sdkCaptureProject==null,"STATE_CAPTURE_PROJECT_ONCE");sdkCaptureProject=project;}
         if(SdkProductMode)PrepareSdkProductImport(om,project,product,hp);
         MethodInfo projectIdGetter=SdkDeviceMethod(project.GetType(),0x06002836),installationsGetter=SdkDeviceMethod(project.GetType(),0x06002852);
         MethodInfo createInstallation=SdkDeviceMethod(factoryType,0x06000142),createDevice=SdkDeviceMethod(factoryType,0x0600014f),devicesGetter=SdkDeviceMethod(installationType,0x0600233d);
@@ -4907,7 +4975,7 @@ internal static class ProjectConstructorProbe
         internal object Source,Parameter,Device;internal MethodInfo Read,Identity,Parent;internal string Id,Name;
     }
     internal static MethodInfo SdkDeviceMethodForHost(Type type,int token){return SdkDeviceMethod(type,token);}
-    internal static bool StateEditDirtyEligible(){return StateEditDispatcherEligible()&&sdkStateEnterEvent!=null;}
+    internal static bool StateEditDirtyEligible(){return StateEditDispatcherEligible()&&(sdkStateEdit&&sdkStateEnterEvent!=null||sdkStateReload&&sdkRestoreActive);}
     internal static object StateEditOriginalDevice(){return sdkDeviceRetained==null?null:sdkDeviceRetained[3];}
     internal static bool StateEditDirtyParameter(object parameter)
     {
@@ -5016,9 +5084,97 @@ internal static class ProjectConstructorProbe
             Record("DCA_STATE_UI_ENTER_RETURN source=OWNED_WPF_INPUT_MANAGER input-handled="+inputHandled+" followup=TAB tab-handled="+tabHandled+" cell-commit-event="+cellCommitEvent+" row-commit-event="+rowCommitEvent+" cancel-observed="+cancelObserved+" actual-human-input=False direct-CommitEdit=NOT_CALLED");
             valid=liveIdentity&&displayMatches&&!System.Windows.Controls.Validation.GetHasError(liveContent)&&!System.Windows.Controls.Validation.GetHasError(liveCell)&&!System.Windows.Controls.Validation.GetHasError(liveRow)&&!System.Windows.Controls.Validation.GetHasError(target.Grid)&&!editView.IsEditingItem;
             object after=target.Read.Invoke(target.Parameter,new object[0]);ProbeFiles.Require(Object.Equals(target.Identity.Invoke(target.Parameter,new object[0]),target.Id)&&Object.ReferenceEquals(target.Parent.Invoke(target.Parameter,new object[0]),target.Device),"STATE_EDIT_SDK_IDENTITY_UNCHANGED");if(!(after is string&&ReferenceDcaStateEdit.Changed(began,cell,row,valid,(string)after)))DiagnoseStateEditCommit(target,editor,binding,editView,cell,row,observed,after,actualCell);ProbeFiles.Require(after is string&&ReferenceDcaStateEdit.Changed(began,cell,row,valid,(string)after),"STATE_EDIT_ORIGINAL_COMMIT_AND_SDK_READBACK");sdkStateEditChanged=true;
+            if(sdkStateCapture)PrepareStateCandidate(target,(string)after);
             Record("DCA_STATE_UI_EDIT_END began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-after="+ReferenceDcaStateInspection.Encode((string)after)+" encoding=UTF8_BASE64 changed=True path=ORIGINAL_WPF_TEXTBOX_ENTER_AND_TAB SDK-read=060013CC direct-SDK-setter=NOT_CALLED capture=NOT_RUN persistence=NOT_ESTABLISHED restart=NOT_RUN hardware=NOT_RUN");
         }catch{Record("DCA_STATE_UI_EDIT_FAILED began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-change=UNKNOWN_IF_PARTIAL rollback=NOT_ASSERTED");throw;}
         finally{host.IsEnabled=false;target.Grid.CellEditEnding-=cellEnding;target.Grid.RowEditEnding-=rowEnding;GC.KeepAlive(editor);GC.KeepAlive(target);}
+    }
+    static void PrepareStateCandidate(StateEditTarget target,string observed)
+    {
+        ProbeFiles.Require(sdkStateCapture&&(sdkStateReload?sdkRestoreDisplayVerified:sdkStateEditChanged)&&sdkCaptureBytes==null&&SdkHostPhaseEligible()&&sdkProductUiActive&&sdkCaptureProject!=null&&sdkDeviceRetained!=null&&Object.ReferenceEquals(target.Device,sdkDeviceRetained[6]),"STATE_CAPTURE_EXACT_EDIT_SCOPE");
+        object value=target.Read.Invoke(target.Parameter,new object[0]),uid=target.Identity.Invoke(target.Parameter,new object[0]);Type instance=target.Parameter.GetType();MethodInfo name=SdkDeviceMethod(instance,0x060013d1);
+        string internalName=name.Invoke(target.Parameter,new object[0]) as string;
+        ProbeFiles.Require(value is string&&String.Equals((string)value,observed,StringComparison.Ordinal)&&Object.Equals(uid,target.Id)&&internalName==target.Name&&Object.ReferenceEquals(target.Parent.Invoke(target.Parameter,new object[0]),target.Device),"STATE_CAPTURE_SDK_READBACK_IDENTITY");
+        object project=sdkCaptureProject,installation=sdkDeviceRetained[2],device=sdkDeviceRetained[3],hp=sdkDeviceRetained[0];Assembly om=project.GetType().Assembly,ids=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Ids.dll"));
+        MethodInfo projectId=SdkDeviceMethod(project.GetType(),0x06002836),childId=SdkDeviceMethod(om.GetType("Knx.Ets.ObjectModel.DomObject",true),0x06000116),devices=SdkDeviceMethod(installation.GetType(),0x0600233d),application=SdkDeviceMethod(hp.GetType(),0x060003a5);
+        ProbeFiles.Require(SdkContainsExact(sdkDeviceInstallations,installation)&&SdkContainsExact(devices.Invoke(installation,new object[0]),device),"STATE_CAPTURE_LIVE_DEVICE_MEMBERSHIP");
+        Func<object,Type,string> originalId=delegate(object id,Type exact){return new UTF8Encoding(false,true).GetString(Convert.FromBase64String(StableFixtureId(id,exact)));};
+        string exe=ProbeFiles.Local(typeof(ProjectConstructorProbe).Assembly.Location,true,false),hostHash=ProbeFiles.HashFile(exe);ProbeFiles.Require(hostHash==ProbeFiles.OwnedHash(exe),"STATE_CAPTURE_PINNED_HOST");
+        string[] fields={originalId(projectId.Invoke(project,new object[0]),ids.GetType("Knx.Ets.Ids.Project.ProjectId",true)),originalId(childId.Invoke(installation,new object[0]),ids.GetType("Knx.Ets.Ids.Project.InstallationId",true)),originalId(childId.Invoke(device,new object[0]),ids.GetType("Knx.Ets.Ids.Project.DeviceId",true)),originalId(application.Invoke(hp,new object[0]),ids.GetType("Knx.Ets.Ids.Product.ApplicationProgramId",true)),OriginalProductImportProbe.ArchiveHash,Hashes[0],sdkDcaInstance.GetType().Assembly.GetName().Version.ToString(),Hashes[1],Hashes[8],hostHash,(string)uid,internalName,(string)value};
+        using(Process process=Process.GetCurrentProcess())sdkCaptureBytes=ReferenceDcaStateCandidate.Encode(fields,process.Id);
+        Record("DCA_STATE_CANDIDATE_PREPARED bytes="+sdkCaptureBytes.Length+" source=ACTUAL_PUBLIC_SDK_GETTERS publication=PENDING_FINAL_VALIDATION durability=NOT_ESTABLISHED");
+    }
+    static void PublishStateCandidate(int outcome)
+    {
+        ProbeFiles.Require(ReferenceDcaStateCandidate.CanPublish(sdkStateCapture,sdkStateReload?sdkRestoreDisplayVerified:sdkStateEditChanged,outcome,sdkCaptureBytes!=null)&&sdkCapturePath!=null,"STATE_CAPTURE_SUCCESS_REQUIRED");
+        byte[] bytes=sdkCaptureBytes;ProbeFiles.Require(bytes.Length<=ReferenceDcaStateCandidate.MaximumBytes,"STATE_CAPTURE_BOUND");string path=ProbeFiles.Local(sdkCapturePath,false,false);
+        using(var output=new FileStream(path,FileMode.CreateNew,FileAccess.Write,FileShare.None)){output.Write(bytes,0,bytes.Length);output.Flush(true);}
+        Record("DCA_STATE_CANDIDATE_WRITTEN bytes="+bytes.Length+" sha256="+ProbeFiles.HashFile(path)+" file=LOG_SIDECAR_CANDIDATE_JSON requires-confirmed-launcher-exit0=True accepted-configuration=False");
+    }
+    static void LoadStateRestoreProjection()
+    {
+        ProbeFiles.Require(sdkStateReload&&sdkRestore==null&&ReferenceDcaStateRestore.Hash(sdkRestoreHash),"STATE_RESTORE_INPUT_ONCE");
+        sdkRestoreInput=new FileStream(ProbeFiles.Local(log.Name+".restore.json",true,false),FileMode.Open,FileAccess.Read,FileShare.Read);Inputs.Add(sdkRestoreInput);
+        ProbeFiles.Require(sdkRestoreInput.Length>0&&sdkRestoreInput.Length<=16384&&ReferenceDcaStateRestore.HeldHash(sdkRestoreInput)==sdkRestoreHash,"STATE_RESTORE_INPUT_PIN");sdkRestoreInput.Position=0;
+        byte[] bytes=new byte[(int)sdkRestoreInput.Length];int offset=0;while(offset<bytes.Length){int count=sdkRestoreInput.Read(bytes,offset,bytes.Length-offset);ProbeFiles.Require(count>0,"STATE_RESTORE_TRUNCATED");offset+=count;}
+        sdkRestore=ReferenceDcaStateRestore.Decode(bytes);
+        ProbeFiles.Require(sdkRestore.Field("product_sha256")==OriginalProductImportProbe.ArchiveHash&&sdkRestore.Field("dca_sha256")==Hashes[0]&&sdkRestore.Field("sdk_sha256")==Hashes[1]&&sdkRestore.Field("object_model_sha256")==Hashes[8]&&sdkRestore.Field("parameter_unique_id")==ReferenceDcaStateEdit.ParameterId&&sdkRestore.Field("parameter_internal_name")==ReferenceDcaStateEdit.InternalName,"STATE_RESTORE_REFERENCE_PINS");
+        Record("DCA_STATE_RESTORE_INPUT bytes="+bytes.Length+" sha256="+sdkRestoreHash+" artifact-sha256="+sdkRestore.Field("state_artifact_sha256")+" UUID-revision=SYNTHETIC_OFFLINE_FIXTURE accepted-configuration=False bus-capability=NONE");
+    }
+    static void CheckStateRestoreInput(){ProbeFiles.Require(sdkRestoreInput!=null&&sdkRestoreInput.Length>0&&sdkRestoreInput.Length<=16384&&ReferenceDcaStateRestore.HeldHash(sdkRestoreInput)==sdkRestoreHash,"STATE_RESTORE_INPUT_CHANGED");}
+    static string StateOriginalId(object id,Type exact){return new UTF8Encoding(false,true).GetString(Convert.FromBase64String(StableFixtureId(id,exact)));}
+    static object FindStateRestoreModuleParameter(object sdkDevice,Type instance,Type parameterCollection,MethodInfo find,MethodInfo identity)
+    {
+        Assembly sdk=sdkDevice.GetType().Assembly;Type module=sdk.GetType("Knx.Ets.Sdk.Project.ModuleInstance",true),modulesType=sdk.GetType("Knx.Ets.Sdk.Project.ModuleInstanceCollection",true);
+        MethodInfo modules=SdkDeviceMethod(sdkDevice.GetType(),0x060010e0),modulesParent=SdkDeviceMethod(modulesType,0x06001023),moduleParent=SdkDeviceMethod(module,0x06001001),parameters=SdkDeviceMethod(module,0x0600100b),parameterModule=SdkDeviceMethod(instance,0x060013cb),collectionModule=SdkDeviceMethod(parameterCollection,0x060013f6);
+        ProbeFiles.Require(module.MetadataToken==0x0200018f&&modulesType.MetadataToken==0x02000190&&modules.Name=="get_ModuleInstances"&&modules.ReturnType==modulesType&&modules.GetParameters().Length==0&&parameters.Name=="get_ParameterInstanceRefs"&&parameters.ReturnType==parameterCollection&&parameters.GetParameters().Length==0&&moduleParent.ReturnType==sdkDevice.GetType()&&modulesParent.ReturnType==sdkDevice.GetType()&&parameterModule.ReturnType==module&&collectionModule.ReturnType==module,"STATE_RESTORE_ORIGINAL_MODULE_ABI");
+        object values=modules.Invoke(sdkDevice,new object[0]);ProbeFiles.Require(values!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(values)&&values.GetType()==modulesType&&Object.ReferenceEquals(modulesParent.Invoke(values,new object[0]),sdkDevice),"STATE_RESTORE_MODULE_COLLECTION_OWNER");
+        var sequence=values as System.Collections.IEnumerable;ProbeFiles.Require(sequence!=null,"STATE_RESTORE_MODULE_ENUMERABLE");var iterator=sequence.GetEnumerator();int count=0,named=0,matches=0;object selected=null;
+        try{while(iterator.MoveNext()){
+            ProbeFiles.Require(++count<=1024,"STATE_RESTORE_MODULE_SCAN_BOUND");object current=iterator.Current;
+            ProbeFiles.Require(current!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(current)&&current.GetType()==module&&Object.ReferenceEquals(moduleParent.Invoke(current,new object[0]),sdkDevice),"STATE_RESTORE_MODULE_ORIGINAL_OWNER");
+            object members=parameters.Invoke(current,new object[0]);ProbeFiles.Require(members!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(members)&&members.GetType()==parameterCollection&&Object.ReferenceEquals(collectionModule.Invoke(members,new object[0]),current),"STATE_RESTORE_MODULE_PARAMETERS_OWNER");
+            object candidate=find.Invoke(members,new object[]{sdkRestore.Field("parameter_internal_name")});if(candidate==null)continue;named++;
+            ProbeFiles.Require(!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(candidate)&&candidate.GetType()==instance,"STATE_RESTORE_MODULE_PARAMETER_ORIGINAL_TYPE");
+            object uid=identity.Invoke(candidate,new object[0]);ProbeFiles.Require(uid is string&&((string)uid).Length<=256,"STATE_RESTORE_MODULE_UID_BOUND");
+            if(!String.Equals((string)uid,sdkRestore.Field("parameter_unique_id"),StringComparison.Ordinal))continue;
+            ProbeFiles.Require(Object.ReferenceEquals(parameterModule.Invoke(candidate,new object[0]),current),"STATE_RESTORE_PARAMETER_MODULE_OWNER");selected=candidate;matches++;ProbeFiles.Require(matches==1,"STATE_RESTORE_MODULE_PARAMETER_DUPLICATE");
+        }}finally{try{var disposable=iterator as IDisposable;if(disposable!=null)disposable.Dispose();}finally{Record("DCA_STATE_RESTORE_MODULE_SCAN modules="+count+" named-candidates="+named+" exact-UID-matches="+matches+" bound=1024 source=ORIGINAL_PUBLIC_SDK_MODULE_COLLECTIONS values=NOT_INSPECTED");}}
+        ProbeFiles.Require(matches==1&&selected!=null,"STATE_RESTORE_MODULE_PARAMETER_NOT_FOUND");return selected;
+    }
+    static void ApplyStateRestore(object sdkDevice)
+    {
+        ProbeFiles.Require(sdkStateReload&&sdkRestore!=null&&!sdkRestoreActive&&!sdkRestoreApplied&&!sdkUiCallAttempted&&sdkProductUiActive&&SdkHostPhaseEligible()&&contextLifetime&&ProductDependencyComplete&&sdkCaptureProject!=null&&sdkDeviceRetained!=null&&Object.ReferenceEquals(sdkDevice,sdkDeviceRetained[6]),"STATE_RESTORE_EXPLICIT_OWNER_SCOPE");CheckStateRestoreInput();
+        object project=sdkCaptureProject,installation=sdkDeviceRetained[2],device=sdkDeviceRetained[3],hp=sdkDeviceRetained[0];Assembly om=project.GetType().Assembly,ids=Assembly.LoadFrom(Path.Combine(stage,"Knx.Ets.Ids.dll"));
+        MethodInfo projectId=SdkDeviceMethod(project.GetType(),0x06002836),childId=SdkDeviceMethod(om.GetType("Knx.Ets.ObjectModel.DomObject",true),0x06000116),deviceMembers=SdkDeviceMethod(installation.GetType(),0x0600233d),application=SdkDeviceMethod(hp.GetType(),0x060003a5);
+        ProbeFiles.Require(StateOriginalId(projectId.Invoke(project,new object[0]),ids.GetType("Knx.Ets.Ids.Project.ProjectId",true))==sdkRestore.Field("project_id")&&StateOriginalId(childId.Invoke(installation,new object[0]),ids.GetType("Knx.Ets.Ids.Project.InstallationId",true))==sdkRestore.Field("installation_id")&&StateOriginalId(childId.Invoke(device,new object[0]),ids.GetType("Knx.Ets.Ids.Project.DeviceId",true))==sdkRestore.Field("device_id")&&StateOriginalId(application.Invoke(hp,new object[0]),ids.GetType("Knx.Ets.Ids.Product.ApplicationProgramId",true))==sdkRestore.Field("application_id")&&sdkDcaInstance.GetType().Assembly.GetName().Version.ToString()==sdkRestore.Field("dca_version")&&SdkContainsExact(sdkDeviceInstallations,installation)&&SdkContainsExact(deviceMembers.Invoke(installation,new object[0]),device),"STATE_RESTORE_GENUINE_CONTEXT_IDENTITY");
+        sdkRestoreActive=true;
+        try{
+            Assembly sdk=sdkDevice.GetType().Assembly;Type instance=sdk.GetType("Knx.Ets.Sdk.Project.ParameterInstanceRef",true),collectionType=sdk.GetType("Knx.Ets.Sdk.Project.ParameterInstanceRefCollection",true);
+            MethodInfo collection=SdkDeviceMethod(sdkDevice.GetType(),0x060010df),find=SdkDeviceMethod(collectionType,0x060013f9),read=SdkDeviceMethod(instance,0x060013cc),write=SdkDeviceMethod(instance,0x060013cd),identity=SdkDeviceMethod(instance,0x060013d0),name=SdkDeviceMethod(instance,0x060013d1),parent=SdkDeviceMethod(instance,0x060013ca),definition=SdkDeviceMethod(instance,0x060013cf);
+            ProbeFiles.Require(instance.MetadataToken==0x020001ca&&collectionType.MetadataToken==0x020001ce&&collection.ReturnType==collectionType&&find.Name=="FindByName"&&find.ReturnType==instance&&find.GetParameters().Length==1&&find.GetParameters()[0].ParameterType==typeof(string)&&write.Name=="set_Value"&&write.ReturnType==typeof(void)&&write.GetParameters().Length==1&&write.GetParameters()[0].ParameterType==typeof(object),"STATE_RESTORE_EXACT_PUBLIC_ABI");
+            object members=collection.Invoke(sdkDevice,new object[0]);ProbeFiles.Require(members!=null&&members.GetType()==collectionType&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(members),"STATE_RESTORE_ORIGINAL_PARAMETER_COLLECTION");
+            object parameter=find.Invoke(members,new object[]{sdkRestore.Field("parameter_internal_name")});
+            if(parameter==null)parameter=FindStateRestoreModuleParameter(sdkDevice,instance,collectionType,find,identity);
+            bool found=parameter!=null,proxy=found&&System.Runtime.Remoting.RemotingServices.IsTransparentProxy(parameter),original=found&&!proxy&&parameter.GetType()==instance,uidMatch=false,nameMatch=false,parentMatch=false;object actualUid=null,actualName=null;string identityStage="TYPE";
+            try{if(original){identityStage="UID";actualUid=identity.Invoke(parameter,new object[0]);uidMatch=actualUid is string&&String.Equals((string)actualUid,sdkRestore.Field("parameter_unique_id"),StringComparison.Ordinal);identityStage="INTERNAL_NAME";actualName=name.Invoke(parameter,new object[0]);nameMatch=actualName is string&&String.Equals((string)actualName,sdkRestore.Field("parameter_internal_name"),StringComparison.Ordinal);identityStage="PARENT";parentMatch=Object.ReferenceEquals(parent.Invoke(parameter,new object[0]),sdkDevice);identityStage="COMPLETE";}}
+            finally{string actualId=actualUid as string,uidHash="NOT_AVAILABLE";if(actualId!=null&&actualId.Length<=256){byte[] data=new UTF8Encoding(false,true).GetBytes(actualId);using(var hash=System.Security.Cryptography.SHA256.Create())uidHash=BitConverter.ToString(hash.ComputeHash(data)).Replace("-",String.Empty).ToLowerInvariant();}Record("DCA_STATE_RESTORE_PARAMETER_IDENTITY stage="+identityStage+" found="+found+" proxy="+proxy+" exact-type="+original+" uid-string="+(actualUid is string)+" uid-match="+uidMatch+" uid-length="+(actualId==null?-1:actualId.Length)+" uid-sha256="+uidHash+" name-string="+(actualName is string)+" name-match="+nameMatch+" parent-same="+parentMatch+" lookup=ORIGINAL_FindByName values=NOT_INSPECTED");}
+            ProbeFiles.Require(ReferenceDcaStateRestore.ExactParameterIdentity(original,uidMatch,nameMatch,parentMatch),"STATE_RESTORE_EXACT_PARAMETER_IDENTITY");
+            object actualDefinition=definition.Invoke(parameter,new object[0]);ProbeFiles.Require(actualDefinition!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actualDefinition)&&actualDefinition.GetType()==sdk.GetType("Knx.Ets.Sdk.Product.ParameterRef",true),"STATE_RESTORE_REAL_DEFINITION");
+            object before=read.Invoke(parameter,new object[0]);string value=sdkRestore.Field("value");ProbeFiles.Require(before is string&&((string)before==String.Empty||(string)before==value),"STATE_RESTORE_FRESH_OR_IDENTICAL_VALUE");
+            bool changed=!String.Equals((string)before,value,StringComparison.Ordinal);Record("DCA_STATE_RESTORE_SET_BEGIN original-public-token=060013CD changed="+changed+" before="+ReferenceDcaStateInspection.Encode((string)before)+" encoding=UTF8_BASE64 WriteAccess=ORIGINAL UI-not-invoked=True");
+            if(changed)write.Invoke(parameter,new object[]{value});
+            object after=read.Invoke(parameter,new object[0]);ProbeFiles.Require(after is string&&(string)after==value&&Object.Equals(identity.Invoke(parameter,new object[0]),sdkRestore.Field("parameter_unique_id"))&&Object.ReferenceEquals(parent.Invoke(parameter,new object[0]),sdkDevice),"STATE_RESTORE_ORIGINAL_SETTER_READBACK");sdkRestoredParameter=parameter;sdkRestoreApplied=true;
+            Record("DCA_STATE_RESTORE_SET_END SDK-value="+ReferenceDcaStateInspection.Encode((string)after)+" encoding=UTF8_BASE64 changed="+changed+" setter-attempts="+(changed?1:0)+" display=NOT_YET_OBSERVED accepted-configuration=False");
+        }finally{sdkRestoreActive=false;Record("DCA_STATE_RESTORE_SCOPE_END active=False UI-visible=NOT_YET_OBSERVED");}
+    }
+    static void VerifyStateRestoreDisplay(StateEditTarget target,FrameworkElement view)
+    {
+        ProbeFiles.Require(sdkStateReload&&sdkRestoreApplied&&!sdkRestoreActive&&!sdkRestoreDisplayVerified&&target!=null&&sdkProductUiActive&&SdkHostPhaseEligible()&&contextLifetime&&view.IsVisible&&Object.ReferenceEquals(target.Parameter,sdkRestoredParameter)&&target.Grid.IsVisible&&target.Row.IsVisible&&Object.ReferenceEquals(target.Row.Item,target.Source)&&OriginalRowBinding(target.Column.Binding as System.Windows.Data.Binding)&&target.Column.Visibility==Visibility.Visible,"STATE_RESTORE_VISIBLE_TARGET");
+        var text=target.Column.GetCellContent(target.Source) as System.Windows.Controls.TextBlock;var binding=text==null?null:System.Windows.Data.BindingOperations.GetBindingExpression(text,System.Windows.Controls.TextBlock.TextProperty);
+        var edits=target.Grid.Items as System.ComponentModel.IEditableCollectionView;object actual=target.Read.Invoke(target.Parameter,new object[0]);string expected=sdkRestore.Field("value");
+        ProbeFiles.Require(text!=null&&text.IsVisible&&PresentationSource.FromVisual(text)!=null&&Object.ReferenceEquals(text.DataContext,target.Source)&&binding!=null&&Object.ReferenceEquals(binding.ResolvedSource,target.Source)&&binding.ResolvedSourcePropertyName=="Description"&&binding.Status==System.Windows.Data.BindingStatus.Active&&text.Text==expected&&actual is string&&(string)actual==expected&&edits!=null&&!edits.IsEditingItem&&!target.Row.IsEditing&&!System.Windows.Controls.Validation.GetHasError(text)&&!System.Windows.Controls.Validation.GetHasError(target.Row)&&!System.Windows.Controls.Validation.GetHasError(target.Grid)&&target.Id==sdkRestore.Field("parameter_unique_id")&&target.Name==sdkRestore.Field("parameter_internal_name"),"STATE_RESTORE_ORIGINAL_DISPLAY_AND_SDK_VALUE");
+        sdkRestoreDisplayVerified=true;Record("DCA_STATE_RESTORE_DISPLAY_VERIFIED original-visible-Description=True SDK-value="+ReferenceDcaStateInspection.Encode((string)actual)+" encoding=UTF8_BASE64 UI-edit=NOT_PERFORMED artifact-sha256="+sdkRestore.Field("state_artifact_sha256")+" accepted-configuration=False");PrepareStateCandidate(target,(string)actual);
     }
     static void InspectOriginalStateBindings(FrameworkElement view,object device,System.Windows.Controls.Border inspectionHost)
     {
@@ -5042,7 +5198,7 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(parameter)&&parameter.GetType()==instance&&Object.ReferenceEquals(parent.Invoke(parameter,new object[0]),device),"STATE_INSPECTION_REAL_SAME_DEVICE_PARAMETER");
             object actual=value.Invoke(parameter,new object[0]);ProbeFiles.Require(actual==null||actual.GetType()==typeof(string),"STATE_INSPECTION_STRING_VALUE_ONLY");string id=unique.Invoke(parameter,new object[0]) as string,internalName=name.Invoke(parameter,new object[0]) as string;
             if(!emit(prefix+"SDK-parameter=GENUINE unique-id="+ReferenceDcaStateInspection.Encode(id)+" internal-name="+ReferenceDcaStateInspection.Encode(internalName)+" value-kind="+(actual==null?"NULL":"STRING")+" value="+ReferenceDcaStateInspection.Encode(actual==null?String.Empty:(string)actual)+" encoding=UTF8_BASE64 selection=CANDIDATE_NOT_YET_EDIT_QUALIFIED"))return false;
-            if(sdkStateEdit&&control=="DataGridTextColumn"&&ReferenceDcaStateEdit.Target(id,internalName,source.GetType().MetadataToken,member,actual as string))editTarget=new StateEditTarget{Grid=currentGrid,Row=currentRow,Column=currentColumn,Source=source,Parameter=parameter,Device=device,Read=value,Identity=unique,Parent=parent,Id=id,Name=internalName};
+            if((sdkStateEdit&&control=="DataGridTextColumn"&&ReferenceDcaStateEdit.Target(id,internalName,source.GetType().MetadataToken,member,actual as string)||sdkStateReload&&control=="DataGridTextColumn"&&id==sdkRestore.Field("parameter_unique_id")&&internalName==sdkRestore.Field("parameter_internal_name")&&source.GetType().MetadataToken==0x0200001f&&member=="Description"))editTarget=new StateEditTarget{Grid=currentGrid,Row=currentRow,Column=currentColumn,Source=source,Parameter=parameter,Device=device,Read=value,Identity=unique,Parent=parent,Id=id,Name=internalName};
             mapped++;if(offer=="TEXTBOX_TWO_WAY")editorMappings++;if(offer=="GRID_COLUMN_METADATA_TWO_WAY")columnMappings++;return true;
         };
         int maximum=sdkStateEditors?8192:512;
@@ -5076,7 +5232,7 @@ internal static class ProjectConstructorProbe
             else for(int i=children-1;i>=0;i--)pending.Push(Tuple.Create(System.Windows.Media.VisualTreeHelper.GetChild(node,i),next.Item2+1));
         }
         Record("DCA_STATE_INSPECTION_END visited="+visited+" bindings="+sources.Count+" mapped="+mapped+" textbox-two-way-mappings="+editorMappings+" grid-column-metadata-mappings="+columnMappings+" visible-textboxes="+textBoxes+" visible-grid-rows="+gridRows+" limited="+limited+" detail-chars="+detailChars+" outcome="+(mapped==0?"INCONCLUSIVE_NO_VISIBLE_MAPPING":sdkStateEditors?(editorMappings>0?"READ_ONLY_TEXTBOX_BINDING_OBSERVED":columnMappings>0?"READ_ONLY_GRID_COLUMN_METADATA":"INCONCLUSIVE_NO_EDIT_OFFER"):"READ_ONLY_CANDIDATES_OBSERVED")+" outer-container=DISABLED grid-edit=NOT_ATTEMPTED original-setters=NOT_CALLED change=NOT_RUN capture=NOT_RUN reload=NOT_RUN hardware=NOT_RUN");
-        if(sdkStateEdit)AttemptOriginalGridEdit(editTarget,view,inspectionHost);
+        if(sdkStateReload)VerifyStateRestoreDisplay(editTarget,view);else if(sdkStateEdit)AttemptOriginalGridEdit(editTarget,view,inspectionHost);
     }
     static int sdkUiBoundaryEntries;
     static void RunMissingSdkDeviceNegative(object actualDevice)
@@ -5116,6 +5272,7 @@ internal static class ProjectConstructorProbe
         try{
         try{
             Record("DCA_UI_CALLBACK_POLICY context-cap="+ContextAdapterLimit()+" project-reference-cap="+ProductUiProjectReferenceLimit()+" other-context-cap="+ProductUiOtherContextLimit()+" cache-cap="+ProductUiCacheRequestLimit()+" creator-cap="+ProductUiCreatorLimit()+" write-cap="+ProductUiWriteLimit()+" "+ContextBudgetModeDescription());
+            if(sdkStateReload)ApplyStateRestore(device);
             TraceDependencyGuard(unexpected,rejected,"DCA_UI_PRE");Record("DCA_UI_BEGIN token=0600001E devices=1 genuine=True application-match=NOT_QUALIFIED bus-capability=NONE");
             sdkUiCallAttempted=true;view=method.Invoke(sdkDcaInstance,new object[]{devices}) as FrameworkElement;sdkUiCallReturned=true;
             ProbeFiles.Require(view!=null&&view.GetType().Assembly==sdkDcaInstance.GetType().Assembly&&view.Parent==null,"DCA_UI_ORIGINAL_VIEW_REQUIRED");sdkUiOriginalViewReturned=true;
@@ -6385,6 +6542,7 @@ internal static class ProjectConstructorProbe
             }finally{sdkUiSuppressRepeatedHealthyFinal=prior;}
             if(suppress){try{Record((ownedMissingDevice?"SDK_DEVICE_NEGATIVE_FINAL_REVALIDATION exit=":ownedStableIdentity?"SDK_IDENTITY_FINAL_REVALIDATION exit=":ParameterNegativeProfile()?"SDK_READ_FINAL_REVALIDATION exit=":"SDK_UI_FINAL_REVALIDATION exit=")+outcome+" checks=EXECUTED healthy-repeat-logs=OMITTED fault-logs=UNCHANGED");}catch(Exception error){outcome=2;try{if(log!=null)Errors(error);}catch{}}}
         }
+        if(sdkStateCapture&&outcome==0){try{if(sdkStateReload)CheckStateRestoreInput();PublishStateCandidate(outcome);}catch(Exception error){outcome=2;try{if(log!=null)Errors(error);}catch{}}}
         return outcome;
     }
     static int MainCore(string[] args)
@@ -6393,7 +6551,7 @@ internal static class ProjectConstructorProbe
         try {
             ProbeFiles.Require((args.Length == 6 || args.Length == 8) && args[0] == "--mode" && args[2] == "--input" && args[4] == "--log", "PROJECT_ARGUMENTS");
             mode = args[1]; ProbeFiles.Require(EnumOnly || Original || OwnedProject || FactoryOnly, "PROJECT_MODE");
-            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-state-edit"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
+            ProbeFiles.Require(args.Length == 6 || (SdkProductMode&&args[6]=="--ui-state-reload"&&ReferenceDcaStateRestore.Hash(args[7])) || (SdkProductMode&&args[6]=="--ui-state-capture"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-edit"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-editors"&&args[7]=="600") || (SdkProductMode&&args[6]=="--ui-state-inspect"&&args[7]=="600") || (SdkProductMode&&args[6]=="--owned-ui-context-negative"&&args[7]=="missing-device") || (SdkProductMode&&args[6]=="--owned-stable-identity"&&args[7]=="observe") || (SdkProductMode&&args[6]=="--owned-parameter-negative"&&args[7]=="missing-definition") || (SdkProductMode&&args[6]=="--owned-selection-negative"&&(args[7]=="actual-product"||args[7]=="missing-context")) || (SdkProductMode&&args[6]=="--ui-seconds"&&args[7]=="600") || (mode == "owned-project-genuine-factory-resources" && args[6] == "--owned-resource-case" && Array.IndexOf(OwnedResourceCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-denied" && args[6] == "--owned-undo-case" && Array.IndexOf(OwnedUndoCases, args[7]) >= 0)
                 || (mode == "owned-project-undo-provider-factory" && args[6] == "--owned-factory-case" && Array.IndexOf(OwnedFactoryCases, args[7]) >= 0)
                 || (mode == "owned-project-large-string-cache-denied" && args[6] == "--owned-cache-case" && Array.IndexOf(OwnedCacheCases, args[7]) >= 0)
@@ -6403,8 +6561,10 @@ internal static class ProjectConstructorProbe
                 || (mode == "owned-project-content-store-reference" && args[6] == "--owned-content-store-case" && Array.IndexOf(OwnedContentCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case" && Array.IndexOf(OwnedStoreDiagnosticCases, args[7]) >= 0)
                 || (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case" && Array.IndexOf(new string[] { "missing", "size", "hash" }, args[7]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
-            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--ui-state-edit"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
+            if (args.Length == 8) { if(SdkProductMode){if(args[6]=="--ui-state-reload"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateCapture=true;sdkStateReload=true;sdkRestoreHash=args[7];}else if(args[6]=="--ui-state-capture"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;sdkStateCapture=true;}else if(args[6]=="--ui-seconds")sdkUiSeconds=600;else if(args[6]=="--ui-state-inspect"){sdkUiSeconds=600;sdkStateInspection=true;}else if(args[6]=="--ui-state-editors"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;}else if(args[6]=="--ui-state-edit"){sdkUiSeconds=600;sdkStateInspection=true;sdkStateEditors=true;sdkStateEdit=true;}else if(args[6]=="--owned-stable-identity")ownedStableIdentity=true;else if(args[6]=="--owned-ui-context-negative")ownedMissingDevice=true;else if(args[6]=="--owned-parameter-negative")ownedParameterNegative=true;else ownedSelectionNegativeCase=args[7];}else if (ExistsOwned) ownedExistsCase = args[7]; else if (ContentDiagnosticsOwned) ownedContentDiagnosticCase = args[7]; else if (ContentOwned) ownedContentCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-store-diagnostic-case") ownedStoreDiagnosticCase = args[7]; else if (mode == "owned-project-context-xml-registration" && args[6] == "--owned-xml-pin-case") ownedXmlPinCase = args[7]; else if (ContextOwned) ownedContextCase = args[7]; else if (CacheOwned) ownedCacheCase = args[7]; else if (UndoFactoryOwned) ownedFactoryCase = args[7]; else if (UndoDeniedOwned) ownedUndoCase = args[7]; else ownedResourceCase = args[7]; }
             log = new FileStream(ProbeFiles.Local(args[5], false, false), FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            if(sdkStateCapture)sdkCapturePath=ProbeFiles.Local(log.Name+".candidate.json",false,false);
+            if(sdkStateReload)LoadStateRestoreProjection();
             Record("PROJECT_START mode=" + mode + " original-constructor-ready=" + OriginalConstructorReady + " qualification=NOT_ESTABLISHED");
             // Source-frozen readiness precedes input pins and every original load.
             if (Original) ProbeFiles.Require(OriginalConstructorReady, "ENUM_LITERAL_NOT_REVIEWED");
@@ -6465,7 +6625,7 @@ internal static class ProjectConstructorProbe
             CheckUndoProvider("PROCESS_FINAL"); CheckUndoFactory("PROCESS_FINAL"); CheckCache("PROCESS_FINAL"); CheckContextArguments("PROCESS_FINAL");
             ProbeFiles.Require(!unexpected && !rejected, "PROJECT_DEPENDENCY_BLOCKER");
             if(CompactProductDiagnostics())Record("HEALTHY_DIAGNOSTIC_SUMMARY distinct-known-records="+healthyLog.Kinds+" repeated-healthy-records-omitted="+healthyLog.Omitted+" first-provenance="+(sdkStateEdit?"RETAINED_EXCEPT_EDIT_HEALTHY_DETAILS":"RETAINED")+" edit-healthy-reply-details-omitted="+sdkEditHealthyRepliesOmitted+" errors-and-validation=UNCHANGED");
-            Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui="+UiOutcome()+" state="+(sdkStateEditChanged?"UI_EDIT_OBSERVED_NOT_CAPTURED":sdkStateEditAttempted?"UI_EDIT_ATTEMPT_NOT_CONFIRMED":"NOT_RUN")+" hardware=NOT_RUN");
+            Record("PROJECT_RESULT exit=" + result + " metadata-only=" + EnumOnly + " qualification=NOT_ESTABLISHED ui="+UiOutcome()+" state="+(sdkRestoreDisplayVerified?"RELOAD_DISPLAY_VERIFIED_CANDIDATE_PENDING":sdkStateEditChanged?"UI_EDIT_OBSERVED_NOT_CAPTURED":sdkStateEditAttempted?"UI_EDIT_ATTEMPT_NOT_CONFIRMED":"NOT_RUN")+" hardware=NOT_RUN");
             if(CompactProductDiagnostics())sdkUiMainCoreFinalRecorded=true;
             return result;
         } catch (Exception error) { if (log != null) { try { Errors(error); } catch (IOException) { } } Console.WriteLine("PROJECT_FAILURE " + error.GetType().FullName + " " + Text(error.Message)+" ui="+UiOutcome()); return 2; }

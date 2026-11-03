@@ -51,6 +51,7 @@ internal static class ProbeLauncher
         File.Delete(ProbeFiles.Local(marker,true,false));ProbeFiles.Local(root,true,true);Directory.Delete(root,false);
         Console.WriteLine("LAUNCH_PRODUCT_TEMP removed=True files="+files.Count+" directories="+directories.Count+" bytes="+bytes+" evidence=conversion-temp-evidence.txt descendants=NOT_CONTAINED");
     }
+    static bool StateReloadHash(string value){if(value==null||value.Length!=64)return false;foreach(char c in value)if(!(c>='0'&&c<='9'||c>='a'&&c<='f'))return false;return true;}
     internal static int Main(string[] args)
     {
         Process child = null; bool started = false, confirmed = false;
@@ -60,8 +61,9 @@ internal static class ProbeLauncher
             bool stableIdentity=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-stable-identity"&&args[9]=="observe";
             bool parameterNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-parameter-negative"&&args[9]=="missing-definition";
             bool selectionNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-selection-negative"&&(args[9]=="actual-product"||args[9]=="missing-context");
-            bool stateInspection=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&(args[8]=="--ui-state-inspect"||args[8]=="--ui-state-editors"||args[8]=="--ui-state-edit")&&args[9]=="600";
-            bool interactiveProductUi=stateInspection||(args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-seconds"&&args[9]=="600");
+            bool stateReload=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-state-reload"&&StateReloadHash(args[9]);
+            bool stateInspection=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&(args[8]=="--ui-state-inspect"||args[8]=="--ui-state-editors"||args[8]=="--ui-state-edit"||args[8]=="--ui-state-capture")&&args[9]=="600";
+            bool interactiveProductUi=stateReload||stateInspection||(args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-seconds"&&args[9]=="600");
             int seconds;
             ProbeFiles.Require((args.Length == 8 || args.Length == 10) && args[0] == "--seconds" && Int32.TryParse(args[1], out seconds) && seconds >= 1 && seconds <= (interactiveProductUi ? 660 : args[3] == "original-sdk-product-store-fixture" ? 45 : 30) && args[2] == "--mode" && args[4] == "--input" && args[6] == "--log", "LAUNCH_ARGUMENTS");
             // Definite assignment is explicit for the C#5 compiler after compound validation.
@@ -94,6 +96,8 @@ internal static class ProbeLauncher
             ProbeFiles.Require(!emptyContainer || seconds <= (interactiveProductUi ? 660 : productImport ? 45 : 15), "FACTORY_CONTAINER_DEADLINE");
             ProbeFiles.Require(project || mode == "neutral" || mode == "original" || mode == "original-initialize" || mode == "owned-initialize" || mode == "owned-Success" || mode == "owned-Throw" || mode == "owned-Missing" || mode == "owned-Hang" || mode == "owned-Flood", "LAUNCH_MODE");
             string input = ProbeFiles.Local(args[5], true, true), log = ProbeFiles.Local(args[7], false, false);
+            if(stateReload){ProbeFiles.Local(log+".restore.json",true,false);ProbeFiles.Local(log+".candidate.json",false,false);}
+            if(stateInspection&&args[8]=="--ui-state-capture")ProbeFiles.Local(log+".candidate.json",false,false);
             string root = Path.GetDirectoryName(typeof(ProbeLauncher).Assembly.Location);
             string exe = ProbeFiles.Local(Path.Combine(root, emptyContainer ? "ProjectFactoryContainerProbe.exe" : factoryBinding ? "ProjectFactoryBindingProbe.exe" : mode == "neutral" ? "NeutralStaHost.exe" : project ? "ProjectConstructorProbe.exe" : "ConstructorProbe.exe"), true, false);
             ProbeFiles.Require(ProbeFiles.HashFile(exe) == ProbeFiles.OwnedHash(exe), "LAUNCH_CHILD_HASH");
@@ -101,7 +105,7 @@ internal static class ProbeLauncher
             child.StartInfo.Arguments = mode == "neutral" ? "--seconds 1 --log " + ProbeFiles.Quote(log)
                 : "--mode " + ProbeFiles.Quote(mode) + " --input " + ProbeFiles.Quote(input) + " --log " + ProbeFiles.Quote(log);
             ProbeFiles.Require(!interactiveProductUi||seconds==660,"PRODUCT_UI_EXPLICIT_DEADLINE");
-            if(interactiveProductUi)child.StartInfo.Arguments+=stateInspection?" "+ProbeFiles.Quote(args[8])+" 600":" --ui-seconds 600";
+            if(interactiveProductUi)child.StartInfo.Arguments+=stateReload?" --ui-state-reload "+ProbeFiles.Quote(args[9]):stateInspection?" "+ProbeFiles.Quote(args[8])+" 600":" --ui-seconds 600";
             if(parameterNegative)child.StartInfo.Arguments+=" --owned-parameter-negative missing-definition";
             if(stableIdentity)child.StartInfo.Arguments+=" --owned-stable-identity observe";
             if(missingDevice)child.StartInfo.Arguments+=" --owned-ui-context-negative missing-device";

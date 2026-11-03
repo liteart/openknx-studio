@@ -81,12 +81,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; read-only original UI inspection only |
-| Source commit(s) | Worktree based on `1325a53`; source audit below |
-| Tests executed | Windows read-only inspections and owned regression; required TEST-001–003 NOT RUN |
-| Evidence location | Private run `4913a4b620f9` and source audit below |
+| Implementation / report status | In progress; scalar edit, capture, restart and no-op observed; blob-negative work pending |
+| Source commit(s) | `2f56e6a`, `433ae95`, plus host worktree audited below |
+| Tests executed | Windows reference restart and no-op observed; 423 owned cases and focused negative checks passed; missing blob pending |
+| Evidence location | Private Task012 and Windows run evidence identified below |
 | Acceptance criteria met | None asserted |
-| Technical outcome | Two SDK parameter mappings observed; editable operation and round-trip not established |
+| Technical outcome | One synthetic-automation reference value round-tripped across Rust/macOS and Windows; production state and hardware not qualified |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Unassigned |
 
@@ -304,3 +304,54 @@ Owned Windows regression `dca012f12701` reported 423 passing cases and task
 exit 0. The collector again expected an absent `sdk-project.log`; the driver
 output was verified separately, with no owned process remaining, and the task
 was removed. No original DCA or hardware was exercised by this owned suite.
+
+Capture run `dca012c12801` repeated the original automated edit and exported
+a 914-byte bounded candidate after final host validation. The launcher and
+child exited 0; all pinned inputs passed and the test task/processes were
+removed. A private copy matched the recorded candidate SHA-256
+`4befada7117cd39d8f5088c35c3f360f4036e2b6039cd057da9939706492965c`.
+The candidate is not an accepted or durable Rust state. Private log SHA-256:
+`644df8dd619b23655ddba75059bc3fe9535205872aeac60d10173e1165335dec`;
+source audit SHA-256:
+`dc13815943b5aa05843ca0e49caed8e7f4f571530a305be9ac51ae9bb73823f1`.
+
+On macOS the Rust proof imported that candidate after independent exit and
+identity checks, saved an immutable canonical artifact (SHA-256
+`fa4b1a1d3acd4bd5a6a90f4bfda505bce6335c18678ed5bcd2ff256864381fb5`),
+and exported a restore request in a fresh process (SHA-256
+`e0dbbce3dde67899588fd95b5e0bb0dfcbdbd262a2601c91146318e8e1d4c8f9`).
+The editor UUID and revision are explicitly synthetic fixture provenance; this
+is not an accepted Git configuration. Reimport returned unchanged.
+
+Windows restore attempt `dca012a13001` verified the request hash but rejected
+the parameter identity before invoking the setter; it exited 2. Input pins and
+cleanup passed. It did not display or restore the value. Private log SHA-256:
+`15dca972fd08dac34d2a489f6eb2c25d5ca9ede6ed69b283852d15f232040791`;
+source audit SHA-256:
+`4d604514db677e6b3a4a4031506e26797256922c5a0365836d03f77e1faba6db`.
+
+Run `dca012a13101` established that device-level `FindByName` did not find the
+module-scoped parameter. In successful run `dca012a13201`, the fresh host
+enumerated the original SDK's 80 module instances, found exactly one complete
+UID match, and verified its name, module and parent device before invoking the
+public SDK setter. The original DCA then displayed the stored value and the
+SDK getter matched it. The fresh host exited 0, pinned inputs passed, and the
+test task/processes were removed. This proves the stated reference-fixture
+restart path, not a physical device or production configuration commit.
+Private log SHA-256:
+`4850754cdfda1f0ce9a23c0afd8b4e12d35f38689793dda752b6955b030221d4`;
+source audit SHA-256:
+`bd8c430ed44679c5dfeeaa2591e8b7b70de320fdd56adf4d46d68169c3b12b36`.
+The independently collected post-reload candidate SHA-256 is
+`714bb8184b2832a6ba5ce3994256d521a33f3b6e0c25104570d9747017fd55df`;
+Rust reimported that candidate with the new run's independent process and
+identity evidence and returned `unchanged`, preserving the same artifact
+hash, size, inode, modification time and store entry count. Private no-op
+report SHA-256:
+`2aa8aa37541436698795a726a46bc64293e62745b35d1e1b89cf989b94e2feb7`.
+Remaining acceptance and negative checks require review.
+
+Windows owned regression `dca012f13201` reported 423 passing cases and task
+exit 0, with no owned process remaining. The collector again expected an absent
+`sdk-project.log`; the driver output was checked separately and the task was
+removed. This owned suite does not exercise the original DCA or hardware.
