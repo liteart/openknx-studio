@@ -221,3 +221,86 @@ built on Windows in run `dca012e11801`. The original edit attempt again exited
 Input hashes passed and the test process and task were removed. Private log
 SHA-256:
 `4cd50d27d7f96076c768f5b0f3a4ee797758688c478923b90ae6107d319e2388`.
+
+Static PE inspection of the 50 privately copied, hash-verified ETS6 DLLs found
+one direct `IDispatcher` implementer: `Knx.Ets.ViewModel.WpfDispatcherService`.
+The inspected healthy path uses the original `WindowLock` counter, queues
+events while nested, and drains them in order at the outermost release. The
+provider was not executed or redistributed. Windows run `dca012e11901` with
+an owned bounded adapter exited 2 because the host's edit-phase admission
+guard denied `EnableDefer` before entering the adapter. The SDK value stayed
+unchanged. This is not proof of a completed edit or of general provider
+equivalence. Private original log SHA-256:
+`33e79489deea6670c2e5f32e014a1531867198c9159a955cb362deeedf76268c`;
+source audit SHA-256:
+`4f2cf4ff705631e5d8d92ab5a4f3891f7902e974e0bc033aef689039d78700d9`.
+
+Run `dca012e12001` passed the dispatcher scope admission (two calls, no pending
+actions or dispatcher fault), then failed because the controlled write fixture
+rejected the genuine `ParameterInstance` as an untracked object. A subsequent
+phase error followed its sticky fault. The SDK value remained unchanged and
+the run exited 2. The input hashes and cleanup passed. Private log SHA-256:
+`de7487a7883ecb15d540ad69baaceea3883174f1cc79bb55c709d32137062f3f`;
+source audit SHA-256:
+`e6e77d97922d03eda7a4d111a47e4c51ee4f5dcaad64181b442cdcd5145bf024`.
+
+Run `dca012e12201` read back the requested test text from the genuine SDK
+parameter, but then `SetDirty` rejected a genuine `ProjectTrace`; the row
+commit failed and the process exited 2. This is a partial in-memory fixture
+mutation, not an accepted change, rollback, capture or durable save. Input
+hashes and process cleanup passed. Private log SHA-256:
+`3a6ec17767f4f6fc9be1e6f4d0772372bc5489e2580da2c988216c6471a0ec64`;
+source audit SHA-256:
+`2a49df0396eda3fb31aa37f38b08bbc1b34ca98d2700d9d2167b9d596ff63ad6`.
+
+Run `dca012e12301` read back the requested SDK value, observed the row edit
+end with no validation errors, but the previously retained cell still reported
+`IsEditing=true`. The owned success guard therefore failed and the run exited
+2. Whether that cell remains the live grid cell is not yet established; no
+accepted edit, capture or persistence is asserted. Input pins and cleanup
+passed. Private log SHA-256:
+`eed8b32aa187a57ec916b5978c8b9457814c0967f743c177096c8f96dcf731ed`;
+source audit SHA-256:
+`0ca8c5d6f47ff52240b8be1ea35eac1794ead5254f31bc0a50a6ba2aac7a7b5c`.
+
+Run `dca012e12401` re-resolved the exact live cell: it was the same connected
+cell, still editing with a different TextBox. The stale-cell hypothesis is
+therefore contradicted for this run. The SDK value matched, row editing had
+ended and no validation errors were observed, but the UI success guard failed
+and the run exited 2. Input pins and cleanup passed; no state capture is
+claimed. Private log SHA-256:
+`b43fb1ac936e99c9a228991b62a505a0cc3c864da27aec7515ee53f727f4d671`;
+source audit SHA-256:
+`bbd39f2b5cbae507decb1d8729cfbf3e5cbe3dbfe24293fd428fa283e614d09f`.
+
+Run `dca012e12501` stopped before sending Tab because the required keyboard
+focus was no longer inside the grid after Enter (`STATE_EDIT_TAB_REAL_FOCUS_SCOPE`,
+exit 2). It did not complete the live-cell or SDK readback checks; the SDK
+state after this attempt is not asserted. Input pins and cleanup passed.
+Private log SHA-256:
+`e7b9fc3e97e43dd36dec44e4bd73dc8d5b2cfe625006999ce737ed7c2dce5cac`;
+source audit SHA-256:
+`2c0b0d0955a3beec81e822462f590ffa6e1307c4b66003dca3d100ab78d79e56`.
+
+Run `dca012e12601` re-resolved the exact live cell and attempted to focus it;
+the grid acquired focus but the cell itself did not. The explicit focus guard
+stopped before Tab (exit 2), so final SDK/readback and capture are not asserted.
+Input pins and cleanup passed. Private log SHA-256:
+`ff52bb62df58ada325f1bae5b22ef437e7c2e5b9ac2074047f50cf01cb181361`;
+source audit SHA-256:
+`f7be853a1c2be7fbea9ebfbaaf20e3a9a2ca69f0a1384504bcd506f8bcad4d19`.
+
+Run `dca012e12701` completed the automated fixture edit through the original
+WPF TextBox, Enter and Tab path. The live original cell displayed the requested
+text and was no longer editing; original SDK readback matched, row edit ended,
+and no validation errors were reported. The process exited 0, original input
+hashes passed, and its task and processes were removed. This establishes one
+automated in-memory edit only: capture, durable file, no-op and restart tests
+remain NOT RUN. Private log SHA-256:
+`ea1cdf8b1d0624c7348c48c40edb17d604c26c3a611c5218cf2cf5075350e71c`;
+source audit SHA-256:
+`3751be30cfc95f6a7b4d7b7cb12145e35543be5f6addc444809c2d331fc39b88`.
+Owned Windows regression `dca012f12701` reported 423 passing cases and task
+exit 0. The collector again expected an absent `sdk-project.log`; the driver
+output was verified separately, with no owned process remaining, and the task
+was removed. No original DCA or hardware was exercised by this owned suite.

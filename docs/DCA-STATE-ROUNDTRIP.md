@@ -100,5 +100,10 @@ run `dca012e11801` reached the SDK and failed because the host does not yet
 support `IDispatcher.EnableDefer`; the SDK value remained unchanged. The
 original `DispatcherDeferrer` pairs EnableDefer with DisableDefer, but the
 actual provider's event and nesting semantics are not yet established. No
-placeholder is substituted. The task record contains earlier failed attempts
-and exact evidence hashes; capture and restart remain NOT RUN.
+placeholder is substituted. A subsequent bounded adapter implements the
+statically observed owner-thread deferral path; unsupported and ambiguous
+failure cases remain fail-closed. Windows run `dca012e12701` completed one
+automated edit, displayed the requested value in the original grid and read
+the same value from the SDK. It ended normally. This is not a human edit or a
+durable save. The task record contains earlier failed attempts and exact
+evidence hashes; capture and restart remain NOT RUN.

@@ -78,6 +78,8 @@ internal static class ReferenceDcaStateEdit
     {return expected!=null&&Object.ReferenceEquals(expected,actual)&&enter;}
     internal static bool EndedFromEvents(bool editing,bool commit,bool cancelled){return !editing&&commit&&!cancelled;}
     internal static bool FocusReady(bool active,bool editor,bool grid,bool sameCell){return active&&editor&&grid&&sameCell;}
+    internal static bool DirtyTarget(bool phase,bool throughDevice,bool throughProject,string actual){return phase&&throughDevice&&throughProject&&String.Equals(actual,ParameterId,StringComparison.Ordinal);}
+    internal static bool LiveCellIdentity(bool content,bool column,bool item,bool row,bool grid){return content&&column&&item&&row&&grid;}
     internal static bool Changed(bool began,bool cell,bool row,bool valid,string actual)
     {return began&&cell&&row&&valid&&actual==FixtureText;}
 }
@@ -625,12 +627,38 @@ internal sealed class ProjectContentReference
     internal void Complete(bool accepted) { lock (sync) { if (accepted && !faulted && Proxy.State.Entries == 0 && !Proxy.State.Faulted) replies++; } }
 }
 
+// Owned owner-thread bounds around verified dispatcher event-deferral semantics.
+// The counter is the original pinned public Common.WindowLock, not copied vendor code.
+internal sealed class BoundedDispatcherEvents
+{
+    readonly int owner=Thread.CurrentThread.ManagedThreadId;readonly Func<bool> eligible;readonly Func<uint> depth;readonly Action increase,decrease;readonly Action<Action> dispatch;readonly object retained;
+    readonly List<Action> pending=new List<Action>();bool fault,flushing;int calls,active,delivered;
+    internal BoundedDispatcherEvents(object counter,Func<uint> read,Action enter,Action exit,Action<Action> invoke,Func<bool> phase)
+    {retained=counter;depth=read;increase=enter;decrease=exit;dispatch=invoke;eligible=phase;}
+    void Require(bool condition,string code){if(!condition){fault=true;throw new NotSupportedException(code);}}
+    void Enter(){if(calls<1025)calls++;Require(!fault&&Thread.CurrentThread.ManagedThreadId==owner&&eligible()&&calls<=1024,"SDK_DEFER_OWNER_LIFETIME_OR_BUDGET");}
+    internal bool Deferring{get{Enter();try{return depth()>0;}catch{fault=true;throw;}}}
+    internal void Enable(){Enter();try{Require(!flushing&&depth()<16,"SDK_DEFER_DEPTH_OR_REENTRY");increase();}catch{fault=true;throw;}}
+    internal void Disable(){Enter();try{
+        Require(!flushing&&depth()>0,"SDK_DEFER_UNBALANCED_OR_REENTRY");decrease();if(depth()!=0)return;
+        flushing=true;try{for(int i=0;i<pending.Count;i++)Deliver(pending[i]);pending.Clear();}finally{flushing=false;}
+    }catch{fault=true;throw;}}
+    internal void Event(Action action){Enter();try{Require(action!=null,"SDK_DEFER_NULL_ACTION");if(depth()>0){Require(!flushing&&pending.Count<256,"SDK_DEFER_QUEUE_BOUND");pending.Add(action);}else Deliver(action);}catch{fault=true;throw;}}
+    void Deliver(Action action){Require(active<16&&delivered<1024,"SDK_DEFER_ACTION_BOUND");active++;try{dispatch(action);delivered++;Require(!fault,"SDK_DEFER_CAUGHT_CALLBACK_FAULT");}catch{fault=true;throw;}finally{active--;}}
+    internal void CheckFinal(){Require(Thread.CurrentThread.ManagedThreadId==owner&&!fault&&depth()==0&&pending.Count==0&&active==0&&!flushing,"SDK_DEFER_FINAL_DENIAL");GC.KeepAlive(retained);}
+    internal int Pending{get{return pending.Count;}}internal int Calls{get{return calls;}}internal int Delivered{get{return delivered;}}internal bool Faulted{get{return fault;}}
+}
+
 // Necessary host adaptation: real WPF dispatcher and an explicitly empty data-store fixture.
 internal sealed class SdkHostProxy : RealProxy
 {
     readonly object sync=new object();readonly int owner=Thread.CurrentThread.ManagedThreadId;readonly Type contract;readonly string role;
     readonly MethodInfo query,invoke;readonly object emptyStores;readonly Action<string> record;readonly Dispatcher dispatcher;
     int entries,replies,lifetime;bool fault,inAction;
+    readonly Dictionary<MethodInfo,bool> deferReplyKinds=new Dictionary<MethodInfo,bool>();
+    BoundedDispatcherEvents deferred;MethodInfo deferEnable,deferDisable,deferQuery,deferEvent;int HostLimit{get{return deferred==null?16:1024;}}
+    internal void ConfigureDefer(MethodInfo[] methods,object counter,Func<uint> depth,Action increase,Action decrease)
+    {ProbeFiles.Require(role=="DISPATCHER"&&lifetime==0&&deferred==null&&methods.Length==4,"SDK_DEFER_CONFIGURE_ONCE");deferEnable=methods[0];deferDisable=methods[1];deferQuery=methods[2];deferEvent=methods[3];deferred=new BoundedDispatcherEvents(counter,depth,increase,decrease,delegate(Action action){ProbeFiles.Require(dispatcher.CheckAccess()&&!dispatcher.HasShutdownStarted&&!dispatcher.HasShutdownFinished,"SDK_DEFER_REAL_WPF_OWNER");action();},ProjectConstructorProbe.StateEditDispatcherEligible);}
     internal SdkHostProxy(Type type,string kind,MethodInfo getter,MethodInfo action,object empty,Action<string> output):base(type)
     {contract=type;role=kind;query=getter;invoke=action;emptyStores=empty;record=output;if(kind=="DISPATCHER"){dispatcher=Dispatcher.CurrentDispatcher;ProbeFiles.Require(dispatcher.CheckAccess()&&Thread.CurrentThread.GetApartmentState()==ApartmentState.STA,"SDK_REAL_WPF_STA");}}
     internal bool Faulted{get{lock(sync){return fault;}}}
@@ -655,26 +683,27 @@ internal sealed class SdkHostProxy : RealProxy
     public override IMessage Invoke(IMessage message)
     {
         using(IDisposable parameterInvocation=ProjectConstructorProbe.AcquireParameterReadInvocation()){
-        int count;lock(sync){if(entries<17)entries++;count=entries;}int previous=0;bool suspended=false,prepared=false,owns=false;MethodInfo method=null;
-        try{bool eligible=ProjectConstructorProbe.SdkHostPhaseEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
-            lock(sync){if(count>16||fault||lifetime!=1||Thread.CurrentThread.ManagedThreadId!=owner||!eligible||excluded){fault=true;throw new NotSupportedException("SDK_HOST_PHASE_OR_BUDGET:"+role);}}
-            method=ProjectContentDenyProxy.CaptureContentMethod(message);bool action=invoke!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,invoke);ProbeFiles.Require(action||ProjectConstructorProbe.ExactRuntimeMethod(method,query),"SDK_HOST_UNSUPPORTED:"+role);
+        int limit=HostLimit;int count;lock(sync){if(entries<limit+1)entries++;count=entries;}int previous=0;bool suspended=false,prepared=false,owns=false;MethodInfo method=null;
+        try{bool eligible=ProjectConstructorProbe.SdkHostPhaseEligible(),deferEligible=ProjectConstructorProbe.StateEditDispatcherEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
+            lock(sync){if(count>limit||fault||lifetime!=1||Thread.CurrentThread.ManagedThreadId!=owner||!eligible||excluded){fault=true;throw new NotSupportedException("SDK_HOST_PHASE_OR_BUDGET:"+role);}}
+            method=ProjectContentDenyProxy.CaptureContentMethod(message);bool enable=deferred!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,deferEnable),disable=deferred!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,deferDisable),deferState=deferred!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,deferQuery),eventCall=deferred!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,deferEvent);bool action=eventCall||(invoke!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,invoke));ProbeFiles.Require(enable||disable||deferState||action||ProjectConstructorProbe.ExactRuntimeMethod(method,query),"SDK_HOST_UNSUPPORTED:"+role);
             var call=(IMethodCallMessage)message;int arity=action?1:0;ProbeFiles.Require(call.MethodName==method.Name&&call.ArgCount==arity&&call.InArgCount==arity,"SDK_HOST_MESSAGE_SHAPE");object[] values=call.Args;ProbeFiles.Require(values!=null&&values.Length==arity,"SDK_HOST_ARGUMENT_COUNT");object argument=action?values[0]:null;
             if(action)ProbeFiles.Require(argument!=null&&!System.Runtime.Remoting.RemotingServices.IsTransparentProxy(argument)&&argument.GetType()==typeof(Action),"SDK_HOST_EXACT_ACTION");
             var context=call.LogicalCallContext;string uri=call.Uri;ProbeFiles.Require(uri==null||uri.Length<=1024,"SDK_HOST_URI_BOUND");var snapshot=new ValidatorCallSnapshot(method,context,uri,action?new object[]{argument}:new object[0],action?new Type[]{typeof(Action)}:Type.EmptyTypes);
             object result;
-            if(role=="DISPATCHER"){
+            if(enable||disable||deferState||eventCall){ProbeFiles.Require(deferEligible,"SDK_DEFER_EXPLICIT_EDIT_PHASE");if(suspended){ProjectConstructorProbe.RestoreProjectResourceCallback(previous);suspended=false;}if(enable){deferred.Enable();result=null;}else if(disable){deferred.Disable();result=null;}else if(deferState)result=deferred.Deferring;else{deferred.Event((Action)argument);result=null;}}
+            else if(role=="DISPATCHER"){
                 if(action){lock(sync){ProbeFiles.Require(!inAction,"SDK_HOST_NESTED_ACTION");inAction=true;owns=true;}if(suspended){ProjectConstructorProbe.RestoreProjectResourceCallback(previous);suspended=false;}dispatcher.Invoke((Action)argument,DispatcherPriority.Send,CancellationToken.None,TimeSpan.FromSeconds(2));result=null;}
                 else result=dispatcher.CheckAccess();
             }else result=emptyStores;
-            lock(sync){ProbeFiles.Require(!fault,"SDK_HOST_CAUGHT_FAULT");}record("SDK_HOST_REPLY role="+role+" method="+ProjectConstructorProbe.Text(method.Name)+" source="+(role=="DISPATCHER"?"REAL_WPF_DISPATCHER":"EXPLICIT_EMPTY_ENUMERATION_FIXTURE")+" values=NOT_LOGGED");
+            lock(sync){ProbeFiles.Require(!fault,"SDK_HOST_CAUGHT_FAULT");}bool logReply=true;if(deferred!=null)lock(sync){logReply=!deferReplyKinds.ContainsKey(method);if(logReply)deferReplyKinds.Add(method,true);}if(logReply)record("SDK_HOST_REPLY role="+role+" method="+ProjectConstructorProbe.Text(method.Name)+" source="+(role=="DISPATCHER"?"REAL_WPF_DISPATCHER":"EXPLICIT_EMPTY_ENUMERATION_FIXTURE")+" values=NOT_LOGGED");
             IMessage response=new ReturnMessage(result,new object[0],0,context,snapshot);prepared=true;return response;
-        }catch{lock(sync){fault=true;}if(count<=16)record("SDK_HOST_DENIED role="+role+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED");throw;}
+        }catch{lock(sync){fault=true;}if(count<=limit)record("SDK_HOST_DENIED role="+role+" "+ProjectContentDenyProxy.ContentMethodDescriptor(method,contract)+" values=NOT_INSPECTED");throw;}
         finally{try{if(suspended)ProjectConstructorProbe.RestoreProjectResourceCallback(previous);}catch{lock(sync){fault=true;}throw;}finally{lock(sync){if(owns)inAction=false;if(prepared&&!fault)replies++;}}}
 
         }
     }
-    internal void Audit(string phase){int e,r,l;bool f,active;lock(sync){e=entries;r=replies;l=lifetime;f=fault;active=inAction||contextActionsActive!=0;}try{if(f||e>16||r>e||active||ProjectConstructorProbe.SdkAuditLog(phase))record("SDK_HOST_AUDIT role="+role+" phase="+phase+" entries="+e+" replies="+r+" fault="+f+" lifetime="+l+" context-actions="+contextActions+" context-action-replies="+contextActionReplies);}finally{if(f||e>16||r>e||active||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&l!=2))throw new NotSupportedException("SDK_HOST_FINAL_DENIAL:"+role);GC.KeepAlive(dispatcher);GC.KeepAlive(emptyStores);}}
+    internal void Audit(string phase){int e,r,l;bool f,active;lock(sync){e=entries;r=replies;l=lifetime;f=fault;active=inAction||contextActionsActive!=0;}try{if(f||e>HostLimit||r>e||active||ProjectConstructorProbe.SdkAuditLog(phase))record("SDK_HOST_AUDIT role="+role+" phase="+phase+" entries="+e+" replies="+r+" fault="+f+" lifetime="+l+" context-actions="+contextActions+" context-action-replies="+contextActionReplies);}finally{try{if(deferred!=null){try{deferred.CheckFinal();}finally{if(deferred.Faulted||ProjectConstructorProbe.SdkAuditLog(phase))record("SDK_DEFER_AUDIT phase="+phase+" calls="+deferred.Calls+" delivered="+deferred.Delivered+" pending="+deferred.Pending+" fault="+deferred.Faulted+" counter=ORIGINAL_PUBLIC_WINDOW_LOCK callback-exception-policy=STICKY_NO_RETRY healthy-reply-log=FIRST_PER_METHOD");}}}finally{if(f||e>HostLimit||r>e||active||((phase=="PROCESS_FINAL"||phase=="AFTER_ALL_MANAGED_CLEANUP")&&l!=2))throw new NotSupportedException("SDK_HOST_FINAL_DENIAL:"+role);GC.KeepAlive(dispatcher);GC.KeepAlive(emptyStores);}}}
 }
 
 // SDK-only empty IdMapping cache fixture. No bytes/stream or unknown operation is supplied.
@@ -1382,15 +1411,29 @@ internal sealed class SdkWriteContextProxy : RealProxy
     MethodInfo setClean,dirtyParent;int cleanCommits;
     internal void ConfigureProductDirtyQueries(MethodInfo clean,MethodInfo parent)
     {lock(sync){ProbeFiles.Require(ProjectConstructorProbe.ProductFixtureMode()&&active&&!fault&&setClean==null&&dirtyParent==null,"SDK_WRITE_DIRTY_QUERY_CONFIGURE_ONCE");setClean=clean;dirtyParent=parent;}}
-    bool SameProjectNode(object value)
+    bool SameProjectNode(object value){return SameProjectNode(value,null);}
+    bool SameProjectNode(object value,object requiredAncestor)
     {
-        var seen=new List<object>();object current=value;
+        var seen=new List<object>();object current=value;bool found=requiredAncestor==null;
         for(int depth=0;depth<32;depth++){
-            if(Object.ReferenceEquals(current,project))return true;
+            if(Object.ReferenceEquals(current,requiredAncestor))found=true;
+            if(Object.ReferenceEquals(current,project))return found;
             if(current==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(current)||current.GetType().Module!=project.GetType().Module||!dirtyParent.DeclaringType.IsInstanceOfType(current))return false;
             foreach(object prior in seen)if(Object.ReferenceEquals(prior,current))return false;seen.Add(current);current=dirtyParent.Invoke(current,new object[0]);
         }
         return false;
+    }
+    bool AssociatedEditTrace(object value)
+    {
+        if(value==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(value))return false;
+        Type type=value.GetType();if(type.Module!=project.GetType().Module||type.MetadataToken!=0x020003d2)return false;
+        MethodInfo parent=ProjectConstructorProbe.SdkDeviceMethodForHost(type,0x06002a61),canonical=ProjectConstructorProbe.SdkDeviceMethodForHost(project.GetType(),0x06002877);
+        Type collection=canonical.ReturnType;
+        ProbeFiles.Require(parent.Name=="get_ParentCollection"&&parent.ReturnType==collection&&parent.GetParameters().Length==0&&canonical.Name=="get_ProjectTraces"&&canonical.GetParameters().Length==0&&collection.Module==type.Module&&collection.MetadataToken==0x020003d4,"SDK_WRITE_TRACE_COLLECTION_ABI");
+        object actual=parent.Invoke(value,new object[0]),expected=canonical.Invoke(project,new object[0]);
+        if(actual==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(actual)||actual.GetType()!=collection||!Object.ReferenceEquals(actual,expected))return false;
+        MethodInfo owner=ProjectConstructorProbe.SdkDeviceMethodForHost(collection,0x06002a73);ProbeFiles.Require(owner.Name=="get_ParentProject"&&owner.ReturnType==project.GetType()&&owner.GetParameters().Length==0,"SDK_WRITE_TRACE_OWNER_ABI");
+        return Object.ReferenceEquals(owner.Invoke(actual,new object[0]),project);
     }
     readonly ManualResetEvent unlocked=new ManualResetEvent(true);readonly Action<string> record;readonly Func<bool> eligible;
     readonly object writeGate=new object();readonly int scopeOwner=Thread.CurrentThread.ManagedThreadId;WriteLease currentLease;bool scopeHeld;int scopeAcquires,scopeReleases,scopeAborts;
@@ -1408,7 +1451,7 @@ internal sealed class SdkWriteContextProxy : RealProxy
         int limit=ProjectConstructorProbe.ProductUiWriteLimit();int count;lock(sync){if(entries<limit+1)entries++;count=entries;}
         bool suspended=false,prepared=false,makeDirty=false,makeClean=false,queryDirty=false,queryLock=false,openScope=false,productCleanup=false;WriteLease lease=null;int previous=0,objectIndex=-1;MethodInfo method=null;string failureStage="ENTRY";object observedArgument=null;
         try{
-            bool allowed=eligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();productCleanup=ProjectConstructorProbe.ProductStoreDisposalEligible();if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
+            bool allowed=eligible(),editDirty=ProjectConstructorProbe.StateEditDirtyEligible(),excluded=ProjectConstructorProbe.UndoFactoryCallbackExcluded();productCleanup=ProjectConstructorProbe.ProductStoreDisposalEligible();if(!excluded){previous=ProjectConstructorProbe.SuspendProjectResourceCallback();suspended=true;}
             ProbeFiles.Require(count<=limit,"SDK_WRITE_FIXTURE_BUDGET");lock(sync){ProbeFiles.Require(active&&!fault&&allowed&&!excluded,"SDK_WRITE_FIXTURE_PHASE");}
             method=ProjectContentDenyProxy.CaptureContentMethod(message);makeDirty=ProjectConstructorProbe.ExactRuntimeMethod(method,setDirty);queryDirty=ProjectConstructorProbe.ExactRuntimeMethod(method,iamDirty);queryLock=ProjectConstructorProbe.ExactRuntimeMethod(method,isLockedForWriting);openScope=writeScope!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,writeScope);
             makeClean=setClean!=null&&ProjectConstructorProbe.ExactRuntimeMethod(method,setClean);failureStage="METHOD";
@@ -1416,6 +1459,13 @@ internal sealed class SdkWriteContextProxy : RealProxy
             var call=(IMethodCallMessage)message;int arity=makeDirty||makeClean||queryDirty?1:0;ProbeFiles.Require(call.ArgCount==arity&&call.InArgCount==arity,"SDK_WRITE_FIXTURE_ARITY");object[] args=call.Args;ProbeFiles.Require(args!=null&&args.Length==arity,"SDK_WRITE_FIXTURE_ARGUMENTS");
             object argument=arity==1?args[0]:null;observedArgument=argument;failureStage="OBJECT_MEMBERSHIP";
             if(arity==1){lock(sync){for(int i=0;i<objects.Count;i++)if(Object.ReferenceEquals(argument,objects[i])){objectIndex=i;break;}}
+                if(objectIndex<0&&makeDirty&&editDirty&&dirtyParent!=null&&ProjectConstructorProbe.StateEditDirtyParameter(argument)&&SameProjectNode(argument,ProjectConstructorProbe.StateEditOriginalDevice())){
+                    lock(sync){ProbeFiles.Require(active&&!fault&&objects.Count==3,"SDK_WRITE_SELECTED_PARAMETER_ONCE");objectIndex=objects.Count;objects.Add(argument);dirtyObjects.Add(false);}
+                }
+                if(objectIndex<0&&makeDirty&&editDirty&&AssociatedEditTrace(argument)){
+                    lock(sync){ProbeFiles.Require(active&&!fault&&objects.Count==4&&dirtyObjects[3],"SDK_WRITE_SELECTED_EDIT_TRACE_ONCE");objectIndex=objects.Count;objects.Add(argument);dirtyObjects.Add(false);}
+                }
+                ProbeFiles.Require(!makeDirty||objectIndex<3||editDirty,"SDK_WRITE_SELECTED_PARAMETER_EDIT_SCOPE");
                 ProbeFiles.Require(objectIndex>=0||((queryDirty||makeClean)&&productCleanup&&dirtyParent!=null&&SameProjectNode(argument)),"SDK_WRITE_FIXTURE_EXACT_TRACKED_OR_PROJECT_QUERY_OBJECT");}
             LogicalCallContext context=call.LogicalCallContext;string uri=call.Uri;ProbeFiles.Require(uri==null||uri.Length<=1024,"SDK_WRITE_FIXTURE_URI_BOUND");
             var snapshot=new ValidatorCallSnapshot(method,context,uri,arity==1?new object[]{argument}:new object[0],arity==1?new Type[]{method.GetParameters()[0].ParameterType}:Type.EmptyTypes);
@@ -4060,6 +4110,17 @@ internal static class ProjectConstructorProbe
     static SdkModelRootApi sdkModelRootApi;
     internal static bool SdkHostPhaseEligible()
     {return SdkMode&&Thread.CurrentThread.ManagedThreadId==sdkOwner&&(SdkOwned||contextLifetime)&&projectResourceBudgetActive&&!projectResourceCallbackSuspended&&(sdkRootSetupPhase||sdkWrapperPhase||guidProjectDisposal||projectResourceWindow==2);}
+    internal static bool StateEditDispatcherEligible(){return sdkStateEdit&&sdkProductUiActive&&ProductDependencyComplete&&SdkHostPhaseEligible()&&projectResourceWindow==0;}
+    static void PrepareDispatcherDeferral(Type contract)
+    {
+        MethodInfo[] methods={SdkDeviceMethod(contract,0x060001ad),SdkDeviceMethod(contract,0x060001ae),SdkDeviceMethod(contract,0x060001ac),SdkDeviceMethod(contract,0x060001ab)};
+        for(int i=0;i<methods.Length;i++){ParameterInfo[] args=methods[i].GetParameters();ProbeFiles.Require(methods[i].ReturnType==(i==2?typeof(bool):typeof(void))&&args.Length==(i==3?1:0)&&(i!=3||args[0].ParameterType==typeof(Action)),"SDK_DEFER_EXACT_INTERFACE_ABI");}
+        Type type=contract.Assembly.GetType("Knx.Ets.Common.Wpf.WindowLock",true);ConstructorInfo ctor=type.GetConstructor(Type.EmptyTypes);MethodInfo read=SdkDeviceMethod(type,0x06000192),increase=SdkDeviceMethod(type,0x06000195),decrease=SdkDeviceMethod(type,0x06000196);
+        ProbeFiles.Require(type.MetadataToken==0x0200002d&&type.IsPublic&&ctor!=null&&ctor.IsPublic&&ctor.MetadataToken==0x06000197&&read.ReturnType==typeof(uint)&&read.GetParameters().Length==0&&increase.ReturnType==typeof(void)&&increase.GetParameters().Length==0&&decrease.ReturnType==typeof(void)&&decrease.GetParameters().Length==0,"SDK_DEFER_ORIGINAL_WINDOW_LOCK_ABI");
+        object counter=ctor.Invoke(new object[0]);ProbeFiles.Require(counter!=null&&counter.GetType()==type&&(uint)read.Invoke(counter,new object[0])==0,"SDK_DEFER_ORIGINAL_EMPTY_COUNTER");
+        sdkUi.ConfigureDefer(methods,counter,delegate{return (uint)read.Invoke(counter,new object[0]);},delegate{increase.Invoke(counter,new object[0]);},delegate{decrease.Invoke(counter,new object[0]);});
+        Record("SDK_DEFER_READY contract=EXACT_PINNED_COMMON owner=REAL_WPF_STA counter=ORIGINAL_PUBLIC_WINDOW_LOCK depth-max=16 queue-max=256 calls-max=1024 events=FIFO_OUTERMOST_DRAIN_BEFORE_CLEAR unknown-underflow-reentry=DENIED callback-failure=STICKY_NO_RETRY provider-DLL=NOT_ADMITTED");
+    }
     static void PrepareSdkModelServices(Type root,Type collection,Type factory,Type dataStore,Type projectStore,Type usage,Type dispatcher,bool original)
     {
         ProbeFiles.Require(sdkRootData==null&&sdkUi==null&&PublicInterface(dataStore)&&PublicInterface(dispatcher),"SDK_MODEL_SERVICES_ONCE");
@@ -4070,7 +4131,7 @@ internal static class ProjectConstructorProbe
         ProbeFiles.Require(root.GetType()==typeof(object).GetType()&&root.IsPublic&&root.IsClass&&!root.IsAbstract&&!root.IsGenericType&&ctor!=null&&ctor.DeclaringType==root&&ctor.IsPublic&&!ctor.IsStatic&&(int)ctor.Attributes==6278&&projects!=null&&projects.DeclaringType==root&&projects.ReturnType==collection&&projects.GetParameters().Length==0&&(int)projects.Attributes==2534,"SDK_GENUINE_MODEL_ROOT_API");
         ParameterInfo[] vector=ctor.GetParameters();ProbeFiles.Require(vector.Length==3&&vector[0].ParameterType==dataStore&&vector[1].ParameterType==factory&&vector[2].ParameterType==usage&&vector[2].IsOptional&&vector[2].HasDefaultValue&&(int)vector[2].Attributes==4112&&vector[2].RawDefaultValue==null,"SDK_MODEL_ROOT_USAGE_DEFAULT");
         if(original)ProbeFiles.Require(SdkOriginal&&root.Assembly.FullName==OmIdentity&&root.MetadataToken==0x02000093&&root.Module==collection.Module&&root.Module==dataStore.Module&&root.Module==factory.Module&&dataStore.MetadataToken==0x02000030&&stores.MetadataToken==0x060001cc&&ctor.MetadataToken==0x0600053e&&projects.MetadataToken==0x06000537&&dispatcher.Assembly.FullName==Identities[10]&&dispatcher.MetadataToken==0x0200002f&&check.MetadataToken==0x060001a5&&invoke.MetadataToken==0x060001a6,"SDK_MODEL_ROOT_ORIGINAL_TOKENS");
-        sdkRootData=new SdkHostProxy(dataStore,"DATA_STORE",stores,null,Array.CreateInstance(projectStore,0),Record);sdkUi=new SdkHostProxy(dispatcher,"DISPATCHER",check,invoke,null,Record);sdkModelRootApi=new SdkModelRootApi{Root=root,Collection=collection,Constructor=ctor,Projects=projects};
+        sdkRootData=new SdkHostProxy(dataStore,"DATA_STORE",stores,null,Array.CreateInstance(projectStore,0),Record);sdkUi=new SdkHostProxy(dispatcher,"DISPATCHER",check,invoke,null,Record);if(original&&sdkStateEdit)PrepareDispatcherDeferral(dispatcher);sdkModelRootApi=new SdkModelRootApi{Root=root,Collection=collection,Constructor=ctor,Projects=projects};
         Record("SDK_MODEL_SERVICES_READY data=EXPLICIT_EMPTY_ENUMERATION dispatcher=OWNED_REAL_WPF_MARSHAL_ADAPTER usage-default=VERIFIED_NULL");
     }
     static object CreateSdkCanonicalCollection(object factory)
@@ -4845,6 +4906,23 @@ internal static class ProjectConstructorProbe
         internal System.Windows.Controls.DataGrid Grid;internal System.Windows.Controls.DataGridRow Row;internal System.Windows.Controls.DataGridTextColumn Column;
         internal object Source,Parameter,Device;internal MethodInfo Read,Identity,Parent;internal string Id,Name;
     }
+    internal static MethodInfo SdkDeviceMethodForHost(Type type,int token){return SdkDeviceMethod(type,token);}
+    internal static bool StateEditDirtyEligible(){return StateEditDispatcherEligible()&&sdkStateEnterEvent!=null;}
+    internal static object StateEditOriginalDevice(){return sdkDeviceRetained==null?null:sdkDeviceRetained[3];}
+    internal static bool StateEditDirtyParameter(object parameter)
+    {
+        if(parameter==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(parameter))return false;
+        Type type=parameter.GetType();if(type.Assembly.FullName!=OmIdentity||type.Module!=contextGenuineFactory.GetType().Module||type.MetadataToken!=0x02000397)return false;
+        MethodInfo getter=SdkDeviceMethod(type,0x0600279c);Type idType=getter.ReturnType;
+        ProbeFiles.Require(getter.Name=="get_Id"&&getter.GetParameters().Length==0&&idType.FullName=="Knx.Ets.Ids.Project.ParameterInstanceRefId"&&idType.Assembly.FullName=="Knx.Ets.Ids, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159","STATE_EDIT_PARAMETER_ORIGINAL_ID_ABI");
+        object id=getter.Invoke(parameter,new object[0]);if(id==null||System.Runtime.Remoting.RemotingServices.IsTransparentProxy(id)||id.GetType()!=idType)return false;
+        Type modeType=idType.Assembly.GetType("Knx.Ets.Ids.WriterMode",true);ProbeFiles.Require(modeType.IsEnum&&Enum.IsDefined(modeType,Enum.ToObject(modeType,1)),"STATE_EDIT_PARAMETER_ORIGINAL_WRITER_MODE");
+        MethodInfo write=idType.GetMethod("ToString",BindingFlags.Public|BindingFlags.Instance,null,new Type[]{modeType},null);
+        ProbeFiles.Require(write!=null&&write.Module==idType.Module&&write.ReturnType==typeof(string)&&!write.IsGenericMethod,"STATE_EDIT_PARAMETER_ORIGINAL_ID_WRITER");
+        // SDK DomObject.get_Id (06000128) uses the original Id.ToString(WriterMode=1).
+        string actual=write.Invoke(id,new object[]{Enum.ToObject(modeType,1)}) as string;
+        return ReferenceDcaStateEdit.DirtyTarget(true,true,true,actual);
+    }
     static bool OriginalRowBinding(System.Windows.Data.Binding binding)
     {return binding!=null&&binding.Path!=null&&binding.Path.Path=="Description"&&binding.Mode==System.Windows.Data.BindingMode.TwoWay&&ReferenceDcaStateInspection.DefaultRowBinding(binding.ShouldSerializeSource()||binding.Source!=null,binding.RelativeSource!=null,binding.ElementName,binding.XPath)&&binding.Converter==null&&String.IsNullOrEmpty(binding.StringFormat)&&!binding.IsAsync&&binding.Delay==0&&binding.UpdateSourceTrigger!=System.Windows.Data.UpdateSourceTrigger.Explicit;}
     static void DiagnoseStateEditCommit(StateEditTarget target,System.Windows.Controls.TextBox editor,System.Windows.Data.BindingExpression binding,System.ComponentModel.IEditableCollectionView editing,bool cell,bool row,object before,object after,System.Windows.Controls.DataGridCell actualCell)
@@ -4897,7 +4975,7 @@ internal static class ProjectConstructorProbe
             ProbeFiles.Require(ReferenceDcaStateEdit.FocusReady(ownerWindow.IsActive,editorFocused,target.Grid.IsKeyboardFocusWithin,sameCell)&&target.Row.IsEditing&&Object.ReferenceEquals(binding.ResolvedSource,target.Source)&&editor.Text==(string)observed&&!System.Windows.Controls.Validation.GetHasError(editor),"STATE_EDIT_REAL_KEYBOARD_FOCUS_REQUIRED");
             DependencyObject cellAncestor=editor;for(int depth=0;cellAncestor!=null&&!(cellAncestor is System.Windows.Controls.DataGridCell)&&depth<8;depth++)cellAncestor=System.Windows.Media.VisualTreeHelper.GetParent(cellAncestor);var actualCell=cellAncestor as System.Windows.Controls.DataGridCell;
             editor.SelectAll();editor.SelectedText=ReferenceDcaStateEdit.FixtureText;
-            Record("DCA_STATE_UI_EDIT_INPUT text="+ReferenceDcaStateEdit.DiagnosticText(editor.Text)+" text-is-requested="+(editor.Text==ReferenceDcaStateEdit.FixtureText)+" cell-container="+(actualCell!=null)+" cell-editing="+(actualCell!=null&&actualCell.IsEditing)+" binding-status="+binding.Status+" update-trigger="+binding.ParentBinding.UpdateSourceTrigger+" dirty="+binding.IsDirty+" source-updated-notification="+binding.ParentBinding.NotifyOnSourceUpdated+" encoding=UTF8_BASE64");
+            Record("DCA_STATE_UI_EDIT_INPUT text-is-requested="+(editor.Text==ReferenceDcaStateEdit.FixtureText)+" binding-status="+binding.Status+" dirty="+binding.IsDirty+" values=SEE_EDIT_BEGIN");
             editor.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible()&&Object.ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement,editor),"STATE_EDIT_ENTER_READY");},DispatcherPriority.Background,CancellationToken.None,TimeSpan.FromSeconds(2));
             ProbeFiles.Require(System.Windows.Input.Keyboard.Modifiers==System.Windows.Input.ModifierKeys.None,"STATE_EDIT_ENTER_NO_MODIFIERS");PresentationSource inputSource=PresentationSource.FromVisual(editor);ProbeFiles.Require(inputSource!=null&&sdkStateEnterEvent==null,"STATE_EDIT_REAL_PRESENTATION_SOURCE");
             bool inputHandled=false;
@@ -4905,13 +4983,40 @@ internal static class ProjectConstructorProbe
                 sdkStateEnterEvent=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,inputSource,Environment.TickCount,System.Windows.Input.Key.Enter){RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyDownEvent};inputHandled=System.Windows.Input.InputManager.Current.ProcessInput(sdkStateEnterEvent);
                 sdkStateEnterEvent=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,inputSource,Environment.TickCount,System.Windows.Input.Key.Enter){RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyUpEvent};System.Windows.Input.InputManager.Current.ProcessInput(sdkStateEnterEvent);
             }finally{sdkStateEnterEvent=null;}
-            editor.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible(),"STATE_EDIT_ENTER_COMPLETION_SCOPE");},DispatcherPriority.Background,CancellationToken.None,TimeSpan.FromSeconds(2));
-            cell=actualCell!=null&&ReferenceDcaStateEdit.EndedFromEvents(actualCell.IsEditing,cellCommitEvent,cancelObserved);row=ReferenceDcaStateEdit.EndedFromEvents(target.Row.IsEditing||editView.IsEditingItem,rowCommitEvent,cancelObserved);
-            Record("DCA_STATE_UI_ENTER_RETURN source=OWNED_WPF_INPUT_MANAGER input-handled="+inputHandled+" cell-commit-event="+cellCommitEvent+" row-commit-event="+rowCommitEvent+" cancel-observed="+cancelObserved+" actual-human-input=False direct-CommitEdit=NOT_CALLED");
-            Record("DCA_STATE_UI_EDIT_ENTER_OUTCOME cell="+cell+" row="+row+" observed-events="+eventCount+" cell-editing="+(actualCell!=null&&actualCell.IsEditing)+" editor-text-is-requested="+(editor.Text==ReferenceDcaStateEdit.FixtureText)+" binding-status="+binding.Status+" dirty="+binding.IsDirty);
-            valid=!System.Windows.Controls.Validation.GetHasError(editor)&&!System.Windows.Controls.Validation.GetHasError(target.Row)&&!System.Windows.Controls.Validation.GetHasError(target.Grid)&&!editView.IsEditingItem;
+            editor.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible(),"STATE_EDIT_ENTER_COMPLETION_SCOPE");},DispatcherPriority.ContextIdle,CancellationToken.None,TimeSpan.FromSeconds(2));
+            var beforeTabFocus=System.Windows.Input.Keyboard.FocusedElement;Record("DCA_STATE_UI_TAB_FOCUS_BEFORE active="+ownerWindow.IsActive+" view-visible="+view.IsVisible+" grid-focus="+target.Grid.IsKeyboardFocusWithin+" modifiers="+System.Windows.Input.Keyboard.Modifiers+" own-input-pending="+(sdkStateEnterEvent!=null)+" focus-type="+(beforeTabFocus==null?"NONE":Text(beforeTabFocus.GetType().FullName)));
+            FrameworkElement tabContent=target.Column.GetCellContent(target.Source);DependencyObject tabAncestor=tabContent;
+            for(int depth=0;tabAncestor!=null&&!(tabAncestor is System.Windows.Controls.DataGridCell)&&depth<8;depth++)tabAncestor=System.Windows.Media.VisualTreeHelper.GetParent(tabAncestor);
+            var tabCell=tabAncestor as System.Windows.Controls.DataGridCell;DependencyObject tabRowAncestor=tabCell;
+            for(int depth=0;tabRowAncestor!=null&&!(tabRowAncestor is System.Windows.Controls.DataGridRow)&&depth<12;depth++)tabRowAncestor=System.Windows.Media.VisualTreeHelper.GetParent(tabRowAncestor);
+            bool tabIdentity=tabCell!=null&&tabContent!=null&&tabContent.IsVisible&&tabCell.IsVisible&&tabCell.IsEnabled&&PresentationSource.FromVisual(tabCell)!=null&&Object.ReferenceEquals(tabCell.Content,tabContent)&&Object.ReferenceEquals(tabCell.Column,target.Column)&&Object.ReferenceEquals(tabCell.DataContext,target.Source)&&Object.ReferenceEquals(tabRowAncestor,target.Row)&&Object.ReferenceEquals(target.Grid.ItemContainerGenerator.ContainerFromItem(target.Source),target.Row)&&Object.ReferenceEquals(target.Row.Item,target.Source)&&Object.ReferenceEquals(System.Windows.Controls.ItemsControl.ItemsControlFromItemContainer(target.Row),target.Grid);
+            ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible()&&host.IsEnabled&&tabIdentity&&sdkStateEnterEvent==null,"STATE_EDIT_TAB_EXACT_LIVE_TARGET");
+            var tabEditor=tabContent as System.Windows.Controls.TextBox;var tabBinding=tabEditor==null?null:System.Windows.Data.BindingOperations.GetBindingExpression(tabEditor,System.Windows.Controls.TextBox.TextProperty);
+            ProbeFiles.Require(tabEditor!=null&&tabEditor.GetType()==typeof(System.Windows.Controls.TextBox)&&tabEditor.IsVisible&&tabEditor.IsEnabled&&!tabEditor.IsReadOnly&&PresentationSource.FromVisual(tabEditor)!=null&&tabEditor.Text==ReferenceDcaStateEdit.FixtureText&&tabBinding!=null&&Object.ReferenceEquals(tabBinding.ResolvedSource,target.Source)&&tabBinding.ResolvedSourcePropertyName=="Description"&&tabBinding.Status==System.Windows.Data.BindingStatus.Active&&tabBinding.ParentBinding.Mode==System.Windows.Data.BindingMode.TwoWay&&tabBinding.ParentBinding.Converter==null&&String.IsNullOrEmpty(tabBinding.ParentBinding.StringFormat)&&!tabBinding.ParentBinding.IsAsync&&tabBinding.ParentBinding.Delay==0&&tabBinding.ParentBinding.UpdateSourceTrigger!=System.Windows.Data.UpdateSourceTrigger.Explicit&&!System.Windows.Controls.Validation.GetHasError(tabEditor),"STATE_EDIT_TAB_EXACT_LIVE_EDITOR_BINDING");
+            bool tabActivate=ownerWindow.Activate(),tabFocusRequest=tabEditor.Focus(),tabFocusReturn=Object.ReferenceEquals(System.Windows.Input.Keyboard.Focus(tabEditor),tabEditor);
+            tabCell.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible(),"STATE_EDIT_TAB_FOCUS_LIFETIME");},DispatcherPriority.Input,CancellationToken.None,TimeSpan.FromSeconds(2));
+            bool tabFocused=Object.ReferenceEquals(System.Windows.Input.Keyboard.FocusedElement,tabEditor)&&tabEditor.IsKeyboardFocusWithin&&tabCell.IsKeyboardFocusWithin&&Object.ReferenceEquals(tabBinding.ResolvedSource,target.Source)&&Object.ReferenceEquals(target.Column.GetCellContent(target.Source),tabContent)&&Object.ReferenceEquals(tabCell.Content,tabContent)&&target.Grid.CurrentCell.IsValid&&Object.ReferenceEquals(target.Grid.CurrentCell.Item,target.Source)&&Object.ReferenceEquals(target.Grid.CurrentCell.Column,target.Column);
+            Record("DCA_STATE_UI_TAB_FOCUS_AFTER identity="+tabIdentity+" activate="+tabActivate+" active="+ownerWindow.IsActive+" focus-request="+tabFocusRequest+" focus-return="+tabFocusReturn+" exact-live-editor-focused="+tabFocused+" focused-type="+(System.Windows.Input.Keyboard.FocusedElement==null?"NONE":Text(System.Windows.Input.Keyboard.FocusedElement.GetType().FullName))+" grid-focus="+target.Grid.IsKeyboardFocusWithin);
+            ProbeFiles.Require(ownerWindow.IsActive&&view.IsVisible&&target.Grid.IsKeyboardFocusWithin&&tabFocused&&System.Windows.Input.Keyboard.Modifiers==System.Windows.Input.ModifierKeys.None&&sdkStateEnterEvent==null,"STATE_EDIT_TAB_REAL_FOCUS_SCOPE");
+            bool tabHandled=false;PresentationSource tabSource=PresentationSource.FromVisual(target.Grid);ProbeFiles.Require(tabSource!=null,"STATE_EDIT_TAB_REAL_PRESENTATION_SOURCE");
+            try{
+                sdkStateEnterEvent=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,tabSource,Environment.TickCount,System.Windows.Input.Key.Tab){RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyDownEvent};tabHandled=System.Windows.Input.InputManager.Current.ProcessInput(sdkStateEnterEvent);
+                sdkStateEnterEvent=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,tabSource,Environment.TickCount,System.Windows.Input.Key.Tab){RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyUpEvent};System.Windows.Input.InputManager.Current.ProcessInput(sdkStateEnterEvent);
+            }finally{sdkStateEnterEvent=null;}
+            target.Grid.Dispatcher.Invoke(delegate{ProbeFiles.Require(sdkStateEdit&&sdkProductUiActive&&contextLifetime&&SdkWrapperEligible(),"STATE_EDIT_TAB_COMPLETION_SCOPE");},DispatcherPriority.ContextIdle,CancellationToken.None,TimeSpan.FromSeconds(2));
+            FrameworkElement liveContent=target.Column.GetCellContent(target.Source);DependencyObject liveAncestor=liveContent;
+            for(int depth=0;liveAncestor!=null&&!(liveAncestor is System.Windows.Controls.DataGridCell)&&depth<8;depth++)liveAncestor=System.Windows.Media.VisualTreeHelper.GetParent(liveAncestor);
+            var liveCell=liveAncestor as System.Windows.Controls.DataGridCell;DependencyObject rowAncestor=liveCell;
+            for(int depth=0;rowAncestor!=null&&!(rowAncestor is System.Windows.Controls.DataGridRow)&&depth<12;depth++)rowAncestor=System.Windows.Media.VisualTreeHelper.GetParent(rowAncestor);
+            var liveRow=rowAncestor as System.Windows.Controls.DataGridRow;
+            bool liveIdentity=liveCell!=null&&liveRow!=null&&ReferenceDcaStateEdit.LiveCellIdentity(liveContent!=null&&Object.ReferenceEquals(liveCell.Content,liveContent)&&liveContent.IsVisible&&PresentationSource.FromVisual(liveContent)!=null,Object.ReferenceEquals(liveCell.Column,target.Column),Object.ReferenceEquals(liveRow.Item,target.Source)&&Object.ReferenceEquals(liveCell.DataContext,target.Source),Object.ReferenceEquals(target.Grid.ItemContainerGenerator.ContainerFromItem(target.Source),liveRow),Object.ReferenceEquals(System.Windows.Controls.ItemsControl.ItemsControlFromItemContainer(liveRow),target.Grid));
+            var liveDisplay=liveContent as System.Windows.Controls.TextBlock;bool displayMatches=liveDisplay!=null&&Object.ReferenceEquals(liveDisplay.DataContext,target.Source)&&liveDisplay.Text==ReferenceDcaStateEdit.FixtureText;
+            Record("DCA_STATE_UI_LIVE_CELL display-matches="+displayMatches+" outcome="+(liveIdentity?"LIVE_CONTAINER_OBSERVED":"INCONCLUSIVE_NO_QUALIFIED_LIVE_CONTAINER")+" identity="+liveIdentity+" same-retained="+Object.ReferenceEquals(liveCell,actualCell)+" retained-connected="+(actualCell!=null&&PresentationSource.FromVisual(actualCell)!=null)+" retained-editing="+(actualCell!=null&&actualCell.IsEditing)+" live-editing="+(liveCell!=null&&liveCell.IsEditing)+" same-row="+Object.ReferenceEquals(liveRow,target.Row)+" same-editor="+Object.ReferenceEquals(liveContent,editor)+" live-content="+(liveContent==null?"NONE":Text(liveContent.GetType().FullName))+" bounds=ancestor8_row12 assumptions=NONE");
+            cell=liveIdentity&&ReferenceDcaStateEdit.EndedFromEvents(liveCell.IsEditing,cellCommitEvent,cancelObserved);row=liveIdentity&&ReferenceDcaStateEdit.EndedFromEvents(liveRow.IsEditing||editView.IsEditingItem,rowCommitEvent,cancelObserved);
+            Record("DCA_STATE_UI_ENTER_RETURN source=OWNED_WPF_INPUT_MANAGER input-handled="+inputHandled+" followup=TAB tab-handled="+tabHandled+" cell-commit-event="+cellCommitEvent+" row-commit-event="+rowCommitEvent+" cancel-observed="+cancelObserved+" actual-human-input=False direct-CommitEdit=NOT_CALLED");
+            valid=liveIdentity&&displayMatches&&!System.Windows.Controls.Validation.GetHasError(liveContent)&&!System.Windows.Controls.Validation.GetHasError(liveCell)&&!System.Windows.Controls.Validation.GetHasError(liveRow)&&!System.Windows.Controls.Validation.GetHasError(target.Grid)&&!editView.IsEditingItem;
             object after=target.Read.Invoke(target.Parameter,new object[0]);ProbeFiles.Require(Object.Equals(target.Identity.Invoke(target.Parameter,new object[0]),target.Id)&&Object.ReferenceEquals(target.Parent.Invoke(target.Parameter,new object[0]),target.Device),"STATE_EDIT_SDK_IDENTITY_UNCHANGED");if(!(after is string&&ReferenceDcaStateEdit.Changed(began,cell,row,valid,(string)after)))DiagnoseStateEditCommit(target,editor,binding,editView,cell,row,observed,after,actualCell);ProbeFiles.Require(after is string&&ReferenceDcaStateEdit.Changed(began,cell,row,valid,(string)after),"STATE_EDIT_ORIGINAL_COMMIT_AND_SDK_READBACK");sdkStateEditChanged=true;
-            Record("DCA_STATE_UI_EDIT_END began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-after="+ReferenceDcaStateInspection.Encode((string)after)+" encoding=UTF8_BASE64 changed=True path=ORIGINAL_WPF_TEXTBOX_AND_ENTER SDK-read=060013CC direct-SDK-setter=NOT_CALLED capture=NOT_RUN persistence=NOT_ESTABLISHED restart=NOT_RUN hardware=NOT_RUN");
+            Record("DCA_STATE_UI_EDIT_END began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-after="+ReferenceDcaStateInspection.Encode((string)after)+" encoding=UTF8_BASE64 changed=True path=ORIGINAL_WPF_TEXTBOX_ENTER_AND_TAB SDK-read=060013CC direct-SDK-setter=NOT_CALLED capture=NOT_RUN persistence=NOT_ESTABLISHED restart=NOT_RUN hardware=NOT_RUN");
         }catch{Record("DCA_STATE_UI_EDIT_FAILED began="+began+" cell-commit="+cell+" row-commit="+row+" valid="+valid+" SDK-change=UNKNOWN_IF_PARTIAL rollback=NOT_ASSERTED");throw;}
         finally{host.IsEnabled=false;target.Grid.CellEditEnding-=cellEnding;target.Grid.RowEditEnding-=rowEnding;GC.KeepAlive(editor);GC.KeepAlive(target);}
     }
@@ -5018,7 +5123,7 @@ internal static class ProjectConstructorProbe
             Record("DCA_UI_RETURNED genuine-original-view=True view-type="+Text(view.GetType().FullName)+" device-qualified=NOT_ASSERTED");TraceDependencyGuard(unexpected,rejected,"DCA_UI_RETURNED");
             object hosted=view;if(sdkStateInspection){inspectionHost=new System.Windows.Controls.Border{Child=view,IsEnabled=false};hosted=inspectionHost;}
             window=new Window{Title=sdkStateEdit?"OpenKNX Studio - original MDT DALI UI - guarded local fixture edit":sdkStateInspection?"OpenKNX Studio - original MDT DALI UI - read-only inspection":"OpenKNX Studio - original MDT DALI UI - offline fixture",Content=hosted,Width=1200,Height=800};
-            if(sdkStateEdit){window.IsHitTestVisible=false;window.PreviewKeyDown+=delegate(object sender,System.Windows.Input.KeyEventArgs e){if(!ReferenceDcaStateEdit.OwnedInput(sdkStateEnterEvent,e,e.Key==System.Windows.Input.Key.Enter))e.Handled=true;};window.PreviewKeyUp+=delegate(object sender,System.Windows.Input.KeyEventArgs e){if(!ReferenceDcaStateEdit.OwnedInput(sdkStateEnterEvent,e,e.Key==System.Windows.Input.Key.Enter))e.Handled=true;};window.PreviewTextInput+=delegate(object sender,System.Windows.Input.TextCompositionEventArgs e){e.Handled=true;};}
+            if(sdkStateEdit){window.IsHitTestVisible=false;window.PreviewKeyDown+=delegate(object sender,System.Windows.Input.KeyEventArgs e){if(!ReferenceDcaStateEdit.OwnedInput(sdkStateEnterEvent,e,e.Key==System.Windows.Input.Key.Enter||e.Key==System.Windows.Input.Key.Tab))e.Handled=true;};window.PreviewKeyUp+=delegate(object sender,System.Windows.Input.KeyEventArgs e){if(!ReferenceDcaStateEdit.OwnedInput(sdkStateEnterEvent,e,e.Key==System.Windows.Input.Key.Enter||e.Key==System.Windows.Input.Key.Tab))e.Handled=true;};window.PreviewTextInput+=delegate(object sender,System.Windows.Input.TextCompositionEventArgs e){e.Handled=true;};}
             timer=new DispatcherTimer(DispatcherPriority.Normal,Dispatcher.CurrentDispatcher);timer.Interval=TimeSpan.FromSeconds(sdkUiSeconds);
             timer.Tick+=delegate{timer.Stop();expired=true;Record("DCA_UI_HOLD_EXPIRED seconds="+sdkUiSeconds+" action=CLOSE_OWNED_WINDOW");window.Close();};
             window.ContentRendered+=delegate{if(visible)return;ProbeFiles.Require(window.IsVisible&&view.IsVisible&&window.Dispatcher.CheckAccess(),"DCA_UI_VISIBLE_RENDERED_REQUIRED");visible=true;sdkUiRendered=true;Record("DCA_UI_VISIBLE original-control=True rendered=True hold-seconds="+sdkUiSeconds+" close=USER_OR_DEADLINE hardware=NOT_RUN application-match=NOT_QUALIFIED");if(sdkStateInspection){try{InspectOriginalStateBindings(view,device,inspectionHost);}catch(Exception error){sdkStateInspectionFault=true;Errors(error);window.Close();return;}}timer.Start();};
