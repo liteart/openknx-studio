@@ -138,6 +138,7 @@ cargo fmt --manifest-path experiments/task152-passkey/Cargo.toml -- --check
 cargo clippy --offline --locked --all-targets --manifest-path experiments/task152-passkey/Cargo.toml -- -D warnings
 cargo test --offline --locked --manifest-path experiments/task152-passkey/Cargo.toml
 node --check experiments/task152-passkey/src/browser.js
+node --test experiments/task152-passkey/browser_test.mjs
 ```
 
 The initial reproducible observation was absence of a WebAuthn verifier or
@@ -155,6 +156,21 @@ checks passed. The initial sandbox run passed the library and five handler tests
 but the socket test failed because localhost bind was denied; the complete
 offline suite then passed with authorized localhost socket access. No external
 host or KNX interface was contacted.
+
+The first Safari attempt was reported by the operator as cancelled/rejected,
+without a useful error stage. The cause was not established. The follow-up UI
+prepares and decodes a challenge before enabling the ceremony and invokes
+`navigator.credentials.create/get` directly during the button click. Prepared
+challenges refresh after 100 seconds, before the server's 120-second limit; a
+stale click refreshes options and requires another explicit click. Preparing a
+challenge never opens a credential prompt. Errors now show only a fixed stage,
+an allowlisted exception name or HTTP status and the observed activation boolean;
+browser error messages and credential details are never displayed or logged.
+Eight simulated-DOM Node regression tests passed, including a provider mock
+that rejects calls made outside the synchronous user gesture. This is not an
+observed Safari success. [WebKit documents gesture requirements and Fetch
+propagation](https://webkit.org/blog/11312/meet-face-id-and-touch-id-for-the-web/),
+so an asynchronous fetch was a compatibility concern, not a confirmed diagnosis.
 
 An operator-driven native-vault browser enrollment/assertion, protected enrollment,
 trusted-display/separation tests and hardware integration remain **NOT RUN**.

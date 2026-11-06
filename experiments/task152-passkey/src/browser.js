@@ -5,12 +5,19 @@ const element = (id) => document.getElementById(id);
 let csrf = null;
 let enrolled = false;
 let busy = false;
+let prepared = null;
+let refreshTimer = null;
+const PREPARED_LIFETIME_MS = 100000;
 
 function controls() {
   element("enroll").disabled = !csrf || busy || enrolled;
   element("reviewed").disabled = !csrf || busy || !enrolled;
   element("assert").disabled = !csrf || busy || !enrolled || !element("reviewed").checked;
   element("stop").disabled = !csrf || busy;
+  element("enroll").textContent = prepared?.kind === "enroll"
+    ? "Create temporary test passkey" : "Prepare temporary test passkey";
+  element("assert").textContent = prepared?.kind === "assert"
+    ? "Verify synthetic plan with passkey" : "Prepare plan verification";
 }
 
 function decode(value) {
@@ -30,8 +37,59 @@ async function post(path, data = {}) {
     headers: { "Content-Type": "application/json", "X-OpenKNX-Development-CSRF": csrf },
     body: JSON.stringify(data),
   });
-  if (!response.ok) throw new Error("Local test request was rejected.");
+  if (!response.ok) throw new LocalRequestError(response.status);
   return response.json();
+}
+
+class LocalRequestError extends Error {
+  constructor(status) { super(); this.status = status; }
+}
+
+function diagnostic(stage, error, gesture = null) {
+  const safeNames = new Set(["NotAllowedError", "SecurityError", "NotSupportedError",
+    "InvalidStateError", "ConstraintError", "AbortError", "UnknownError", "NotReadableError",
+    "TypeError", "DataError", "EncodingError", "OperationError", "NetworkError", "SyntaxError"]);
+  let code = "unavailable error name";
+  if (error instanceof LocalRequestError && Number.isInteger(error.status)
+      && error.status >= 400 && error.status <= 599) code = `HTTP ${error.status}`;
+  else if (safeNames.has(error?.name)) code = error.name;
+  const activation = gesture === null ? "" : `; user gesture ${gesture}`;
+  return `Passkey test stopped during ${stage} (${code}${activation}). You can prepare a new attempt. No device authorization was issued.`;
+}
+
+function clearPrepared() {
+  prepared = null;
+  if (refreshTimer !== null) clearTimeout(refreshTimer);
+  refreshTimer = null;
+}
+
+function decodeOptions(options, kind) {
+  const publicKey = options.publicKey;
+  publicKey.challenge = decode(publicKey.challenge);
+  for (const field of ["excludeCredentials", "allowCredentials"]) {
+    if (publicKey[field]) for (const credential of publicKey[field]) credential.id = decode(credential.id);
+  }
+  if (kind === "enroll") publicKey.user.id = decode(publicKey.user.id);
+  return publicKey;
+}
+
+async function prepare(kind, retainedStatus = null) {
+  busy = true; clearPrepared(); controls();
+  if (!retainedStatus) element("status").textContent = "Preparing a short-lived challenge. No passkey prompt has started.";
+  try {
+    await post("/api/cancel");
+    const publicKey = decodeOptions(await post(`/api/${kind}/start`), kind);
+    prepared = { kind, publicKey, at: performance.now() };
+    refreshTimer = setTimeout(() => {
+      if (!busy && csrf) void prepare(enrolled ? "assert" : "enroll", retainedStatus);
+    }, PREPARED_LIFETIME_MS);
+    element("status").textContent = retainedStatus || (kind === "enroll"
+      ? "Ready. Choose Create temporary test passkey to open your browser's passkey prompt."
+      : "Ready. Review the exact plan, then choose Verify synthetic plan with passkey.");
+  } catch (error) {
+    const preparationStatus = diagnostic(`${kind === "enroll" ? "enrollment" : "assertion"} challenge preparation`, error);
+    element("status").textContent = retainedStatus ? `${retainedStatus} ${preparationStatus}` : preparationStatus;
+  } finally { busy = false; controls(); }
 }
 
 function serialize(credential) {
@@ -47,41 +105,52 @@ function serialize(credential) {
 }
 
 async function ceremony(kind) {
+  if (busy || !csrf) return;
+  if (!prepared || prepared.kind !== kind || performance.now() - prepared.at >= PREPARED_LIFETIME_MS) {
+    await prepare(kind);
+    return;
+  }
+  const publicKey = prepared.publicKey;
+  clearPrepared();
   busy = true; controls();
   element("status").textContent = "Confirm using the passkey provider chosen in your browser.";
+  let stage = `${kind === "enroll" ? "enrollment" : "assertion"} passkey prompt`;
+  const gesture = navigator.userActivation ? (navigator.userActivation.isActive ? "active" : "inactive") : "unavailable";
+  let retainedStatus = null;
   try {
-    const options = await post(`/api/${kind}/start`);
-    const publicKey = options.publicKey;
-    publicKey.challenge = decode(publicKey.challenge);
-    for (const field of ["excludeCredentials", "allowCredentials"]) {
-      if (publicKey[field]) for (const credential of publicKey[field]) credential.id = decode(credential.id);
-    }
-    if (kind === "enroll") publicKey.user.id = decode(publicKey.user.id);
+    // The options are already fetched and decoded. The WebAuthn API is invoked
+    // directly in the click handler's activation, before any asynchronous wait.
     const credential = kind === "enroll"
       ? await navigator.credentials.create({ publicKey })
       : await navigator.credentials.get({ publicKey });
     if (!credential) throw new Error("Passkey ceremony did not complete.");
-    const result = await post(`/api/${kind}/finish`, serialize(credential));
+    stage = `${kind === "enroll" ? "enrollment" : "assertion"} response encoding`;
+    const response = serialize(credential);
+    stage = `${kind === "enroll" ? "enrollment" : "assertion"} verification`;
+    const result = await post(`/api/${kind}/finish`, response);
     if (result.physical_authorization !== false) throw new Error("Unexpected response.");
     if (kind === "enroll") {
       enrolled = true;
-      element("status").textContent = "Temporary test passkey enrolled. Review the plan below to test an assertion.";
+      retainedStatus = "Temporary test passkey enrolled. Review the plan below to test an assertion.";
     } else {
-      element("status").textContent = "Passkey assertion verified for this synthetic plan. No device authorization was issued.";
+      retainedStatus = "Passkey assertion verified for this synthetic plan. No device authorization was issued.";
       element("reviewed").checked = false;
     }
-  } catch (_) {
-    // Neither authenticator data nor browser error details are logged or shown.
-    try { await post("/api/cancel"); } catch (_) { /* The temporary server may have stopped. */ }
-    element("status").textContent = "The passkey test was cancelled or rejected. You can retry while the server is running.";
-  } finally { busy = false; controls(); }
+  } catch (error) {
+    // Only a fixed stage, allowlisted exception name or HTTP status and a boolean
+    // activation observation are shown. Messages and credential data stay private.
+    retainedStatus = diagnostic(stage, error, stage.endsWith("passkey prompt") ? gesture : null);
+  } finally {
+    busy = false;
+    await prepare(enrolled ? "assert" : "enroll", retainedStatus);
+  }
 }
 
 element("enroll").addEventListener("click", () => ceremony("enroll"));
 element("assert").addEventListener("click", () => ceremony("assert"));
 element("reviewed").addEventListener("change", controls);
 element("stop").addEventListener("click", async () => {
-  busy = true; controls();
+  busy = true; clearPrepared(); controls();
   try { await post("/api/stop"); } catch (_) { /* A stopped server has no enrollment. */ }
   csrf = null;
   element("status").textContent = "Test server stopped. Remove the localhost test passkey from your provider if desired.";
@@ -100,7 +169,6 @@ element("stop").addEventListener("click", async () => {
     if (session.physical_authorization !== false) throw new Error("Unexpected session.");
     csrf = session.csrf;
     element("plan").textContent = session.plan;
-    element("status").textContent = "Ready. Choose Create temporary test passkey when you want to start.";
-    controls();
+    await prepare("enroll");
   } catch (_) { element("status").textContent = "The local test session is unavailable. Restart the development runner."; }
 })();
