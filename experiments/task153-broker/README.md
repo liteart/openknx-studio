@@ -2,7 +2,7 @@
 
 This non-shipping Rust library defines the bounded input and configured-plan
 policy for a future protected operator service. It contains no executable,
-listener, peer-identity provider, protected store, passkey enrollment, approval
+listener, protected store, passkey enrollment, approval
 issuer or KNX adapter. `UnprovisionedBroker` always rejects a valid request with
 `protected_host_unavailable`; it does not open a journal or contact a device.
 There is no test fixture that turns this facade into a protected service.
@@ -29,6 +29,33 @@ nor tests an OS privilege boundary and cannot release a physical capability.
 It deliberately reuses the existing plan representation instead of adding
 another approval ledger or repeating the dispatcher simulator.
 
+## macOS kernel peer identity
+
+The macOS-only `macos_peer` module now obtains the effective UID and GID of a
+connected Unix-domain peer through the safe `nix::unistd::getpeereid` wrapper.
+It never reads a claimed identity from request JSON. The matching policy rejects
+the configured agent UID, rejects a shared operator/agent UID, and requires the
+expected operator UID and GID. `PeerIdentity` has private fields and cannot be
+deserialized. It is connection evidence, not an approval or host token.
+
+On macOS arm64, three tests used actual temporary Unix-domain sockets to check
+the kernel-observed UID/GID at both endpoints and rejection of the current
+principal and deliberately mismatched policy IDs. The tests created no users,
+inspected no credentials and changed no service or system configuration. They
+do not prove that another principal exists or that the agent cannot acquire
+administrative authority. A successful distinct-UID operator connection and
+protected configuration ownership/ACL/IPC installation remain **NOT RUN**.
+The facade remains unprovisioned and cannot dispatch.
+
+Primary API evidence inspected on 2026-11-06:
+
+- [Apple getpeereid manual](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html)
+  documents effective credentials fixed at connect/listen time.
+- The downloaded `nix 0.31.3` source `src/unistd.rs:3999` implements a safe
+  `AsFd` wrapper, enabled only by the `socket` and `user` features on BSD targets.
+  Its narrowly encapsulated upstream FFI is not a claim that the dependency
+  contains no unsafe code; this project increment adds no unsafe block.
+
 ## Remaining implementation
 
 Before this contract can front an executing service, the macOS provider must
@@ -49,8 +76,15 @@ service, macOS ownership/IPC, Windows, Linux and hardware tests are **NOT RUN**.
 
 The experiment-only path dependency reuses the existing Task152 library and
 its reviewed pinned dependencies. It is not a release manifest or production
-dependency pin. No new registry package or feature is introduced; upstream
-license and security caveats remain in Task152's dependency review.
+dependency pin; upstream caveats remain in Task152's dependency review.
+The macOS provider pins `nix = 0.31.3` (MIT, Rust >=1.69) with defaults disabled
+and only `socket` and `user` features. Its new dependencies are `memoffset 0.9.1`
+(MIT), `cfg_aliases 0.2.2` (MIT) and `bitflags 2.13.2` (MIT OR Apache-2.0), with
+the already resolved `libc` and `cfg-if`. Tests pin `tempfile = 3.24.0`
+(MIT OR Apache-2.0). Its resolved dependencies, including non-host targets,
+offer MIT/Apache-2.0 options; no license metadata was missing in the inspected
+new package set. The exact versions are in Cargo.lock. Only missing
+`memoffset` needed downloading; no dependency code was copied or relabeled.
 
 From the repository root with the pinned toolchain:
 
@@ -65,4 +99,7 @@ effect restrictions, exact summary/digest binding and denial without a real
 host provider. The initial test exposed Serde's acceptance of unknown fields
 on a unit enum variant; the contract now uses an empty struct variant so that
 the unknown-field policy is enforced. These are contract tests, not a service
-boundary, hardware or protected-approval proof.
+boundary, hardware or protected-approval proof. Three macOS local-socket tests
+and one compile-fail identity-construction test additionally passed. The local
+socket tests require permission to create/connect their temporary Unix sockets;
+they do not contact a network host or KNX interface.

@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Portable input contract for a future OS-protected operator broker.
 //!
-//! No OS identity, protected storage, enrollment or execution authority is
-//! implemented here. Input validation never authenticates a local peer.
+//! macOS peer identity checking is available, but no protected host boundary,
+//! storage, enrollment or execution authority is established here. Input
+//! validation alone never authenticates a local peer.
 
 use serde::{Deserialize, Serialize};
 use task152_passkey_prototype::{BoundPlan, guard};
+
+#[cfg(target_os = "macos")]
+pub mod macos_peer;
 
 pub const MAX_REQUEST_BYTES: usize = 4_096;
 pub const PROTOCOL_VERSION: u8 = 1;

@@ -196,6 +196,10 @@ plan policy; its unprovisioned facade always refuses execution. Five offline
 tests, formatting and Clippy passed on macOS arm64. An independent review
 passed for this bounded increment. See
 [the experiment](../experiments/task153-broker/README.md) and Git history for
-the source and commands. The service, OS privilege/IPC boundary, protected
+the source and commands. A subsequent macOS increment uses kernel-reported
+Unix-socket peer credentials and rejects an agent UID or unexpected principal;
+eight tests and one compile-fail test passed, including real local sockets.
+Distinct-principal authorization and protected provisioning remain NOT RUN.
+The service, OS privilege/IPC boundary, protected
 enrollment, actual adapter integration and hardware tests remain NOT RUN.
 All acceptance criteria remain open; no gate is advanced.
