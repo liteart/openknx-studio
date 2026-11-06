@@ -6,6 +6,7 @@ use nix::errno::Errno;
 use nix::fcntl::AtFlags;
 use nix::fcntl::{OFlag, open, openat};
 use nix::sys::stat::Mode;
+use sha2::{Digest, Sha256};
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
@@ -189,12 +190,63 @@ pub fn load_fixed_configuration() -> Result<RootOwnedSnapshot, ConfigError> {
     let parent = checked_directory(path.parent().ok_or(ConfigError::PathRejected)?)?;
     let _lock = lock_existing_configuration(&parent)?;
     ensure_no_activation_fence(&parent)?;
-    let file = open_leaf(&parent, path.file_name().ok_or(ConfigError::PathRejected)?)?;
+    read_checked_leaf(&parent, path.file_name().ok_or(ConfigError::PathRejected)?)
+}
+
+fn read_checked_leaf(parent: &File, name: &OsStr) -> Result<RootOwnedSnapshot, ConfigError> {
+    let file = open_leaf(parent, name)?;
     let before = checked_metadata(&file, false)?;
     let bytes = read_bounded(&file)?;
     let after = checked_metadata(&file, false)?;
     ensure_unchanged((&before).into(), (&after).into(), bytes.len())?;
     Ok(RootOwnedSnapshot { bytes })
+}
+
+pub(super) fn load_service_manifest() -> Result<RootOwnedSnapshot, ConfigError> {
+    let parent = checked_directory(
+        Path::new(CONFIGURATION)
+            .parent()
+            .ok_or(ConfigError::PathRejected)?,
+    )?;
+    read_checked_leaf(&parent, OsStr::new("service-manifest.json"))
+}
+
+pub(super) fn load_write_plan() -> Result<RootOwnedSnapshot, ConfigError> {
+    let parent = checked_directory(
+        Path::new(CONFIGURATION)
+            .parent()
+            .ok_or(ConfigError::PathRejected)?,
+    )?;
+    read_checked_leaf(&parent, OsStr::new("write-plan.json"))
+}
+
+pub(super) fn hash_installed_service(path: &Path) -> Result<[u8; 32], ConfigError> {
+    let parent = checked_directory(path.parent().ok_or(ConfigError::PathRejected)?)?;
+    let file = open_leaf(&parent, path.file_name().ok_or(ConfigError::PathRejected)?)?;
+    let before = checked_metadata(&file, false)?;
+    if before.len() > 128 * 1024 * 1024 {
+        return Err(ConfigError::TooLarge);
+    }
+    let mut digest = Sha256::new();
+    let mut count = 0u64;
+    let mut file_ref = &file;
+    let mut buffer = [0; 32768];
+    loop {
+        let length = file_ref.read(&mut buffer).map_err(|_| ConfigError::Io)?;
+        if length == 0 {
+            break;
+        }
+        count = count
+            .checked_add(length as u64)
+            .ok_or(ConfigError::TooLarge)?;
+        if count > 128 * 1024 * 1024 {
+            return Err(ConfigError::TooLarge);
+        }
+        digest.update(&buffer[..length]);
+    }
+    let after = checked_metadata(&file, false)?;
+    ensure_unchanged((&before).into(), (&after).into(), count as usize)?;
+    Ok(digest.finalize().into())
 }
 
 fn lock_existing_configuration(parent: &File) -> Result<File, ConfigError> {

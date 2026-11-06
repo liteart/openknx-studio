@@ -304,6 +304,78 @@ root, call the protected store, load real credentials or claim a complete
 privileged end-to-end test. The existing diagnostic binary still runs only its
 peer diagnostic; no executable currently starts this enrollment handler.
 
+## Source-only fixed operator service listener
+
+`task153-operator-service` now provides a separate explicit macOS entry point.
+It accepts only `--operator-service-only` and requires actual root/wheel
+credentials. Startup from the development checkout is refused: the executable
+path must be `/Library/PrivilegedHelperTools/org.openknxstudio.operator`.
+No elevated launch or installation has been performed.
+
+Startup requires a descriptor-validated root-owned `service-manifest.json` in
+the fixed store, with schema 1, `executable_sha256` (32-byte JSON array),
+`executable_cdhash` (40 hexadecimal characters), `plan_digest` (32-byte
+array) and exact `gateway` (canonical IPv4 address and nonzero port).
+Native `SecCode::for_self` dynamic validation must match the explicit
+CDHash requirement; this binds the running image rather than trusting a
+pathname. A bounded descriptor-read SHA256 of the protected installed file
+must independently match the manifest. Requirements cannot be supplied as
+arbitrary text, and native validation uses no-network flags.
+
+These checks establish integrity **under the protected provisioning
+assumption**, not publisher provenance or human approval. A root-owned
+self-referential manifest is not a signature. The operator must independently
+verify the reviewed artifact and provision its pins through a trusted path;
+this source creates no manifest and offers no way to enable service from an
+agent-writable artifact. No resistance to malicious root installation is
+claimed. The protected operator client/UI remains missing.
+
+The root-owned `write-plan.json` is loaded from the fixed store by descriptor.
+It must match the pinned canonical digest, exact protected manifest gateway, bus path
+`knxnetip-udp`, target `1.1.231`, object 0/PID 14/element 1 and exact `00` to `04`
+candidate. Actual deployment must privately provision the gateway Simon
+approved for the selected bench; no actual gateway/configuration is committed.
+Static policy tests use TEST-NET addresses only. The plan must be unexpired
+and contain the reviewed descriptor-0/`0705`
+evidence fingerprint using the existing Task020 evidence tuple. This is a
+profile-correlation fingerprint; it does not uniquely authenticate hardware.
+The real executor must still re-read descriptor/current value immediately
+before writing. No such device read or write occurs in this binary.
+
+Only after every startup check passes can it bind the fixed
+`/private/var/db/org.openknxstudio.operator/operator.sock` under the protected
+existing parent. The socket becomes mode 0600; kernel root-peer checking also
+precedes every request. Existing endpoints are never reused or unlinked. The
+single-threaded listener admits at most eight sessions during a 15-minute
+accept window. A handler admitted before the window closes can finish later;
+its frame I/O uses the 120-second connection deadline, while synchronous
+filesystem/native operations, including fsync, have no hard completion bound.
+An accepted durable commit is not forcibly interrupted to meet a wall-clock
+shutdown claim. Shutdown retains the endpoint for
+independent operator cleanup. All handlers remain non-authorizing; no KNX
+adapter is connected. No HTTP server or unprivileged browser bridge is enabled.
+
+Main-image validation does not establish loaded-library or launch-environment
+integrity. Provisioning review must independently cover hardened runtime/library
+validation where applicable, trusted launch configuration and inherited
+environment, including DYLD injection paths. A hash match does not make an
+agent-controlled elevated launch safe. No such launch hardening or installed
+service behavior has been qualified by this increment.
+
+Six tests establish actual unprivileged startup denial, strict reference-plan
+and manifest validation, bounded local session denial, and native dynamic-code
+matching against the current test image's public CDHash. The latter invokes
+the fixed vendor `codesign --display` tool only on its own test executable;
+it does not sign code, inspect identities/keychains or write a trusted pin.
+Positive installed-root service startup, protected UI/client enrollment and
+physical execution remain **NOT RUN**. No test artifact, manifest or private
+bench configuration is committed.
+
+Primary code-identity references:
+
+- [Apple exact code requirements](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements)
+- [Safe Security.framework API](https://docs.rs/security-framework/3.7.0/security_framework/os/macos/code_signing/struct.SecCode.html)
+
 ## Remaining implementation
 
 Before this contract can front an executing service, the macOS provider must
@@ -328,6 +400,13 @@ dependency pin; upstream caveats remain in Task152's dependency review.
 The read-only verifier directly pins the same `webauthn-rs = 0.6.2`, defaults
 disabled; the `softpasskey` authenticator is a dev-dependency only and was
 already reviewed in Task152. No dangerous credential/state features are used.
+Native running-image validation pins `security-framework = 3.7.0`
+(MIT OR Apache-2.0, Rust >=1.85), defaults disabled. Its new packages
+`core-foundation 0.10.1` and `security-framework-sys 2.17.0` retain their
+MIT/Apache-2.0 notices; no build script or keychain feature is invoked by this
+code. Only safe self-code/requirement validation APIs are used. Upstream FFI
+contains unsafe code; the project adds none. The already reviewed `sha2 0.11.0`
+is directly pinned for executable/plan evidence hashing.
 The macOS file operations also pin `rustix = 1.1.6` (MIT/Apache-2.0 options,
 Rust >=1.65), defaults disabled with only `fs` and `std`. It was already present
 through `tempfile`; no new registry package was introduced. The reviewed safe
@@ -367,6 +446,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 42 library tests, six helper tests and two
+The current complete run passed 48 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

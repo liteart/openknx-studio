@@ -222,7 +222,11 @@ service or actual enrollment; power-loss hardware behavior remains unverified.
 A root-peer-checked connection handler now connects a verified registration to
 staging and activation, and checks assertions against the fixed root record;
 its unprivileged/synthetic tests and independent review passed. No listener,
-protected operator client or real privileged integration is available yet.
+protected operator client or real privileged integration was available then.
+A macOS listener source now verifies a protected manifest, running-code
+identity and the fixed target plan before accepting root peers. Its test suite
+and independent review passed for source-only use. It is not installed, has no
+trusted operator UI or KNX executor, and has not run with elevated privileges.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on
