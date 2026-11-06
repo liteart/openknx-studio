@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use task152_passkey_prototype::{BoundPlan, guard};
 
 #[cfg(target_os = "macos")]
+mod enrollment_store;
+#[cfg(target_os = "macos")]
 pub mod macos_config;
 #[cfg(target_os = "macos")]
 pub mod macos_peer;

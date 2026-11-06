@@ -197,6 +197,44 @@ configuration or access any actual user credential. A compile-fail test proves
 callers cannot use the private parser. The public fixed-file loader remains
 unexercised until a separately approved operator enrollment has been provisioned.
 
+## Private durable enrollment staging
+
+The private, dormant `enrollment_store` module supplies a fixed-leaf create-new
+primitive for a future protected registration ceremony. Its wrapper requires
+actual root/wheel credentials and an existing descriptor-validated parent. It
+serializes only a standard public `Passkey` record with bounded issuer/schema,
+then opens `enrollment.pending.json` relative to that parent with
+`O_CREAT|O_EXCL|O_NOFOLLOW`. Existing active `config.json`, existing pending
+files and symlinks are refused without alteration. New file mode is set to
+0600 by descriptor, and creator ownership, regular-file type, link count and
+native ACL are checked before writing. Success follows actual file `sync_all`
+and parent-directory `sync_all`, in that order.
+
+This step never publishes `config.json`: a valid but unacknowledged pending
+record must not become an active enrollment after an interruption. On failure,
+the code does not remove the pending file and refuses retry while it exists;
+its directory entry is not guaranteed durable before successful directory sync.
+The active-file check is not a cross-process lock. Future activation and
+enrollment must serialize and revalidate under a protected lock. There is no
+cleanup, activation, arbitrary path/byte import
+API or externally callable writer. The module is not connected to an endpoint,
+the verifier or the diagnostic helper. No real root store was created.
+
+Seven tests use actual temporary directories and generated public passkey
+records to check create-new/no-overwrite, existing active file and symlink
+protection, descriptor-parent rename binding, bounds and the actual
+unprivileged wrapper denial. Deterministic fault injection at creation, after
+writing and after file sync leaves the pending file present; the successful path executes
+native file and directory sync calls. These are stage-fault tests, not a
+power-loss test or a trace proving storage hardware behavior.
+
+A safe explicit enrollment ceremony still requires the independently installed
+operator service and protected UI/peer path. That ceremony must obtain the
+operator's real passkey registration result; root UID, a record label or this
+private persistence primitive does not prove human initiation. Activation of
+the staged record, durable credential updates and the execution ledger remain
+unimplemented. No user action to run a root command is requested by this code.
+
 ## Remaining implementation
 
 Before this contract can front an executing service, the macOS provider must
@@ -255,6 +293,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 22 library tests, six helper tests and two
+The current complete run passed 29 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

@@ -11,7 +11,7 @@ use std::os::fd::AsFd;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Component, Path};
 
-const CONFIGURATION: &str = "/private/var/db/org.openknxstudio.operator/config.json";
+pub(super) const CONFIGURATION: &str = "/private/var/db/org.openknxstudio.operator/config.json";
 pub const MAX_CONFIGURATION_BYTES: usize = 16_384;
 const MAX_PATH_BYTES: usize = 1_024;
 const MAX_COMPONENTS: usize = 32;
@@ -46,7 +46,7 @@ fn directory_flags() -> OFlag {
     OFlag::O_RDONLY | OFlag::O_DIRECTORY | OFlag::O_NOFOLLOW | OFlag::O_CLOEXEC
 }
 
-fn no_granting_acl(file: &File) -> Result<(), ConfigError> {
+pub(super) fn no_granting_acl(file: &File) -> Result<(), ConfigError> {
     // Native IDs avoid resolving ACL principals through account/name services.
     // Deny entries cannot add rights; reject all allow entries, including
     // read-only ones, rather than speculate about effective ACL semantics.
@@ -87,7 +87,7 @@ fn open_directory_at(parent: &File, name: &OsStr) -> Result<File, ConfigError> {
         .map_err(|_| ConfigError::PathRejected)
 }
 
-fn checked_directory(path: &Path) -> Result<File, ConfigError> {
+pub(super) fn checked_directory(path: &Path) -> Result<File, ConfigError> {
     if !path.is_absolute() || path.as_os_str().len() > MAX_PATH_BYTES {
         return Err(ConfigError::PathRejected);
     }

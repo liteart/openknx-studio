@@ -210,6 +210,12 @@ descriptor-validated configuration and checks plan-bound WebAuthn assertions.
 Synthetic cryptographic tests and independent review passed. Its observation
 cannot authorize hardware; actual protected enrollment, durable credential
 updates and the execution ledger remain unimplemented or NOT RUN.
+Private enrollment staging now writes a non-active pending record using
+create-new and file/directory synchronization; it neither activates a key nor
+provides an operator endpoint. Seven temporary-filesystem tests passed and the
+bounded increment was independently reviewed. Failure before directory sync
+does not guarantee a pending file survives power loss. Protected serialization
+and activation remain unimplemented.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on
