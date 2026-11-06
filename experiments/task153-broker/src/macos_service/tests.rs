@@ -95,7 +95,7 @@ fn fixed_reference_route_profile_descriptor_and_digest_are_all_required() {
 
 #[test]
 fn manifest_pin_cannot_inject_a_weaker_native_requirement() {
-    let record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":"192.0.2.50:3671"});
+    let record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":"192.0.2.50:3671","operator_uid":41001,"operator_gid":41002,"operator_acl_uuid":"{00000000-0000-4000-8000-000000000001}","agent_uid":41003});
     assert!(parse_manifest(&serde_json::to_vec(&record).unwrap()).is_ok());
     for pin in [
         "always".to_owned(),
@@ -128,7 +128,7 @@ fn gateway_pin_requires_canonical_ipv4_and_nonzero_port_and_exact_plan_match() {
         "192.0.2.50:3671 ",
     ] {
         assert!(!valid_gateway(invalid));
-        let record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":invalid});
+        let record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":invalid,"operator_uid":41001,"operator_gid":41002,"operator_acl_uuid":"{00000000-0000-4000-8000-000000000001}","agent_uid":41003});
         assert!(matches!(
             parse_manifest(&serde_json::to_vec(&record).unwrap()),
             Err(Error::ManifestRejected)
@@ -184,7 +184,13 @@ fn bounded_actual_local_listener_closes_denied_session_without_root_storage() {
         let mut client = UnixStream::connect(&path).unwrap();
         let plan = ConfiguredPlan::new(input()).unwrap();
         assert_eq!(
-            serve_connections(&listener, &plan, Instant::now() + Duration::from_secs(2), 1),
+            serve_connections(
+                &listener,
+                &plan,
+                &ExpectedOperator::new(0, 0, geteuid().as_raw()).unwrap(),
+                Instant::now() + Duration::from_secs(2),
+                1
+            ),
             Ok(())
         );
         let mut bytes = Vec::new();
@@ -193,4 +199,41 @@ fn bounded_actual_local_listener_closes_denied_session_without_root_storage() {
         drop(listener);
         assert!(path.exists());
     }
+}
+
+#[test]
+fn manifest_requires_distinct_nonroot_principals() {
+    // Arbitrary synthetic policy IDs, never host account data.
+    let record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":"192.0.2.50:3671","operator_uid":41001,"operator_gid":41002,"operator_acl_uuid":"{00000000-0000-4000-8000-000000000001}","agent_uid":41003});
+    for (field, value) in [("operator_uid", 0), ("agent_uid", 0), ("agent_uid", 41001)] {
+        let mut changed = record.clone();
+        changed[field] = value.into();
+        assert!(matches!(
+            parse_manifest(&serde_json::to_vec(&changed).unwrap()),
+            Err(Error::ManifestRejected)
+        ));
+    }
+    let mut missing = record;
+    missing.as_object_mut().unwrap().remove("agent_uid");
+    assert!(matches!(
+        parse_manifest(&serde_json::to_vec(&missing).unwrap()),
+        Err(Error::ManifestRejected)
+    ));
+}
+
+#[test]
+fn native_acl_uuid_pin_is_required_canonical_and_nonzero() {
+    for invalid in [
+        "",
+        "operator",
+        "41001",
+        "{00000000-0000-0000-0000-000000000000}",
+        "00000000-0000-4000-8000-000000000001",
+        "{00000000-0000-4000-8000-00000000000G}",
+    ] {
+        assert!(!socket_access::valid_acl_uuid(invalid));
+    }
+    assert!(socket_access::valid_acl_uuid(
+        "{00000000-0000-4000-8000-000000000001}"
+    ));
 }

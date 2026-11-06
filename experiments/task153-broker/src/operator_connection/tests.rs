@@ -58,12 +58,13 @@ fn send(stream: &mut UnixStream, bytes: &[u8]) {
 fn actual_nonroot_process_and_peer_are_denied_without_reading_a_ceremony() {
     if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
         let (_directory, mut client, server) = connected();
+        let policy = ExpectedOperator::new(0, 0, geteuid().as_raw()).unwrap();
         assert_eq!(
-            require_operator_peer(&server),
+            require_operator_peer(&server, &policy),
             Err(Error::OperatorPeerDenied)
         );
         assert_eq!(
-            handle_operator_connection(server, &plan()),
+            handle_operator_connection(server, &plan(), &policy),
             Err(Error::RootServiceRequired)
         );
         let mut reply = Vec::new();
@@ -197,5 +198,21 @@ fn replies_are_bounded_frames_without_implicit_authorization() {
             deadline()
         ),
         Err(Error::InvalidFrame)
+    );
+}
+
+#[test]
+fn configured_policy_matches_actual_peer_and_rejects_agent_on_same_connection() {
+    let (_directory, _client, server) = connected();
+    let uid = geteuid().as_raw();
+    let gid = getegid().as_raw();
+    // A deliberately different policy ID is not evidence of another account.
+    let synthetic_other = uid.checked_add(1).unwrap();
+    let accepted = ExpectedOperator::new(uid, gid, synthetic_other).unwrap();
+    assert_eq!(require_operator_peer(&server, &accepted), Ok(()));
+    let denied = ExpectedOperator::new(synthetic_other, gid, uid).unwrap();
+    assert_eq!(
+        require_operator_peer(&server, &denied),
+        Err(Error::OperatorPeerDenied)
     );
 }

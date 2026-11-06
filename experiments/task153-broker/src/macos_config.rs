@@ -196,6 +196,9 @@ pub fn load_fixed_configuration() -> Result<RootOwnedSnapshot, ConfigError> {
 fn read_checked_leaf(parent: &File, name: &OsStr) -> Result<RootOwnedSnapshot, ConfigError> {
     let file = open_leaf(parent, name)?;
     let before = checked_metadata(&file, false)?;
+    if before.mode() & 0o7777 != 0o600 {
+        return Err(ConfigError::PermissionsRejected);
+    }
     let bytes = read_bounded(&file)?;
     let after = checked_metadata(&file, false)?;
     ensure_unchanged((&before).into(), (&after).into(), bytes.len())?;
@@ -251,7 +254,8 @@ pub(super) fn hash_installed_service(path: &Path) -> Result<[u8; 32], ConfigErro
 
 fn lock_existing_configuration(parent: &File) -> Result<File, ConfigError> {
     let file = open_leaf(parent, OsStr::new("enrollment.lock"))?;
-    if checked_metadata(&file, false)?.len() != 0 {
+    let metadata = checked_metadata(&file, false)?;
+    if metadata.len() != 0 || metadata.mode() & 0o7777 != 0o600 {
         return Err(ConfigError::PermissionsRejected);
     }
     rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockShared)

@@ -47,6 +47,14 @@ pub struct ExpectedOperator {
 }
 
 impl ExpectedOperator {
+    pub(crate) fn uid(&self) -> u32 {
+        self.uid
+    }
+
+    pub(crate) fn gid(&self) -> u32 {
+        self.gid
+    }
+
     pub fn new(uid: u32, gid: u32, agent_uid: u32) -> Result<Self, PeerError> {
         if uid == agent_uid {
             return Err(PeerError::SharedPrincipal);

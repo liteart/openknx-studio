@@ -216,7 +216,7 @@ private activation now hold an exclusive native flock on the descriptor-checked
 empty `enrollment.lock`. Readers hold the shared lock while inspecting the
 fence and reading the active record. A busy lock fails immediately. There is
 no arbitrary path/byte import API or public raw writer. The module
-is only connected to the root-peer-authenticated handler described below; no
+is only connected to the configured-operator-peer-authenticated handler described below; no
 listener, operator UI or diagnostic-helper invocation enables it. No
 real root store was created.
 
@@ -265,16 +265,18 @@ private persistence primitive does not prove human initiation. Durable
 credential updates, protected ceremony wiring and the execution ledger remain
 unimplemented. No user action to run a root command is requested by this code.
 
-## Root operator Unix connection handler
+## Configured operator Unix connection handler
 
 `operator_connection::handle_operator_connection` owns one Unix stream and
-requires actual root/wheel process credentials plus kernel-observed root/wheel
-peer credentials before reading any byte. Wire data cannot provide IDs,
+requires actual root/wheel service credentials plus the configured operator
+UID/GID from kernel-observed peer credentials before reading any byte. The
+service obtains this policy from its protected manifest; the agent UID is
+explicitly denied. Wire data cannot provide IDs,
 select a target/property/value, import a stored key or request a device action.
 The service supplies one immutable configured plan. These checks do not prove
-the process was independently installed or that the root client represents a
+the process was independently installed or that the configured operator client represents a
 human; the missing operator client must perform explicit OS-authenticated
-initiation. No HTTP enrollment endpoint or socket listener is added.
+initiation. The handler itself provides no HTTP enrollment endpoint or listener.
 
 The framed JSON protocol is version 1 with a four-byte big-endian body length,
 32 KiB request limit, 64 KiB reply limit and a 120-second deadline for socket
@@ -294,9 +296,9 @@ may already be committed; a future client must inspect protected state and must
 not retry blindly. This handler has no grant or dispatcher and cannot contact KNX.
 The localhost RP does not prove phone-only custody or make a browser page an
 independent operator channel. A same-user HTTP bootstrap must not be used to
-pin an agent-chosen key; the protected root operator client/UI is still needed.
+pin an agent-chosen key; the protected operator client/UI is still needed.
 
-Six tests use actual local Unix sockets and synthetic registration credentials
+Seven tests use actual local Unix sockets and synthetic registration credentials
 to establish non-root process/peer denial before reading a ceremony, bounded
 framing, rejected caller identity/target fields, required UV, genuine synthetic
 registration and wrong-origin/challenge/expiry rejection. They do not impersonate
@@ -315,7 +317,13 @@ No elevated launch or installation has been performed.
 Startup requires a descriptor-validated root-owned `service-manifest.json` in
 the fixed store, with schema 1, `executable_sha256` (32-byte JSON array),
 `executable_cdhash` (40 hexadecimal characters), `plan_digest` (32-byte
-array) and exact `gateway` (canonical IPv4 address and nonzero port).
+array), exact `gateway` (canonical IPv4 address and nonzero port), and
+`operator_uid`, `operator_gid`, `agent_uid` numeric OS policy, plus an
+`operator_acl_uuid` native principal pin (canonical lowercase braced UUID,
+nonzero). Operator and agent
+UIDs must be distinct and nonzero; no identity is accepted from IPC. The
+selected operator account must resolve to that UID and primary GID. No host
+account IDs or deployment manifest are committed.
 Native `SecCode::for_self` dynamic validation must match the explicit
 CDHash requirement; this binds the running image rather than trusting a
 pathname. A bounded descriptor-read SHA256 of the protected installed file
@@ -344,8 +352,48 @@ before writing. No such device read or write occurs in this binary.
 
 Only after every startup check passes can it bind the fixed
 `/private/var/db/org.openknxstudio.operator/operator.sock` under the protected
-existing parent. The socket becomes mode 0600; kernel root-peer checking also
-precedes every request. Existing endpoints are never reused or unlinked. The
+existing parent. This directory must already be root-owned mode 0711 with no
+allow ACL: non-root users may search it but cannot list or modify it. Root
+configuration, plan, manifest and reader lock must be mode 0600 with no allow
+ACL. Provisioning must prepare this policy independently; startup changes no
+account or directory permissions.
+
+The root-owned socket has mode 0600 and exactly one non-inheriting WRITE_DATA
+ACE. The setter receives the decimal operator UID, parsed directly by pinned
+exacl and converted by Apple's mbr_uid_to_uuid; usernames and aliases are never
+used for ACL creation. Native-ID ACL readback must match the separately
+protected operator_acl_uuid pin exactly, including the WRITE-only permission
+and empty inheritance flags. A UID-to-UUID mismatch closes the listener before
+admission. Provisioning must independently establish that this UUID belongs to
+the selected operator, and protect that account/directory-service identity. No group grant or ACL,
+owner or deletion authority is delegated. ACL installation uses exacl's safe
+no-follow path API under the previously validated root-only writable parent;
+readback must match the exact ACE and inode/type/owner/mode must remain stable.
+A symlink or ordinary file fails without modifying its target. Kernel UID/GID
+checking on the owned connection independently precedes every request and
+rejects the agent principal. An ACL failure stops admission and retains the
+endpoint for reviewed cleanup. This is not a general path-writing API.
+
+Apple's Unix socket implementation authorizes connect using WRITE_DATA on the
+socket vnode ([XNU uipc_usrreq.c](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/uipc_usrreq.c)).
+An actual temporary socket test under the normal test UID proves ACL storage,
+exact native UUID readback, rejection of a mismatched UUID pin and socket
+compatibility. Because that test UID also owns the
+fixture, it does **not** prove another principal's effective access or denial.
+Dedicated-group authority was avoided: the pinned nix version does not expose
+getgrouplist on macOS, and primary-GID comparison cannot prove supplementary
+group exclusion. The UID ACL grants no group access.
+
+A separately provisioned operator login and normal Safari can avoid custom
+browser entitlements. That principal must not be available to the agent via
+login/session/process control or privilege escalation. The operator bridge/UI
+is still missing; no browser ceremony through this new principal has run. No
+account creation, root execution, installation or real key access occurred.
+Real distinct-user socket acceptance/agent denial, protected enrollment and
+launch-environment isolation remain **NOT RUN**. This source does not establish
+that the current host has those identities or isolation.
+
+Existing endpoints are never reused or unlinked. The
 single-threaded listener admits at most eight sessions during a 15-minute
 accept window. A handler admitted before the window closes can finish later;
 its frame I/O uses the 120-second connection deadline, while synchronous
@@ -362,7 +410,7 @@ environment, including DYLD injection paths. A hash match does not make an
 agent-controlled elevated launch safe. No such launch hardening or installed
 service behavior has been qualified by this increment.
 
-Six tests establish actual unprivileged startup denial, strict reference-plan
+Source tests establish actual unprivileged startup denial, strict reference-plan
 and manifest validation, bounded local session denial, and native dynamic-code
 matching against the current test image's public CDHash. The latter invokes
 the fixed vendor `codesign --display` tool only on its own test executable;
@@ -446,6 +494,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 48 library tests, six helper tests and two
+The current complete run passed 53 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

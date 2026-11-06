@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Root-peer-authenticated Unix connection handler. No listener or operator UI.
+//! Configured-operator-peer-authenticated Unix connection handler. No listener or operator UI.
 //!
 //! The installed root service and OS-authenticated operator client are still
 //! missing. Running this from a writable checkout does not establish protection.
@@ -8,7 +8,7 @@ use crate::ConfiguredPlan;
 use crate::enrollment_store::{
     ActivationOutcome, activate_first_enrollment, persist_pending_enrollment,
 };
-use crate::macos_peer::inspect_peer;
+use crate::macos_peer::{ExpectedOperator, check_operator_peer};
 use crate::root_passkey::{RootPasskeyVerifier, operator_webauthn, unique_json};
 use nix::unistd::{getegid, geteuid};
 use serde::Deserialize;
@@ -56,12 +56,9 @@ enum Command {
     },
 }
 
-fn require_operator_peer(stream: &UnixStream) -> Result<(), Error> {
-    let peer = inspect_peer(stream).map_err(|_| Error::OperatorPeerDenied)?;
-    // No claimed UID/GID, token, body field or caller-created identity is used.
-    if peer.uid() != 0 || peer.gid() != 0 {
-        return Err(Error::OperatorPeerDenied);
-    }
+fn require_operator_peer(stream: &UnixStream, policy: &ExpectedOperator) -> Result<(), Error> {
+    // The service obtains policy from protected configuration, never request IDs.
+    check_operator_peer(stream, policy).map_err(|_| Error::OperatorPeerDenied)?;
     Ok(())
 }
 
@@ -178,11 +175,12 @@ impl Registration {
 pub fn handle_operator_connection(
     mut stream: UnixStream,
     plan: &ConfiguredPlan,
+    policy: &ExpectedOperator,
 ) -> Result<(), Error> {
     if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
         return Err(Error::RootServiceRequired);
     }
-    require_operator_peer(&stream)?;
+    require_operator_peer(&stream, policy)?;
     let deadline = Instant::now()
         .checked_add(SESSION_TIMEOUT)
         .ok_or(Error::Timeout)?;

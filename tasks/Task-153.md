@@ -227,6 +227,10 @@ A macOS listener source now verifies a protected manifest, running-code
 identity and the fixed target plan before accepting root peers. Its test suite
 and independent review passed for source-only use. It is not installed, has no
 trusted operator UI or KNX executor, and has not run with elevated privileges.
+The listener now supports a separately provisioned non-root operator principal:
+socket ACL identity is pinned and kernel peer UID/GID is checked independently.
+Synthetic socket tests and independent review passed. Actual separate-account
+access, installation and browser bridge remain NOT RUN.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

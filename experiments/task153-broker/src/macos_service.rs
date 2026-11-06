@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Fixed, bounded local service listener. No installer, operator UI or KNX.
 
+use crate::macos_peer::ExpectedOperator;
 use crate::{ConfiguredPlan, macos_config, operator_connection, root_passkey::unique_json};
-use nix::unistd::{getegid, geteuid};
+use nix::unistd::{Uid, User, getegid, geteuid};
 use security_framework::os::macos::code_signing::{Flags, SecCode, SecRequirement};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -34,6 +35,7 @@ pub enum Error {
     PlanRejected,
     EndpointUnavailable,
     Io,
+    OperatorPolicyRejected,
 }
 
 #[derive(Deserialize)]
@@ -44,6 +46,10 @@ struct Manifest {
     executable_cdhash: String,
     plan_digest: [u8; 32],
     gateway: String,
+    operator_uid: u32,
+    operator_gid: u32,
+    operator_acl_uuid: String,
+    agent_uid: u32,
 }
 
 fn valid_gateway(gateway: &str) -> bool {
@@ -67,6 +73,10 @@ fn parse_manifest(bytes: &[u8]) -> Result<Manifest, Error> {
         || manifest.executable_sha256 == [0; 32]
         || manifest.plan_digest == [0; 32]
         || !valid_gateway(&manifest.gateway)
+        || !socket_access::valid_acl_uuid(&manifest.operator_acl_uuid)
+        || manifest.operator_uid == 0
+        || manifest.agent_uid == 0
+        || manifest.operator_uid == manifest.agent_uid
     {
         return Err(Error::ManifestRejected);
     }
@@ -127,6 +137,7 @@ fn parse_plan(
 fn serve_connections(
     listener: &UnixListener,
     plan: &ConfiguredPlan,
+    policy: &ExpectedOperator,
     deadline: Instant,
     limit: usize,
 ) -> Result<(), Error> {
@@ -135,7 +146,7 @@ fn serve_connections(
         match listener.accept() {
             Ok((stream, _)) => {
                 sessions += 1;
-                let _ = operator_connection::handle_operator_connection(stream, plan);
+                let _ = operator_connection::handle_operator_connection(stream, plan, policy);
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                 std::thread::sleep(Duration::from_millis(20))
@@ -171,6 +182,17 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     {
         return Err(Error::RunningImageRejected);
     }
+    let policy = ExpectedOperator::new(
+        manifest.operator_uid,
+        manifest.operator_gid,
+        manifest.agent_uid,
+    )
+    .map_err(|_| Error::OperatorPolicyRejected)?;
+    // Resolve only the selected account; no enumeration or credential access.
+    let _operator = User::from_uid(Uid::from_raw(policy.uid()))
+        .map_err(|_| Error::OperatorPolicyRejected)?
+        .filter(|user| user.uid.as_raw() == policy.uid() && user.gid.as_raw() == policy.gid())
+        .ok_or(Error::OperatorPolicyRejected)?;
     let snapshot = macos_config::load_write_plan().map_err(|_| Error::InstallationUnavailable)?;
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -184,21 +206,35 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     )?;
     macos_config::inspect_root_owned_directory(Path::new(STORE))
         .map_err(|_| Error::InstallationUnavailable)?;
+    // Operator can search this root-owned directory, never list or replace it.
+    // Provisioning is separate: the service never changes directory authority.
+    if fs::symlink_metadata(STORE)
+        .map_err(|_| Error::InstallationUnavailable)?
+        .permissions()
+        .mode()
+        & 0o7777
+        != 0o711
+    {
+        return Err(Error::InstallationUnavailable);
+    }
     match fs::symlink_metadata(SOCKET) {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
         _ => return Err(Error::EndpointUnavailable),
     }
     let listener = UnixListener::bind(SOCKET).map_err(|_| Error::EndpointUnavailable)?;
     // The protected parent prevents ordinary replacement. A connection in the
-    // brief bind/chmod interval still faces kernel root-peer authentication.
+    // brief bind/chmod interval still faces kernel configured-peer authentication.
     fs::set_permissions(SOCKET, fs::Permissions::from_mode(0o600))
         .map_err(|_| Error::EndpointUnavailable)?;
+    socket_access::restrict_socket(Path::new(SOCKET), policy.uid(), &manifest.operator_acl_uuid)?;
     listener.set_nonblocking(true).map_err(|_| Error::Io)?;
     let deadline = Instant::now().checked_add(LIFETIME).ok_or(Error::Io)?;
     // Closing the listener never unlinks paths. A stale endpoint blocks restart
     // until an independently reviewed operator cleanup has checked its identity.
-    serve_connections(&listener, &plan, deadline, MAX_SESSIONS)
+    serve_connections(&listener, &plan, &policy, deadline, MAX_SESSIONS)
 }
+
+mod socket_access;
 
 #[cfg(test)]
 mod tests;
