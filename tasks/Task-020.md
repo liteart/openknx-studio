@@ -47,6 +47,7 @@ Add the generic write service and demonstrate one reversible write only after th
 - [Task-004](Task-004.md): Register reference artifacts and the isolated test bench. Required predecessor behavior/evidence must be accepted.
 - [Task-151](Task-151.md): Provide the connected device transport session required by the selected Verify Mode candidate before that candidate can be written.
 - [Task-152](Task-152.md): Provide the owner-selected plan-bound human approval prototype before using that path for a physical write.
+- [Task-153](Task-153.md): Provide a separately protected operator broker that owns exact-plan approval consumption and execution before using that path for a physical write.
 
 **Required phase gate:** None; execute only satisfied prerequisites and approved lab actions.
 
@@ -90,7 +91,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked on exact reversible property, scoped write plan and backend authorization/identity enforcement; generic low-level increment reviewed offline |
+| Implementation / report status | Blocked on protected broker Task-153, exact-plan execution integration, and final identity/recovery qualification; generic low-level increment and simulator remain offline only |
 | Source commit(s) | Local knust fork `da9a66679d6d49108f97ec8afeaed8d56c382a63`, based on Task019 `e1d3d9b0ad7ec0edad6b4c82782cd3148ff65d56`; editor offline guard model `8c06571`; fork not published |
 | Tests executed | Seven property codec regression tests, nine synthetic loopback write tests, focused Clippy, formatting and diff checks PASS; hardware writes/readback and backend authorization negative NOT RUN |
 | Evidence location | Fork `TASK020-PROPERTY-WRITE.md` at `da9a66679d6d49108f97ec8afeaed8d56c382a63`; checkpoint below |

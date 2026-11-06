@@ -1,6 +1,6 @@
 # Task Index
 
-This backlog contains **152 individually specified tasks**, numbered Task-001 through Task-152. Every task has its own Markdown file. IDs above Task-152 are unallocated, not empty files.
+This backlog contains **153 individually specified tasks**, numbered Task-001 through Task-153. Every task has its own Markdown file. IDs above Task-152 are unallocated, not empty files.
 
 All implementation/report statuses initially are **Not started**. This kit specifies work; it does not assert that tests, forks, code or releases already exist. Task dependencies and explicit phase-gate outcomes both govern readiness. A NO-GO report does not unlock the next stage.
 
@@ -15,7 +15,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | Stage | Task IDs | Count | Gate |
 |---|---|---:|---|
 | PoCs and feasibility gate | Task-001 to Task-028 | 28 | Task-028 |
-| Additional PoC input investigations and test reliability | Task-139 to Task-149, Task-151 to Task-152 | 13 | No gate unlocked; Task-005 still governs provisioning |
+| Additional PoC input investigations and test reliability | Task-139 to Task-149, Task-151 to Task-153 | 14 | No gate unlocked; Task-005 still governs provisioning |
 | Alpha integration | Task-029 to Task-092 | 64 | Task-092 |
 | Beta functionality | Task-093 to Task-112 | 20 | Task-112 |
 | Release candidate | Task-113 to Task-125 | 13 | Task-125 |
@@ -212,6 +212,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-149](tasks/Task-149.md) | Preserve the mandatory cEMI TPCI control octet | knust-fork / cEMI codec | Accepted Tasks 015 and 147; no phase gate unlocked |
 | [Task-151](tasks/Task-151.md) | Implement bounded connected KNX management sessions | knust-fork / KNX transport | Accepted Tasks 016, 017 and 019; no phase gate unlocked |
 | [Task-152](tasks/Task-152.md) | Prototype plan-bound phone passkey approval | Editor / human approval PoC | Accepted Tasks 019 and 151; no phase gate unlocked |
+| [Task-153](tasks/Task-153.md) | Prototype a protected local operator broker for KNX writes | Editor / operator authorization and guarded executor | Task-152 WebAuthn verifier and successful synthetic macOS ceremony; no phase gate unlocked |
 
 ## Project identity and repository workflow
 
