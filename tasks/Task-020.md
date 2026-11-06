@@ -90,7 +90,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | Blocked on exact reversible property, scoped write plan and backend authorization/identity enforcement; generic low-level increment reviewed offline |
-| Source commit(s) | Local knust fork `da9a66679d6d49108f97ec8afeaed8d56c382a63`, based on Task019 `e1d3d9b0ad7ec0edad6b4c82782cd3148ff65d56`; fork not published |
+| Source commit(s) | Local knust fork `da9a66679d6d49108f97ec8afeaed8d56c382a63`, based on Task019 `e1d3d9b0ad7ec0edad6b4c82782cd3148ff65d56`; editor offline guard model `8c06571`; fork not published |
 | Tests executed | Seven property codec regression tests, nine synthetic loopback write tests, focused Clippy, formatting and diff checks PASS; hardware writes/readback and backend authorization negative NOT RUN |
 | Evidence location | Fork `TASK020-PROPERTY-WRITE.md` at `da9a66679d6d49108f97ec8afeaed8d56c382a63`; checkpoint below |
 | Acceptance criteria met | AC-002 supported by offline review; AC-001 and AC-003 remain pending physical readback/restore and durable authorization/uncertainty enforcement |
@@ -170,3 +170,26 @@ possible `00`→`04`→`00` Verify Mode test has SHA-256
 `add2f653dd4f98b2e11de427f69f5f5114e6d2875ee401ff625c835322bf7612`.
 The draft is not an execution capability: exact-plan enforcement, durable
 intent, recovery review and physical readback remain required.
+
+## Offline exact-plan guard model — 2026-11-06
+
+The user explicitly requested the selected Verify Mode write/restore test.
+An editor-owned offline model binds immutable plan and target, requires a
+trusted approval and fresh observed identity/value, persists intent before
+dispatch selection, quarantines an unresolved bus path and requires separate
+post-write and post-restore observations. Synthetic approval and observation
+constructors exist only in tests. Missing real approval or observation
+watermarks fail closed. The model contains no executable device adapter and
+cannot itself send a KNX packet or authorize this test.
+
+Independent review found mutable dispatch and stale-readback risks; both were
+corrected and re-reviewed. `cargo test --locked --test task020-guard` passed
+18 offline tests, independently repeated on main. Full workspace tests, Clippy,
+formatting and scope checks passed in the task worktree. The reviewed model
+source SHA-256 is
+`f668820bf4b2dfe8f2a12f8aa17236cadd9fe23c176ea33445afdf5a1258b1ee`.
+Trusted human approval and authenticated observation adapters, a dispatcher
+using the pinned fork API, power-loss/Windows durability qualification, the
+actual device write and restoration are still NOT RUN or unavailable. User
+consent is already recorded; no repeated consent is implied by these technical
+gaps.
