@@ -17,6 +17,8 @@ pub mod macos_peer;
 #[cfg(target_os = "macos")]
 pub mod macos_service;
 #[cfg(target_os = "macos")]
+pub mod operator_browser;
+#[cfg(target_os = "macos")]
 pub mod operator_connection;
 #[cfg(target_os = "macos")]
 pub mod root_passkey;

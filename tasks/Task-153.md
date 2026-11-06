@@ -231,6 +231,11 @@ The listener now supports a separately provisioned non-root operator principal:
 socket ACL identity is pinned and kernel peer UID/GID is checked independently.
 Synthetic socket tests and independent review passed. Actual separate-account
 access, installation and browser bridge remain NOT RUN.
+An experimental separate-operator Safari bridge and its synthetic tests are
+now available. Protected enrollment must not run until an isolated browser
+profile and origin state, including absence of service workers and untrusted
+extensions, are independently qualified. Actual separate-user access and
+Safari enrollment remain NOT RUN; the bridge does not authorize KNX writes.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

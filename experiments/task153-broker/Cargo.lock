@@ -2037,6 +2037,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "socket2",
  "task152-passkey-prototype",
  "tempfile",
  "webauthn-authenticator-rs",

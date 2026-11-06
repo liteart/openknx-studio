@@ -440,7 +440,107 @@ operator action described in Task153; no installation command is provided or
 invoked here. Windows and Linux need their own verified OS providers. Actual
 service, macOS ownership/IPC, Windows, Linux and hardware tests are **NOT RUN**.
 
+## Separate-operator Safari bridge source
+
+`task153-operator-browser` accepts only `--enroll` or `--assert`. It must run
+under the independently provisioned operator login/session, using an artifact
+reviewed and installed outside the agent's writable boundary. A development
+checkout is not a trusted operator surface.
+
+Protected enrollment additionally requires a freshly isolated Safari profile in
+that operator account, with no pre-existing localhost:15300 Service Worker,
+origin/site storage or extensions/content blockers. A previously installed
+Service Worker can replace the page or JavaScript before these header checks
+and observe/intercept the bootstrap and authenticated requests. Extensions or
+browser/session control can similarly bypass the intended display and secret
+isolation. Private files, exact Origin and the passkey prompt do not mitigate
+that compromised-browser case. The bridge neither clears nor proves browser
+profile state; a new profile and its isolation must be independently provisioned
+and qualified before treating enrollment as protected. This prerequisite is
+**unverified / NOT RUN**; no such browser profile was created or inspected.
+ Installation, artifact integrity,
+separate-principal login/session/process isolation (including accessibility,
+remote control and privilege escalation), and actual browser behavior remain
+**NOT RUN**. This increment installs nothing and does not establish that the
+current host has an isolated operator principal. Never launch an agent-writable
+bridge artifact as the approving operator.
+
+Before HTTP binding or bootstrap creation, the client connects the fixed Unix
+socket with a two-second nonblocking connect deadline, verifies kernel-observed root/wheel server identity, sends the selected
+begin request and requires a valid non-authorizing service reply. The service
+independently checks the client against its protected operator UID/GID policy.
+No caller can choose an endpoint, plan, target, property or value. Successful
+socket identity assumes the existing protected service provisioning; it does
+not establish publisher trust or authorize a device operation.
+
+The bridge binds only `127.0.0.1:15300`, generates a 256-bit secret using the
+safe pinned Security.framework `SecRandom` wrapper, and creates an exclusive
+0600 bootstrap file in an explicitly 0700 owned directory. Descriptor ACL
+checks reject inherited allow ACEs before secret contents are written. Safari
+is opened with only the file path in arguments. The secret travels in the
+navigation fragment, is immediately removed with history.replaceState, and is
+then sent only in a custom same-origin request header. It is never placed in
+command arguments, environment, server logs or query/path data. The bootstrap navigation uses no-referrer; the served page, HTTP response and
+POST fetches use same-origin so Safari preserves the exact Origin rather than
+Origin:null. Same-origin referrers contain only the fragment-free localhost
+URL. The bootstrap is removed after the first authenticated request.
+Normal cleanup removes only matching owned fixture inodes and the resulting
+empty directory; substitution/unknown contents retain quarantine. A process
+crash may leave a private bootstrap file for operator cleanup.
+
+Unauthenticated GETs expose only static disabled UI and JavaScript. Requests
+must use the exact localhost Host; POSTs additionally require the exact origin,
+JSON content type and session secret. Foreign/null/missing POST origin,
+wrong/missing secret, duplicate headers, transfer encoding, oversized data and
+unexpected routes fail closed. No CORS endpoint or cookies are used. Header
+bytes are bounded to 4096, request bodies to 32768, replies to 65536; the bridge
+admits at most 64 connections within 110 seconds, with two-second HTTP request
+I/O deadlines. I/O is nonblocking with absolute deadlines: actual Darwin
+closed-peer fixtures exposed EINVAL when resetting SO_RCVTIMEO after a reply,
+so this bridge does not rely on that socket-option behavior. The Safari opener
+has a two-second child-process admission wait; OS scheduling and process
+cleanup are not hard realtime guarantees.
+
+The authenticated page renders the service's canonical summary and digest
+using textContent, requires acknowledgement and a fresh explicit passkey click,
+and invokes standard navigator.credentials.create/get. It submits exactly one
+finish command on the original service connection. The service verifies the
+WebAuthn ceremony and handles protected enrollment; every response remains
+physical_authorization:false. Failed/uncertain enrollment responses require
+protected operator inspection rather than a retry claim. No KNX adapter or
+bearer grant is added. The existing service's ledger/executor integration is
+still missing.
+
+Eight new tests use actual temporary loopback/Unix sockets, private filesystem
+fixtures and synthetic public ceremony data. They cover HTTP/CSRF denials,
+framing/deadlines, saturated Unix-connect backlog, static-page secrecy, wrong
+server UID, service framing,
+private bootstrap permissions and replacement-preserving cleanup. Two additional simulated DOM/WebAuthn tests exercise both complete browser
+flows, exact same-origin fetch policy, immediate fragment removal and fresh
+operator click before the provider call. No test opens Safari or accesses a
+real user credential. Browser UX, complete protected
+enrollment/assertion, distinct-user denial, Windows/Linux and hardware remain
+**NOT RUN**. Thirty focused framing repetitions passed after the Darwin I/O
+fix. `tempfile = 3.24.0` is now a macOS runtime dependency for private bootstrap
+creation; its version/license/dependency review is unchanged and no new package
+was introduced.
+
+Primary RNG reference: [Apple SecRandomCopyBytes](https://developer.apple.com/documentation/security/secrandomcopybytes(_:_:_:)).
+
 ## Dependencies and verification
+
+The bridge directly pins already-resolved `socket2 = 0.6.5`, default features
+disabled (MIT OR Apache-2.0, MSRV 1.70). Only existing libc/windows-sys packages
+are used; the lockfile adds only the direct dependency edge. Reviewed upstream
+Socket::new sets close-on-exec and Apple NOSIGPIPE; connect_timeout switches to
+nonblocking connect and polls against elapsed time, including interrupted poll
+handling. The bridge additionally checks deadline and connected peer address,
+then authenticates kernel UID/GID. OwnedFd conversions are safe upstream APIs;
+no project unsafe code or FFI is added. Upstream contains unsafe code; this is a
+focused API/source review, not a full audit. An actual small-backlog Unix socket
+fixture fills the queue and verifies bounded timeout or immediate refusal
+instead of an indefinite connect. This macOS run observed immediate refusal
+after the first queued client; it did not exercise a delayed OS poll timeout.
 
 The experiment-only path dependency reuses the existing Task152 library and
 its reviewed pinned dependencies. It is not a release manifest or production
@@ -482,6 +582,7 @@ From the repository root with the pinned toolchain:
 ```sh
 cargo test --offline --locked --manifest-path experiments/task153-broker/Cargo.toml
 cargo fmt --manifest-path experiments/task153-broker/Cargo.toml -- --check
+node --test experiments/task153-broker/browser_test.mjs
 cargo clippy --offline --locked --all-targets --manifest-path experiments/task153-broker/Cargo.toml -- -D warnings
 ```
 
@@ -494,6 +595,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 53 library tests, six helper tests and two
+The current complete run passed 61 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.
