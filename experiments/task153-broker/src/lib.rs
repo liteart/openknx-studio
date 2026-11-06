@@ -6,7 +6,7 @@
 //! validation alone never authenticates a local peer.
 
 use serde::{Deserialize, Serialize};
-use task152_passkey_prototype::{BoundPlan, guard};
+use task152_passkey_prototype::{BoundPlan, guard as plan_guard};
 
 #[cfg(target_os = "macos")]
 mod assertion_store;
@@ -86,7 +86,7 @@ pub struct ConfiguredPlan {
 }
 
 impl ConfiguredPlan {
-    pub fn new(input: guard::PlanInput) -> Result<Self, Error> {
+    pub fn new(input: plan_guard::PlanInput) -> Result<Self, Error> {
         // Only the reviewed Verify Mode candidate is representable. The route
         // and identity come from future protected configuration, never IPC.
         if input.selector.object != 0

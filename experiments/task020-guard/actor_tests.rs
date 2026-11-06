@@ -22,12 +22,12 @@ impl Clock for FixedClock {
     }
 }
 
-struct Peer {
+pub(super) struct Peer {
     child: Child,
     _controls: ChildStdin,
     lines: mpsc::Receiver<String>,
     events: Vec<String>,
-    endpoint: String,
+    pub(super) endpoint: String,
 }
 impl Drop for Peer {
     fn drop(&mut self) {
@@ -37,12 +37,20 @@ impl Drop for Peer {
 }
 impl Peer {
     async fn start(case: &str, mode: &str) -> Self {
+        Self::start_profile(case, mode, "1.1.42", "127").await
+    }
+    pub(super) async fn start_profile(
+        case: &str,
+        mode: &str,
+        target: &str,
+        property: &str,
+    ) -> Self {
         let stderr = File::create(format!("{ARTIFACTS}/e2e-{case}.stderr.log")).unwrap();
         let mut child = Command::new(SIMULATOR)
             .args([
                 "--loopback-simulator",
                 "--target",
-                "1.1.42",
+                target,
                 "--client",
                 "1.1.254",
                 "--mask",
@@ -50,7 +58,7 @@ impl Peer {
                 "--object-index",
                 "0",
                 "--property-id",
-                "127",
+                property,
                 "--start-index",
                 "1",
                 "--count",
@@ -119,7 +127,7 @@ impl Peer {
             }
         }
     }
-    async fn finish(&mut self) {
+    pub(super) async fn finish(&mut self) {
         self.until("SIMULATOR_DONE").await;
         let status = timeout(Duration::from_secs(2), async {
             loop {
@@ -152,7 +160,7 @@ impl Peer {
             .unwrap();
         assert!(device < gateway);
     }
-    fn selected(&self, marker: &str) -> Vec<&str> {
+    pub(super) fn selected(&self, marker: &str) -> Vec<&str> {
         self.events
             .iter()
             .filter(|line| line.contains(marker))

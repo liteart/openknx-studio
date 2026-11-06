@@ -575,9 +575,77 @@ commit/restart behavior and real operator keys remain **NOT RUN**.
 This ledger is not Task020's execution-intent/route journal. The dispatcher
 still has no production approval issuer or registered broker adapter, and the
 service executes no device operation or future replay of this stored record.
-Connecting its durable verification result directly to the existing guard and
-typed adapter remains the next source increment. No guard visibility, physical
-gate or device capability was widened in this change.
+The exact-source integration below now consumes this durable verification
+result into the existing guard and typed adapter. The default broker still has
+no qualified execution entrypoint; no public guard visibility or physical gate
+was widened.
+
+## Exact-source guard and typed-adapter integration
+
+run_execution_check.py reuses Task020's verified Git-blob exporter to build a
+temporary, non-shipping crate from exact broker/guard source plus fork revision
+4d296afb0906d17b6724b56c912f2e9e3f6680a5 and exacl revision
+18275aa1a82aae9a786b108b0db0992a4d06e6e2. No fork was published and no local
+fork path or temporary lockfile enters a committed release manifest. The
+runner preserves both input locks' cached resolutions, preferring the broker's
+existing packages where names overlap, then resolves and checks only the
+temporary graph offline. knust features must be exactly dpt; Secure stays off.
+It exports Git blobs rather than copying dependency worktree/build files.
+
+The temporary crate registers guard_execution.rs as a private child of an
+exact Task020 guard copy. That child alone can construct the guard's private
+HumanApproval from a consuming PersistedAssertion witness. Only successful
+standard WebAuthn verification plus protected ledger persistence emits that
+witness in non-test code. It has no public constructor, serializer, Clone or
+observation-to-witness conversion; the default UI drops it and returns only its
+non-authorizing observation. No grant constructor was added to Task020 or to
+an MCP/IPC operation. Task152's ordinary guard copy is left unmodified.
+
+The private path parses the canonical displayed plan into the same exact guard
+model and compares its recomputed digest to the configured digest and witness.
+It hard-requires target 1.1.231, the reviewed descriptor profile, object0/PID14/
+element1 and exactly 00 to04, and rechecks expiry before opening the actual
+KnustAdapter. The adapter uses only the pinned fork's public typed API. The
+existing dispatcher owns desired/readback/restore/readback and durable route,
+consumption, intent, uncertain-state and cleanup evidence. Its existing
+prewrite descriptor/current-property reads remain in force. A profile digest
+is correlation evidence, not unique hardware authentication.
+
+Production execution requires an uninhabited QualifiedExecution context:
+there is no constructor until independently reviewed installation, principal,
+browser/profile and operator qualification are implemented. The default crate
+never registers this execution module. There is no executable flag or claimed
+manifest boolean to enable it. Its dormant root wrapper additionally requires
+root/wheel and a descriptor-checked fixed execution directory under the
+protected store, root-owned mode0700 with no allow ACL. That descriptor stays
+alive through execution, confining the existing path-based journal under the
+assumption that privileged actors do not maliciously replace the root-protected
+ancestry. Root substitution and installed-root confinement were **NOT RUN**;
+this source preparation establishes neither qualified host nor hardware access.
+
+The combined offline run passed108 Rust tests, including the actual typed
+adapter/owned fork loopback peer driven by a genuine synthetic WebAuthn
+assertion and actual filesystem counter record: exactly two writes (04,00),
+four property reads, four descriptor reads and separately confirmed device and
+gateway cleanup. A changed plan or expired witness emitted zero UDP packets.
+The positive test deliberately uses an ordinary owned journal fixture through
+a private test path; it never constructs QualifiedExecution or pretends to
+prove protected-root storage. Existing cancellation/unknown-outcome tests also
+passed. Combined source check, Clippy and Task020 artifact validation passed.
+
+Run with the pinned toolchain, a clean local fork checkout at the exact revision
+and the existing reviewed exacl checkout (source only):
+
+```sh
+python3 -B experiments/task153-broker/run_execution_check.py --fork "$PINNED_KNUST_CHECKOUT" --exacl "$PINNED_EXACL_CHECKOUT"
+```
+
+The runner reports its temporary artifact directory and exact input hashes.
+Normal broker verification remains67 library tests,6 helper tests and2
+compile-fail doctests; default builds gain no adapter or network authority.
+Actual protected installation, profile qualification, service-to-executor
+activation and the real write remain **NOT RUN**. Their missing qualification
+cannot be replaced by this passing synthetic integration.
 
 ## Dependencies and verification
 

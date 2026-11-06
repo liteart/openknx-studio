@@ -298,3 +298,24 @@ fn persistence_failure_consumes_verified_ceremony_without_success_observation() 
     );
     assert!(verifier.credential_update_pending);
 }
+
+/// Actual standard WebAuthn+filesystem fixture, never root or hardware proof.
+/// Only the isolated exact-source integration runner consumes this witness.
+#[allow(dead_code)]
+pub(crate) fn persisted_assertion_fixture(
+    plan: &ConfiguredPlan,
+    parent: &std::fs::File,
+) -> PersistedAssertion {
+    let (mut verifier, mut authenticator) = verifier_fixture();
+    let options = verifier.begin(plan, 100).unwrap();
+    let response = sign(&mut authenticator, options);
+    verifier
+        .complete_with_store(plan, &response, 101, |record| {
+            crate::assertion_store::store_synthetic_record_for_test(
+                parent,
+                &serde_json::to_vec(record).unwrap(),
+            )
+        })
+        .unwrap()
+        .1
+}

@@ -97,6 +97,22 @@ impl VerifiedAssertionRecord<'_> {
     }
 }
 
+/// Consuming, non-serializable witness. Only actual verification followed by
+/// protected persistence creates it in non-test code. Observations cannot be
+/// converted into this type; it is never returned over the wire.
+#[allow(dead_code)]
+pub(super) struct PersistedAssertion {
+    id: [u8; 16],
+    digest: [u8; 32],
+    expires: u64,
+}
+#[allow(dead_code)]
+impl PersistedAssertion {
+    pub(super) fn consume_for_guard(self) -> ([u8; 16], [u8; 32], u64) {
+        (self.id, self.digest, self.expires)
+    }
+}
+
 /// The only public loader reads the fixed descriptor-validated root-owned file.
 /// This type establishes no installed-service, UI or peer-authentication proof.
 ///
@@ -231,7 +247,49 @@ impl RootPasskeyVerifier {
         response: &[u8],
         now: u64,
     ) -> Result<RootAssertionObservation, Error> {
-        self.finish_with_store(plan, response, now, crate::assertion_store::persist)
+        self.finish_for_execution(plan, response, now)
+            .map(|(observed, _witness)| observed)
+    }
+
+    pub(super) fn finish_for_execution(
+        &mut self,
+        plan: &ConfiguredPlan,
+        response: &[u8],
+        now: u64,
+    ) -> Result<(RootAssertionObservation, PersistedAssertion), Error> {
+        self.complete_with_store(plan, response, now, crate::assertion_store::persist)
+    }
+
+    fn complete_with_store<F>(
+        &mut self,
+        plan: &ConfiguredPlan,
+        response: &[u8],
+        now: u64,
+        persist: F,
+    ) -> Result<(RootAssertionObservation, PersistedAssertion), Error>
+    where
+        F: FnOnce(&VerifiedAssertionRecord<'_>) -> Result<(), crate::assertion_store::Error>,
+    {
+        let expires = self
+            .pending
+            .as_ref()
+            .ok_or(Error::ChallengeUnavailable)?
+            .expires;
+        let observed = self.finish_with_store(plan, response, now, persist)?;
+        let hash: [u8; 32] = Sha256::digest(response).into();
+        let mut id = [0; 16];
+        id.copy_from_slice(&hash[..16]);
+        if id == [0; 16] {
+            return Err(Error::VerificationFailed);
+        }
+        Ok((
+            observed,
+            PersistedAssertion {
+                id,
+                digest: plan.digest(),
+                expires,
+            },
+        ))
     }
 
     fn finish_with_store<F>(
@@ -347,4 +405,4 @@ impl<'de> Deserialize<'de> for UniqueJson {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

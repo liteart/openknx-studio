@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
 
-fn input() -> guard::PlanInput {
-    guard::PlanInput {
+fn input() -> plan_guard::PlanInput {
+    plan_guard::PlanInput {
         operation_id: "synthetic-operation".into(),
-        route: guard::Route {
+        route: plan_guard::Route {
             gateway: "synthetic-gateway".into(),
             bus_path: "synthetic-bus".into(),
             target: "synthetic-target".into(),
             identity: [7; 32],
         },
-        selector: guard::Selector {
+        selector: plan_guard::Selector {
             object: 0,
             property: 14,
             index: 1,
@@ -80,13 +80,13 @@ fn protocol_version_and_request_id_are_bounded() {
 #[test]
 fn configured_candidate_rejects_other_properties_or_effects() {
     for mutate in [
-        |p: &mut guard::PlanInput| p.selector.object = 1,
-        |p: &mut guard::PlanInput| p.selector.property = 15,
-        |p: &mut guard::PlanInput| p.selector.index = 2,
-        |p: &mut guard::PlanInput| p.selector.count = 2,
-        |p: &mut guard::PlanInput| p.selector.element_size = 2,
-        |p: &mut guard::PlanInput| p.original = vec![1],
-        |p: &mut guard::PlanInput| p.desired = vec![8],
+        |p: &mut plan_guard::PlanInput| p.selector.object = 1,
+        |p: &mut plan_guard::PlanInput| p.selector.property = 15,
+        |p: &mut plan_guard::PlanInput| p.selector.index = 2,
+        |p: &mut plan_guard::PlanInput| p.selector.count = 2,
+        |p: &mut plan_guard::PlanInput| p.selector.element_size = 2,
+        |p: &mut plan_guard::PlanInput| p.original = vec![1],
+        |p: &mut plan_guard::PlanInput| p.desired = vec![8],
     ] {
         let mut configured = input();
         mutate(&mut configured);
@@ -100,8 +100,11 @@ fn configured_candidate_rejects_other_properties_or_effects() {
 #[test]
 fn summary_and_requested_digest_use_the_same_existing_guard_snapshot() {
     let plan = ConfiguredPlan::new(input()).unwrap();
-    let shown: guard::PlanInput = serde_json::from_str(plan.summary()).unwrap();
-    assert_eq!(guard::Plan::new(shown).unwrap().digest(), plan.digest());
+    let shown: plan_guard::PlanInput = serde_json::from_str(plan.summary()).unwrap();
+    assert_eq!(
+        plan_guard::Plan::new(shown).unwrap().digest(),
+        plan.digest()
+    );
     let decoded = decode_request(&request(Command::ExecuteApproved {
         plan_digest: plan.digest(),
     }))

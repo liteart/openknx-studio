@@ -240,6 +240,15 @@ A one-shot assertion record now stores the exact plan and updated public
 credential before reporting a verified observation; existing records prevent
 reuse. Synthetic cryptographic/filesystem tests and independent review passed.
 Protected-root restart behavior and actual execution integration remain NOT RUN.
+A gated offline integration now connects the persisted synthetic assertion to
+the existing guard and exact exported knust adapter. The loopback peer completed
+write/readback/restore/readback and teardown; altered or expired plans emitted
+no UDP packets. The exact-export runner passed 108 tests, Clippy and artifact
+validation; an independent reviewer reproduced the focused scenarios. Evidence
+is under `private/evidence/task153-execution-integration-20261106/` (result
+SHA-256 `1761dbce935f6489b78d5d59b90aaa256e21c8d3575444bde81edddc2e84bd51`).
+The production qualification is deliberately unconstructible; installed host,
+browser isolation, protected journal and physical write remain NOT RUN.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

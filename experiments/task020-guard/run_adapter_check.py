@@ -49,9 +49,9 @@ def inspect_fork(path):
             raise ValueError(f"missing required fork file: {name}")
 
 
-def export_pinned_tree(fork, destination):
+def export_pinned_tree(fork, destination, revision=FORK_REVISION):
     """Export raw pinned blobs, never worktree/index files or archive filters."""
-    tree = git_bytes(fork, "ls-tree", "-r", "-l", "-z", "--full-tree", FORK_REVISION)
+    tree = git_bytes(fork, "ls-tree", "-r", "-l", "-z", "--full-tree", revision)
     if len(tree) > 1_048_576:
         raise ValueError("pinned tree metadata exceeds the export bound")
     entries = tree.rstrip(b"\0").split(b"\0")
