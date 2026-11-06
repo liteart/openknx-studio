@@ -160,3 +160,13 @@ v01.10.01 §4.2.14.7; the current generic write primitive is connectionless.
 A KNXnet/IP tunnel alone is not that device transport connection. No Verify
 Mode write has been sent, and the candidate requires further protocol and
 recovery review before any such operation.
+
+Subsequently, the separately reviewed Task151 connected-session harness read
+the same control byte (`00`) after a matching connected DD0 check. Device-session
+teardown was locally network-confirmed and gateway teardown remotely confirmed;
+no device write was sent. Private evidence is under
+`task151-connected-read-20261106/`. A non-executable private draft for a
+possible `00`→`04`→`00` Verify Mode test has SHA-256
+`add2f653dd4f98b2e11de427f69f5f5114e6d2875ee401ff625c835322bf7612`.
+The draft is not an execution capability: exact-plan enforcement, durable
+intent, recovery review and physical readback remain required.
