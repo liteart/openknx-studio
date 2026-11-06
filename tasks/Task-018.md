@@ -73,9 +73,12 @@ No inference that identity readability proves programming compatibility.
 
 ## Risks and Blockers
 
-The physical identity comparison requires a specifically selected device,
-expected independently sourced identity, gateway/target identities and a
-separately coordinated read-only operation. Simon deferred work with the
+The physical identity comparison requires independently sourced expected
+identity and a bounded read-only operation. Simon selected a specific device
+and supplied gateway, individual address, model and ETS application reference;
+these household-specific details are recorded privately rather than published.
+The selected DD0 operation reports a mask version and does not itself verify
+the supplied application version or fingerprint. Simon deferred work with the
 production ETS project and its full-device write/capture. Unsupported or
 undocumented behavior must be recorded and must not be guessed.
 
@@ -86,7 +89,7 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; selected one-shot descriptor read implemented and reviewed offline; hardware identity comparison pending |
-| Source commit(s) | Local knust fork `322f02fbeeee6e5c9a85646c9640deb9562da84a`, based on Task017 `c62a89ac03005e415bcba72c19d6242ebc683c4d`; fork not published |
+| Source commit(s) | Local knust fork `322f02fbeeee6e5c9a85646c9640deb9562da84a` and `e73c435c05a4305062bce239fb8f03632c82ade4`, based on Task017 `c62a89ac03005e415bcba72c19d6242ebc683c4d`; fork not published |
 | Tests executed | 15 synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; physical device identity read NOT RUN |
 | Evidence location | Fork `TASK018-IDENTITY.md` at `322f02fbeeee6e5c9a85646c9640deb9562da84a`; checkpoint below |
 | Acceptance criteria met | AC-001 pending physical reference comparison; AC-002/003 supported by synthetic tests only, not a hardware claim |
@@ -115,3 +118,16 @@ checks successfully; the coordinator independently reran all 15 tests. The
 reviewer checked the standard locators, codec use and tests, with no remaining
 demonstrated must-fix finding within this bounded scope. No KNX device read,
 write, production ETS project access or Windows test was performed.
+
+## Selected device and gateway address — 2026-11-06
+
+Simon supplied a specific target, model, ETS application version and fingerprint;
+the unverified user-supplied reference is preserved in private
+`task018-reference-device-20261106.json`. No device access follows merely from
+recording these values. A separately reviewed local fork increment
+`e73c435c05a4305062bce239fb8f03632c82ade4` exposes the address reported by the
+successful gateway connection response without enabling address-management
+fallback probing. Four unit and three synthetic loopback tests passed; focused
+Clippy, formatting and diff checks passed. The gateway-provided address does
+not prove uniqueness or the target's identity. Actual device identification,
+hardware comparison and full Task018 acceptance remain pending.
