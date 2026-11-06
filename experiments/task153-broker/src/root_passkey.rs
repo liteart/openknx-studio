@@ -114,15 +114,7 @@ impl RootPasskeyVerifier {
             return Err(Error::InvalidEnrollment);
         }
         let EnrollmentKind::Operator = enrollment.kind;
-        let origin = Url::parse(OPERATOR_ORIGIN).map_err(|_| Error::InvalidEnrollment)?;
-        let webauthn = WebauthnBuilder::new("localhost", &origin)
-            .map_err(|_| Error::InvalidEnrollment)?
-            .rp_name("OpenKNX Studio operator approval")
-            .allow_subdomains(false)
-            .allow_any_port(false)
-            .timeout(Duration::from_secs(LIFETIME))
-            .build()
-            .map_err(|_| Error::InvalidEnrollment)?;
+        let webauthn = operator_webauthn()?;
         Ok(Self {
             webauthn,
             credential: enrollment.credential,
@@ -209,7 +201,21 @@ impl RootPasskeyVerifier {
     }
 }
 
-fn unique_json<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T, serde_json::Error> {
+pub(super) fn operator_webauthn() -> Result<Webauthn, Error> {
+    let origin = Url::parse(OPERATOR_ORIGIN).map_err(|_| Error::InvalidEnrollment)?;
+    WebauthnBuilder::new("localhost", &origin)
+        .map_err(|_| Error::InvalidEnrollment)?
+        .rp_name("OpenKNX Studio operator approval")
+        .allow_subdomains(false)
+        .allow_any_port(false)
+        .timeout(Duration::from_secs(LIFETIME))
+        .build()
+        .map_err(|_| Error::InvalidEnrollment)
+}
+
+pub(super) fn unique_json<T: serde::de::DeserializeOwned>(
+    bytes: &[u8],
+) -> Result<T, serde_json::Error> {
     // First pass rejects duplicate keys at every depth, including in the
     // library-owned credential/response types. Serde's recursion bound applies.
     serde_json::from_slice::<UniqueJson>(bytes)?;

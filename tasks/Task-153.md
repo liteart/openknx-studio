@@ -219,6 +219,10 @@ remains required. A private activation increment now serializes readers and
 writers, uses an activation fence and no-replace rename, and tests interruption
 and uncertain cleanup with temporary files. It is not connected to an operator
 service or actual enrollment; power-loss hardware behavior remains unverified.
+A root-peer-checked connection handler now connects a verified registration to
+staging and activation, and checks assertions against the fixed root record;
+its unprivileged/synthetic tests and independent review passed. No listener,
+protected operator client or real privileged integration is available yet.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

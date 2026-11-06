@@ -15,6 +15,8 @@ pub mod macos_config;
 #[cfg(target_os = "macos")]
 pub mod macos_peer;
 #[cfg(target_os = "macos")]
+pub mod operator_connection;
+#[cfg(target_os = "macos")]
 pub mod root_passkey;
 
 pub const MAX_REQUEST_BYTES: usize = 4_096;

@@ -185,8 +185,7 @@ applied in memory and mark `credential_update_pending`; nothing writes or
 acknowledges them as durable. A durable protected credential update and one-use
 execution ledger must exist before observations can authorize real effects.
 The trust anchor public key is never replaced by assertion data. The
-unprovisioned broker facade and diagnostic remain disconnected from this
-verification path and cannot issue a device capability.
+unprovisioned broker facade and diagnostic cannot issue a device capability.
 
 Six new tests use generated software-authenticator credentials and genuine
 signatures. They exercise serialization roundtrip, counter-change status,
@@ -216,8 +215,9 @@ entry is not guaranteed durable before successful directory sync. Staging and
 private activation now hold an exclusive native flock on the descriptor-checked
 empty `enrollment.lock`. Readers hold the shared lock while inspecting the
 fence and reading the active record. A busy lock fails immediately. There is
-no arbitrary path/byte import API or externally callable writer. The module
-is not connected to an endpoint, the verifier or the diagnostic helper. No
+no arbitrary path/byte import API or public raw writer. The module
+is only connected to the root-peer-authenticated handler described below; no
+listener, operator UI or diagnostic-helper invocation enables it. No
 real root store was created.
 
 Seven tests use actual temporary directories and generated public passkey
@@ -264,6 +264,45 @@ operator's real passkey registration result; root UID, a record label or this
 private persistence primitive does not prove human initiation. Durable
 credential updates, protected ceremony wiring and the execution ledger remain
 unimplemented. No user action to run a root command is requested by this code.
+
+## Root operator Unix connection handler
+
+`operator_connection::handle_operator_connection` owns one Unix stream and
+requires actual root/wheel process credentials plus kernel-observed root/wheel
+peer credentials before reading any byte. Wire data cannot provide IDs,
+select a target/property/value, import a stored key or request a device action.
+The service supplies one immutable configured plan. These checks do not prove
+the process was independently installed or that the root client represents a
+human; the missing operator client must perform explicit OS-authenticated
+initiation. No HTTP enrollment endpoint or socket listener is added.
+
+The framed JSON protocol is version 1 with a four-byte big-endian body length,
+32 KiB request limit, 64 KiB reply limit and a 120-second deadline for socket
+reads and writes; cryptographic verification and filesystem synchronization are
+not bounded by that deadline. Duplicate keys and unknown commands/fields are
+rejected. Exactly one
+enrollment or assertion ceremony is allowed per connection, with private
+server-held challenge state. Enrollment uses required-UV WebAuthn registration
+and the shared exact RP/origin policy before private stage/activate calls.
+Assertion uses only the fixed descriptor-validated root credential and sends
+the same service-owned canonical plan summary/digest that it verifies.
+
+All replies and assertion observations remain `physical_authorization:false`.
+Successful registration reports activation or committed-cleanup-uncertain
+accurately when its reply is delivered. If the final reply is lost, enrollment
+may already be committed; a future client must inspect protected state and must
+not retry blindly. This handler has no grant or dispatcher and cannot contact KNX.
+The localhost RP does not prove phone-only custody or make a browser page an
+independent operator channel. A same-user HTTP bootstrap must not be used to
+pin an agent-chosen key; the protected root operator client/UI is still needed.
+
+Six tests use actual local Unix sockets and synthetic registration credentials
+to establish non-root process/peer denial before reading a ceremony, bounded
+framing, rejected caller identity/target fields, required UV, genuine synthetic
+registration and wrong-origin/challenge/expiry rejection. They do not impersonate
+root, call the protected store, load real credentials or claim a complete
+privileged end-to-end test. The existing diagnostic binary still runs only its
+peer diagnostic; no executable currently starts this enrollment handler.
 
 ## Remaining implementation
 
@@ -328,6 +367,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 36 library tests, six helper tests and two
+The current complete run passed 42 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

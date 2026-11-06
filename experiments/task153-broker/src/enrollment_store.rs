@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Dormant private first-enrollment persistence. No public importer or ceremony.
+//! Private first-enrollment persistence. No public arbitrary importer.
 //!
-//! This is deliberately not connected to the broker until protected operator
-//! initiation, enrollment UI and service provisioning have been established.
-#![allow(dead_code)]
+//! Only the root-peer-authenticated connection handler reaches this module.
+//! Installed service protection and operator UI initiation remain prerequisites.
 
 use crate::macos_config::{
     CONFIGURATION, MAX_CONFIGURATION_BYTES, checked_directory, ensure_no_activation_fence,
@@ -21,7 +20,7 @@ use std::path::Path;
 use webauthn_rs::prelude::Passkey;
 
 #[derive(Debug, PartialEq, Eq)]
-enum StoreError {
+pub(super) enum StoreError {
     OperatorProvisioningUnavailable,
     InvalidRecord,
     AlreadyExistsOrUnavailable,
@@ -56,7 +55,7 @@ enum ActivationStage {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum ActivationOutcome {
+pub(super) enum ActivationOutcome {
     Activated,
     CommittedCleanupUncertain,
 }
@@ -102,7 +101,10 @@ fn encode_record(issuer: &str, credential: &Passkey) -> Result<Vec<u8>, StoreErr
 
 /// Dormant root-only wrapper. A future caller must supply only the result of
 /// its explicit protected WebAuthn operator registration, never imported keys.
-fn persist_pending_enrollment(issuer: &str, credential: &Passkey) -> Result<(), StoreError> {
+pub(super) fn persist_pending_enrollment(
+    issuer: &str,
+    credential: &Passkey,
+) -> Result<(), StoreError> {
     if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
         return Err(StoreError::OperatorProvisioningUnavailable);
     }
@@ -223,7 +225,7 @@ fn named_inode_matches(parent: &File, name: &str, file: &File) -> bool {
 
 /// Dormant activation only; a future protected ceremony must supply the exact
 /// same public record that it registered and staged, never an imported record.
-fn activate_first_enrollment(
+pub(super) fn activate_first_enrollment(
     issuer: &str,
     credential: &Passkey,
 ) -> Result<ActivationOutcome, StoreError> {
