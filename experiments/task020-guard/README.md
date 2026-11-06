@@ -1,9 +1,10 @@
 # Task020 offline exact-plan safety core
 
-This increment is a test-only editor-side model. It contains no executable,
-networking, KNX codec, fork dependency, credential discovery or physical-device
-adapter. It cannot run the planned hardware test. Its only Cargo registration
-is the `task020-guard` test target.
+The default Cargo target is a test-only editor-side model. It contains no
+executable, networking, KNX codec, fork dependency, credential discovery or
+physical-device adapter. Its only Cargo registration is the `task020-guard`
+test target. The separate development adapter below is built only through an
+explicit offline runner and cannot run the planned hardware test.
 
 The model owns a bounded immutable plan and binds an exact route, identity
 receipt, property selector, original bytes, desired bytes and recovery purpose
@@ -127,3 +128,84 @@ the used public gateway `disconnect` permits a missing response; it cannot
 produce complete gateway-cleanup evidence or release the commissioning path.
 Trusted human approval, actual observation authority, a verified gateway-close
 adapter and a runnable end-to-end executor are still absent.
+
+## Reproducible development adapter check
+
+`knust_adapter.rs` now contains a development-only concrete `TypedSession`
+adapter. It uses the fork's public `Tunnel`, `ManagementSession`, typed property
+and descriptor APIs. One bounded actor owns the tunnel and borrowed device
+session. It consumes opaque dispatch tokens, checks the route and latest
+descriptor observation, and sends each selected write once. After the device
+session borrow ends, it consumes the tunnel through `GatewayDisconnectAttempt`.
+Complete cleanup requires both device-local confirmation and a successful
+same-channel gateway response. Cancellation or an incomplete receipt never
+releases the durable route quarantine. An abandoned caller does not abort an
+in-flight actor operation: the bounded operation settles and the actor closes
+its device/gateway sessions without retrying or restoring uncertain writes.
+
+This source has no root Cargo registration, production grant constructor,
+approval CLI, hardware command, or release dependency. The exact development
+fork pin is `4d296afb0906d17b6724b56c912f2e9e3f6680a5`. A clean local checkout
+of that revision and cached dependencies are required. With the repository's
+pinned Rust 1.99.1 toolchain available on `PATH`, run:
+
+```sh
+python3 experiments/task020-guard/run_adapter_check.py --fork-path /path/to/local/knust-fork
+```
+
+The runner verifies the exact clean revision before building anything. It
+creates a fresh temporary directory outside the repository for the generated
+manifest, lockfile, build output, journal evidence and logs. Fork sources are
+exported from raw pinned Git blobs with verified hashes, lengths and modes;
+worktree/index contents, hidden-index flags, ignored files, archive filters and
+Git replacement objects cannot supply build inputs. Symlinks, submodules and
+unreviewed Cargo configuration in the pinned tree are rejected. Every exported
+file's provenance is recorded in the private result.
+
+Cargo always runs offline using a fresh Cargo home with registry caches only.
+User Cargo configuration, credentials, compiler wrappers, build overrides and
+Rust flags are not inherited; ancestor Cargo configuration fails the check.
+The exported fork's lockfile seeds only the temporary dependency resolution;
+subsequent checks use `--locked`. Neither repository's manifest or lockfile is
+changed, and no fork source enters the editor repository. The enabled fork
+features must be exactly `dpt`; Secure is disabled.
+
+The harness copies the reviewed core and dispatcher byte-for-byte, then appends
+one visible `cfg(test)` descendant module to the temporary core copy. This is
+the only instrumentation and permits synthetic test approvals without opening
+the production approval type. Test fixtures contain an invented target and
+opaque property, not the user-selected device or a manufacturer support claim.
+The runner launches only the fork-owned simulator, which binds an ephemeral
+IPv4 loopback endpoint. Tests validate that endpoint before passing it to the
+actual adapter. No configurable hardware endpoint or target is accepted.
+
+`actor_tests.rs` covers the actual adapter actor/observe/write/close paths:
+
+- Normal `00` → `04` → `00`, with four separate descriptor/property reads and
+  distinct device/gateway cleanup.
+- Cancellation after queue handoff but before the actor processes a write.
+- Cancellation before and after a synthetic write effect.
+- Bounded write uncertainty, without automatic retry or restoration.
+
+The failure paths retain quarantine across journal reopen and reject a new
+operation. `validate_actor_logs.py` separately checks peer event order, exact
+values/write counts, stderr, final cleanup events and durable journal files.
+It uses explicit errors rather than Python assertions, bounds artifact reads
+and directory entries, and rejects corrupted evidence even under `python -O`.
+It is a read-only artifact parser, not independent review. Five focused Python
+regressions cover raw exports, modes/hash mismatch, isolated build environments,
+corrupted logs with optimization and oversized reads. The runner executes these
+and the entire temporary Rust suite, Clippy and formatting, then writes `result.json`
+and prints its private artifact directory. Missing caches, toolchain, loopback
+permission, expected responses or cleanup fail the check explicitly. Individual
+commands have a 180-second watchdog; simulator lifetimes are 20 seconds.
+
+On macOS arm64 with Rust 1.99.1, the reproducible runner passed all 39 temporary
+Rust tests (31 core/dispatcher, five actor and three adapter-port tests), Clippy,
+formatting and separate artifact validation. The default editor workspace's
+31 guard, 17 state and two CLI tests also passed, together with workspace
+Clippy, formatting, scope and diff checks. Independent integration review is
+pending. Windows,
+physical-device writes/readback/restoration, trusted operator approval and
+production integration remain NOT RUN or unavailable. Simulator success does
+not satisfy Task020's physical acceptance criterion.
