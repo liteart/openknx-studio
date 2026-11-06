@@ -7,6 +7,7 @@ use std::fs::{self, DirBuilder};
 use std::io::Write;
 use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
 use std::os::unix::net::{UnixListener, UnixStream};
+use std::path::Path;
 use std::time::{Duration, Instant};
 use task153_broker_core::macos_peer::{ExpectedOperator, check_operator_peer};
 
@@ -60,31 +61,31 @@ fn check_fixed_ancestors() -> Result<(), Error> {
     Ok(())
 }
 
-struct Endpoint;
+struct Endpoint {
+    listener: UnixListener,
+}
 
 impl Endpoint {
-    fn create() -> Result<(Self, UnixListener), Error> {
+    fn create() -> Result<Self, Error> {
         check_fixed_ancestors()?;
+        Self::create_in(Path::new(DIRECTORY))
+    }
+
+    fn create_in(directory: &Path) -> Result<Self, Error> {
         // Exclusive creation: never reuse, chmod, chown or unlink an existing
         // object. The newly created private directory contains the socket.
         DirBuilder::new()
             .mode(0o700)
-            .create(DIRECTORY)
+            .create(directory)
             .map_err(|_| Error::PathUnavailable)?;
-        let endpoint = Self;
-        let listener = UnixListener::bind(SOCKET).map_err(|_| Error::Io)?;
-        fs::set_permissions(SOCKET, fs::Permissions::from_mode(0o600)).map_err(|_| Error::Io)?;
+        let socket = directory.join("peer.sock");
+        let listener = UnixListener::bind(&socket).map_err(|_| Error::Io)?;
+        fs::set_permissions(&socket, fs::Permissions::from_mode(0o600)).map_err(|_| Error::Io)?;
         listener.set_nonblocking(true).map_err(|_| Error::Io)?;
-        Ok((endpoint, listener))
-    }
-}
-
-impl Drop for Endpoint {
-    fn drop(&mut self) {
-        // Best-effort fixed-path cleanup is not inode-anchored. A leftover
-        // after a crash is deliberately not reused; errors are ignored.
-        let _ = fs::remove_file(SOCKET);
-        let _ = fs::remove_dir(DIRECTORY);
+        // Drop closes the owned listener only. Path-based unlink would be
+        // unsafe before ACL/inode-anchored parent protection is established.
+        // Retain the endpoint as quarantine; later starts refuse it.
+        Ok(Self { listener })
     }
 }
 
@@ -106,13 +107,13 @@ pub(crate) fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     let agent_uid = parse_arguments(&arguments)?;
     require_root()?;
     let operator = ExpectedOperator::new(0, 0, agent_uid).map_err(|_| Error::Arguments)?;
-    let (_endpoint, listener) = Endpoint::create()?;
+    let endpoint = Endpoint::create()?;
     println!("Temporary macOS peer diagnostic at {SOCKET}");
     println!("No enrollment, approval or device operation is available. Expires after 5 minutes.");
     let started = Instant::now();
     let mut connections = 0;
     while started.elapsed() < LIFETIME && connections < MAX_CONNECTIONS {
-        match listener.accept() {
+        match endpoint.listener.accept() {
             Ok((mut stream, _)) => {
                 connections += 1;
                 let _ = respond_to_peer(&mut stream, &operator);
@@ -130,6 +131,7 @@ pub(crate) fn run(arguments: Vec<OsString>) -> Result<(), Error> {
 mod tests {
     use super::*;
     use std::io::Read;
+    use std::os::unix::fs::FileTypeExt;
 
     fn arguments(values: &[&str]) -> Vec<OsString> {
         values.iter().map(OsString::from).collect()
@@ -166,6 +168,53 @@ mod tests {
     #[test]
     fn fixed_ancestor_preflight_checks_actual_host_metadata_without_writing() {
         assert_eq!(check_fixed_ancestors(), Ok(()));
+    }
+
+    #[test]
+    fn dropping_endpoint_preserves_quarantine_and_refuses_reuse() {
+        let temporary = tempfile::Builder::new()
+            .prefix("task153-retain-")
+            .tempdir_in("/private/tmp")
+            .unwrap();
+        let directory = temporary.path().join("endpoint");
+        let endpoint = Endpoint::create_in(&directory).unwrap();
+        drop(endpoint);
+        assert!(directory.is_dir());
+        assert!(
+            fs::symlink_metadata(directory.join("peer.sock"))
+                .unwrap()
+                .file_type()
+                .is_socket()
+        );
+        assert!(matches!(
+            Endpoint::create_in(&directory),
+            Err(Error::PathUnavailable)
+        ));
+    }
+
+    #[test]
+    fn substituted_directory_and_socket_survive_endpoint_drop() {
+        let temporary = tempfile::Builder::new()
+            .prefix("task153-replace-")
+            .tempdir_in("/private/tmp")
+            .unwrap();
+        let directory = temporary.path().join("endpoint");
+        let original = temporary.path().join("original");
+        let endpoint = Endpoint::create_in(&directory).unwrap();
+        fs::rename(&directory, &original).unwrap();
+        fs::create_dir(&directory).unwrap();
+        fs::write(directory.join("peer.sock"), b"replacement must survive").unwrap();
+        drop(endpoint);
+        assert_eq!(
+            fs::read(directory.join("peer.sock")).unwrap(),
+            b"replacement must survive"
+        );
+        assert!(
+            fs::symlink_metadata(original.join("peer.sock"))
+                .unwrap()
+                .file_type()
+                .is_socket()
+        );
     }
 
     #[test]

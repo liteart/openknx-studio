@@ -70,10 +70,12 @@ The endpoint is fixed at
 checks fixed ancestors' nominal owner/type/mode, exclusively creates its own
 0700 directory, and creates a 0600 socket inside. It refuses any pre-existing
 directory instead of unlinking or repurposing it. It has a five-minute lifetime
-and a 32-connection limit. Normal shutdown attempts to remove the fixed socket
-and directory; cleanup is not inode-anchored and ignores errors. Privileged
-launch remains gated on ACL and ownership review;
-crash leftovers cause the next start to fail rather than being reused.
+and a 32-connection limit. Normal shutdown closes the owned listener and leaves
+the directory/socket quarantined. It performs no path-based unlink: a swapped
+directory or socket must never be deleted by a stale owner. Leftovers after
+normal shutdown, failed creation or a crash cause the next start to fail rather
+than being reused. Removal needs a later independently reviewed operator
+procedure; privileged launch remains gated on ACL and ownership review.
 
 The socket returns only a fixed identity-match or denial JSON response with
 `physical_authorization:false`. It reads no request body, echoes no identity,
@@ -99,14 +101,27 @@ increment. A successfully verified separate-principal diagnostic session is
 still **NOT RUN**. The helper is deliberately not wired to the passkey or
 dispatcher until those prerequisites have evidence.
 
-Four focused helper tests check strict arguments, fixed ancestors' actual
+Six focused helper tests check strict arguments, fixed ancestors' actual
 read-only metadata, the actual unprivileged
 process's startup denial, and a real temporary Unix-socket agent connection's
-fixed denial response. They do not start the fixed root endpoint. If tests are
+fixed denial response. Additional real temporary-socket tests prove endpoint
+drop preserves quarantine/refuses reuse and retains substituted paths. They do
+not start the fixed root endpoint. If tests are
 run as root, the unprivileged-start test cannot establish that particular
 negative; the recorded run used the normal macOS development principal.
 
 ## Remaining implementation
+
+The ACL dependency investigation found a concrete descriptor-based candidate:
+[`exacl` revision `18275aa1a82aae9a786b108b0db0992a4d06e6e2`](https://github.com/byllyfish/exacl/tree/18275aa1a82aae9a786b108b0db0992a4d06e6e2)
+accepts `BorrowedFd` in `getfacl` and routes it to the native descriptor ACL
+API. Its manifest is MIT, Rust >=1.85, with default features disabled. This is
+an unreleased API relative to the published 0.13 documentation, despite the
+manifest retaining that version. It has not been added, built or qualified in
+this experiment. An exact-revision dependency review and tests are required
+before use. Path-only ACL inspection or stat-then-unlink does not solve the
+race; the future provider must bind ancestry, ACL and file contents to the
+same opened descriptors. No `/dev/fd` pathname workaround is accepted as proof.
 
 Before this contract can front an executing service, the macOS provider must
 verify the actual service identity, executable/configuration ownership, access
