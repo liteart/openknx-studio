@@ -18,6 +18,10 @@ path = "src/service_main.rs"
 name = "task153-operator-browser"
 path = "src/browser_main.rs"
 
+[[bin]]
+name = "task153-install-preflight"
+path = "src/install_preflight.rs"
+
 [workspace]
 
 [dependencies]

@@ -249,6 +249,13 @@ is under `private/evidence/task153-execution-integration-20261106/` (result
 SHA-256 `1761dbce935f6489b78d5d59b90aaa256e21c8d3575444bde81edddc2e84bd51`).
 The production qualification is deliberately unconstructible; installed host,
 browser isolation, protected journal and physical write remain NOT RUN.
+The local development installer was rebuilt as two narrow components after
+review found parent-permission and AppleDouble problems. Static inspection of
+the actual package, its BOM, contents, signatures and architecture passed
+independent review; five packaging tests passed. Inventory is in private
+`evidence/task153-installer-repair-20261106/`. Installer execution and actual
+parent-metadata preservation remain NOT RUN; this does not authorize or enable
+the device write.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on
