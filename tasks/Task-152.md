@@ -1,0 +1,78 @@
+# Task-152: Prototype plan-bound phone passkey approval
+
+## Metadata
+
+| Field | Value |
+|---|---|
+| Task ID | Task-152 |
+| Status | Ready |
+| Stage | PoC dependency |
+| Component / Git project | knx-editor / human approval prototype |
+| Owner | Primary coordinator and editor implementer |
+| Requirement references | [R-006](../docs/REQUIREMENTS.md), [R-022](../docs/REQUIREMENTS.md), [R-025](../docs/REQUIREMENTS.md), [R-030](../docs/REQUIREMENTS.md) |
+
+## Context and owner direction
+
+On 2026-11-06 Simon requested a low-effort reusable PIN-based approval for
+the selected physical write and later applicable tasks. Simon has a smartphone
+supporting passkeys and device PIN or biometric verification; no separate
+hardware security key is available. The user's device-write consent and the
+actual technical approval mechanism are distinct. Never request or record the
+PIN in chat, arguments, environment variables, logs, workspace or project data.
+
+## Requirements
+
+- DR-001: Prototype a reusable, operator-controlled approval path using a
+  reviewed standard passkey implementation with user verification. Bind an
+  unpredictable, short-lived, one-use challenge to the exact immutable plan,
+  target, effect, issuer and expiry; reject changes, replay and expiry.
+- DR-002: Verify assertion signature, challenge, relying-party identity, exact
+  origin, user-verification flags and enrollment against an independently
+  protected trusted credential. No agent-accessible MCP tool may mint approval.
+- DR-003: Provide an operator-visible exact-plan summary; document whether it
+  appears on the phone or on the desktop and do not claim trusted transaction
+  display where the authenticator does not provide one.
+- DR-004: Use bounded inputs, local/offline defaults, structured failure and
+  durable one-use consumption. Preserve the current explicit threat boundary:
+  unrestricted code under the approving principal is not an application-only
+  security boundary. Do not treat a local prompt, file or agent-supplied PIN as
+  proof of human approval.
+- DR-005: Keep an unavailable or unverified trust anchor fail-closed. No
+  simulated approval grants a physical operation. No automatic device access,
+  device write, account creation, key enumeration or external service is implied.
+
+## Acceptance criteria
+
+- [ ] AC-001: A user-controlled enrollment and passkey assertion bind a tested
+  exact plan without disclosing the PIN to the agent or backend.
+- [ ] AC-002: Changed plan/target, unknown credential, invalid origin/RP,
+  absent user verification, replay and expiration are rejected.
+- [ ] AC-003: Tests establish the stated operator/MCP separation and clearly
+  record any same-principal or trusted-display limitations.
+- [ ] AC-004: The prototype integrates with the existing editor guard without
+  treating synthetic credentials or tests as a real grant.
+
+## Dependencies, tests and boundaries
+
+Accepted [Task-019](Task-019.md) and [Task-151](Task-151.md); Task020's tested
+offline guard model supplies the integration fixture. No phase gate applies to
+this bounded PoC. It does not mark the gated production authorization
+[Task-070](Task-070.md) Done or advance [Task-028](Task-028.md).
+
+Verify with standards-based unit/negative tests, an operator-driven local phone
+enrollment and assertion, and an independent security review. Physical KNX
+writes, production credentials and actual PINs are not test fixtures. Browser,
+phone and authenticator compatibility are NOT ESTABLISHED until observed.
+Any package dependency must have its version, license and security properties
+reviewed and pinned before use.
+
+## Completion record
+
+| Field | Current value |
+|---|---|
+| Implementation / report status | Ready; mechanism and protected enrollment not yet implemented |
+| Source commit(s) | Not created |
+| Tests executed | NOT RUN |
+| Evidence location | Owner direction and Task020 offline guard evidence |
+| Acceptance criteria met | None |
+| Reviewer | Unassigned |

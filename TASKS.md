@@ -1,6 +1,6 @@
 # Task Index
 
-This backlog contains **151 individually specified tasks**, numbered Task-001 through Task-151. Every task has its own Markdown file. IDs above Task-151 are unallocated, not empty files.
+This backlog contains **152 individually specified tasks**, numbered Task-001 through Task-152. Every task has its own Markdown file. IDs above Task-152 are unallocated, not empty files.
 
 All implementation/report statuses initially are **Not started**. This kit specifies work; it does not assert that tests, forks, code or releases already exist. Task dependencies and explicit phase-gate outcomes both govern readiness. A NO-GO report does not unlock the next stage.
 
@@ -15,7 +15,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | Stage | Task IDs | Count | Gate |
 |---|---|---:|---|
 | PoCs and feasibility gate | Task-001 to Task-028 | 28 | Task-028 |
-| Additional PoC input investigations and test reliability | Task-139 to Task-149, Task-151 | 12 | No gate unlocked; Task-005 still governs provisioning |
+| Additional PoC input investigations and test reliability | Task-139 to Task-149, Task-151 to Task-152 | 13 | No gate unlocked; Task-005 still governs provisioning |
 | Alpha integration | Task-029 to Task-092 | 64 | Task-092 |
 | Beta functionality | Task-093 to Task-112 | 20 | Task-112 |
 | Release candidate | Task-113 to Task-125 | 13 | Task-125 |
@@ -45,7 +45,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-017](tasks/Task-017.md) | Implement and verify minimum non-secure tunneling | knust-fork / KNXnet-IP transport | [Task-015](tasks/Task-015.md), [Task-016](tasks/Task-016.md) |
 | [Task-018](tasks/Task-018.md) | Read and identify the reference device through KNX management | knust-fork / device management | [Task-017](tasks/Task-017.md) |
 | [Task-019](tasks/Task-019.md) | Implement minimum generic KNX property reads | knust-fork / property services | [Task-016](tasks/Task-016.md), [Task-018](tasks/Task-018.md) |
-| [Task-020](tasks/Task-020.md) | Implement an explicitly authorized reversible property write | knust-fork / property services | [Task-019](tasks/Task-019.md), [Task-004](tasks/Task-004.md); [Task-151](tasks/Task-151.md) for the selected Verify Mode candidate |
+| [Task-020](tasks/Task-020.md) | Implement an explicitly authorized reversible property write | knust-fork / property services | [Task-019](tasks/Task-019.md), [Task-004](tasks/Task-004.md); [Task-151](tasks/Task-151.md) and [Task-152](tasks/Task-152.md) for the selected test path |
 | [Task-021](tasks/Task-021.md) | Add only the selected profile memory and load-state primitives | knust-fork / low-level management | [Task-015](tasks/Task-015.md), [Task-016](tasks/Task-016.md), [Task-018](tasks/Task-018.md), [Task-004](tasks/Task-004.md) |
 | [Task-022](tasks/Task-022.md) | Record PoC B hardware read-write evidence | knust-fork / examples and PoC report | [Task-018](tasks/Task-018.md), [Task-019](tasks/Task-019.md), [Task-020](tasks/Task-020.md), [Task-021](tasks/Task-021.md) |
 | [Task-023](tasks/Task-023.md) | Parse only the selected KNXPROD application for PoC C | knx-editor / poc/product-download (Rust) | [Task-003](tasks/Task-003.md), [Task-004](tasks/Task-004.md) |
@@ -211,6 +211,7 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 | [Task-148](tasks/Task-148.md) | Probe the original DCA constructor on a clean Windows host | Bounded original-DCA runtime research | Accepted Tasks 143 and 144; owned tests/review first; explicit constructor-only owner exception despite isolation FAIL; no gate unlocked |
 | [Task-149](tasks/Task-149.md) | Preserve the mandatory cEMI TPCI control octet | knust-fork / cEMI codec | Accepted Tasks 015 and 147; no phase gate unlocked |
 | [Task-151](tasks/Task-151.md) | Implement bounded connected KNX management sessions | knust-fork / KNX transport | Accepted Tasks 016, 017 and 019; no phase gate unlocked |
+| [Task-152](tasks/Task-152.md) | Prototype plan-bound phone passkey approval | Editor / human approval PoC | Accepted Tasks 019 and 151; no phase gate unlocked |
 
 ## Project identity and repository workflow
 
@@ -220,4 +221,4 @@ Start with Task-001 through Task-004 and obtain the actual fixture/rights/enviro
 
 ## How to extend the backlog
 
-Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (Task-152), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.
+Use [TASK-TEMPLATE.md](templates/TASK-TEMPLATE.md). Assign the next unused ID (Task-153), define exact requirements/tests/ownership and connect the dependency graph. Do not renumber completed or referenced tasks. Add protocol gaps to the fork, not as implementation shortcuts inside an editor or host task. Update the requirement traceability and affected phase gate.

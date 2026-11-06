@@ -50,6 +50,8 @@ Review all three minimal experiments and issue an explicit GO or NO-GO for produ
 The selected Task020 write candidate also depends on the connected device
 session in [Task-151](Task-151.md), through Task022. Simulator-only session
 evidence does not substitute for the required hardware write and recovery.
+The owner-selected human approval prototype [Task-152](Task-152.md) is another
+dependency of that selected test path; its result does not itself grant G-POC.
 
 **Required phase gate:** PoC A/B/C evidence must be reviewed; this task decides G-POC.
 

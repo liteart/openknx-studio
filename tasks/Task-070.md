@@ -20,6 +20,10 @@ Enforce human-only exact-plan and DCA operation grants
 
 Implement authorization outside the agent-accessible MCP capability set for physical effects.
 
+The owner requested a reusable phone/PIN-backed passkey direction; the bounded
+pre-gate prototype is tracked in [Task-152](Task-152.md). Its outcome does not
+waive this task's gate, trusted-channel requirements or acceptance tests.
+
 ## Detailed Requirements
 
 - DR-001: Compiled plan grants bind immutable plan hash, exact targets, permitted effect, issuer and expiry; consume once at execution start.
