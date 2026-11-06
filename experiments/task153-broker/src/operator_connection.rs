@@ -240,7 +240,7 @@ pub fn handle_operator_connection(
             };
             let bytes = serde_json::to_vec(&credential).map_err(|_| Error::InvalidRequest)?;
             let observation = verifier
-                .finish(plan, &bytes, now()?)
+                .finish_protected(plan, &bytes, now()?)
                 .map_err(|_| Error::VerificationFailed)?;
             write_reply(
                 &mut stream,

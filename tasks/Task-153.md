@@ -236,6 +236,10 @@ now available. Protected enrollment must not run until an isolated browser
 profile and origin state, including absence of service workers and untrusted
 extensions, are independently qualified. Actual separate-user access and
 Safari enrollment remain NOT RUN; the bridge does not authorize KNX writes.
+A one-shot assertion record now stores the exact plan and updated public
+credential before reporting a verified observation; existing records prevent
+reuse. Synthetic cryptographic/filesystem tests and independent review passed.
+Protected-root restart behavior and actual execution integration remain NOT RUN.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

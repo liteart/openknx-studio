@@ -193,7 +193,10 @@ pub fn load_fixed_configuration() -> Result<RootOwnedSnapshot, ConfigError> {
     read_checked_leaf(&parent, path.file_name().ok_or(ConfigError::PathRejected)?)
 }
 
-fn read_checked_leaf(parent: &File, name: &OsStr) -> Result<RootOwnedSnapshot, ConfigError> {
+pub(super) fn read_checked_leaf(
+    parent: &File,
+    name: &OsStr,
+) -> Result<RootOwnedSnapshot, ConfigError> {
     let file = open_leaf(parent, name)?;
     let before = checked_metadata(&file, false)?;
     if before.mode() & 0o7777 != 0o600 {

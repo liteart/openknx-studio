@@ -226,3 +226,75 @@ fn malformed_or_oversized_assertion_consumes_challenge_without_observation() {
         );
     }
 }
+
+#[test]
+fn verified_synthetic_counter_and_exact_assertion_are_persisted_before_observation() {
+    let (mut verifier, mut authenticator) = verifier_fixture();
+    let plan = ConfiguredPlan::new(input()).unwrap();
+    let options = verifier.begin(&plan, 100).unwrap();
+    let response = sign(&mut authenticator, options);
+    let directory = tempfile::tempdir_in("/private/tmp").unwrap();
+    let parent = std::fs::File::open(directory.path()).unwrap();
+    let observed = verifier
+        .finish_with_store(&plan, &response, 101, |record| {
+            assert_eq!(record.plan_digest, plan.digest());
+            assert_eq!(
+                record.assertion_sha256,
+                <[u8; 32]>::from(Sha256::digest(&response))
+            );
+            assert_eq!(record.expires_at_utc_seconds, 220);
+            let bytes = serde_json::to_vec(record).unwrap();
+            crate::assertion_store::store_synthetic_record_for_test(&parent, &bytes)
+        })
+        .unwrap();
+    assert!(!observed.credential_update_pending());
+    assert!(!observed.physical_authorization());
+    let stored: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(directory.path().join("verified-assertion.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        stored["credential"],
+        serde_json::to_value(&verifier.credential).unwrap()
+    );
+    assert_eq!(stored["physical_authorization"], false);
+    // A second valid ceremony cannot overwrite the first record/counter state.
+    let options = verifier.begin(&plan, 102).unwrap();
+    let response = sign(&mut authenticator, options);
+    assert_eq!(
+        verifier
+            .finish_with_store(&plan, &response, 103, |record| {
+                crate::assertion_store::store_synthetic_record_for_test(
+                    &parent,
+                    &serde_json::to_vec(record).unwrap(),
+                )
+            })
+            .unwrap_err(),
+        Error::ProtectedLedgerUnavailable
+    );
+    assert_eq!(
+        verifier.finish(&plan, &response, 104).unwrap_err(),
+        Error::ChallengeUnavailable
+    );
+}
+
+#[test]
+fn persistence_failure_consumes_verified_ceremony_without_success_observation() {
+    let (mut verifier, mut authenticator) = verifier_fixture();
+    let plan = ConfiguredPlan::new(input()).unwrap();
+    let options = verifier.begin(&plan, 100).unwrap();
+    let response = sign(&mut authenticator, options);
+    assert_eq!(
+        verifier
+            .finish_with_store(&plan, &response, 101, |_| Err(
+                crate::assertion_store::Error::Io
+            ))
+            .unwrap_err(),
+        Error::ProtectedLedgerUnavailable
+    );
+    assert_eq!(
+        verifier.finish(&plan, &response, 102).unwrap_err(),
+        Error::ChallengeUnavailable
+    );
+    assert!(verifier.credential_update_pending);
+}

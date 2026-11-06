@@ -5,6 +5,7 @@
 use crate::ConfiguredPlan;
 use crate::macos_config::{MAX_CONFIGURATION_BYTES, load_fixed_configuration};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fmt;
 use std::time::{Duration, Instant};
@@ -25,6 +26,7 @@ pub enum Error {
     PlanMismatch,
     InvalidResponse,
     VerificationFailed,
+    ProtectedLedgerUnavailable,
 }
 
 #[derive(Deserialize)]
@@ -75,6 +77,26 @@ impl RootAssertionObservation {
     }
 }
 
+/// Private record: only successful verifier completion constructs this type.
+/// It persists public credential state, never a bearer grant or private key.
+#[derive(Serialize)]
+pub(super) struct VerifiedAssertionRecord<'a> {
+    schema: u8,
+    issuer: &'a str,
+    enrollment_sha256: [u8; 32],
+    assertion_sha256: [u8; 32],
+    plan_digest: [u8; 32],
+    verified_at_utc_seconds: u64,
+    expires_at_utc_seconds: u64,
+    credential: &'a Passkey,
+    physical_authorization: bool,
+}
+impl VerifiedAssertionRecord<'_> {
+    pub(super) fn enrollment_digest(&self) -> [u8; 32] {
+        self.enrollment_sha256
+    }
+}
+
 /// The only public loader reads the fixed descriptor-validated root-owned file.
 /// This type establishes no installed-service, UI or peer-authentication proof.
 ///
@@ -88,10 +110,13 @@ pub struct RootPasskeyVerifier {
     issuer: String,
     pending: Option<Pending>,
     credential_update_pending: bool,
+    enrollment_sha256: [u8; 32],
 }
 
 impl RootPasskeyVerifier {
     pub fn load() -> Result<Self, Error> {
+        crate::assertion_store::ensure_available()
+            .map_err(|_| Error::ProtectedLedgerUnavailable)?;
         let snapshot = load_fixed_configuration().map_err(|_| Error::ProtectedConfigUnavailable)?;
         Self::from_record(snapshot.as_bytes())
     }
@@ -121,6 +146,7 @@ impl RootPasskeyVerifier {
             issuer: enrollment.issuer,
             pending: None,
             credential_update_pending: false,
+            enrollment_sha256: Sha256::digest(bytes).into(),
         })
     }
 
@@ -194,6 +220,51 @@ impl RootPasskeyVerifier {
             credential_update_pending: self.credential_update_pending,
             physical_authorization: false,
         })
+    }
+
+    /// One-shot protected completion: no successful reply before updated public
+    /// credential/counter state and exact assertion binding are durable. Any
+    /// existing or partial record blocks subsequent protected use across restart.
+    pub(super) fn finish_protected(
+        &mut self,
+        plan: &ConfiguredPlan,
+        response: &[u8],
+        now: u64,
+    ) -> Result<RootAssertionObservation, Error> {
+        self.finish_with_store(plan, response, now, crate::assertion_store::persist)
+    }
+
+    fn finish_with_store<F>(
+        &mut self,
+        plan: &ConfiguredPlan,
+        response: &[u8],
+        now: u64,
+        persist: F,
+    ) -> Result<RootAssertionObservation, Error>
+    where
+        F: FnOnce(&VerifiedAssertionRecord<'_>) -> Result<(), crate::assertion_store::Error>,
+    {
+        let expires = self
+            .pending
+            .as_ref()
+            .map(|pending| pending.expires)
+            .ok_or(Error::ChallengeUnavailable)?;
+        let mut observed = self.finish(plan, response, now)?;
+        let record = VerifiedAssertionRecord {
+            schema: 1,
+            issuer: &self.issuer,
+            enrollment_sha256: self.enrollment_sha256,
+            assertion_sha256: Sha256::digest(response).into(),
+            plan_digest: observed.plan_digest,
+            verified_at_utc_seconds: now,
+            expires_at_utc_seconds: expires,
+            credential: &self.credential,
+            physical_authorization: false,
+        };
+        persist(&record).map_err(|_| Error::ProtectedLedgerUnavailable)?;
+        self.credential_update_pending = false;
+        observed.credential_update_pending = false;
+        Ok(observed)
     }
 
     pub fn cancel(&mut self) {

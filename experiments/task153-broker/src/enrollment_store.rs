@@ -178,7 +178,7 @@ fn validate_private_file(file: &File) -> Result<(), StoreError> {
     no_granting_acl(file).map_err(|_| StoreError::FileRejected)
 }
 
-fn exclusive_store_lock(parent: &File) -> Result<File, StoreError> {
+pub(super) fn exclusive_store_lock(parent: &File) -> Result<File, StoreError> {
     let file = match openat(
         parent,
         "enrollment.lock",

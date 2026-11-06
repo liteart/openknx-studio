@@ -527,6 +527,58 @@ was introduced.
 
 Primary RNG reference: [Apple SecRandomCopyBytes](https://developer.apple.com/documentation/security/secrandomcopybytes(_:_:_:)).
 
+## One-shot protected assertion/counter ledger
+
+The operator connection now calls finish_protected: standard WebAuthn signature
+and UV verification still run first, then successful completion requires a
+fixed verified-assertion.json record in the descriptor-validated root store.
+The private record contains the exact plan digest, original enrollment hash,
+assertion-response hash, issuer, verification/expiry times and updated public
+Passkey state (including authenticator counter/backup flags). It contains no
+PIN, authenticator private key or reusable bearer grant. The caller cannot
+supply a destination or deserialize a verified record.
+
+The writer requires actual root/wheel process credentials, uses the existing
+exclusive enrollment lock, rejects an activation fence, and re-reads the
+root-owned enrollment by descriptor. Its hash must still match the state used
+for verification. A fixed descriptor-relative O_EXCL/O_NOFOLLOW create is
+mode 0600 with descriptor ownership/type/link/mode/ACL checks. Empty-file and
+parent fsync first establish a reservation; record data, file fsync and parent
+fsync must then finish before the success observation. Errors after creation
+never remove the record; earlier validation or open failures may leave none. A
+failure before the initial directory sync may lose its name after a
+power failure, but no successful observation or device capability has been
+issued at that stage. Fault tests observe actual filesystem calls and injected
+process-stage failures; they are not power-loss qualification.
+
+Any existing record, including an empty/partial file, symlink or unreadable
+entry, makes later protected loading unavailable. O_EXCL independently prevents
+a concurrent verifier from replacing/overwriting it. Therefore the original
+config cannot regain counter authority after a successful record, even across
+restart. This is intentionally a single protected assertion for the single
+prepared write/restore candidate; no automatic reset, multi-operation counter
+migration, record replay or resume API exists. Do not delete a record simply
+to retry; recovery requires separate protected operator review. The updated
+counter remains in this immutable record rather than overwriting config.json.
+The public read-only verifier finish method still returns only a non-authorizing
+observation; only the protected connection uses this persistence path.
+
+Six new tests cover private ordered persistence, every injected write/sync
+stage remaining quarantined, no overwrite, symlink refusal, renamed-parent
+descriptor binding and unprivileged runtime denial. Genuine software-generated
+WebAuthn assertions additionally persist the updated synthetic counter into an
+actual owned filesystem fixture before returning an observation; a second
+commit fails and persistence failure consumes the challenge. These fixtures
+establish no root-owned snapshot or protected-principal claim. Installed-root
+commit/restart behavior and real operator keys remain **NOT RUN**.
+
+This ledger is not Task020's execution-intent/route journal. The dispatcher
+still has no production approval issuer or registered broker adapter, and the
+service executes no device operation or future replay of this stored record.
+Connecting its durable verification result directly to the existing guard and
+typed adapter remains the next source increment. No guard visibility, physical
+gate or device capability was widened in this change.
+
 ## Dependencies and verification
 
 The bridge directly pins already-resolved `socket2 = 0.6.5`, default features
@@ -595,6 +647,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 61 library tests, six helper tests and two
+The current complete run passed 67 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.
