@@ -6,6 +6,10 @@ rust-version = "1.99.1"
 license = "Apache-2.0"
 publish = false
 
+[[bin]]
+name = "task152-browser-demo"
+path = "src/main.rs"
+
 [workspace]
 
 [dependencies]

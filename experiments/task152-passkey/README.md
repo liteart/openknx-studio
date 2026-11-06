@@ -1,8 +1,9 @@
 # Task152 development passkey verifier
 
 This standalone Rust experiment verifies a standard WebAuthn passkey assertion
-against an exact immutable Task020 plan. It has no executable, browser listener,
-MCP endpoint, device connection, physical approval issuer or credential import.
+against an exact immutable Task020 plan. An explicitly invoked temporary browser
+runner exercises only a synthetic plan. It has no MCP endpoint, device
+connection, physical approval issuer or credential import.
 A successful assertion produces a `DevelopmentReceipt` with
 `physical_authorization: false`. It cannot be converted into Task020's private
 `HumanApproval`; a compile-fail test checks that boundary.
@@ -33,7 +34,7 @@ leaves authenticator attachment unrestricted: a future browser UI can offer
 the macOS vault, Windows platform credentials or supported Linux authenticators
 and a phone where the browser supports it. It does not invoke a macOS-only
 keychain API. Native browser, platform vault and phone compatibility are
-**NOT RUN**; this increment contains no browser UI. A synchronized credential
+**NOT RUN** until an operator completes the browser test. A synchronized credential
 does not prove that its private key is held only on the phone.
 
 Enrollment is explicitly **development enrollment**, stored only in process
@@ -44,8 +45,8 @@ or hardware-capability handoff. Those missing pieces remain fail-closed.
 In particular, an MCP principal can instantiate this development library but
 can obtain only development observations, never physical grants.
 
-The summary is supplied for a future desktop display; it is not displayed by
-this library. Ordinary authenticator PIN/biometric dialogs must not be described
+The browser runner displays the exact synthetic summary on the desktop before
+assertion. Ordinary authenticator PIN/biometric dialogs must not be described
 as a trusted display of the KNX transaction. Unrestricted code under the same
 approving OS principal can modify enrollment, executable code and desktop
 display. This experiment does not claim protection against that principal.
@@ -55,6 +56,44 @@ Linux builds/durability are **NOT RUN**. If directory synchronization is not
 supported, this implementation returns `Io` rather than releasing an
 observation. Callers must provide a trusted UTC clock and an independently
 protected service before any future physical integration.
+
+## Temporary browser runner
+
+After independent review, an operator can explicitly start the development test
+from the repository root with an existing local evidence directory:
+
+```sh
+mkdir -p private/evidence/task152-browser-demo
+cargo run --offline --locked --manifest-path experiments/task152-passkey/Cargo.toml \
+  --bin task152-browser-demo -- --development-only \
+  --journal-dir private/evidence/task152-browser-demo
+```
+
+Then open `http://localhost:15200` manually. No passkey ceremony starts on page
+load. The operator chooses **Create temporary test passkey**, reviews the exact
+synthetic plan and chooses **Verify synthetic plan with passkey**. The browser
+selects the available provider; no PIN is entered into this page. Creating the
+test passkey can leave a `localhost` credential in that provider after the test;
+the operator can remove it there afterward. The server's public enrollment
+exists only in memory and is discarded when the server stops. This runner is
+not the reusable protected enrollment required for actual device approval.
+
+The server binds only `127.0.0.1:15200` and accepts only the exact Host
+`localhost:15200`. Mutating requests require the exact Origin, same-origin Fetch
+Metadata, JSON content type and a random per-run CSRF token. The session token
+endpoint rejects cross-site fetches. These checks prevent ordinary external web
+pages from starting the ceremonies; they do not authenticate an independent OS
+principal. Local clients can construct those headers and obtain development
+observations. No endpoint can issue a physical capability.
+
+Requests have an 8 KiB header limit, 32 KiB body limit and total five-second read
+deadline. Responses have a total five-second write deadline. Duplicate headers,
+ambiguous lengths, chunking, Expect/Upgrade and buffered pipelining are rejected.
+Each connection executes at most one request and is closed even if a browser
+requests keep-alive. There is no persistent HTTP connection or general server
+framework. CSP blocks external content and framing; responses use no-store and
+nosniff. Headers, tokens, credential identifiers and assertions are not logged.
+The server expires after 15 minutes; its Stop button or Ctrl+C can stop it sooner.
 
 ## Dependency review
 
@@ -98,6 +137,7 @@ From the repository root, with the pinned Cargo toolchain available:
 cargo fmt --manifest-path experiments/task152-passkey/Cargo.toml -- --check
 cargo clippy --offline --locked --all-targets --manifest-path experiments/task152-passkey/Cargo.toml -- -D warnings
 cargo test --offline --locked --manifest-path experiments/task152-passkey/Cargo.toml
+node --check experiments/task152-passkey/src/browser.js
 ```
 
 The initial reproducible observation was absence of a WebAuthn verifier or
@@ -107,6 +147,15 @@ signed wrong RP hash, missing UV, signature corruption, different challenge,
 replay, expiry, cancellation, restart, journal consumption and bounded inputs.
 The unchanged Task020 guard tests also run through the imported model.
 
-An operator-driven browser enrollment/assertion, protected enrollment,
+The browser runner adds negative HTTP framing/CSRF/origin/session tests, a
+genuine-signature synthetic registration/assertion through its handlers and a
+real localhost socket test. On macOS arm64 the final run passed 45 library tests,
+six runner tests and one compile-fail doctest; fmt, clippy and JavaScript syntax
+checks passed. The initial sandbox run passed the library and five handler tests
+but the socket test failed because localhost bind was denied; the complete
+offline suite then passed with authorized localhost socket access. No external
+host or KNX interface was contacted.
+
+An operator-driven native-vault browser enrollment/assertion, protected enrollment,
 trusted-display/separation tests and hardware integration remain **NOT RUN**.
 Task152 acceptance criteria and the Task020 hardware write remain incomplete.

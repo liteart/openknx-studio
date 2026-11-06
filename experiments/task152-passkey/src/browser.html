@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenKNX Studio — temporary passkey test</title>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>Temporary passkey test</h1>
+    <p>This test verifies a synthetic plan. It cannot authorize or contact a KNX device.</p>
+    <p>Your browser can offer its supported passkey providers, including your operating system's vault. Your PIN or biometrics stay with that provider.</p>
+    <p>Creating a test passkey adds a credential for <strong>localhost</strong> to your chosen provider. This server forgets its enrollment when stopped. You may delete that test passkey from your provider afterward.</p>
+    <button id="enroll" type="button" disabled>Create temporary test passkey</button>
+    <h2>Exact synthetic plan</h2>
+    <pre id="plan">Loading the local test plan…</pre>
+    <p>The plan is displayed here on the desktop. The passkey prompt does not confirm these transaction details.</p>
+    <label><input id="reviewed" type="checkbox" disabled>I reviewed this exact synthetic plan.</label>
+    <p><button id="assert" type="button" disabled>Verify synthetic plan with passkey</button></p>
+    <p id="status" role="status" aria-live="polite">Connecting to the local test server…</p>
+    <button id="stop" type="button" disabled>Stop test server</button>
+  </main>
+</body>
+</html>

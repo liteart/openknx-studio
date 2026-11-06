@@ -73,9 +73,9 @@ reviewed and pinned before use.
 
 | Field | Current value |
 |---|---|
-| Implementation / report status | Development-only verifier increment; browser UI, protected enrollment and physical grant remain absent |
+| Implementation / report status | Development-only verifier and localhost browser demo; protected enrollment and physical grant remain absent |
 | Source commit(s) | See Git history for this task's verifier increment |
-| Tests executed | Offline Cargo test: 45 unit tests and one compile-fail doctest PASS on macOS arm64; fmt and clippy PASS; browser, platform vault, Windows, Linux and hardware NOT RUN |
+| Tests executed | Offline Cargo test: 45 library tests, 6 browser-runner tests and one compile-fail doctest PASS on macOS arm64; fmt and clippy PASS; operator platform-vault ceremony, Windows, Linux and hardware NOT RUN |
 | Evidence location | [Experiment README](../experiments/task152-passkey/README.md), tests and dependency inventory; Task020 offline guard evidence |
 | Acceptance criteria met | None complete; synthetic credentials cannot authorize physical effects |
 | Reviewer | Independent agent review: no blocker for development-only increment; Windows directory synchronization remains unverified and likely requires a platform-specific implementation |
