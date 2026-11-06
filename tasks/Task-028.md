@@ -47,6 +47,10 @@ Review all three minimal experiments and issue an explicit GO or NO-GO for produ
 - [Task-022](Task-022.md): Record PoC B hardware read-write evidence. Required predecessor behavior/evidence must be accepted.
 - [Task-027](Task-027.md): Execute and verify the minimum independent application download. Required predecessor behavior/evidence must be accepted.
 
+The selected Task020 write candidate also depends on the connected device
+session in [Task-151](Task-151.md), through Task022. Simulator-only session
+evidence does not substitute for the required hardware write and recovery.
+
 **Required phase gate:** PoC A/B/C evidence must be reviewed; this task decides G-POC.
 
 A completed report with FAIL/INCONCLUSIVE or a gate with NO-GO does not satisfy a required successful proof. Required external inputs and side-effect permissions remain separate prerequisites even if a manifest/documentation task is complete.

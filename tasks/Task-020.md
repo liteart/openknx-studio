@@ -45,6 +45,7 @@ Add the generic write service and demonstrate one reversible write only after th
 
 - [Task-019](Task-019.md): Implement minimum generic KNX property reads. Required predecessor behavior/evidence must be accepted.
 - [Task-004](Task-004.md): Register reference artifacts and the isolated test bench. Required predecessor behavior/evidence must be accepted.
+- [Task-151](Task-151.md): Provide the connected device transport session required by the selected Verify Mode candidate before that candidate can be written.
 
 **Required phase gate:** None; execute only satisfied prerequisites and approved lab actions.
 
