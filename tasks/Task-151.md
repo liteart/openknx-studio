@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Task ID | Task-151 |
-| Status | Ready |
+| Status | Done |
 | Stage | PoC dependency |
 | Component / Git project | knust-fork / KNX transport |
 | Owner | Primary coordinator and protocol agent |
@@ -32,11 +32,11 @@ lifecycle; it must not select manufacturer properties or grant write approval.
 
 ## Acceptance criteria
 
-- [ ] AC-001: Simulator tests demonstrate correct connect, exchange and close,
+- [x] AC-001: Simulator tests demonstrate correct connect, exchange and close,
   including target responsiveness and independent transport/tunnel ACKs.
-- [ ] AC-002: Missing confirmations, wrong sequence, duplicate frames, NAK,
+- [x] AC-002: Missing confirmations, wrong sequence, duplicate frames, NAK,
   timeout and cancellation produce bounded, explicit outcomes.
-- [ ] AC-003: Uncertain write dispatch cannot silently become an automatic write
+- [x] AC-003: Uncertain write dispatch cannot silently become an automatic write
   replay; the component grants no human authorization.
 
 ## Dependencies and tests
@@ -70,9 +70,31 @@ been performed.
 
 | Field | Current value |
 |---|---|
-| Implementation / report status | Ready; no implementation or test run yet |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Private Task020 device-control read and supplied KNX standard |
-| Acceptance criteria met | None |
-| Reviewer | Unassigned |
+| Implementation / report status | Done for bounded generic offline session behavior; physical execution and backend authorization remain separate |
+| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855`, based on Task020 `da9a66679d6d49108f97ec8afeaed8d56c382a63`; fork not published |
+| Tests executed | 14 synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; physical/Windows tests NOT RUN |
+| Evidence location | Fork `TASK151-CONNECTED-MANAGEMENT.md` at source commit; private Task020 device-control read and supplied KNX standard |
+| Acceptance criteria met | AC-001–003 for the documented offline scope |
+| Reviewer | Independent protocol and code review PASS after correcting idle timing and error-state handling |
+
+## Bounded session result — 2026-11-06
+
+The fork supplies a generic exclusively owned connected management session,
+distinguishing tunnel receipts, local network confirmation, target transport
+acknowledgments and application responses. It bounds sequences, timeouts,
+receive work and supported read retries. A potentially dispatched write is
+latched as uncertain on cancellation or error and is not automatically
+replayed. A connected descriptor response is required before a write; the
+component does not grant or enforce a human write authorization.
+
+On macOS arm64 with the pinned offline toolchain, `cargo test --locked --offline
+--no-default-features --features dpt --test test_management_session` passed
+14 synthetic loopback tests, independently repeated by the coordinator.
+Focused Clippy, formatting and diff checks passed. Independent review found and
+verified fixes for an idle clock extended by delayed gateway receipts and for
+property decode errors leaving the session reusable. Source SHA-256 is
+`372657ddcaf703678f331e3332f0d7599bf0d9e248a64691e815893a819d16d6`; test
+source SHA-256 is
+`da629186cecb35e3329c44034dfe757e508b13427b488b2fd57d6c9b33dfbb00`.
+No live session, physical write, device readback or backend authorization test
+was performed. In particular this result does not complete Task020.
