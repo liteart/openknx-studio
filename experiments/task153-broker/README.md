@@ -647,7 +647,13 @@ python3 -B experiments/task153-broker/run_execution_check.py --fork "$PINNED_KNU
 ```
 
 The runner reports its temporary artifact directory and exact input hashes.
-Normal broker verification remains67 library tests,6 helper tests and2
+It also builds the actual `task153-operator-service` entrypoint from the same
+registered exact-source crate and retains a hash-checked copy under
+`artifacts/` with its SHA-256 and size in `result.json`. This is a development
+build artifact, not a running or installed service. The compiled qualification
+remains unconstructible and its normal handler still drops the witness; merely
+packaging this executable cannot enable a physical write.
+An earlier normal broker run passed 67 library tests, six helper tests and two
 compile-fail doctests; default builds gain no adapter or network authority.
 Actual protected installation, profile qualification, service-to-executor
 activation and the real write remain **NOT RUN**. Their missing qualification
@@ -721,6 +727,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 67 library tests, six helper tests and two
+An earlier complete run passed 67 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

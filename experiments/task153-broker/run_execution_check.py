@@ -115,6 +115,30 @@ def main():
         report["compiled_source_sha256"] = compiled
         report["temporary_lock_sha256"] = helper.digest(broker / "Cargo.lock")
         record()
+        # Build the actual service entrypoint from this same registered crate,
+        # not only a library/test harness. This does not enable the uninhabited
+        # host qualification, run the service, or install/package anything.
+        execute(["cargo","build","--locked","--offline","--bin","task153-operator-service"],broker)
+        service = work / "target/debug/task153-operator-service"
+        if service.is_symlink() or not service.is_file() or not 0 < service.stat().st_size <= 134217728:
+            raise ValueError("operator service artifact rejected")
+        artifacts = work / "artifacts"
+        artifacts.mkdir()
+        copied_service = artifacts / service.name
+        shutil.copyfile(service,copied_service)
+        copied_service.chmod(0o755)
+        if helper.digest(copied_service) != helper.digest(service):
+            raise ValueError("copied operator service changed")
+        report["operator_service_artifact"] = {
+            "path":str(copied_service.relative_to(work)),
+            "sha256":helper.digest(copied_service),
+            "size_bytes":copied_service.stat().st_size,
+            "host_qualification":"UNCONSTRUCTIBLE",
+            "service_started":"NOT RUN",
+            "installation":"NOT RUN",
+            "hardware":"NOT RUN",
+        }
+        record()
         execute(["cargo","build","--locked","--offline","--no-default-features","--features","dpt","--example","connected_management_simulator"],exported)
         metadata=json.loads(execute(["cargo","metadata","--locked","--offline","--format-version","1","--filter-platform","aarch64-apple-darwin"],broker))
         ids={package["id"] for package in metadata["packages"] if package["name"]=="knust"}
@@ -126,6 +150,9 @@ def main():
         execute(["python3",str(GUARD / "validate_actor_logs.py"),str(work)],broker)
         if compiled_hashes() != compiled:
             raise ValueError("compiled source changed during verification")
+        if (helper.digest(copied_service) != report["operator_service_artifact"]["sha256"]
+                or helper.digest(service) != report["operator_service_artifact"]["sha256"]):
+            raise ValueError("operator service artifact changed during verification")
         for directory, key in [(exported,"fork_files"),(acl_export,"exacl_files")]:
             if any(helper.digest(directory / name) != value["sha256"] for name,value in report[key].items()):
                 raise ValueError("exported dependency changed during verification")
