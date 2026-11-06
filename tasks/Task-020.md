@@ -215,3 +215,29 @@ A separate non-shipping adapter draft compiled against the local fork, but did
 not demonstrate confirmed gateway cleanup. Real trusted approval, authenticated
 observations, complete concrete adapter integration and the physical write and
 restoration remain unavailable or NOT RUN.
+
+## Reproducible offline adapter integration — 2026-11-06
+
+Editor commit `8498089` records a development-only concrete KNX adapter and a
+reproducible runner against exact local fork revision
+`4d296afb0906d17b6724b56c912f2e9e3f6680a5`. The runner exports verified Git
+blobs into a temporary isolated build and does not put a local fork path in a
+shipping manifest or committed lockfile. It exposes no real grant issuer or
+device-execution command; synthetic approvals exist only in test code.
+
+The actual adapter actor, dispatcher and owned loopback peer were exercised in
+five end-to-end scenarios, including `00`→`04`→`00`, independent reads, both
+cleanup stages and cancellation before and after a synthetic effect. Unknown
+outcomes remained quarantined after reopening the journal; no automatic retry
+or restore occurred. The complete development runner passed 39 Rust tests,
+five Python regressions, focused Clippy, formatting and bounded artifact
+validation. An independent reviewer reran the full isolated runner and checked
+the source; private result SHA-256 is
+`2981ab7e9545eff0829eaacb813206841a7d5a99645eebcb7596006468fc3a10` under
+`private/evidence/task020-adapter-e2e-20261106/`. The runner builds only the
+pinned exported fork and its validator cannot be disabled by Python optimization.
+
+This is synthetic integration evidence, not a physical write or a production
+authorization channel. A trusted human-only grant adapter and authenticated
+real observations remain unavailable. The user's target-limited consent is
+already recorded; these technical limitations are not a request to repeat it.
