@@ -193,3 +193,25 @@ using the pinned fork API, power-loss/Windows durability qualification, the
 actual device write and restoration are still NOT RUN or unavailable. User
 consent is already recorded; no repeated consent is implied by these technical
 gaps.
+
+## Offline dispatcher model — 2026-11-06
+
+A separately reviewed editor-side offline dispatcher model consumes an opaque
+plan-bound selection and checks route, selector, payload and stage before a
+mocked typed-session dispatch. It does not mint real approval or contact
+hardware. Uncertain dispatch never triggers automatic retry or restoration.
+After successful restore readback, route quarantine remains until both device
+and gateway cleanup are confirmed and durable cleanup evidence is recorded.
+Failure, pending or cancelled cleanup retains quarantine, including after
+reopening the journal.
+
+Independent review found and verified the correction of an earlier premature
+quarantine release. `cargo test --locked --test task020-guard` passed 31 offline
+tests, independently repeated by the reviewer. Full workspace tests, Clippy,
+formatting and diff checks passed in the task worktree. Editor source commit is
+`228cb75`; dispatcher SHA-256 is
+`44f3ebc689741e0899d9211c598c846883b636321471cfa618ab87965b65a160`.
+A separate non-shipping adapter draft compiled against the local fork, but did
+not demonstrate confirmed gateway cleanup. Real trusted approval, authenticated
+observations, complete concrete adapter integration and the physical write and
+restoration remain unavailable or NOT RUN.
