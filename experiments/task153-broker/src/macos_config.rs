@@ -2,6 +2,8 @@
 //! Descriptor-bound root-owned configuration inspection, not a service grant.
 
 use exacl::{AclEntry, AclEntryKind, AclOption, getfacl};
+use nix::errno::Errno;
+use nix::fcntl::AtFlags;
 use nix::fcntl::{OFlag, open, openat};
 use nix::sys::stat::Mode;
 use std::ffi::OsStr;
@@ -27,6 +29,8 @@ pub enum ConfigError {
     TooLarge,
     ChangedDuringRead,
     Io,
+    ConfigurationBusy,
+    ActivationUncertain,
 }
 
 /// Bytes read from an opened root-owned file after descriptor checks. This does
@@ -183,12 +187,33 @@ fn ensure_unchanged(
 pub fn load_fixed_configuration() -> Result<RootOwnedSnapshot, ConfigError> {
     let path = Path::new(CONFIGURATION);
     let parent = checked_directory(path.parent().ok_or(ConfigError::PathRejected)?)?;
+    let _lock = lock_existing_configuration(&parent)?;
+    ensure_no_activation_fence(&parent)?;
     let file = open_leaf(&parent, path.file_name().ok_or(ConfigError::PathRejected)?)?;
     let before = checked_metadata(&file, false)?;
     let bytes = read_bounded(&file)?;
     let after = checked_metadata(&file, false)?;
     ensure_unchanged((&before).into(), (&after).into(), bytes.len())?;
     Ok(RootOwnedSnapshot { bytes })
+}
+
+fn lock_existing_configuration(parent: &File) -> Result<File, ConfigError> {
+    let file = open_leaf(parent, OsStr::new("enrollment.lock"))?;
+    if checked_metadata(&file, false)?.len() != 0 {
+        return Err(ConfigError::PermissionsRejected);
+    }
+    rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockShared)
+        .map_err(|_| ConfigError::ConfigurationBusy)?;
+    // Keeping this File alive holds the lock; closing it releases it without
+    // a custom Drop that could panic on an explicit unlock error.
+    Ok(file)
+}
+
+pub(super) fn ensure_no_activation_fence(parent: &File) -> Result<(), ConfigError> {
+    match nix::sys::stat::fstatat(parent, "activation.pending", AtFlags::AT_SYMLINK_NOFOLLOW) {
+        Err(Errno::ENOENT) => Ok(()),
+        _ => Err(ConfigError::ActivationUncertain),
+    }
 }
 
 #[cfg(test)]

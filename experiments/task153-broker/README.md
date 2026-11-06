@@ -210,15 +210,15 @@ files and symlinks are refused without alteration. New file mode is set to
 native ACL are checked before writing. Success follows actual file `sync_all`
 and parent-directory `sync_all`, in that order.
 
-This step never publishes `config.json`: a valid but unacknowledged pending
-record must not become an active enrollment after an interruption. On failure,
-the code does not remove the pending file and refuses retry while it exists;
-its directory entry is not guaranteed durable before successful directory sync.
-The active-file check is not a cross-process lock. Future activation and
-enrollment must serialize and revalidate under a protected lock. There is no
-cleanup, activation, arbitrary path/byte import
-API or externally callable writer. The module is not connected to an endpoint,
-the verifier or the diagnostic helper. No real root store was created.
+Staging alone never publishes `config.json`. On staging failure, the code does
+not remove the pending file and refuses retry while it exists; its directory
+entry is not guaranteed durable before successful directory sync. Staging and
+private activation now hold an exclusive native flock on the descriptor-checked
+empty `enrollment.lock`. Readers hold the shared lock while inspecting the
+fence and reading the active record. A busy lock fails immediately. There is
+no arbitrary path/byte import API or externally callable writer. The module
+is not connected to an endpoint, the verifier or the diagnostic helper. No
+real root store was created.
 
 Seven tests use actual temporary directories and generated public passkey
 records to check create-new/no-overwrite, existing active file and symlink
@@ -228,11 +228,41 @@ writing and after file sync leaves the pending file present; the successful path
 native file and directory sync calls. These are stage-fault tests, not a
 power-loss test or a trace proving storage hardware behavior.
 
+Private activation reopens the staged record without following symlinks and
+checks its exact bytes, inode, owner/mode/link count and ACL. It creates and
+synchronizes an `activation.pending` fence and its parent directory before
+publishing anything. `rustix::fs::renameat_with` with `NOREPLACE` invokes Darwin
+`renameatx_np(RENAME_EXCL)`; the destination cannot be overwritten even if it
+appears after validation. The published inode is rechecked. On unsupported
+systems the safe library rejects the flagged rename rather than falling back
+to an overwriting operation.
+
+The commit point is successful parent-directory synchronization after the
+rename. Once fence creation has succeeded, failures before that point leave the
+fence; validation or open failures can occur before a fence exists. The reader
+explicitly
+rejects a fenced record after reopen, even if a complete `config.json` exists.
+Activation never automatically retries or removes a failure fence. After the
+commit point, the record is durable. A fence-unlink or final directory-sync
+problem returns `CommittedCleanupUncertain`, rather than claiming no effect.
+The fence may remain and block the reader, or its removal may be lost on a
+crash; if it is absent, the active record was already synchronized before
+cleanup. Fence cleanup uses a protected parent and cooperating lock; its
+stat-then-unlink sequence is not an atomic inode-conditional deletion. Only
+fully synchronized cleanup returns `Activated`. These are
+enrollment outcomes, not device approval capabilities.
+
+Seven additional real-filesystem tests cover exact activation, changed record,
+existing and racing destination, reader-lock exclusion, precommit interruption
+with fence/reopen refusal, postcommit cleanup uncertainty and substituted source
+inode rejection. Fault injection tests the specified state transitions; this
+does not establish power-loss behavior of the storage hardware.
+
 A safe explicit enrollment ceremony still requires the independently installed
 operator service and protected UI/peer path. That ceremony must obtain the
 operator's real passkey registration result; root UID, a record label or this
-private persistence primitive does not prove human initiation. Activation of
-the staged record, durable credential updates and the execution ledger remain
+private persistence primitive does not prove human initiation. Durable
+credential updates, protected ceremony wiring and the execution ledger remain
 unimplemented. No user action to run a root command is requested by this code.
 
 ## Remaining implementation
@@ -259,6 +289,11 @@ dependency pin; upstream caveats remain in Task152's dependency review.
 The read-only verifier directly pins the same `webauthn-rs = 0.6.2`, defaults
 disabled; the `softpasskey` authenticator is a dev-dependency only and was
 already reviewed in Task152. No dangerous credential/state features are used.
+The macOS file operations also pin `rustix = 1.1.6` (MIT/Apache-2.0 options,
+Rust >=1.65), defaults disabled with only `fs` and `std`. It was already present
+through `tempfile`; no new registry package was introduced. The reviewed safe
+rename and flock wrappers encapsulate upstream FFI; no project unsafe code is
+added. The flagged Darwin rename has no unsafe overwrite fallback.
 The macOS provider pins `nix = 0.31.3` (MIT, Rust >=1.69) with defaults disabled
 and only `socket`, `user` and `fs` features. Its new dependencies are `memoffset 0.9.1`
 (MIT), `cfg_aliases 0.2.2` (MIT) and `bitflags 2.13.2` (MIT OR Apache-2.0), with
@@ -293,6 +328,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 29 library tests, six helper tests and two
+The current complete run passed 36 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

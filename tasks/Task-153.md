@@ -215,7 +215,10 @@ create-new and file/directory synchronization; it neither activates a key nor
 provides an operator endpoint. Seven temporary-filesystem tests passed and the
 bounded increment was independently reviewed. Failure before directory sync
 does not guarantee a pending file survives power loss. Protected serialization
-and activation remain unimplemented.
+remains required. A private activation increment now serializes readers and
+writers, uses an activation fence and no-replace rename, and tests interruption
+and uncertain cleanup with temporary files. It is not connected to an operator
+service or actual enrollment; power-loss hardware behavior remains unverified.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

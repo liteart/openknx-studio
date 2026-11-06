@@ -1999,6 +1999,7 @@ version = "0.0.0"
 dependencies = [
  "exacl",
  "nix",
+ "rustix",
  "serde",
  "serde_json",
  "task152-passkey-prototype",

@@ -6,15 +6,16 @@
 #![allow(dead_code)]
 
 use crate::macos_config::{
-    CONFIGURATION, MAX_CONFIGURATION_BYTES, checked_directory, no_granting_acl,
+    CONFIGURATION, MAX_CONFIGURATION_BYTES, checked_directory, ensure_no_activation_fence,
+    no_granting_acl,
 };
 use nix::errno::Errno;
 use nix::fcntl::{AtFlags, OFlag, openat};
 use nix::sys::stat::{Mode, fchmod, fstatat};
-use nix::unistd::{getegid, geteuid};
+use nix::unistd::{UnlinkatFlags, getegid, geteuid, unlinkat};
 use serde::Serialize;
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use webauthn_rs::prelude::Passkey;
@@ -26,6 +27,8 @@ enum StoreError {
     AlreadyExistsOrUnavailable,
     FileRejected,
     Io,
+    Busy,
+    ActivationUncertain,
 }
 
 #[derive(Serialize)]
@@ -42,6 +45,20 @@ enum Stage {
     Written,
     FileSynced,
     DirectorySynced,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ActivationStage {
+    FenceDurable,
+    Renamed,
+    CommitSynced,
+    FenceRemoved,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum ActivationOutcome {
+    Activated,
+    CommittedCleanupUncertain,
 }
 
 struct BoundedRecord(Vec<u8>);
@@ -107,6 +124,8 @@ fn create_new_record<F: FnMut(Stage) -> Result<(), StoreError>>(
     if bytes.is_empty() || bytes.len() > MAX_CONFIGURATION_BYTES {
         return Err(StoreError::InvalidRecord);
     }
+    let _lock = exclusive_store_lock(parent)?;
+    ensure_no_activation_fence(parent).map_err(|_| StoreError::ActivationUncertain)?;
     match fstatat(parent, "config.json", AtFlags::AT_SYMLINK_NOFOLLOW) {
         Err(Errno::ENOENT) => (),
         _ => return Err(StoreError::AlreadyExistsOrUnavailable),
@@ -143,6 +162,164 @@ fn create_new_record<F: FnMut(Stage) -> Result<(), StoreError>>(
     // The code never removes a failed pending file. Before directory sync, its
     // name may still be lost on power failure; this is not a durable lock.
     Ok(())
+}
+
+fn validate_private_file(file: &File) -> Result<(), StoreError> {
+    let metadata = file.metadata().map_err(|_| StoreError::Io)?;
+    if !metadata.is_file()
+        || metadata.uid() != geteuid().as_raw()
+        || metadata.nlink() != 1
+        || metadata.mode() & 0o777 != 0o600
+    {
+        return Err(StoreError::FileRejected);
+    }
+    no_granting_acl(file).map_err(|_| StoreError::FileRejected)
+}
+
+fn exclusive_store_lock(parent: &File) -> Result<File, StoreError> {
+    let file = match openat(
+        parent,
+        "enrollment.lock",
+        OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL | OFlag::O_NOFOLLOW | OFlag::O_CLOEXEC,
+        Mode::S_IRUSR | Mode::S_IWUSR,
+    ) {
+        Ok(fd) => {
+            let file = File::from(fd);
+            fchmod(&file, Mode::S_IRUSR | Mode::S_IWUSR).map_err(|_| StoreError::FileRejected)?;
+            file
+        }
+        Err(Errno::EEXIST) => openat(
+            parent,
+            "enrollment.lock",
+            OFlag::O_RDWR | OFlag::O_NOFOLLOW | OFlag::O_CLOEXEC | OFlag::O_NONBLOCK,
+            Mode::empty(),
+        )
+        .map(File::from)
+        .map_err(|_| StoreError::FileRejected)?,
+        Err(_) => return Err(StoreError::Io),
+    };
+    validate_private_file(&file)?;
+    if file.metadata().map_err(|_| StoreError::Io)?.len() != 0 {
+        return Err(StoreError::FileRejected);
+    }
+    rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive)
+        .map_err(|_| StoreError::Busy)?;
+    file.sync_all().map_err(|_| StoreError::Io)?;
+    parent.sync_all().map_err(|_| StoreError::Io)?;
+    Ok(file)
+}
+
+fn named_inode_matches(parent: &File, name: &str, file: &File) -> bool {
+    let Ok(named) = fstatat(parent, name, AtFlags::AT_SYMLINK_NOFOLLOW) else {
+        return false;
+    };
+    let Ok(opened) = file.metadata() else {
+        return false;
+    };
+    u64::try_from(named.st_dev).ok() == Some(opened.dev())
+        && named.st_ino == opened.ino()
+        && (named.st_mode & nix::libc::S_IFMT) == nix::libc::S_IFREG
+}
+
+/// Dormant activation only; a future protected ceremony must supply the exact
+/// same public record that it registered and staged, never an imported record.
+fn activate_first_enrollment(
+    issuer: &str,
+    credential: &Passkey,
+) -> Result<ActivationOutcome, StoreError> {
+    if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
+        return Err(StoreError::OperatorProvisioningUnavailable);
+    }
+    let path = Path::new(CONFIGURATION);
+    let parent = checked_directory(
+        path.parent()
+            .ok_or(StoreError::OperatorProvisioningUnavailable)?,
+    )
+    .map_err(|_| StoreError::OperatorProvisioningUnavailable)?;
+    activate_pending(&parent, &encode_record(issuer, credential)?, |_| Ok(()))
+}
+
+fn activate_pending<F: FnMut(ActivationStage) -> Result<(), StoreError>>(
+    parent: &File,
+    expected: &[u8],
+    mut stage: F,
+) -> Result<ActivationOutcome, StoreError> {
+    if expected.is_empty() || expected.len() > MAX_CONFIGURATION_BYTES {
+        return Err(StoreError::InvalidRecord);
+    }
+    let _lock = exclusive_store_lock(parent)?;
+    ensure_no_activation_fence(parent).map_err(|_| StoreError::ActivationUncertain)?;
+    match fstatat(parent, "config.json", AtFlags::AT_SYMLINK_NOFOLLOW) {
+        Err(Errno::ENOENT) => (),
+        _ => return Err(StoreError::AlreadyExistsOrUnavailable),
+    }
+    let pending = openat(
+        parent,
+        "enrollment.pending.json",
+        OFlag::O_RDONLY | OFlag::O_NOFOLLOW | OFlag::O_CLOEXEC | OFlag::O_NONBLOCK,
+        Mode::empty(),
+    )
+    .map(File::from)
+    .map_err(|_| StoreError::FileRejected)?;
+    validate_private_file(&pending)?;
+    let mut bytes = Vec::new();
+    (&pending)
+        .take((MAX_CONFIGURATION_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|_| StoreError::Io)?;
+    if bytes != expected || !named_inode_matches(parent, "enrollment.pending.json", &pending) {
+        return Err(StoreError::InvalidRecord);
+    }
+    pending.sync_all().map_err(|_| StoreError::Io)?;
+
+    // A durable fence must precede any publication. Readers reject it under
+    // their shared lock, including after a crash or failed directory sync.
+    let mut fence = openat(
+        parent,
+        "activation.pending",
+        OFlag::O_WRONLY | OFlag::O_CREAT | OFlag::O_EXCL | OFlag::O_NOFOLLOW | OFlag::O_CLOEXEC,
+        Mode::S_IRUSR | Mode::S_IWUSR,
+    )
+    .map(File::from)
+    .map_err(|_| StoreError::ActivationUncertain)?;
+    fchmod(&fence, Mode::S_IRUSR | Mode::S_IWUSR).map_err(|_| StoreError::ActivationUncertain)?;
+    validate_private_file(&fence).map_err(|_| StoreError::ActivationUncertain)?;
+    fence
+        .write_all(b"activation-uncommitted-v1\n")
+        .map_err(|_| StoreError::ActivationUncertain)?;
+    fence
+        .sync_all()
+        .map_err(|_| StoreError::ActivationUncertain)?;
+    parent
+        .sync_all()
+        .map_err(|_| StoreError::ActivationUncertain)?;
+    stage(ActivationStage::FenceDurable).map_err(|_| StoreError::ActivationUncertain)?;
+    rustix::fs::renameat_with(
+        parent,
+        "enrollment.pending.json",
+        parent,
+        "config.json",
+        rustix::fs::RenameFlags::NOREPLACE,
+    )
+    .map_err(|_| StoreError::ActivationUncertain)?;
+    stage(ActivationStage::Renamed).map_err(|_| StoreError::ActivationUncertain)?;
+    if !named_inode_matches(parent, "config.json", &pending) {
+        return Err(StoreError::ActivationUncertain);
+    }
+    parent
+        .sync_all()
+        .map_err(|_| StoreError::ActivationUncertain)?;
+    // The enrolled record is now committed. Later cleanup cannot honestly be
+    // reported as no effect, even if the fence remains or its removal is lost.
+    if stage(ActivationStage::CommitSynced).is_err()
+        || !named_inode_matches(parent, "activation.pending", &fence)
+        || unlinkat(parent, "activation.pending", UnlinkatFlags::NoRemoveDir).is_err()
+        || stage(ActivationStage::FenceRemoved).is_err()
+        || parent.sync_all().is_err()
+    {
+        return Ok(ActivationOutcome::CommittedCleanupUncertain);
+    }
+    Ok(ActivationOutcome::Activated)
 }
 
 #[cfg(test)]
@@ -308,5 +485,162 @@ mod tests {
                 Err(StoreError::OperatorProvisioningUnavailable)
             );
         }
+    }
+
+    #[test]
+    fn atomic_activation_publishes_exact_staged_record_and_clears_durable_fence() {
+        let (directory, parent) = fixture();
+        let bytes = synthetic_record();
+        create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+        assert_eq!(
+            activate_pending(&parent, &bytes, |_| Ok(())),
+            Ok(ActivationOutcome::Activated)
+        );
+        assert_eq!(
+            fs::read(directory.path().join("config.json")).unwrap(),
+            bytes
+        );
+        assert!(!directory.path().join("enrollment.pending.json").exists());
+        assert_eq!(ensure_no_activation_fence(&parent), Ok(()));
+    }
+
+    #[test]
+    fn changed_record_and_existing_config_cannot_be_activated() {
+        let (directory, parent) = fixture();
+        let bytes = synthetic_record();
+        create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+        assert_eq!(
+            activate_pending(&parent, b"wrong record", |_| Ok(())),
+            Err(StoreError::InvalidRecord)
+        );
+        fs::write(directory.path().join("config.json"), b"keep active").unwrap();
+        assert_eq!(
+            activate_pending(&parent, &bytes, |_| Ok(())),
+            Err(StoreError::AlreadyExistsOrUnavailable)
+        );
+        assert_eq!(
+            fs::read(directory.path().join("config.json")).unwrap(),
+            b"keep active"
+        );
+        assert!(directory.path().join("enrollment.pending.json").exists());
+    }
+
+    #[test]
+    fn precommit_interruption_keeps_reader_fence_across_reopen() {
+        for fail_at in [ActivationStage::FenceDurable, ActivationStage::Renamed] {
+            let (directory, parent) = fixture();
+            let bytes = synthetic_record();
+            create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+            assert_eq!(
+                activate_pending(&parent, &bytes, |stage| if stage == fail_at {
+                    Err(StoreError::Io)
+                } else {
+                    Ok(())
+                }),
+                Err(StoreError::ActivationUncertain)
+            );
+            drop(parent);
+            let reopened = File::open(directory.path()).unwrap();
+            assert_eq!(
+                ensure_no_activation_fence(&reopened),
+                Err(crate::macos_config::ConfigError::ActivationUncertain)
+            );
+            assert_eq!(
+                activate_pending(&reopened, &bytes, |_| Ok(())),
+                Err(StoreError::ActivationUncertain)
+            );
+        }
+    }
+
+    #[test]
+    fn postcommit_cleanup_fault_is_reported_as_committed_not_no_effect() {
+        for fail_at in [ActivationStage::CommitSynced, ActivationStage::FenceRemoved] {
+            let (directory, parent) = fixture();
+            let bytes = synthetic_record();
+            create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+            assert_eq!(
+                activate_pending(&parent, &bytes, |stage| if stage == fail_at {
+                    Err(StoreError::Io)
+                } else {
+                    Ok(())
+                }),
+                Ok(ActivationOutcome::CommittedCleanupUncertain)
+            );
+            assert_eq!(
+                fs::read(directory.path().join("config.json")).unwrap(),
+                bytes
+            );
+            assert_eq!(
+                directory.path().join("activation.pending").exists(),
+                fail_at == ActivationStage::CommitSynced
+            );
+        }
+    }
+
+    #[test]
+    fn kernel_noreplace_rejects_destination_created_after_validation() {
+        let (directory, parent) = fixture();
+        let bytes = synthetic_record();
+        create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+        let active = directory.path().join("config.json");
+        assert_eq!(
+            activate_pending(&parent, &bytes, |stage| {
+                if stage == ActivationStage::FenceDurable {
+                    fs::write(&active, b"racing destination").unwrap();
+                }
+                Ok(())
+            }),
+            Err(StoreError::ActivationUncertain)
+        );
+        assert_eq!(fs::read(active).unwrap(), b"racing destination");
+        assert!(directory.path().join("enrollment.pending.json").exists());
+    }
+
+    #[test]
+    fn shared_reader_lock_blocks_activation_before_any_fence() {
+        let (directory, parent) = fixture();
+        let bytes = synthetic_record();
+        create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+        let shared = File::open(directory.path().join("enrollment.lock")).unwrap();
+        rustix::fs::flock(&shared, rustix::fs::FlockOperation::NonBlockingLockShared).unwrap();
+        assert_eq!(
+            activate_pending(&parent, &bytes, |_| Ok(())),
+            Err(StoreError::Busy)
+        );
+        assert!(!directory.path().join("activation.pending").exists());
+        drop(shared);
+        assert_eq!(
+            activate_pending(&parent, &bytes, |_| Ok(())),
+            Ok(ActivationOutcome::Activated)
+        );
+    }
+
+    #[test]
+    fn substituted_pending_inode_is_quarantined_after_rename() {
+        let (directory, parent) = fixture();
+        let bytes = synthetic_record();
+        create_new_record(&parent, &bytes, |_| Ok(())).unwrap();
+        assert_eq!(
+            activate_pending(&parent, &bytes, |stage| {
+                if stage == ActivationStage::FenceDurable {
+                    fs::rename(
+                        directory.path().join("enrollment.pending.json"),
+                        directory.path().join("original"),
+                    )
+                    .unwrap();
+                    fs::write(
+                        directory.path().join("enrollment.pending.json"),
+                        b"substituted inode",
+                    )
+                    .unwrap();
+                }
+                Ok(())
+            }),
+            Err(StoreError::ActivationUncertain)
+        );
+        assert_eq!(
+            ensure_no_activation_fence(&parent),
+            Err(crate::macos_config::ConfigError::ActivationUncertain)
+        );
     }
 }
