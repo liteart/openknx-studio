@@ -66,14 +66,9 @@ mod tests {
         }
     }
 
-    // Synthetic approval exists solely inside this private unit-test module.
     // No fixture approval can be obtained through the non-test API.
     fn synthetic_approval(plan: &Plan, id: u8) -> HumanApproval {
-        HumanApproval {
-            id: [id; 16],
-            plan_digest: plan.digest(),
-            expires_at_utc_seconds: 200,
-        }
+        synthetic_approval_for_test([id; 16], plan.digest(), 200)
     }
 
     fn confirm(attempt: &mut Attempt, now: u64) {
@@ -677,6 +672,21 @@ pub struct HumanApproval {
     id: [u8; 16],
     plan_digest: [u8; 32],
     expires_at_utc_seconds: u64,
+}
+
+/// Synthetic fixture access exists only in a test build. It is not an issuer,
+/// credential verifier or executable capability available to shipped callers.
+#[cfg(test)]
+pub(crate) fn synthetic_approval_for_test(
+    id: [u8; 16],
+    plan_digest: [u8; 32],
+    expires_at_utc_seconds: u64,
+) -> HumanApproval {
+    HumanApproval {
+        id,
+        plan_digest,
+        expires_at_utc_seconds,
+    }
 }
 
 #[derive(Debug)]

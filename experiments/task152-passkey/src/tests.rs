@@ -6,6 +6,8 @@ use webauthn_authenticator_rs::{
     AuthenticatorBackend, WebauthnAuthenticator, softpasskey::SoftPasskey,
 };
 
+mod guard_integration;
+
 fn input() -> guard::PlanInput {
     guard::PlanInput {
         operation_id: "synthetic-passkey-plan".into(),

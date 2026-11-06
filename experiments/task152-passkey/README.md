@@ -8,6 +8,16 @@ A successful assertion produces a `DevelopmentReceipt` with
 `physical_authorization: false`. It cannot be converted into Task020's private
 `HumanApproval`; a compile-fail test checks that boundary.
 
+The test-only guard integration additionally exercises a genuine synthetic
+WebAuthn signature through the existing Task020 dispatcher and an in-memory
+simulated session. An explicitly `cfg(test)` fixture constructor supplies the
+dispatcher approval only in those tests; no normal library or browser binary
+can call it. The tests cover the exact write/readback/restore/readback/cleanup
+sequence, changed plans, expiry, durable replay rejection and an uncertain
+write without an automatic restore. A development receipt by itself still
+causes zero session calls. This is offline integration evidence, not protected
+enrollment, a physical grant adapter or device execution.
+
 ## Implemented behavior
 
 - The same validated `PlanInput` supplies the immutable plan digest and the exact
