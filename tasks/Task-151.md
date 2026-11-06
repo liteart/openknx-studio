@@ -71,7 +71,7 @@ been performed.
 | Field | Current value |
 |---|---|
 | Implementation / report status | Done for bounded generic offline session behavior; physical execution and backend authorization remain separate |
-| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855`, read-only harness `ae1ef36eb190b40a1fab02f7d673e12e9b2d9757`, strict gateway close `5afd1b7bc27e42a160196b0730df8b687062e645`; fork not published |
+| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855`, read-only harness `ae1ef36eb190b40a1fab02f7d673e12e9b2d9757`, strict gateway close `5afd1b7bc27e42a160196b0730df8b687062e645`, test peer `4d296afb0906d17b6724b56c912f2e9e3f6680a5`; fork not published |
 | Tests executed | 14 session and nine read-harness synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; one selected physical connected read PASS; Windows NOT RUN |
 | Evidence location | Fork `TASK151-CONNECTED-MANAGEMENT.md` at source commit; private Task020 device-control read and supplied KNX standard |
 | Acceptance criteria met | AC-001–003 for the documented offline scope |
@@ -131,3 +131,17 @@ target and received Cargo exit 101 without running tests, then used the correct
 `cargo test --locked --offline --no-default-features --features dpt --test
 test_gateway_disconnect_confirmed` command successfully. No physical gateway
 or device operation was performed for this follow-up.
+
+## Reusable connected-management test peer — 2026-11-06
+
+Fork revision `4d296afb0906d17b6724b56c912f2e9e3f6680a5` adds an explicit,
+test-only, IPv4-loopback peer for one configurable synthetic target and property.
+It supports a complete read/change/read/restore/read flow and bounded
+hold-before/hold-after cases for testing client cancellation. It is not a
+production device emulator or authorization path. Four focused tests covering
+five loopback flows passed, independently repeated by the coordinator; focused
+Clippy, formatting and diff checks passed, and independent review found no
+demonstrated must-fix issue. Default invocation remained offline. The simulator
+source SHA-256 is
+`5668490ad44c5f912924bf84527c8bec67587fef121e2608b57972c50346bf39`.
+Hardware, external network and Windows execution were NOT RUN.
