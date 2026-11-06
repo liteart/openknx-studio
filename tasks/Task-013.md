@@ -74,8 +74,8 @@ No full OS sandbox, real communication, or safe-write claim.
 ## Risks and Blockers
 
 Before an original DCA connection test, configure and verify Windows Firewall
-blocking on the test host, as directed by Simon on 2026-11-03. The earlier
-15-minute firewall rules have expired and must not be assumed active. Firewall
+blocking on the test host, as directed by Simon. Temporary rules expire after
+15 minutes and must be verified again for each test. Firewall
 rules alone do not establish protection against a direct USB/driver path, an
 allowed management endpoint, or a privileged process changing those rules. The
 host isolation guard remains in place until the actual test environment and
@@ -98,6 +98,24 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 | Reviewer | Unassigned |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Temporary Windows firewall observation — 2026-11-06
+
+At Simon's direction, temporary outbound IPv4/IPv6 block rules were installed on
+dev host `.60`, with `192.168.1.208` excluded for the existing management
+connection and IPv4 loopback excluded. A SYSTEM task was registered to remove
+the rules after 15 minutes. ActiveStore reported both rules enabled; a TCP
+connect attempt to reserved benchmarking address `198.18.0.1:9` failed with
+`AccessDenied`. The private inventory stdout SHA-256 is
+`91f5538b6de86ebb25f75bf2c389571268acca1853db77d944f4daafba97752e` and the
+benchmark-denial stdout SHA-256 is
+`82c232dfb14951beacb20ec371ce94c6c2205ed04a6b1ce4b2ca0d3f06f4f492`; both
+are under `private/evidence/task013-firewall-20261106/`. This observation
+demonstrates a single blocked outbound TCP attempt, not comprehensive process,
+driver or hardware isolation. The management endpoint remains an exception,
+and a limited name-based PnP check did not qualify all passthrough devices.
+The original-probe guard remains in place; vendor connection and UI tests were
+NOT RUN. The rules are temporary and are not evidence for any later test run.
 
 ## Bounded denial checkpoint — 2026-11-03
 
