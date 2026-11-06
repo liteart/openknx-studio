@@ -18,7 +18,7 @@ function credential(kind) {
   };
 }
 
-function harness({ createError = null, getError = null, rejectPath = null, malformedOptions = false } = {}) {
+function harness({ createError = null, getError = null, rejectPath = null, rejectionChecks = null, malformedOptions = false } = {}) {
   const elements = new Map();
   for (const id of ["enroll", "assert", "reviewed", "stop", "status", "plan"]) {
     elements.set(id, { disabled: true, checked: false, textContent: "", listeners: new Map(),
@@ -56,7 +56,11 @@ function harness({ createError = null, getError = null, rejectPath = null, malfo
     clearTimeout(id) { timers.delete(id); },
     async fetch(path, options = {}) {
       calls.push(path);
-      if (path === rejectPath) return { ok: false, status: 403 };
+      if (options.method === "POST") {
+        assert.equal(options.mode, "same-origin");
+        assert.equal(options.referrerPolicy, "same-origin", "POST must preserve an exact Origin instead of null");
+      }
+      if (path === rejectPath) return { ok: false, status: 403, json: async () => ({ checks: rejectionChecks }) };
       const response = path === "/api/session"
         ? { csrf: "synthetic-token", plan: "synthetic exact plan", physical_authorization: false }
         : path.endsWith("/start")
@@ -131,6 +135,17 @@ test("verification HTTP rejection identifies the failing stage and retains disab
   await page.click("enroll");
   assert.match(page.status(), /enrollment verification \(HTTP 403\)/);
   assert.equal(page.elements.get("reviewed").disabled, true);
+});
+
+test("request diagnostics expose only allowlisted booleans and never header values", async () => {
+  const page = harness({ rejectPath: "/api/cancel", rejectionChecks: {
+    origin_present: true, origin_matches: false, origin_is_null: true, csrf_matches: true,
+    csrf_present: "secret-token", authorization: "secret-authorization", error: "secret-message",
+  } });
+  await page.settle();
+  assert.match(page.status(), /origin present true; origin matches false; origin null true; CSRF matches true/);
+  assert.doesNotMatch(page.status(), /secret|CSRF present/);
+  assert.deepEqual(page.prompts, []);
 });
 
 test("challenge preparation HTTP and decoding failures never invoke a provider", async () => {

@@ -43,6 +43,49 @@ struct Demo {
     stopped: bool,
 }
 
+/// Sanitized rejection diagnostics: no header values, tokens or credentials.
+#[derive(serde::Serialize)]
+struct RequestChecks {
+    origin_present: bool,
+    origin_matches: bool,
+    origin_is_null: bool,
+    fetch_site_present: bool,
+    fetch_mode_present: bool,
+    fetch_metadata_matches: bool,
+    csrf_present: bool,
+    csrf_matches: bool,
+    content_type_matches: bool,
+}
+
+impl RequestChecks {
+    fn new(request: &Request, csrf: &str) -> Self {
+        Self {
+            origin_present: request.headers.contains_key("origin"),
+            origin_matches: request.headers.get("origin").map(String::as_str)
+                == Some(DEVELOPMENT_ORIGIN),
+            origin_is_null: request.headers.get("origin").map(String::as_str) == Some("null"),
+            fetch_site_present: request.headers.contains_key("sec-fetch-site"),
+            fetch_mode_present: request.headers.contains_key("sec-fetch-mode"),
+            fetch_metadata_matches: same_origin_fetch(request),
+            csrf_present: request.headers.contains_key("x-openknx-development-csrf"),
+            csrf_matches: request
+                .headers
+                .get("x-openknx-development-csrf")
+                .map(String::as_str)
+                == Some(csrf),
+            content_type_matches: request.headers.get("content-type").map(String::as_str)
+                == Some("application/json"),
+        }
+    }
+
+    fn accepted(&self) -> bool {
+        self.origin_matches
+            && self.fetch_metadata_matches
+            && self.csrf_matches
+            && self.content_type_matches
+    }
+}
+
 pub(crate) fn run(root: &Path) -> Result<(), ServerError> {
     let mut demo = Demo::new(root, now()?)?;
     let listener = TcpListener::bind(ADDRESS).map_err(|_| ServerError::Io)?;
@@ -132,12 +175,12 @@ impl Demo {
         if request.method != "POST" {
             return failure(405, "method_rejected");
         }
-        if request.headers.get("origin").map(String::as_str) != Some(DEVELOPMENT_ORIGIN)
-            || !same_origin_fetch(&request)
-            || request.headers.get("content-type").map(String::as_str) != Some("application/json")
-            || request.headers.get("x-openknx-development-csrf") != Some(&self.csrf)
-        {
-            return failure(403, "request_rejected");
+        let checks = RequestChecks::new(&request, &self.csrf);
+        if !checks.accepted() {
+            return json(
+                403,
+                &serde_json::json!({ "error": "request_rejected", "checks": checks }),
+            );
         }
         let Ok(at) = now() else {
             return failure(503, "clock_unavailable");
@@ -357,8 +400,11 @@ fn parse_request(bytes: &[u8]) -> Result<Request, ServerError> {
 }
 
 fn write_response(stream: &mut TcpStream, response: Response) -> Result<(), ServerError> {
+    // Fetch serializes Origin as null for a same-origin-mode POST under
+    // no-referrer. same-origin preserves our required exact local Origin while
+    // continuing to suppress referrer information on cross-origin requests.
     let head = format!(
-        "HTTP/1.1 {} Response\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nReferrer-Policy: no-referrer\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'\r\n\r\n",
+        "HTTP/1.1 {} Response\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nReferrer-Policy: same-origin\r\nContent-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'\r\n\r\n",
         response.status,
         response.content_type,
         response.body.len()

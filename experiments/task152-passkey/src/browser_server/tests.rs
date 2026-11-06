@@ -87,6 +87,30 @@ fn session_token_is_not_returned_to_cross_site_fetches() {
 }
 
 #[test]
+fn null_origin_is_still_rejected_and_diagnostics_contain_only_booleans() {
+    let (_directory, mut demo) = fixture();
+    let mut request = request(&demo, "POST", "/api/enroll/start", b"{}");
+    request.headers.insert("origin".into(), "null".into());
+    let response = demo.handle(request);
+    assert_eq!(response.status, 403);
+    let body: serde_json::Value = serde_json::from_slice(&response.body).unwrap();
+    let checks = body["checks"].as_object().unwrap();
+    assert!(checks.values().all(serde_json::Value::is_boolean));
+    assert_eq!(checks["origin_present"], true);
+    assert_eq!(checks["origin_matches"], false);
+    assert_eq!(checks["origin_is_null"], true);
+    assert_eq!(checks["fetch_metadata_matches"], true);
+    assert_eq!(checks["csrf_matches"], true);
+    assert!(
+        !String::from_utf8(response.body)
+            .unwrap()
+            .contains(&demo.csrf)
+    );
+    let good = super::tests::request(&demo, "POST", "/api/enroll/start", b"{}");
+    assert_eq!(demo.handle(good).status, 200);
+}
+
+#[test]
 fn malformed_lengths_duplicate_headers_chunking_and_pipelining_are_rejected() {
     for raw in [
         "POST /api/stop HTTP/1.1\r\nHost: localhost:15200\r\nContent-Length: 0\r\ncontent-length: 0\r\n\r\n",
@@ -195,6 +219,7 @@ fn loopback_connection_is_read_bounded_and_response_closes_connection() {
     client.read_to_end(&mut bytes).unwrap();
     let response = String::from_utf8(bytes).unwrap();
     assert!(response.contains("Connection: close\r\n"));
+    assert!(response.contains("Referrer-Policy: same-origin\r\n"));
     assert!(response.contains("Content-Security-Policy: default-src 'none'"));
     assert!(response.ends_with("synthetic response"));
     worker.join().unwrap();

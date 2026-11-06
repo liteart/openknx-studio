@@ -172,6 +172,19 @@ observed Safari success. [WebKit documents gesture requirements and Fetch
 propagation](https://webkit.org/blog/11312/meet-face-id-and-touch-id-for-the-web/),
 so an asynchronous fetch was a compatibility concern, not a confirmed diagnosis.
 
+A later Safari attempt reached HTTP 403 during challenge preparation, before
+any credential API call. Source inspection found a standards conflict: the
+response used `Referrer-Policy: no-referrer` while POST used `mode: same-origin`.
+[Fetch's Origin-header algorithm](https://fetch.spec.whatwg.org/#append-a-request-origin-header)
+serializes the Origin as `null` for that combination. The document and POST now
+use `same-origin` referrer policy; cross-origin referrers remain suppressed and
+the exact Origin, Host, Fetch Metadata and CSRF checks remain required. Null
+Origin is still rejected. Boolean-only rejection diagnostics distinguish
+present/matching/null without exposing any header value or token. The 403 is an
+operator observation; the null-Origin explanation is standards-derived until a
+sanitized native request observation confirms it. Nine simulated browser tests
+cover the explicit POST referrer policy and safe diagnostics.
+
 An operator-driven native-vault browser enrollment/assertion, protected enrollment,
 trusted-display/separation tests and hardware integration remain **NOT RUN**.
 Task152 acceptance criteria and the Task020 hardware write remain incomplete.

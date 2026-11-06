@@ -33,16 +33,20 @@ function encode(buffer) {
 
 async function post(path, data = {}) {
   const response = await fetch(path, {
-    method: "POST", mode: "same-origin", cache: "no-store", credentials: "same-origin",
+    method: "POST", mode: "same-origin", referrerPolicy: "same-origin", cache: "no-store", credentials: "same-origin",
     headers: { "Content-Type": "application/json", "X-OpenKNX-Development-CSRF": csrf },
     body: JSON.stringify(data),
   });
-  if (!response.ok) throw new LocalRequestError(response.status);
+  if (!response.ok) {
+    let checks = null;
+    try { checks = (await response.json()).checks; } catch (_) { /* No diagnostic body is required. */ }
+    throw new LocalRequestError(response.status, checks);
+  }
   return response.json();
 }
 
 class LocalRequestError extends Error {
-  constructor(status) { super(); this.status = status; }
+  constructor(status, checks) { super(); this.status = status; this.checks = checks; }
 }
 
 function diagnostic(stage, error, gesture = null) {
@@ -53,6 +57,13 @@ function diagnostic(stage, error, gesture = null) {
   if (error instanceof LocalRequestError && Number.isInteger(error.status)
       && error.status >= 400 && error.status <= 599) code = `HTTP ${error.status}`;
   else if (safeNames.has(error?.name)) code = error.name;
+  if (error instanceof LocalRequestError && error.checks) {
+    for (const [field, label] of [["origin_present", "origin present"], ["origin_matches", "origin matches"],
+      ["origin_is_null", "origin null"], ["fetch_metadata_matches", "fetch metadata matches"],
+      ["csrf_present", "CSRF present"], ["csrf_matches", "CSRF matches"], ["content_type_matches", "JSON type matches"]]) {
+      if (typeof error.checks[field] === "boolean") code += `; ${label} ${error.checks[field]}`;
+    }
+  }
   const activation = gesture === null ? "" : `; user gesture ${gesture}`;
   return `Passkey test stopped during ${stage} (${code}${activation}). You can prepare a new attempt. No device authorization was issued.`;
 }
