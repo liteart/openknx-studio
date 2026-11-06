@@ -71,8 +71,8 @@ been performed.
 | Field | Current value |
 |---|---|
 | Implementation / report status | Done for bounded generic offline session behavior; physical execution and backend authorization remain separate |
-| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855`, based on Task020 `da9a66679d6d49108f97ec8afeaed8d56c382a63`; fork not published |
-| Tests executed | 14 synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; physical/Windows tests NOT RUN |
+| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855` and read-only harness `ae1ef36eb190b40a1fab02f7d673e12e9b2d9757`, based on Task020 `da9a66679d6d49108f97ec8afeaed8d56c382a63`; fork not published |
+| Tests executed | 14 session and nine read-harness synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; one selected physical connected read PASS; Windows NOT RUN |
 | Evidence location | Fork `TASK151-CONNECTED-MANAGEMENT.md` at source commit; private Task020 device-control read and supplied KNX standard |
 | Acceptance criteria met | AC-001–003 for the documented offline scope |
 | Reviewer | Independent protocol and code review PASS after correcting idle timing and error-state handling |
@@ -96,5 +96,23 @@ property decode errors leaving the session reusable. Source SHA-256 is
 `372657ddcaf703678f331e3332f0d7599bf0d9e248a64691e815893a819d16d6`; test
 source SHA-256 is
 `da629186cecb35e3329c44034dfe757e508b13427b488b2fd57d6c9b33dfbb00`.
-No live session, physical write, device readback or backend authorization test
-was performed. In particular this result does not complete Task020.
+At this checkpoint no live session, physical write, device readback or backend
+authorization test had been performed. In particular this result does not
+complete Task020.
+
+## Connected read-only hardware observation — 2026-11-06
+
+The separately reviewed `readonly_connected_property` harness at local fork
+revision `ae1ef36eb190b40a1fab02f7d673e12e9b2d9757` passed nine synthetic
+loopback tests and then ran once against the user-selected device under the
+private plan `task151-connected-read-20261106/plan.json`. It read a matching
+DD0 mask and the selected one-byte control property (`00`), with exit 0. Device
+session teardown was locally network-confirmed; gateway teardown was remotely
+confirmed. No write was sent. The plan SHA-256 is
+`098e4a9823ba84348a8510af852661cb96cd21252dcea8f78c0437ca5c4bf768`, binary
+SHA-256 is `975a293cbd2f58050902497d15bbe374544b95078e1d44001d151e7e033aa154`,
+and stdout SHA-256 is
+`0fe052938dc7cab832bb4e4bce3deeaf1236605849f7a77b1af50fe7b1c2d9f7`.
+Independent review verified the source and private evidence hashes. This is a
+read-only session observation, not evidence of unique identity, write access,
+durable authorization or physical restoration.
