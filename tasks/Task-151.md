@@ -71,7 +71,7 @@ been performed.
 | Field | Current value |
 |---|---|
 | Implementation / report status | Done for bounded generic offline session behavior; physical execution and backend authorization remain separate |
-| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855` and read-only harness `ae1ef36eb190b40a1fab02f7d673e12e9b2d9757`, based on Task020 `da9a66679d6d49108f97ec8afeaed8d56c382a63`; fork not published |
+| Source commit(s) | Local knust fork `7ebcdbfc8c69dd86c2db7b0adcc3b2cf3b4b0855`, read-only harness `ae1ef36eb190b40a1fab02f7d673e12e9b2d9757`, strict gateway close `5afd1b7bc27e42a160196b0730df8b687062e645`; fork not published |
 | Tests executed | 14 session and nine read-harness synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; one selected physical connected read PASS; Windows NOT RUN |
 | Evidence location | Fork `TASK151-CONNECTED-MANAGEMENT.md` at source commit; private Task020 device-control read and supplied KNX standard |
 | Acceptance criteria met | AC-001–003 for the documented offline scope |
@@ -116,3 +116,18 @@ and stdout SHA-256 is
 Independent review verified the source and private evidence hashes. This is a
 read-only session observation, not evidence of unique identity, write access,
 durable authorization or physical restoration.
+
+## Strict gateway cleanup follow-up — 2026-11-06
+
+Fork revision `5afd1b7bc27e42a160196b0730df8b687062e645` adds an explicit
+owned one-attempt gateway disconnect, requiring a matching successful response
+before reporting confirmation or releasing an address claim. Missing,
+malformed, rejected and cancelled outcomes remain unknown; channel zero is
+handled. Existing graceful-close semantics remain unchanged. Eight synthetic
+loopback tests, 13 legacy compatibility cases, focused Clippy, formatting and
+diff checks passed; the coordinator independently reran the eight new cases.
+An independent review passed. The coordinator initially invoked a mistyped test
+target and received Cargo exit 101 without running tests, then used the correct
+`cargo test --locked --offline --no-default-features --features dpt --test
+test_gateway_disconnect_confirmed` command successfully. No physical gateway
+or device operation was performed for this follow-up.
