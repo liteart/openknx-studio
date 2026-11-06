@@ -276,6 +276,13 @@ independent review; five packaging tests passed. Inventory is in private
 `evidence/task153-installer-repair-20261106/`. Installer execution and actual
 parent-metadata preservation remain NOT RUN; this does not authorize or enable
 the device write.
+The package preparer also accepts the exact-export service artifact and verifies
+its source snapshot, pinned dependency trees and copied binary before signing.
+Ten packaging regressions and independent static package review passed. The
+private inventory is in `private/evidence/task153-exact-package-20261106/`;
+the reviewed package SHA-256 is
+`87fc6441964d58f5e03534b88beed356e092c7d6ab8eed37b794bf7037e536f2`.
+This evidence is snapshot consistency, not independent build attestation.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on

@@ -9,6 +9,7 @@ from pathlib import Path
 import plistlib
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -23,6 +24,11 @@ COMPONENTS = {
     "daemon": ("/Library/LaunchDaemons", 0o755, {}),
 }
 ALLOWED_INPUT_ATTRIBUTES = {"com.apple.provenance"}
+PINNED_FORK_REVISION = "4d296afb0906d17b6724b56c912f2e9e3f6680a5"
+# Tree IDs independently read from the pinned Git commit objects, not a report.
+PINNED_FORK_TREE = "619fd4ff1e49e6f064a1d54f772bffb6dbf9c5f9"
+PINNED_EXACL_REVISION = "18275aa1a82aae9a786b108b0db0992a4d06e6e2"
+PINNED_EXACL_TREE = "8a283b273ca09aa8b1b0eac9dbfc71a94895c1b6"
 
 
 def run(arguments, *, cwd=None):
@@ -47,18 +53,24 @@ def checked_input(path):
         raise ValueError("input rejected")
     attributes = set(run(["/usr/bin/xattr", "-s", str(path)]).splitlines())
     if attributes - ALLOWED_INPUT_ATTRIBUTES:
-        raise ValueError("input security/unknown metadata rejected before copy")
+        raise ValueError("input security/unknown metadata rejected")
     return {"sha256": sha(path), "attribute_names": sorted(attributes)}
 
 
-def copy_binary(source, target):
+def copy_binary(source, target, expected_sha256=None):
     checked = checked_input(source)
+    expected = checked["sha256"] if expected_sha256 is None else expected_sha256
+    if checked["sha256"] != expected:
+        raise ValueError("input changed after evidence verification")
     with source.open("rb") as file:
         if file.read(4) not in (b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe"):
             raise ValueError("Mach-O executable required")
     shutil.copyfile(source, target)
     target.chmod(0o755)
-    if sha(source) != checked["sha256"] or sha(target) != checked["sha256"]:
+    # Repeat source security-metadata checks after copying, and bind the actual
+    # copied bytes to the earlier verified artifact before ad-hoc signing.
+    after = checked_input(source)
+    if after["sha256"] != expected or sha(target) != expected:
         raise ValueError("input changed while copying")
     architectures = set(run(["/usr/bin/lipo", "-archs", str(target)]).split())
     if not architectures or architectures - {"arm64", "x86_64"}:
@@ -111,7 +123,202 @@ def bom_rows(raw, expected):
     return "\n".join(rows) + "\n"
 
 
-def build_component(name, binaries, output, inventory):
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate evidence key")
+        result[key] = value
+    return result
+
+
+def read_snapshot(path, maximum):
+    """Read one bounded no-follow file snapshot through no-follow ancestors."""
+    absolute = path.absolute()
+    if ".." in absolute.parts:
+        raise ValueError("evidence path rejected")
+    descriptor = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in absolute.parts[1:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+        file = os.open(absolute.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=descriptor)
+        try:
+            before = os.fstat(file)
+            if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+                raise ValueError("evidence file rejected")
+            data = bytearray()
+            while len(data) <= maximum:
+                block = os.read(file, min(65536, maximum + 1 - len(data)))
+                if not block:
+                    break
+                data.extend(block)
+            after = os.fstat(file)
+            stamp = lambda value: (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns)
+            if len(data) > maximum or stamp(before) != stamp(after):
+                raise ValueError("evidence file changed or exceeded bound")
+            return bytes(data)
+        finally:
+            os.close(file)
+    finally:
+        os.close(descriptor)
+
+
+def export_path(root, name):
+    path = Path(name)
+    if (not name or path.is_absolute() or path.as_posix() != name
+            or any(part in (".", "..", ".git") for part in path.parts)
+            or "\\" in name or ":" in name or len(name) > 1024):
+        raise ValueError("export path rejected")
+    return root / path
+
+
+def git_tree(files):
+    tree = {}
+    for name, metadata in files.items():
+        parent = tree
+        parts = name.split("/")
+        for part in parts[:-1]:
+            child = parent.setdefault(part, {})
+            if not isinstance(child, dict):
+                raise ValueError("export tree collision")
+            parent = child
+        if parts[-1] in parent:
+            raise ValueError("export tree collision")
+        parent[parts[-1]] = (metadata["mode"], metadata["git_blob"])
+
+    def hash_tree(entries):
+        content = bytearray()
+        for name, value in sorted(entries.items(), key=lambda item: (item[0] + ("/" if isinstance(item[1], dict) else "")).encode()):
+            mode, identifier = ("40000", hash_tree(value)) if isinstance(value, dict) else value
+            content.extend(mode.encode() + b" " + name.encode() + b"\0" + bytes.fromhex(identifier))
+        return hashlib.sha1(b"tree " + str(len(content)).encode() + b"\0" + content).hexdigest()
+
+    return hash_tree(tree)
+
+
+def actual_export_files(root, maximum):
+    pending, files, count = [root], set(), 0
+    while pending:
+        directory = pending.pop()
+        for path in directory.iterdir():
+            count += 1
+            if count > maximum or path.is_symlink():
+                raise ValueError("export directory bound or symlink rejected")
+            metadata = path.stat(follow_symlinks=False)
+            if stat.S_ISDIR(metadata.st_mode):
+                pending.append(path)
+            elif stat.S_ISREG(metadata.st_mode):
+                files.add(path.relative_to(root).as_posix())
+            else:
+                raise ValueError("export object type rejected")
+    return files
+
+
+def validate_export(record, root):
+    expected_commands = [
+        ["rustc", "-vV"], ["cargo", "check", "--offline", "--lib"],
+        ["cargo", "build", "--locked", "--offline", "--bin", "task153-operator-service"],
+        ["cargo", "build", "--locked", "--offline", "--no-default-features", "--features", "dpt", "--example", "connected_management_simulator"],
+        ["cargo", "metadata", "--locked", "--offline", "--format-version", "1", "--filter-platform", "aarch64-apple-darwin"],
+        ["cargo", "test", "--locked", "--offline", "--lib", "--", "--test-threads=1"],
+        ["cargo", "clippy", "--locked", "--offline", "--lib", "--tests", "--", "-D", "warnings"],
+    ]
+    if (record.get("status") != "PASS; exact-source development integration, synthetic loopback only"
+            or record.get("fork_revision") != PINNED_FORK_REVISION
+            or record.get("exacl_revision") != PINNED_EXACL_REVISION
+            or record.get("fork_features") != ["dpt"]
+            or record.get("hardware") != "NOT RUN" or record.get("installed_boundary") != "NOT RUN"):
+        raise ValueError("export outcome or pinned revision rejected")
+    commands = record.get("commands")
+    if not isinstance(commands, list) or len(commands) != len(expected_commands) + 1:
+        raise ValueError("export command sequence rejected")
+    logs = {}
+    for index, command in enumerate(commands):
+        if command.get("exit") != 0 or command.get("log") != f"command-{index:02d}.log":
+            raise ValueError("export command result rejected")
+        arguments = command.get("args")
+        if index < len(expected_commands):
+            if arguments != expected_commands[index]:
+                raise ValueError("export build/test command rejected")
+        elif (not isinstance(arguments, list) or len(arguments) != 3 or arguments[0] != "python3"
+              or Path(arguments[1]).name != "validate_actor_logs.py" or Path(arguments[2]) != root):
+            raise ValueError("export actor validation command rejected")
+        data = read_snapshot(root / command["log"], 2_097_152)
+        if index == 0 and not data.startswith(b"rustc 1.99.1 "):
+            raise ValueError("export toolchain rejected")
+        logs[command["log"]] = hashlib.sha256(data).hexdigest()
+    compiled = record.get("compiled_source_sha256")
+    if not isinstance(compiled, dict) or not 1 <= len(compiled) <= 256:
+        raise ValueError("compiled source inventory rejected")
+    if actual_export_files(root / "editor/experiments", 1024) != set(compiled):
+        raise ValueError("compiled source inventory incomplete")
+    for name, expected in compiled.items():
+        data = read_snapshot(export_path(root / "editor/experiments", name), 262144)
+        if hashlib.sha256(data).hexdigest() != expected:
+            raise ValueError("compiled source changed")
+    lock = read_snapshot(root / "editor/experiments/task153-broker/Cargo.lock", 262144)
+    if hashlib.sha256(lock).hexdigest() != record.get("temporary_lock_sha256"):
+        raise ValueError("compiled lock changed")
+    for key, folder, expected_tree in (("fork_files", "pinned-fork", PINNED_FORK_TREE),
+                                       ("exacl_files", "pinned-exacl", PINNED_EXACL_TREE)):
+        files = record.get(key)
+        if not isinstance(files, dict) or not 1 <= len(files) <= 4096:
+            raise ValueError("dependency inventory rejected")
+        if actual_export_files(root / folder, 8192) != set(files):
+            raise ValueError("dependency inventory incomplete")
+        total = 0
+        for name, metadata in files.items():
+            if metadata.get("mode") not in ("100644", "100755"):
+                raise ValueError("dependency mode rejected")
+            data = read_snapshot(export_path(root / folder, name), 4194304)
+            mode = (root / folder / name).stat(follow_symlinks=False).st_mode & 0o777
+            total += len(data)
+            blob = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
+            if (mode != int(metadata["mode"], 8) & 0o777
+                    or total > 16777216 or hashlib.sha256(data).hexdigest() != metadata.get("sha256")
+                    or blob != metadata.get("git_blob")):
+                raise ValueError("dependency export changed")
+        if git_tree(files) != expected_tree:
+            raise ValueError("dependency export is not the pinned Git tree")
+    return {"compiled_files": len(compiled), "dependency_git_trees": [PINNED_FORK_TREE, PINNED_EXACL_TREE],
+            "command_log_sha256": logs,
+            "execution_attestation": "NOT ESTABLISHED; report/log claims still require independent review"}
+
+
+def verified_service_input(binary, evidence):
+    if (binary is None) != (evidence is None):
+        raise ValueError("service binary and exact-export evidence must be supplied together")
+    if binary is None:
+        return None, None
+    evidence_bytes = read_snapshot(evidence, 1_048_576)
+    record = json.loads(evidence_bytes, object_pairs_hook=unique_object)
+    audit = validate_export(record, evidence.absolute().parent)
+    artifact = record["operator_service_artifact"]
+    artifact_path = Path(artifact["path"])
+    if artifact_path.is_absolute() or ".." in artifact_path.parts:
+        raise ValueError("service evidence path rejected")
+    expected = evidence.absolute().parent / artifact_path
+    if binary.absolute() != expected.absolute():
+        raise ValueError("service evidence identifies another artifact")
+    checked = checked_input(binary)
+    binary_bytes = read_snapshot(binary, 134217728)
+    built = read_snapshot(evidence.absolute().parent / "target/debug/task153-operator-service", 134217728)
+    if (checked["sha256"] != hashlib.sha256(binary_bytes).hexdigest()
+            or checked["sha256"] != artifact["sha256"] or binary_bytes != built
+            or len(binary_bytes) != artifact["size_bytes"]
+            or artifact["host_qualification"] != "UNCONSTRUCTIBLE"
+            or artifact["service_started"] != "NOT RUN"
+            or artifact["installation"] != "NOT RUN"
+            or artifact["hardware"] != "NOT RUN"):
+        raise ValueError("service evidence/artifact mismatch or unsupported qualification")
+    return binary, {"evidence_sha256": hashlib.sha256(evidence_bytes).hexdigest(), "artifact_sha256": checked["sha256"],
+                    "fork_revision": record["fork_revision"], "host_qualification": "UNCONSTRUCTIBLE",
+                    "service_started": "NOT RUN", "installation": "NOT RUN", "hardware": "NOT RUN", "export_audit": audit}
+
+
+def build_component(name, binaries, output, inventory, service_binary=None, service_evidence=None):
     install_location, root_mode, files = COMPONENTS[name]
     work = output / name
     work.mkdir()
@@ -121,7 +328,9 @@ def build_component(name, binaries, output, inventory):
     record = {"install_location": install_location, "required_existing_root_mode": oct(root_mode),
               "files": {}, "scripts": {}}
     for binary, leaf in files.items():
-        record["files"][leaf] = copy_binary(binaries / binary, payload / leaf)
+        source = service_binary if binary == "task153-operator-service" and service_binary is not None else binaries / binary
+        expected = service_evidence["artifact_sha256"] if binary == "task153-operator-service" and service_evidence is not None else None
+        record["files"][leaf] = copy_binary(source, payload / leaf, expected)
     if name == "daemon":
         daemon = {"Label": LABEL,
                   "ProgramArguments": ["/Library/PrivilegedHelperTools/" + LABEL, "--operator-service-only"],
@@ -210,17 +419,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bin-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--service-bin", type=Path)
+    parser.add_argument("--service-evidence", type=Path)
     args = parser.parse_args()
     if sys.platform != "darwin" or os.geteuid() == 0:
         raise ValueError("normal macOS development principal required; do not run as root")
     binaries = args.bin_dir.resolve(strict=True)
+    service_binary, service_evidence = verified_service_input(args.service_bin, args.service_evidence)
     output = args.output.absolute()
     output.mkdir(mode=0o700)
     inventory = {"schema": 2, "purpose": "local development / no device execution",
                  "installer_signature": "unsigned", "binary_signature": "ad-hoc hardened runtime; no publisher identity",
                  "installation": "NOT RUN", "host_qualification": "NOT RUN", "hardware": "NOT RUN",
                  "components": {}, "preparer_sha256": sha(Path(__file__))}
-    packages = [build_component(name, binaries, output, inventory) for name in COMPONENTS]
+    if service_evidence is not None:
+        inventory["exact_export_service"] = service_evidence
+    packages = [build_component(name, binaries, output, inventory, service_binary, service_evidence) for name in COMPONENTS]
     distribution = output / "Distribution"
     run(["/usr/bin/productbuild", "--synthesize", *[x for package in packages for x in ("--package", str(package))], str(distribution)])
     architectures = product_architectures(inventory["components"])

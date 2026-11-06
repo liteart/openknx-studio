@@ -72,6 +72,30 @@ cargo build --offline --locked --manifest-path experiments/task153-broker/Cargo.
 python3 -B experiments/task153-broker/provisioning/prepare_package.py --bin-dir experiments/task153-broker/target/debug --output "$NEW_PRIVATE_OUTPUT_DIRECTORY"
 ```
 
+For a reviewed exact-export service build, provide both `--service-bin` and
+`--service-evidence`. The preparer reads the original binary directly, checks
+its security attributes before copying, and verifies its original path, hash,
+size and disabled host qualification against the export's `result.json`.
+Evidence is read once with bounded no-follow access and duplicate-key rejection.
+The preparer requires the pinned dependency revisions, the successful expected
+build/test command sequence and toolchain, and rechecks every actual compiled
+file, final lock and dependency blob. Dependency Git trees must match tree IDs
+independently pinned from the reviewed commit objects. No symlink ancestor or
+unlisted export file is accepted. It also compares the artifact with the
+exported build output.
+That verified original service hash is carried into packaging: the preparer
+checks both the original input and the actual copied bytes against it before
+signing. It repeats the input security-attribute check after the copy. A change
+between evidence validation and copying aborts package creation.
+The inventory records the evidence hash and original service hash separately
+from the ad-hoc-signed package copy. Do not copy inputs into an unchecked
+intermediate directory or remove security attributes to make them acceptable.
+An export build still does not enable the unconstructible execution gate.
+These checks establish snapshot consistency, not cryptographic execution
+attestation: report/log contents and the build itself still require independent
+review. An agent-owned report is never hardware approval or provenance signed
+by an independent authority.
+
 Apple's local pkgbuild(1) documents install-location and recommended archive
 ownership without changing staged ownership. bsdtar(1) documents metadata-free
 archive options; mkbom(8) documents reconstruction from verified BOM listings.
