@@ -1,9 +1,10 @@
 # Task153 portable broker input contract
 
 This non-shipping Rust library defines the bounded input and configured-plan
-policy for a future protected operator service. It contains no executable,
-listener, protected store, passkey enrollment, approval
-issuer or KNX adapter. `UnprovisionedBroker` always rejects a valid request with
+policy for a future protected operator service. A separately explicit macOS
+peer-diagnostic executable is present; it is not an executing broker and has
+no protected store, passkey enrollment, approval issuer or KNX adapter.
+`UnprovisionedBroker` always rejects a valid request with
 `protected_host_unavailable`; it does not open a journal or contact a device.
 There is no test fixture that turns this facade into a protected service.
 
@@ -55,6 +56,55 @@ Primary API evidence inspected on 2026-11-06:
   `AsFd` wrapper, enabled only by the `socket` and `user` features on BSD targets.
   Its narrowly encapsulated upstream FFI is not a claim that the dependency
   contains no unsafe code; this project increment adds no unsafe block.
+
+## Root-only diagnostic helper source
+
+`task153-peer-diagnostic` is source for a later operator-driven OS-boundary
+diagnostic. Its only accepted arguments are `--diagnostic-only --agent-uid N`,
+where N is nonzero. It checks actual effective UID and GID are both zero before
+any filesystem operation. It accepts no configurable path, command, credential,
+plan or device request.
+
+The endpoint is fixed at
+`/private/var/db/org.openknxstudio.operator-diagnostic/peer.sock`. The helper
+checks fixed ancestors' nominal owner/type/mode, exclusively creates its own
+0700 directory, and creates a 0600 socket inside. It refuses any pre-existing
+directory instead of unlinking or repurposing it. It has a five-minute lifetime
+and a 32-connection limit. Normal shutdown attempts to remove the fixed socket
+and directory; cleanup is not inode-anchored and ignores errors. Privileged
+launch remains gated on ACL and ownership review;
+crash leftovers cause the next start to fail rather than being reused.
+
+The socket returns only a fixed identity-match or denial JSON response with
+`physical_authorization:false`. It reads no request body, echoes no identity,
+and performs no enrollment or device effect. It matches only a root/wheel
+operator peer distinct from the configured nonzero agent UID. These nominal
+filesystem checks are diagnostic safeguards, not full ACL, executable integrity
+or protected-trust-store validation. They do not establish resistance to an
+agent that can obtain root privileges. The broker facade stays unprovisioned.
+
+Build source without administrative authority:
+
+```sh
+cargo build --offline --locked --manifest-path experiments/task153-broker/Cargo.toml --bin task153-peer-diagnostic
+```
+
+**Do not launch a privileged helper from the agent-writable checkout.** A later
+reviewed provisioning step must verify the binary digest, install it into a
+protected location, verify executable/configuration/ancestor ownership and
+ACLs, establish the actual operator/agent privilege relationship and provide
+the explicit OS-authenticated human action. No installer, package signature,
+launchd registration or elevated start is supplied or invoked by this
+increment. A successfully verified separate-principal diagnostic session is
+still **NOT RUN**. The helper is deliberately not wired to the passkey or
+dispatcher until those prerequisites have evidence.
+
+Four focused helper tests check strict arguments, fixed ancestors' actual
+read-only metadata, the actual unprivileged
+process's startup denial, and a real temporary Unix-socket agent connection's
+fixed denial response. They do not start the fixed root endpoint. If tests are
+run as root, the unprivileged-start test cannot establish that particular
+negative; the recorded run used the normal macOS development principal.
 
 ## Remaining implementation
 

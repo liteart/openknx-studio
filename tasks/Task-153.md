@@ -200,6 +200,10 @@ the source and commands. A subsequent macOS increment uses kernel-reported
 Unix-socket peer credentials and rejects an agent UID or unexpected principal;
 eight tests and one compile-fail test passed, including real local sockets.
 Distinct-principal authorization and protected provisioning remain NOT RUN.
+An uninstalled, root-gated diagnostic helper source can later exercise the
+peer checks without a passkey or device operation. Its unprivileged tests and
+read-only macOS ancestor preflight passed; privileged launch remains gated on
+ownership, ACL, executable integrity and cleanup review.
 The service, OS privilege/IPC boundary, protected
 enrollment, actual adapter integration and hardware tests remain NOT RUN.
 All acceptance criteria remain open; no gate is advanced.
