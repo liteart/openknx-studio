@@ -618,7 +618,13 @@ never registers this execution module. There is no executable flag or claimed
 manifest boolean to enable it. Its dormant root wrapper additionally requires
 root/wheel and a descriptor-checked fixed execution directory under the
 protected store, root-owned mode0700 with no allow ACL. That descriptor stays
-alive through execution, confining the existing path-based journal under the
+alive through execution. The one-shot wrapper now scans that directory through
+the checked descriptor and rejects every existing entry, including hidden
+files, subdirectories and symlinks, without reading or deleting them. Existing
+or copied evidence cannot qualify a fresh attempt. Ordinary temporary-directory
+tests cover empty/nonempty scans and descriptor binding after rename. This is
+not automatic recovery or a cleanup procedure. It confines the existing
+path-based journal under the
 assumption that privileged actors do not maliciously replace the root-protected
 ancestry. Root substitution and installed-root confinement were **NOT RUN**;
 this source preparation establishes neither qualified host nor hardware access.

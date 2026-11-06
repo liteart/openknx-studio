@@ -32,6 +32,7 @@ pub enum ConfigError {
     Io,
     ConfigurationBusy,
     ActivationUncertain,
+    ExecutionJournalNotEmpty,
 }
 
 /// Bytes read from an opened root-owned file after descriptor checks. This does
@@ -119,6 +120,35 @@ pub(super) fn checked_directory(path: &Path) -> Result<File, ConfigError> {
 /// metadata and native ACLs. It does not establish a complete protected host.
 pub fn inspect_root_owned_directory(path: &Path) -> Result<(), ConfigError> {
     checked_directory(path).map(drop)
+}
+
+/// Qualify a fresh journal for the one-shot bench operation before any adapter
+/// contact. Existing evidence is never imported or treated as execution trust.
+/// The returned descriptor must remain open for the operation. This does not
+/// establish operator/profile qualification or protect against a privileged
+/// process replacing objects under the same root-owned ancestry.
+#[allow(dead_code)] // Used by the gated exact-source executor, not the default service.
+pub(super) fn checked_fresh_execution_journal(path: &Path) -> Result<File, ConfigError> {
+    let directory = checked_directory(path)?;
+    if directory.metadata().map_err(|_| ConfigError::Io)?.mode() & 0o7777 != 0o700 {
+        return Err(ConfigError::PermissionsRejected);
+    }
+    ensure_no_directory_entries(&directory)?;
+    Ok(directory)
+}
+
+fn ensure_no_directory_entries(directory: &File) -> Result<(), ConfigError> {
+    // Read from this descriptor, not a second pathname lookup. Stop at the
+    // first non-dot entry: hidden files, directories and symlinks all quarantine
+    // the one-shot journal without opening, deleting or interpreting them.
+    let mut entries = rustix::fs::Dir::read_from(directory).map_err(|_| ConfigError::Io)?;
+    while let Some(entry) = entries.read() {
+        let entry = entry.map_err(|_| ConfigError::Io)?;
+        if !matches!(entry.file_name().to_bytes(), b"." | b"..") {
+            return Err(ConfigError::ExecutionJournalNotEmpty);
+        }
+    }
+    Ok(())
 }
 
 fn open_leaf(parent: &File, name: &OsStr) -> Result<File, ConfigError> {
@@ -296,6 +326,70 @@ mod tests {
             inspect_root_owned_directory(Path::new("/private/var/db")),
             Ok(())
         );
+    }
+
+    #[test]
+    fn fresh_execution_journal_rejects_every_existing_entry_without_modifying_it() {
+        for kind in ["file", "hidden", "directory", "symlink"] {
+            let directory = fixture();
+            let descriptor = File::open(directory.path()).unwrap();
+            assert_eq!(ensure_no_directory_entries(&descriptor), Ok(()));
+            let path = directory.path().join(if kind == "hidden" {
+                ".unknown"
+            } else {
+                "unknown"
+            });
+            match kind {
+                "directory" => fs::create_dir(&path).unwrap(),
+                "symlink" => symlink("missing-target", &path).unwrap(),
+                _ => fs::write(&path, b"untrusted or incomplete evidence").unwrap(),
+            }
+            assert_eq!(
+                ensure_no_directory_entries(&descriptor),
+                Err(ConfigError::ExecutionJournalNotEmpty)
+            );
+            assert!(fs::symlink_metadata(&path).is_ok());
+            if matches!(kind, "file" | "hidden") {
+                assert_eq!(
+                    fs::read(&path).unwrap(),
+                    b"untrusted or incomplete evidence"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn execution_journal_scan_stays_bound_to_the_open_directory_after_rename() {
+        let outer = fixture();
+        let path = outer.path().join("journal");
+        fs::create_dir(&path).unwrap();
+        let descriptor = File::open(&path).unwrap();
+        assert_eq!(ensure_no_directory_entries(&descriptor), Ok(()));
+        let original = outer.path().join("original");
+        fs::rename(&path, &original).unwrap();
+        fs::create_dir(&path).unwrap();
+        fs::write(original.join("unresolved.json"), b"unknown").unwrap();
+        assert_eq!(
+            ensure_no_directory_entries(&descriptor),
+            Err(ConfigError::ExecutionJournalNotEmpty)
+        );
+        assert_eq!(
+            ensure_no_directory_entries(&File::open(path).unwrap()),
+            Ok(())
+        );
+        assert_eq!(
+            fs::read(original.join("unresolved.json")).unwrap(),
+            b"unknown"
+        );
+    }
+
+    #[test]
+    fn real_execution_journal_qualification_rejects_nonprivate_root_directory() {
+        // Read-only actual root-owned metadata; no privileged fixture creation.
+        assert!(matches!(
+            checked_fresh_execution_journal(Path::new("/private/var/db")),
+            Err(ConfigError::PermissionsRejected)
+        ));
     }
 
     #[test]

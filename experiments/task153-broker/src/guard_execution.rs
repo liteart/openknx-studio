@@ -39,21 +39,11 @@ pub(crate) async fn execute_qualified(
     witness: PersistedAssertion,
     _qualified: QualifiedExecution,
 ) -> Result<ExecutionReport, Error> {
-    use std::os::unix::fs::MetadataExt;
     if nix::unistd::geteuid().as_raw() != 0 || nix::unistd::getegid().as_raw() != 0 {
         return Err(Error::UnqualifiedHost);
     }
-    let directory = crate::macos_config::checked_directory(Path::new(JOURNAL))
+    let directory = crate::macos_config::checked_fresh_execution_journal(Path::new(JOURNAL))
         .map_err(|_| Error::JournalUnavailable)?;
-    if directory
-        .metadata()
-        .map_err(|_| Error::JournalUnavailable)?
-        .mode()
-        & 0o7777
-        != 0o700
-    {
-        return Err(Error::JournalUnavailable);
-    }
     // Every path component is root-owned and denies ordinary writes/allow ACLs;
     // root-only 0700 leaf confines the existing guard's path-based files. The
     // checked descriptor stays alive through execution. Malicious root/another

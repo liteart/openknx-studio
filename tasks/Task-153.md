@@ -249,6 +249,12 @@ is under `private/evidence/task153-execution-integration-20261106/` (result
 SHA-256 `1761dbce935f6489b78d5d59b90aaa256e21c8d3575444bde81edddc2e84bd51`).
 The production qualification is deliberately unconstructible; installed host,
 browser isolation, protected journal and physical write remain NOT RUN.
+The execution path now also checks that its protected one-shot journal is empty
+before opening the adapter. Eleven focused tests and independent review passed;
+the exact-source integration passed 111 tests. Private evidence is under
+`private/evidence/task153-journal-check-20261106/` (result SHA-256
+`45e57ee8b7568a5d544a5c7f301a2b1a5d741a4ab01e87856c08969eae13e953`). A
+positive root-owned journal and installed execution remain NOT RUN.
 The local development installer was rebuilt as two narrow components after
 review found parent-permission and AppleDouble problems. Static inspection of
 the actual package, its BOM, contents, signatures and architecture passed
