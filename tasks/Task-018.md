@@ -9,7 +9,7 @@ Read and identify the reference device through KNX management
 | Field | Value |
 |---|---|
 | Task ID | Task-018 |
-| Status | Not started |
+| Status | In progress |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / device management |
@@ -73,7 +73,11 @@ No inference that identity readability proves programming compatibility.
 
 ## Risks and Blockers
 
-None beyond listed prerequisites. Unsupported or undocumented behavior must be recorded and must not be guessed.
+The physical identity comparison requires a specifically selected device,
+expected independently sourced identity, gateway/target identities and a
+separately coordinated read-only operation. Simon deferred work with the
+production ETS project and its full-device write/capture. Unsupported or
+undocumented behavior must be recorded and must not be guessed.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -81,13 +85,33 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Implementation / report status | In progress; selected one-shot descriptor read implemented and reviewed offline; hardware identity comparison pending |
+| Source commit(s) | Local knust fork `322f02fbeeee6e5c9a85646c9640deb9562da84a`, based on Task017 `c62a89ac03005e415bcba72c19d6242ebc683c4d`; fork not published |
+| Tests executed | 15 synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; physical device identity read NOT RUN |
+| Evidence location | Fork `TASK018-IDENTITY.md` at `322f02fbeeee6e5c9a85646c9640deb9562da84a`; checkpoint below |
+| Acceptance criteria met | AC-001 pending physical reference comparison; AC-002/003 supported by synthetic tests only, not a hardware claim |
+| Technical outcome | Selected DD0 mask version can be requested and compared against independently supplied evidence; unavailable, denied, mismatched and timed-out outcomes remain distinct |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Reviewer | Independent code and evidence review PASS for bounded offline increment; full task acceptance pending |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Bounded offline descriptor increment — 2026-11-06
+
+The local fork exposes a one-shot, individually addressed connectionless DD0
+read over a selected connected UDP tunnel. It validates the gateway ACK and
+selected response, bounds work and timeout, and preserves unknown/unsupported
+results instead of inventing identity values. The caller must exclusively own
+and retire the tunnel after the exchange, including cancellation: reuse can
+accept a late same-target response and is not a proven freshness guarantee.
+This is an offline PoC component, not a production management session.
+
+On macOS arm64 with the pinned toolchain, `cargo test --locked --offline
+--no-default-features --features dpt --test test_device_identity` passed 15
+synthetic loopback tests, including response/ACK ordering and correlation,
+wrong source/destination, deadlines, cancellation and fixture mismatch. The
+implementer also ran focused Clippy with warnings denied, formatting and diff
+checks successfully; the coordinator independently reran all 15 tests. The
+reviewer checked the standard locators, codec use and tests, with no remaining
+demonstrated must-fix finding within this bounded scope. No KNX device read,
+write, production ETS project access or Windows test was performed.
