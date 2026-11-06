@@ -9,7 +9,7 @@ Implement minimum generic KNX property reads
 | Field | Value |
 |---|---|
 | Task ID | Task-019 |
-| Status | Not started |
+| Status | In progress |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / property services |
@@ -74,7 +74,12 @@ No arbitrary device scanning or property brute force.
 
 ## Risks and Blockers
 
-None beyond listed prerequisites. Unsupported or undocumented behavior must be recorded and must not be guessed.
+The selected classic property response uses the same failure form for denied,
+unsupported and other remote problems. The bounded implementation reports an
+ambiguous remote failure; DR-004 is not fully met without further evidenced
+means to distinguish the causes or an explicit requirement decision. A real
+read also needs a specifically selected, documented property and element range.
+Unsupported or undocumented behavior must be recorded and must not be guessed.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -82,13 +87,32 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Implementation / report status | In progress; bounded generic classic read implemented and independently reviewed offline; DR-004 distinction and hardware test remain open |
+| Source commit(s) | Local knust fork `2bb954fd876a9b5e4dfd14889cf332a733b722b6`, based on Task018 `2f51b48f96a9de2734f368f259c03c8bec5f2399`; fork not published |
+| Tests executed | Four codec unit and nine synthetic loopback tests PASS; focused Clippy, formatting and diff checks PASS; physical property read NOT RUN |
+| Evidence location | Fork `TASK019-PROPERTY-READ.md` at `2bb954fd876a9b5e4dfd14889cf332a733b722b6` |
+| Acceptance criteria met | AC-002 and AC-003 supported by offline tests and review; AC-001 pending selected fixture and hardware read |
+| Technical outcome | Typed selected property read checks range, payload length, response and gateway acknowledgment. Timeout and malformed responses are distinct; classic denied/unsupported causes are not distinguishable. |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Reviewer | Independent protocol and code review PASS for bounded offline increment; full task acceptance pending |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Bounded offline property read — 2026-11-06
+
+The fork implements a one-shot individually addressed classic property read
+using verified KNX application-layer encodings and exact caller-provided
+element-size metadata. It uses no device writes, scans, automatic retries or
+manufacturer-specific property policy. The caller must own and retire the
+tunnel after each attempt, including cancellation; reuse does not prove response
+freshness. The selected classic failure response does not identify whether an
+unavailable property, access denial or another remote cause occurred, and the
+API returns this ambiguity explicitly.
+
+On macOS arm64, `cargo test --locked --offline --no-default-features --features
+dpt --lib protocol::property` passed four unit tests and `cargo test --locked
+--offline --no-default-features --features dpt --test test_property_read` passed
+nine synthetic loopback tests. Focused Clippy, formatting and diff checks also
+passed. The coordinator independently reran the nine loopback tests, and a
+separate reviewer checked primary-source locators and code. No property read was
+sent to a physical device and no Windows test was run.
