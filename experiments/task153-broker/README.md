@@ -154,6 +154,49 @@ Primary references:
 - [Apple descriptor ACL API](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/acl_get.3.html)
 - [Pinned safe descriptor input](https://github.com/byllyfish/exacl/blob/18275aa1a82aae9a786b108b0db0992a4d06e6e2/src/aclfile.rs)
 
+## Read-only enrolled credential verifier
+
+The macOS-only `root_passkey` module loads its enrollment only through the fixed
+descriptor-validated root configuration reader. There is no public byte parser,
+credential import, enrollment endpoint or mutable public-key setter. The file
+schema is version 1 with `kind: "operator"`, bounded `issuer` and a serialized
+`webauthn-rs::Passkey`. The WebAuthn library explicitly supports persistence
+of this public verification record: credential ID, public key and security
+metadata; it contains no authenticator private key or PIN. The kind label does
+not prove enrollment happened: independently protected operator enrollment and
+installation remain required and have not been performed.
+
+The verifier fixes RP `localhost` and exact origin `http://localhost:15300`,
+requires user verification, and holds each random challenge server-side against
+the immutable configured plan digest for at most 120 seconds or plan expiry.
+Every response consumes its ceremony, including invalid, altered, cancelled or
+expired responses. Enrollment JSON and assertion JSON reject duplicate keys at
+every depth as well as invalid/oversized input. Pending state is not serialized.
+
+RP scope is the hostname, not the port: a `localhost` passkey is not inherently
+exclusive to this operator service. The exact assertion-origin check and the
+protected record/provisioning boundary remain essential. The successful earlier
+Safari demonstration used the development origin on port 15200. No browser or
+real passkey ceremony on port 15300 is claimed by these tests.
+
+Successful signatures return only `RootAssertionObservation` with
+`physical_authorization:false`. Credential counter/backup metadata updates are
+applied in memory and mark `credential_update_pending`; nothing writes or
+acknowledges them as durable. A durable protected credential update and one-use
+execution ledger must exist before observations can authorize real effects.
+The trust anchor public key is never replaced by assertion data. The
+unprovisioned broker facade and diagnostic remain disconnected from this
+verification path and cannot issue a device capability.
+
+Six new tests use generated software-authenticator credentials and genuine
+signatures. They exercise serialization roundtrip, counter-change status,
+changed plan, replay, expiry, cancellation, wrong origin/RP, unknown credential,
+missing UV, invalid signature, schema, nested duplicates and input bounds.
+Private parser tests do not fabricate a `RootOwnedSnapshot`, load the native
+configuration or access any actual user credential. A compile-fail test proves
+callers cannot use the private parser. The public fixed-file loader remains
+unexercised until a separately approved operator enrollment has been provisioned.
+
 ## Remaining implementation
 
 Before this contract can front an executing service, the macOS provider must
@@ -175,6 +218,9 @@ service, macOS ownership/IPC, Windows, Linux and hardware tests are **NOT RUN**.
 The experiment-only path dependency reuses the existing Task152 library and
 its reviewed pinned dependencies. It is not a release manifest or production
 dependency pin; upstream caveats remain in Task152's dependency review.
+The read-only verifier directly pins the same `webauthn-rs = 0.6.2`, defaults
+disabled; the `softpasskey` authenticator is a dev-dependency only and was
+already reviewed in Task152. No dangerous credential/state features are used.
 The macOS provider pins `nix = 0.31.3` (MIT, Rust >=1.69) with defaults disabled
 and only `socket`, `user` and `fs` features. Its new dependencies are `memoffset 0.9.1`
 (MIT), `cfg_aliases 0.2.2` (MIT) and `bitflags 2.13.2` (MIT OR Apache-2.0), with
@@ -209,6 +255,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
-The current complete run passed 16 library tests, six helper tests and one
+The current complete run passed 22 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.

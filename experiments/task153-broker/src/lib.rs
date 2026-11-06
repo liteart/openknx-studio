@@ -12,6 +12,8 @@ use task152_passkey_prototype::{BoundPlan, guard};
 pub mod macos_config;
 #[cfg(target_os = "macos")]
 pub mod macos_peer;
+#[cfg(target_os = "macos")]
+pub mod root_passkey;
 
 pub const MAX_REQUEST_BYTES: usize = 4_096;
 pub const PROTOCOL_VERSION: u8 = 1;
@@ -70,6 +72,7 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, Error> {
 /// operator grant. A future protected provider must load it from its own store.
 pub struct ConfiguredPlan {
     plan: BoundPlan,
+    expires_at: u64,
 }
 
 impl ConfiguredPlan {
@@ -86,8 +89,9 @@ impl ConfiguredPlan {
         {
             return Err(Error::InvalidConfiguredPlan);
         }
+        let expires_at = input.expires_at_utc_seconds;
         let plan = BoundPlan::new(input).map_err(|_| Error::InvalidConfiguredPlan)?;
-        Ok(Self { plan })
+        Ok(Self { plan, expires_at })
     }
 
     pub fn digest(&self) -> [u8; 32] {
@@ -97,6 +101,10 @@ impl ConfiguredPlan {
     /// The existing canonical snapshot supplies both display and digest.
     pub fn summary(&self) -> &str {
         self.plan.exact_plan_summary()
+    }
+
+    pub fn expires_at_utc_seconds(&self) -> u64 {
+        self.expires_at
     }
 
     /// Matching a digest does not verify peer identity, assertion or privilege.

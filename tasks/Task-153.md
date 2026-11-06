@@ -205,6 +205,11 @@ ownership, mode and native ACLs through no-follow descriptor-relative traversal;
 unknown ACL types fail closed. Its focused tests include real ACLs, symlinks,
 rename binding and bounded reads. Independent review passed for the bounded
 source increment, not for privileged launch or installed-service integrity.
+A read-only verifier now loads a public passkey record only through the fixed
+descriptor-validated configuration and checks plan-bound WebAuthn assertions.
+Synthetic cryptographic tests and independent review passed. Its observation
+cannot authorize hardware; actual protected enrollment, durable credential
+updates and the execution ledger remain unimplemented or NOT RUN.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on
