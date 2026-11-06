@@ -29,5 +29,9 @@ path = "experiments/dca-state/main.rs"
 name = "dca-state-cli"
 path = "experiments/dca-state/cli_tests.rs"
 
+[[test]]
+name = "task020-guard"
+path = "experiments/task020-guard/tests.rs"
+
 [features]
 default = []
