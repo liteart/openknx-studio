@@ -16,6 +16,9 @@ const MAX_VALUE_BYTES: usize = 64;
 const MAX_RECORD_BYTES: u64 = 16_384;
 const MAX_OBSERVATION_AGE_SECONDS: u64 = 30;
 
+#[path = "dispatcher.rs"]
+pub(crate) mod dispatcher;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Route {
@@ -300,6 +303,25 @@ mod tests {
             journal.recovered_status("success"),
             Status::RestoredVerified
         );
+        // Verified property state does not release the commissioning path
+        // until independent device and gateway cleanup has been confirmed.
+        let blocked = Plan::new(input("before-cleanup")).unwrap();
+        let approval = synthetic_approval(&blocked, 2);
+        let observed = observation(&blocked, 1, 105, 1);
+        assert_eq!(
+            journal
+                .begin(blocked, Some(approval), &observed, 105)
+                .unwrap_err(),
+            Error::RouteUnresolved
+        );
+        attempt
+            .release_after_cleanup(
+                CleanupReceipt {
+                    plan_digest: attempt.plan.digest,
+                },
+                105,
+            )
+            .unwrap();
         let plan = Plan::new(input("next-success")).unwrap();
         let approval = synthetic_approval(&plan, 2);
         let observed = observation(&plan, 1, 105, 1);
@@ -677,6 +699,12 @@ pub struct ObservationWatermark {
     plan_digest: [u8; 32],
     receipt: u64,
     confirmed_at_utc_seconds: u64,
+}
+
+/// Internal adapter evidence that both device and gateway cleanup have been
+/// confirmed. No public constructor or deserializer can release quarantine.
+struct CleanupReceipt {
+    plan_digest: [u8; 32],
 }
 
 fn validate_observation(
@@ -1097,6 +1125,14 @@ impl Attempt {
         self.validate_new_readback(observation)?;
         self.record("complete", "RESTORED_VERIFIED", now)?;
         self.status = Status::RestoredVerified;
+        Ok(())
+    }
+
+    fn release_after_cleanup(&mut self, receipt: CleanupReceipt, now: u64) -> Result<(), Error> {
+        if self.status != Status::RestoredVerified || receipt.plan_digest != self.plan.digest {
+            return Err(Error::InvalidTransition);
+        }
+        self.record("cleanup", "DEVICE_AND_GATEWAY_CLEANUP_CONFIRMED", now)?;
         fs::remove_file(&self.route_path).map_err(|_| Error::Io)?;
         File::open(&self.journal.root)
             .and_then(|directory| directory.sync_all())
