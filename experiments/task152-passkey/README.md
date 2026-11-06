@@ -1,0 +1,112 @@
+# Task152 development passkey verifier
+
+This standalone Rust experiment verifies a standard WebAuthn passkey assertion
+against an exact immutable Task020 plan. It has no executable, browser listener,
+MCP endpoint, device connection, physical approval issuer or credential import.
+A successful assertion produces a `DevelopmentReceipt` with
+`physical_authorization: false`. It cannot be converted into Task020's private
+`HumanApproval`; a compile-fail test checks that boundary.
+
+## Implemented behavior
+
+- The same validated `PlanInput` supplies the immutable plan digest and the exact
+  operator summary, including target, identity, values, purpose, recovery and
+  expiry. Serialization and assertion responses are limited to 32 KiB.
+- The pinned WebAuthn server library generates the unpredictable challenge. Its
+  private in-memory state binds that challenge to one plan, one issuer and an
+  expiry of at most 120 seconds or the plan expiry, whichever comes first.
+- Registration and authentication require user verification. The PIN remains
+  within the authenticator; no PIN field or PIN collection API exists here.
+- Assertions verify signature, credential, challenge, exact origin
+  `http://localhost:15200`, RP `localhost` and user verification. Subdomains and
+  alternative ports are disabled. Every submission consumes its pending state.
+- Success creates a new challenge-ID receipt and synchronizes the file and
+  containing directory before returning. Existing receipt paths are rejected.
+  Cancellation or restart discards pending ceremonies. Expiration, rollback of
+  supplied UTC time and a monotonic timeout are rejected.
+
+## Platform direction and trust boundary
+
+The owner selected the integrated macOS passkey vault and requires a design
+usable on Windows and Linux. This verifier uses browser-standard WebAuthn and
+leaves authenticator attachment unrestricted: a future browser UI can offer
+the macOS vault, Windows platform credentials or supported Linux authenticators
+and a phone where the browser supports it. It does not invoke a macOS-only
+keychain API. Native browser, platform vault and phone compatibility are
+**NOT RUN**; this increment contains no browser UI. A synchronized credential
+does not prove that its private key is held only on the phone.
+
+Enrollment is explicitly **development enrollment**, stored only in process
+memory. It proves possession of a new credential, not the operator's identity.
+The journal is not independently protected from code running as its owner.
+There is no tested operator/MCP separation, protected trust-anchor provisioning
+or hardware-capability handoff. Those missing pieces remain fail-closed.
+In particular, an MCP principal can instantiate this development library but
+can obtain only development observations, never physical grants.
+
+The summary is supplied for a future desktop display; it is not displayed by
+this library. Ordinary authenticator PIN/biometric dialogs must not be described
+as a trusted display of the KNX transaction. Unrestricted code under the same
+approving OS principal can modify enrollment, executable code and desktop
+display. This experiment does not claim protection against that principal.
+
+The directory synchronization path was tested only on macOS arm64. Windows and
+Linux builds/durability are **NOT RUN**. If directory synchronization is not
+supported, this implementation returns `Io` rather than releasing an
+observation. Callers must provide a trusted UTC clock and an independently
+protected service before any future physical integration.
+
+## Dependency review
+
+`webauthn-rs = 0.6.2` is an exact pin, with defaults disabled. Its public
+passkey API enforces required user verification. None of the dangerous feature
+flags for client-supplied state, credential internals or presence-only keys is
+enabled. Pending state is never serialized to the client. The software
+authenticator is a **dev-dependency only**, used to produce genuine signatures
+over synthetic credentials; it explicitly falsifies UV for test coverage and
+must never be a trusted enrollment mechanism.
+
+The downloaded normalized manifest reports Rust >=1.89, below this project's
+pinned 1.99.1. The resolved library uses Rust crypto through `crypto-glue`;
+no OpenSSL provisioning was required in the observed macOS build. The lockfile
+also contains upstream-selected pre-release crypto dependencies, including
+`rsa 0.10.0-rc.19` and `kbkdf 0.1.0-rc.1`; this PoC does not establish release
+qualification or a full transitive security audit.
+
+The WebAuthn crates and `crypto-glue` retain MPL-2.0. Our independently written
+files remain Apache-2.0; no upstream source is copied or relabeled. The complete
+resolved manifest-license inventory is [DEPENDENCIES.tsv](DEPENDENCIES.tsv),
+including development and non-host-target dependencies. No package had missing
+license metadata. The remaining expressions offer permissive options or use
+BSD/Unicode licenses. This is an engineering dependency inventory, not legal
+certification or an assertion that transitive code was audited. Binary
+distribution must preserve third-party notices and fulfill the MPL source
+availability requirements; this experiment ships no binary.
+
+Primary references inspected on 2026-11-06:
+
+- [WebAuthn server API and state warning](https://docs.rs/webauthn-rs/0.6.2/webauthn_rs/)
+- [Published manifest and feature flags](https://docs.rs/crate/webauthn-rs/0.6.2/source/Cargo.toml)
+- [Upstream MPL-2.0 license](https://github.com/kanidm/webauthn-rs/blob/master/LICENSE.md)
+- [WebAuthn assertion verification specification](https://www.w3.org/TR/webauthn-3/#sctn-verifying-assertion)
+
+## Verification
+
+From the repository root, with the pinned Cargo toolchain available:
+
+```sh
+cargo fmt --manifest-path experiments/task152-passkey/Cargo.toml -- --check
+cargo clippy --offline --locked --all-targets --manifest-path experiments/task152-passkey/Cargo.toml -- -D warnings
+cargo test --offline --locked --manifest-path experiments/task152-passkey/Cargo.toml
+```
+
+The initial reproducible observation was absence of a WebAuthn verifier or
+enrollment path; Task020 rejected every missing real approval. Focused tests
+cover changed target/payload/recovery/expiry, unknown credential, exact origin,
+signed wrong RP hash, missing UV, signature corruption, different challenge,
+replay, expiry, cancellation, restart, journal consumption and bounded inputs.
+The unchanged Task020 guard tests also run through the imported model.
+
+An operator-driven browser enrollment/assertion, protected enrollment,
+trusted-display/separation tests and hardware integration remain **NOT RUN**.
+Task152 acceptance criteria and the Task020 hardware write remain incomplete.

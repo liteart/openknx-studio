@@ -5,7 +5,7 @@
 | Field | Value |
 |---|---|
 | Task ID | Task-152 |
-| Status | Ready |
+| Status | In progress |
 | Stage | PoC dependency |
 | Component / Git project | knx-editor / human approval prototype |
 | Owner | Primary coordinator and editor implementer |
@@ -19,6 +19,9 @@ supporting passkeys and device PIN or biometric verification; no separate
 hardware security key is available. The user's device-write consent and the
 actual technical approval mechanism are distinct. Never request or record the
 PIN in chat, arguments, environment variables, logs, workspace or project data.
+Simon subsequently selected the integrated macOS passkey vault and requested
+support for Windows and Linux. Use platform-neutral WebAuthn and compatible
+platform or browser providers; actual platform behavior must be tested.
 
 ## Requirements
 
@@ -70,9 +73,9 @@ reviewed and pinned before use.
 
 | Field | Current value |
 |---|---|
-| Implementation / report status | Ready; mechanism and protected enrollment not yet implemented |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Owner direction and Task020 offline guard evidence |
-| Acceptance criteria met | None |
-| Reviewer | Unassigned |
+| Implementation / report status | Development-only verifier increment; browser UI, protected enrollment and physical grant remain absent |
+| Source commit(s) | See Git history for this task's verifier increment |
+| Tests executed | Offline Cargo test: 45 unit tests and one compile-fail doctest PASS on macOS arm64; fmt and clippy PASS; browser, platform vault, Windows, Linux and hardware NOT RUN |
+| Evidence location | [Experiment README](../experiments/task152-passkey/README.md), tests and dependency inventory; Task020 offline guard evidence |
+| Acceptance criteria met | None complete; synthetic credentials cannot authorize physical effects |
+| Reviewer | Independent agent review: no blocker for development-only increment; Windows directory synchronization remains unverified and likely requires a platform-specific implementation |
