@@ -75,9 +75,11 @@ No speculative memory edits, factory reset, or full application-download claim.
 ## Risks and Blockers
 
 A genuinely reversible documented property and explicit operator approval are mandatory. If none is available, stop rather than selecting a plausible property ID.
-The user has permitted changes to the selected device and offered later ETS
-reprogramming, but no exact documented reversible property, original/desired
-values and property-specific recovery procedure have been identified. The
+On 2026-11-06 the user explicitly permitted writes to the selected device only,
+prohibited writes to any other device, and stated that its ETS state is saved
+and can be restored. This standing target-scoped authorization is recorded
+privately. A verified property, original/desired values and a concrete
+property-specific operation and recovery plan must still be established. The
 offline primitive does not implement the backend approval/identity guard.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
@@ -116,3 +118,44 @@ formatting and diff checks passed. Independent review found a standard-frame
 length issue; the corrected implementation rejects cEMI length above 15 before
 dispatch and tests both sides of the 10-byte data boundary. Re-review passed.
 No physical device write, hardware readback, restore or Windows test was run.
+
+## Optional description property observation — 2026-11-06
+
+Following Simon's target-scoped write authorization, an optional standard
+Device Object description property was investigated as a possible reversible
+candidate. The KNX profile lists the property as optional and its actual access
+is implementation-dependent; the product archive does not establish that this
+device implements it. A read-only attempt first confirmed the selected target's
+DD0 mask and then requested the property's array count. The device returned the
+classic ambiguous remote-failure response; own-channel cleanup was confirmed.
+This does not distinguish unavailable property, access denial or another
+remote problem. No property write was sent, and this result does not authorize
+guessing a value or assuming that the property can be restored.
+
+The exact private plan and result are in
+`private/evidence/task020-description-discovery-20261106/`; the plan SHA-256 is
+`08cca38c330e7684080d0a91cec08c91744397b67a6d4ea83860f3e259f93d49` and the
+property stdout SHA-256 is
+`532b2e36619899c6782dbd03b3103850b3de7d1009de88c3f260e5cacc9acf46`. The
+standing user authorization is preserved separately in private
+`task020-user-target-grant-20261106.json`. A supported writable property and
+documented restoration procedure remain required before a physical write.
+
+## Device-control property observation — 2026-11-06
+
+The selected KNX profile documents Device Object `PID_DEVICE_CONTROL` as a
+possible writable property for the observed mask. A separately bounded
+read-only operation first rechecked the selected target's DD0 mask and then
+read object 0, PID 14, element 1 as one byte. It returned `00`; both own-channel
+disconnects were confirmed. No device write or retry occurred. The private
+plan is `task020-device-control-read-20261106/plan.json`, SHA-256
+`4a861b267406593462c953b902a6d2bb3ae0c62f6d00dd6a9e8bf0e3925595d6`;
+property stdout SHA-256 is
+`4ff87eb22455f9b6b657994f7587131726f1cc170d2ff6e1ffa5a5cbaf6cabce`.
+
+This read does not prove write access or safe restoration. The Verify Mode bit
+requires a device transport-layer connection according to KNX Resources
+v01.10.01 §4.2.14.7; the current generic write primitive is connectionless.
+A KNXnet/IP tunnel alone is not that device transport connection. No Verify
+Mode write has been sent, and the candidate requires further protocol and
+recovery review before any such operation.
