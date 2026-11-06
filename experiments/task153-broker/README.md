@@ -25,8 +25,9 @@ constructing this value currently does not establish configuration trust or
 limit its source to the selected physical bench. Test routes are synthetic.
 The exact same snapshot supplies both the summary and request digest check.
 
-This increment is source-level input validation only. It neither implements
-nor tests an OS privilege boundary and cannot release a physical capability.
+The library also supplies tested macOS peer and file-inspection primitives.
+No installed service privilege boundary is established, and it cannot release
+a physical capability.
 It deliberately reuses the existing plan representation instead of adding
 another approval ledger or repeating the dispatcher simulator.
 
@@ -45,7 +46,7 @@ principal and deliberately mismatched policy IDs. The tests created no users,
 inspected no credentials and changed no service or system configuration. They
 do not prove that another principal exists or that the agent cannot acquire
 administrative authority. A successful distinct-UID operator connection and
-protected configuration ownership/ACL/IPC installation remain **NOT RUN**.
+installed configuration ownership/ACL/IPC protection remain **NOT RUN**.
 The facade remains unprovisioned and cannot dispatch.
 
 Primary API evidence inspected on 2026-11-06:
@@ -67,7 +68,8 @@ plan or device request.
 
 The endpoint is fixed at
 `/private/var/db/org.openknxstudio.operator-diagnostic/peer.sock`. The helper
-checks fixed ancestors' nominal owner/type/mode, exclusively creates its own
+checks fixed ancestors through descriptor-bound owner/type/mode and native ACL
+inspection, exclusively creates its own
 0700 directory, and creates a 0600 socket inside. It refuses any pre-existing
 directory instead of unlinking or repurposing it. It has a five-minute lifetime
 and a 32-connection limit. Normal shutdown closes the owned listener and leaves
@@ -80,9 +82,9 @@ procedure; privileged launch remains gated on ACL and ownership review.
 The socket returns only a fixed identity-match or denial JSON response with
 `physical_authorization:false`. It reads no request body, echoes no identity,
 and performs no enrollment or device effect. It matches only a root/wheel
-operator peer distinct from the configured nonzero agent UID. These nominal
-filesystem checks are diagnostic safeguards, not full ACL, executable integrity
-or protected-trust-store validation. They do not establish resistance to an
+operator peer distinct from the configured nonzero agent UID. These filesystem
+checks do not validate executable integrity, actual enrollment or the installed
+service's privilege relationship. They do not establish resistance to an
 agent that can obtain root privileges. The broker facade stays unprovisioned.
 
 Build source without administrative authority:
@@ -110,18 +112,49 @@ not start the fixed root endpoint. If tests are
 run as root, the unprivileged-start test cannot establish that particular
 negative; the recorded run used the normal macOS development principal.
 
-## Remaining implementation
+## Descriptor-bound configuration provider
 
-The ACL dependency investigation found a concrete descriptor-based candidate:
+The macOS-only `macos_config` module uses
 [`exacl` revision `18275aa1a82aae9a786b108b0db0992a4d06e6e2`](https://github.com/byllyfish/exacl/tree/18275aa1a82aae9a786b108b0db0992a4d06e6e2)
-accepts `BorrowedFd` in `getfacl` and routes it to the native descriptor ACL
-API. Its manifest is MIT, Rust >=1.85, with default features disabled. This is
-an unreleased API relative to the published 0.13 documentation, despite the
-manifest retaining that version. It has not been added, built or qualified in
-this experiment. An exact-revision dependency review and tests are required
-before use. Path-only ACL inspection or stat-then-unlink does not solve the
-race; the future provider must bind ancestry, ACL and file contents to the
-same opened descriptors. No `/dev/fd` pathname workaround is accepted as proof.
+with `BorrowedFd` in `getfacl`, routing to macOS `acl_get_fd_np`. It opens each
+component relative to the already opened parent using `openat` and
+`O_NOFOLLOW`, and checks metadata and ACL against that same descriptor. Every
+ancestor must be a root-owned directory without group/world write permission.
+All extended allow entries are rejected conservatively, including read-only
+ones. Only explicitly recognized user/group deny entries are accepted; the
+pinned library maps unknown native tags to `allow=false` with unknown kind,
+which is rejected rather than assumed to be a deny. Native IDs avoid account-name lookup.
+An unsupported or failed ACL read rejects the path.
+
+The fixed reader can inspect only
+`/private/var/db/org.openknxstudio.operator/config.json`. The leaf must be a
+root-owned regular file with one link, no group/world write and no granting
+ACL. Reads are limited to 16 KiB from the opened descriptor; metadata is
+checked again after reading, including nanosecond mtime and ctime. It creates
+no store and writes no credential.
+`RootOwnedSnapshot` is file-inspection evidence, not proof of installed service
+integrity, enrollment or operator authority. The service facade stays disabled.
+
+Eight tests use actual temporary files and native ACLs to reject an allow ACE
+despite POSIX mode 0600, reject file/directory symlinks and non-root ownership,
+prove rename leaves contents/ACL checks bound to the original descriptor, and
+enforce bounds. Policy regression fixtures reject unknown native-tag output
+and read-only allow entries while accepting recognized deny entries. A
+deterministic metadata fault injection rejects changed ctime even when size
+and mtime are identical. Read-only inspection of the actual root-owned
+`/private/var/db` ancestry passed on this Mac. No operator configuration file was
+created or successfully provisioned. These checks describe current ownership
+and ACLs; they do not revoke a previously acquired writable descriptor. Later
+protected installation must create fresh inaccessible objects and establish
+the actual actor/administrative boundary. A privileged adversary is outside
+the claimed primitive. No `/dev/fd` pathname workaround is used.
+
+Primary references:
+
+- [Apple descriptor ACL API](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/acl_get.3.html)
+- [Pinned safe descriptor input](https://github.com/byllyfish/exacl/blob/18275aa1a82aae9a786b108b0db0992a4d06e6e2/src/aclfile.rs)
+
+## Remaining implementation
 
 Before this contract can front an executing service, the macOS provider must
 verify the actual service identity, executable/configuration ownership, access
@@ -143,13 +176,21 @@ The experiment-only path dependency reuses the existing Task152 library and
 its reviewed pinned dependencies. It is not a release manifest or production
 dependency pin; upstream caveats remain in Task152's dependency review.
 The macOS provider pins `nix = 0.31.3` (MIT, Rust >=1.69) with defaults disabled
-and only `socket` and `user` features. Its new dependencies are `memoffset 0.9.1`
+and only `socket`, `user` and `fs` features. Its new dependencies are `memoffset 0.9.1`
 (MIT), `cfg_aliases 0.2.2` (MIT) and `bitflags 2.13.2` (MIT OR Apache-2.0), with
 the already resolved `libc` and `cfg-if`. Tests pin `tempfile = 3.24.0`
 (MIT OR Apache-2.0). Its resolved dependencies, including non-host targets,
 offer MIT/Apache-2.0 options; no license metadata was missing in the inspected
-new package set. The exact versions are in Cargo.lock. Only missing
-`memoffset` needed downloading; no dependency code was copied or relabeled.
+new package set. The exact versions are in Cargo.lock. The exact Git-pinned
+`exacl` revision is MIT, Rust >=1.85, default features disabled. Its new
+transitive package `scopeguard 1.2.0` is MIT OR Apache-2.0. The reviewed build
+script copies packaged bindings; runtime bindgen and its extra toolchain are
+disabled. This descriptor API is not in the published 0.13 documentation,
+although the source manifest retains version 0.13.0; the exact Git revision is
+therefore essential. Upstream native FFI contains unsafe code; this project
+adds no unsafe code and does not claim a complete upstream audit. Provisioning
+downloaded the exact Git source and missing `scopeguard`; no dependency code
+was copied or relabeled.
 
 From the repository root with the pinned toolchain:
 
@@ -168,3 +209,6 @@ boundary, hardware or protected-approval proof. Three macOS local-socket tests
 and one compile-fail identity-construction test additionally passed. The local
 socket tests require permission to create/connect their temporary Unix sockets;
 they do not contact a network host or KNX interface.
+The current complete run passed 16 library tests, six helper tests and one
+compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
+production-enrollment and hardware validation remain **NOT RUN**.

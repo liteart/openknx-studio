@@ -5,10 +5,11 @@ use nix::unistd::{getegid, geteuid};
 use std::ffi::OsString;
 use std::fs::{self, DirBuilder};
 use std::io::Write;
-use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
+use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::Path;
 use std::time::{Duration, Instant};
+use task153_broker_core::macos_config::inspect_root_owned_directory;
 use task153_broker_core::macos_peer::{ExpectedOperator, check_operator_peer};
 
 const DIRECTORY: &str = "/private/var/db/org.openknxstudio.operator-diagnostic";
@@ -48,17 +49,7 @@ fn require_root() -> Result<(), Error> {
 }
 
 fn check_fixed_ancestors() -> Result<(), Error> {
-    for path in ["/", "/private", "/private/var", "/private/var/db"] {
-        let metadata = fs::symlink_metadata(path).map_err(|_| Error::PathUnavailable)?;
-        if !metadata.is_dir()
-            || metadata.file_type().is_symlink()
-            || metadata.uid() != 0
-            || metadata.mode() & 0o022 != 0
-        {
-            return Err(Error::PathUnavailable);
-        }
-    }
-    Ok(())
+    inspect_root_owned_directory(Path::new("/private/var/db")).map_err(|_| Error::PathUnavailable)
 }
 
 struct Endpoint {

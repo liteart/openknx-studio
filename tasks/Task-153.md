@@ -200,6 +200,11 @@ the source and commands. A subsequent macOS increment uses kernel-reported
 Unix-socket peer credentials and rejects an agent UID or unexpected principal;
 eight tests and one compile-fail test passed, including real local sockets.
 Distinct-principal authorization and protected provisioning remain NOT RUN.
+A macOS descriptor-bound configuration inspection increment checks root
+ownership, mode and native ACLs through no-follow descriptor-relative traversal;
+unknown ACL types fail closed. Its focused tests include real ACLs, symlinks,
+rename binding and bounded reads. Independent review passed for the bounded
+source increment, not for privileged launch or installed-service integrity.
 An uninstalled, root-gated diagnostic helper source can later exercise the
 peer checks without a passkey or device operation. Its unprivileged tests and
 read-only macOS ancestor preflight passed; privileged launch remains gated on
