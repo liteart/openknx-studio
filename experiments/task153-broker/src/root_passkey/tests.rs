@@ -306,6 +306,13 @@ pub(crate) fn persisted_assertion_fixture(
     plan: &ConfiguredPlan,
     parent: &std::fs::File,
 ) -> PersistedAssertion {
+    persisted_assertion_completion_fixture(plan, parent).1
+}
+
+pub(crate) fn persisted_assertion_completion_fixture(
+    plan: &ConfiguredPlan,
+    parent: &std::fs::File,
+) -> (RootAssertionObservation, PersistedAssertion) {
     let (mut verifier, mut authenticator) = verifier_fixture();
     let options = verifier.begin(plan, 100).unwrap();
     let response = sign(&mut authenticator, options);
@@ -317,5 +324,4 @@ pub(crate) fn persisted_assertion_fixture(
             )
         })
         .unwrap()
-        .1
 }

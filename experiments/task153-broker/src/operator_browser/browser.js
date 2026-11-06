@@ -18,6 +18,8 @@
     const ready = await post("/ceremony", {});
     const enroll = ready.status === "enrollment_ready";
     if (ready.physical_authorization !== false || (!enroll && ready.status !== "assertion_ready")) throw new Error("Unexpected operator response.");
+    // This client remains observation-only until its live UI is qualified.
+    if (!enroll && ready.execution_mode !== "observe_only") throw new Error("Executing operator mode is unavailable in this client.");
     document.getElementById("plan").textContent = enroll ? "Enroll the first operator passkey in the protected store. No device authorization is issued." : ready.plan_summary;
     document.getElementById("digest").textContent = enroll ? "" : "Plan SHA256: " + ready.plan_digest.map(byte => byte.toString(16).padStart(2,"0")).join("");
     const publicKey = ready.options.publicKey;

@@ -238,19 +238,8 @@ impl RootPasskeyVerifier {
         })
     }
 
-    /// One-shot protected completion: no successful reply before updated public
-    /// credential/counter state and exact assertion binding are durable. Any
-    /// existing or partial record blocks subsequent protected use across restart.
-    pub(super) fn finish_protected(
-        &mut self,
-        plan: &ConfiguredPlan,
-        response: &[u8],
-        now: u64,
-    ) -> Result<RootAssertionObservation, Error> {
-        self.finish_for_execution(plan, response, now)
-            .map(|(observed, _witness)| observed)
-    }
-
+    /// One-shot protected completion. Only this consuming private result can
+    /// reach the internal executor callback; wire observations grant nothing.
     pub(super) fn finish_for_execution(
         &mut self,
         plan: &ConfiguredPlan,

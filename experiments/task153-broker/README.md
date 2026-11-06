@@ -289,11 +289,14 @@ and the shared exact RP/origin policy before private stage/activate calls.
 Assertion uses only the fixed descriptor-validated root credential and sends
 the same service-owned canonical plan summary/digest that it verifies.
 
-All replies and assertion observations remain `physical_authorization:false`.
+Normal observation-only replies and assertion observations remain
+`physical_authorization:false`.
 Successful registration reports activation or committed-cleanup-uncertain
 accurately when its reply is delivered. If the final reply is lost, enrollment
 may already be committed; a future client must inspect protected state and must
-not retry blindly. This handler has no grant or dispatcher and cannot contact KNX.
+not retry blindly. The normal handler observes only and cannot contact KNX.
+The exact-source build additionally provides a private qualified callback as
+described below; no service startup activates it.
 The localhost RP does not prove phone-only custody or make a browser page an
 independent operator channel. A same-user HTTP bootstrap must not be used to
 pin an agent-chosen key; the protected operator client/UI is still needed.
@@ -400,7 +403,7 @@ its frame I/O uses the 120-second connection deadline, while synchronous
 filesystem/native operations, including fsync, have no hard completion bound.
 An accepted durable commit is not forcibly interrupted to meet a wall-clock
 shutdown claim. Shutdown retains the endpoint for
-independent operator cleanup. All handlers remain non-authorizing; no KNX
+independent operator cleanup. Normal service handlers remain non-authorizing; no KNX
 adapter is connected. No HTTP server or unprivileged browser bridge is enabled.
 
 Main-image validation does not establish loaded-library or launch-environment
@@ -611,8 +614,9 @@ consumption, intent, uncertain-state and cleanup evidence. Its existing
 prewrite descriptor/current-property reads remain in force. A profile digest
 is correlation evidence, not unique hardware authentication.
 
-Production execution requires an uninhabited QualifiedExecution context:
-there is no constructor until independently reviewed installation, principal,
+Production execution requires a sealed QualifiedExecution context. Its private
+marker is inhabited, but no production constructor exists until independently
+reviewed installation, principal,
 browser/profile and operator qualification are implemented. The default crate
 never registers this execution module. There is no executable flag or claimed
 manifest boolean to enable it. Its dormant root wrapper additionally requires
@@ -639,6 +643,29 @@ a private test path; it never constructs QualifiedExecution or pretends to
 prove protected-root storage. Existing cancellation/unknown-outcome tests also
 passed. Combined source check, Clippy and Task020 artifact validation passed.
 
+The exact-source build now has a private service callback handoff. After
+signature verification and durable persistence, the handler passes the
+non-serializable witness exactly once to the qualified executor. The default
+public handler supplies no callback and discards that witness. Wire requests
+cannot choose a callback, import a witness or construct qualification.
+
+The private wrapper owns a sealed qualification value, creates a runtime only
+after verification, and invokes the existing guarded adapter. Its report keeps
+operation state and session cleanup separate: restored readback with uncertain
+cleanup is not complete success. Setup rejection and session uncertainty are
+distinguished. No write is interrupted solely because the reply deadline
+expires; a lost final reply may follow effects and must not cause blind retry.
+
+There is still no production qualification constructor or startup registration.
+The marker is now inhabited and private rather than a zero-variant enum;
+synthetic construction occurs only in tests. The compiler may still elide
+unreachable executor code, so build completion does not prove an active binary
+path. The current Safari client explicitly rejects guarded-execution mode
+before requesting a credential. Live mode and UI require later qualification.
+The loopback test exercises this same completion callback with a genuine
+synthetic persisted witness; the separate non-root test rejects a synthetic
+qualification before any UDP contact. Neither is installed-host evidence.
+
 Run with the pinned toolchain, a clean local fork checkout at the exact revision
 and the existing reviewed exacl checkout (source only):
 
@@ -651,7 +678,7 @@ It also builds the actual `task153-operator-service` entrypoint from the same
 registered exact-source crate and retains a hash-checked copy under
 `artifacts/` with its SHA-256 and size in `result.json`. This is a development
 build artifact, not a running or installed service. The compiled qualification
-remains unconstructible and its normal handler still drops the witness; merely
+has no production constructor and its normal handler still drops the witness; merely
 packaging this executable cannot enable a physical write.
 An earlier normal broker run passed 67 library tests, six helper tests and two
 compile-fail doctests; default builds gain no adapter or network authority.

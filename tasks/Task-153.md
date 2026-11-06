@@ -262,6 +262,13 @@ verified the source and artifact hashes. Private evidence is in
 `d87c2a8a503a7b764e8352dacf62f1e722cb04bd6c1be6ff212b641e87811217`).
 The normal service still discards the witness; building the binary does not
 enable an execution path or prove that unreachable adapter code is retained.
+The service handler now has a private, qualification-gated callback from a
+durably verified assertion to the guarded adapter. Normal startup supplies no
+callback and the current browser rejects guarded mode. The exact-source run
+passed 114 tests and independent review reproduced focused scenarios; evidence
+is in `private/evidence/task153-callback-20261106/` (result SHA-256
+`1d27517b35d98bbcd99ee8c4de57853a8f54f2682a0a46d5f4e31e909e6e7c69`).
+Actual host qualification, installed operation and hardware remain NOT RUN.
 The local development installer was rebuilt as two narrow components after
 review found parent-permission and AppleDouble problems. Static inspection of
 the actual package, its BOM, contents, signatures and architecture passed

@@ -9,9 +9,12 @@ use crate::enrollment_store::{
     ActivationOutcome, activate_first_enrollment, persist_pending_enrollment,
 };
 use crate::macos_peer::{ExpectedOperator, check_operator_peer};
-use crate::root_passkey::{RootPasskeyVerifier, operator_webauthn, unique_json};
+use crate::root_passkey::{
+    PersistedAssertion, RootAssertionObservation, RootPasskeyVerifier, operator_webauthn,
+    unique_json,
+};
 use nix::unistd::{getegid, geteuid};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -20,6 +23,39 @@ use webauthn_rs::prelude::*;
 const MAX_FRAME: usize = 32_768;
 const MAX_REPLY: usize = 65_536;
 const SESSION_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// Internal result, never an approval token or a caller-selected operation.
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)] // Constructed by the gated exact-source executor only.
+pub(crate) enum OperationOutcome {
+    RestoredVerified,
+    RejectedBeforeAdapter,
+    OutcomeUnknown,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)] // Constructed by the gated exact-source executor only.
+pub(crate) enum CleanupOutcome {
+    DeviceAndGatewayConfirmed,
+    DeviceOnly,
+    Uncertain,
+    NotAttempted,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub(crate) struct GuardedExecutionReply {
+    pub(crate) operation: OperationOutcome,
+    pub(crate) cleanup: CleanupOutcome,
+}
+
+impl GuardedExecutionReply {
+    pub(crate) fn succeeded(&self) -> bool {
+        self.operation == OperationOutcome::RestoredVerified
+            && self.cleanup == CleanupOutcome::DeviceAndGatewayConfirmed
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -173,10 +209,30 @@ impl Registration {
 /// The immutable plan is service-owned; IPC cannot select its route/effect.
 /// No return or reply constitutes device authorization.
 pub fn handle_operator_connection(
-    mut stream: UnixStream,
+    stream: UnixStream,
     plan: &ConfiguredPlan,
     policy: &ExpectedOperator,
 ) -> Result<(), Error> {
+    handle_operator_connection_with_execution(
+        stream,
+        plan,
+        policy,
+        None::<fn(&ConfiguredPlan, PersistedAssertion) -> GuardedExecutionReply>,
+    )
+}
+
+/// In-crate handoff for the exact-source executor only. Normal service startup
+/// calls the observation-only wrapper above. No IPC field chooses a callback
+/// or manufactures its persisted verification witness.
+pub(crate) fn handle_operator_connection_with_execution<F>(
+    mut stream: UnixStream,
+    plan: &ConfiguredPlan,
+    policy: &ExpectedOperator,
+    execute: Option<F>,
+) -> Result<(), Error>
+where
+    F: FnOnce(&ConfiguredPlan, PersistedAssertion) -> GuardedExecutionReply,
+{
     if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
         return Err(Error::RootServiceRequired);
     }
@@ -230,7 +286,7 @@ pub fn handle_operator_connection(
                 .map_err(|_| Error::VerificationFailed)?;
             write_reply(
                 &mut stream,
-                &serde_json::json!({"schema":1,"status":"assertion_ready","plan_summary":plan.summary(),"plan_digest":plan.digest(),"options":options,"physical_authorization":false}),
+                &serde_json::json!({"schema":1,"status":"assertion_ready","execution_mode":if execute.is_some() { "guarded_write" } else { "observe_only" },"plan_summary":plan.summary(),"plan_digest":plan.digest(),"options":options,"physical_authorization":false}),
                 deadline,
             )?;
             let Command::FinishAssertion { credential } =
@@ -239,16 +295,36 @@ pub fn handle_operator_connection(
                 return Err(Error::InvalidRequest);
             };
             let bytes = serde_json::to_vec(&credential).map_err(|_| Error::InvalidRequest)?;
-            let observation = verifier
-                .finish_protected(plan, &bytes, now()?)
+            let (observation, witness) = verifier
+                .finish_for_execution(plan, &bytes, now()?)
                 .map_err(|_| Error::VerificationFailed)?;
-            write_reply(
-                &mut stream,
-                &serde_json::json!({"schema":1,"status":"assertion_verified","observation":observation,"physical_authorization":false}),
-                deadline,
-            )
+            let reply = complete_verified_assertion(plan, observation, witness, execute);
+            write_reply(&mut stream, &reply, deadline)
         }
         _ => Err(Error::InvalidRequest),
+    }
+}
+
+pub(crate) fn complete_verified_assertion<F>(
+    plan: &ConfiguredPlan,
+    observation: RootAssertionObservation,
+    witness: PersistedAssertion,
+    execute: Option<F>,
+) -> serde_json::Value
+where
+    F: FnOnce(&ConfiguredPlan, PersistedAssertion) -> GuardedExecutionReply,
+{
+    match execute {
+        None => {
+            serde_json::json!({"schema":1,"status":"assertion_verified","execution_mode":"observe_only","observation":observation,"physical_authorization":false})
+        }
+        Some(execute) => {
+            // Consume the sealed witness exactly once; no wire reply can be
+            // imported to invoke this callback. A lost final reply may follow
+            // physical effects and must never cause an automatic retry.
+            let report = execute(plan, witness);
+            serde_json::json!({"schema":1,"status":"guarded_execution_report","execution_mode":"guarded_write","succeeded":report.succeeded(),"execution":report,"observation":observation})
+        }
     }
 }
 

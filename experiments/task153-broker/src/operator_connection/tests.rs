@@ -216,3 +216,65 @@ fn configured_policy_matches_actual_peer_and_rejects_agent_on_same_connection() 
         Err(Error::OperatorPeerDenied)
     );
 }
+
+#[test]
+fn default_observation_drops_the_consuming_witness_without_an_executor() {
+    let directory = tempfile::tempdir_in("/private/tmp").unwrap();
+    let parent = std::fs::File::open(directory.path()).unwrap();
+    let configured = plan();
+    let (observed, witness) =
+        crate::root_passkey::tests::persisted_assertion_completion_fixture(&configured, &parent);
+    let reply = complete_verified_assertion(
+        &configured,
+        observed,
+        witness,
+        None::<fn(&ConfiguredPlan, PersistedAssertion) -> GuardedExecutionReply>,
+    );
+    assert_eq!(reply["status"], "assertion_verified");
+    assert_eq!(reply["execution_mode"], "observe_only");
+    assert_eq!(reply["physical_authorization"], false);
+    assert!(reply.get("execution").is_none());
+    assert!(directory.path().join("verified-assertion.json").is_file());
+}
+
+#[test]
+fn internal_callback_consumes_exact_persisted_witness_once_and_reports_cleanup_separately() {
+    for cleanup in [
+        CleanupOutcome::DeviceAndGatewayConfirmed,
+        CleanupOutcome::Uncertain,
+    ] {
+        let directory = tempfile::tempdir_in("/private/tmp").unwrap();
+        let parent = std::fs::File::open(directory.path()).unwrap();
+        let configured = plan();
+        let (observed, witness) =
+            crate::root_passkey::tests::persisted_assertion_completion_fixture(
+                &configured,
+                &parent,
+            );
+        let mut calls = 0;
+        let success = cleanup == CleanupOutcome::DeviceAndGatewayConfirmed;
+        let reply = complete_verified_assertion(
+            &configured,
+            observed,
+            witness,
+            Some(|selected: &ConfiguredPlan, witness: PersistedAssertion| {
+                calls += 1;
+                assert!(directory.path().join("verified-assertion.json").is_file());
+                let (id, digest, expires) = witness.consume_for_guard();
+                assert_ne!(id, [0; 16]);
+                assert_eq!(digest, selected.digest());
+                assert_eq!(digest, configured.digest());
+                assert!(expires > 101);
+                GuardedExecutionReply {
+                    operation: OperationOutcome::RestoredVerified,
+                    cleanup,
+                }
+            }),
+        );
+        assert_eq!(calls, 1);
+        assert_eq!(reply["execution_mode"], "guarded_write");
+        assert_eq!(reply["succeeded"], success);
+        assert_eq!(reply["execution"]["operation"], "restored_verified");
+        assert!(reply.get("physical_authorization").is_none());
+    }
+}
