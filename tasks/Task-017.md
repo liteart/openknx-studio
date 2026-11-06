@@ -9,7 +9,7 @@ Implement and verify minimum non-secure tunneling
 | Field | Value |
 |---|---|
 | Task ID | Task-017 |
-| Status | In progress |
+| Status | Done |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / KNXnet-IP transport |
@@ -37,9 +37,9 @@ Provide the smallest reliable discovery/connect/disconnect path needed for the s
 
 ## Acceptance Criteria
 
-- [ ] AC-001: Offline tests and the approved gateway connection produce a valid non-secure tunnel and clean disconnect.
-- [ ] AC-002: Reject malformed and wrong-peer replies, correlate replies with the active channel where supplied, and prevent local UDP port reuse within the documented reservation registry lifetime and capacity. Document the remaining cross-attempt replay limitation; see [ADR-017](../docs/ADR-017-bounded-tunnel-response-correlation.md).
-- [ ] AC-003: Secure-required and invalid endpoint requests fail explicitly.
+- [x] AC-001: Offline tests and the approved gateway connection produce a valid non-secure tunnel and clean disconnect.
+- [x] AC-002: Reject malformed and wrong-peer replies, correlate replies with the active channel where supplied, and prevent local UDP port reuse within the documented reservation registry lifetime and capacity. Document the remaining cross-attempt replay limitation; see [ADR-017](../docs/ADR-017-bounded-tunnel-response-correlation.md).
+- [x] AC-003: Secure-required and invalid endpoint requests fail explicitly.
 
 ## Dependencies to Other Tasks
 
@@ -84,16 +84,31 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; bounded offline tunnel hardening only |
+| Implementation / report status | Done for the selected non-secure gateway lifecycle and bounded correlation scope in ADR-017 |
 | Source commit(s) | Primary local fork `c62a89ac03005e415bcba72c19d6242ebc683c4d`; parallel experiment `e4ea7c198350d8a0fb819cd5d215a7b2f03ef6a4` is not the primary baseline |
-| Tests executed | Offline tests PASS; earlier specifically authorized gateway lifecycle PASS at `e01d5395c1d79386eed47cd8298510deed130eab`; current-source hardware NOT RUN |
-| Evidence location | Fork commit and checkpoint below |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Invalid/malformed endpoints and replies rejected; stale transport retired in tested paths; hardware and protocol timing unqualified |
+| Tests executed | Offline tests PASS as detailed below; separately authorized gateway lifecycle PASS at primary source `c62a89ac03005e415bcba72c19d6242ebc683c4d`, 2026-11-06 |
+| Evidence location | Private `private/evidence/task017-gateway-20261106/` (plan, result, stdout and stderr); fork commit and checkpoints below |
+| Acceptance criteria met | AC-001, AC-002 as revised in ADR-017, AC-003 |
+| Technical outcome | Selected gateway connected, returned a correlated heartbeat, and confirmed disconnect of the same channel. Retargeted replay and peer authentication remain outside the demonstrated guarantee. |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Reviewer | Independent source, test and actual gateway evidence review PASS for the bounded Task017 scope on 2026-11-06 |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Selected gateway lifecycle — 2026-11-06
+
+Simon confirmed `192.168.1.50:3671` and the proposed one-shot connect,
+connection-state request and own-channel disconnect. On macOS, the built
+`readonly_gateway_lifecycle --execute 192.168.1.50:3671 --non-secure` at fork
+revision `c62a89ac03005e415bcba72c19d6242ebc683c4d` returned exit 0;
+connection and heartbeat were confirmed and the same channel's disconnect was
+confirmed. Device reads, device writes and retries were NOT RUN. The private
+plan SHA-256 is `6171f13ce8350885c2457bce3f5d47aef93cba4c02147c877df9a2937ed8c459`,
+the binary SHA-256 is `bbc75289efe311b19e5c098574e61e00adf5325289f4b06d409b38d100ca6afe`,
+and stdout SHA-256 is `56a5f29489ca6db33f0357589bf97477d590b184955bc0d7ffebe2db06e39266`.
+The run and source were independently reviewed against the revised acceptance
+criteria. Long-lived sessions, restart/NAT behavior, other gateways and replay
+resistance are not established; the operation is not a device download test.
 
 ## Offline hardening checkpoint — 2026-11-03
 
@@ -105,8 +120,8 @@ the pinned offline Rust toolchain and loopback-only sockets. `cargo test --locke
 --lib udp_port_reservations` passed 12 focused unit tests. A review of the ADR
 and revised acceptance criterion against the fork source found no blocking
 documentation issue. The retained-response retarget diagnostic remains ignored
-as a known limitation and was not counted as passing. The current revision's
-gateway operation remains NOT RUN; these checks do not complete Task-017.
+as a known limitation and was not counted as passing. At this checkpoint the
+current revision's gateway operation was NOT RUN; see the later 2026-11-06 run.
 
 An additional run at the same fork revision, `cargo test --locked --test
 test_connection_rejection --test test_tunnel_connect_validation --example
@@ -137,8 +152,8 @@ invalid endpoints/timeouts, and retires tested stale transport paths. It does
 not itself establish primary-source protocol timing/retry values, cancellation or
 shared-close behavior, or hardware qualification. The required approved
 read-only gateway connection/disconnect was NOT RUN for this parallel revision.
-Task017 remains In progress; no physical-operation approval is implied by the
-simulator tests.
+Task017 was In progress at this checkpoint; no physical-operation approval is
+implied by the simulator tests.
 
 Source SHA-256: `src/protocol/knxip.rs`
 `3b9f1c3d8dffb65956a7c356f67d9ae288d47bb5df022926aecad326515f74d0`;
@@ -158,15 +173,16 @@ of that same channel, with no application telegrams or device writes. That
 operation passed on 2026-10-23 at fork source
 `e01d5395c1d79386eed47cd8298510deed130eab`; exit 0 and remote cleanup were
 confirmed in private `task017-readonly-gateway/hardware-result.json`. The
-grant applied only to that one operation, not a repeat. The current source and
-physical gateway model/bench isolation have not been requalified.
+grant applied only to that one operation. The current-source lifecycle was
+subsequently tested under a separate 2026-11-06 authorization. The physical
+gateway model and bench isolation have not been independently qualified.
 
 The later primary history includes a retained-response retarget diagnostic at
 `777fd6d48418b6556cdfef5ff87188037c8ae11b` that reproduced a cross-attempt
 ambiguity. Local endpoint reservation at `c62a89a` is a bounded improvement,
 not proof that the ambiguity is eliminated. The owner accepted a bounded
-requirement on 2026-11-03; see ADR-017. AC-002 remains unchecked pending review
-of the revised criteria and actual tests; the
+requirement on 2026-11-03; see ADR-017. AC-002 was unchecked at that checkpoint
+and was subsequently reviewed under the revised criteria. The
 diagnostic and source history are retained in the private Task017 evidence and
 historical editor branch `task/Task-017-endpoint-reservation-evidence`. The
 parallel `e4ea7c1` must not be overlaid wholesale on this primary history,

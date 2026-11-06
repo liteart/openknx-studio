@@ -1,6 +1,6 @@
 # ADR-017: Bound non-secure tunnel response correlation
 
-Status: Owner decision on 2026-11-03; implementation and acceptance remain in progress.
+Status: Owner decision on 2026-11-03; bounded Task-017 scope verified on 2026-11-06.
 Related task: [Task-017](../tasks/Task-017.md).
 
 ## Context
