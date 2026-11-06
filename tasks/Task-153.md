@@ -9,7 +9,7 @@ Build a protected operator approval and execution path for one exact KNX write p
 | Field | Value |
 |---|---|
 | Task ID | Task-153 |
-| Status | Ready |
+| Status | In progress |
 | Stage / required gate | PoC; no phase gate unlocked |
 | Priority | P0 |
 | Component / Git project | knx-editor / operator approval and guarded KNX executor |
@@ -191,6 +191,11 @@ household data or proprietary files in Git.
 
 ## Completion Record
 
-Status: Ready. Actual source commits: not created. Tests: NOT RUN. Evidence:
-not produced. Reviewer: unassigned. Open acceptance criteria: all. Technical
-outcome: not evaluated. Gate outcome: not evaluated.
+The first source-only increment defines bounded request parsing and a configured
+plan policy; its unprovisioned facade always refuses execution. Five offline
+tests, formatting and Clippy passed on macOS arm64. An independent review
+passed for this bounded increment. See
+[the experiment](../experiments/task153-broker/README.md) and Git history for
+the source and commands. The service, OS privilege/IPC boundary, protected
+enrollment, actual adapter integration and hardware tests remain NOT RUN.
+All acceptance criteria remain open; no gate is advanced.
