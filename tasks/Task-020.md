@@ -9,7 +9,7 @@ Implement an explicitly authorized reversible property write
 | Field | Value |
 |---|---|
 | Task ID | Task-020 |
-| Status | Not started |
+| Status | Blocked |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / property services |
@@ -75,6 +75,10 @@ No speculative memory edits, factory reset, or full application-download claim.
 ## Risks and Blockers
 
 A genuinely reversible documented property and explicit operator approval are mandatory. If none is available, stop rather than selecting a plausible property ID.
+The user has permitted changes to the selected device and offered later ETS
+reprogramming, but no exact documented reversible property, original/desired
+values and property-specific recovery procedure have been identified. The
+offline primitive does not implement the backend approval/identity guard.
 
 See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing application IDs, protocol layouts, device properties, credentials, SDK rights or hardware outcomes.
 
@@ -82,13 +86,33 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Not started |
-| Source commit(s) | Not created |
-| Tests executed | NOT RUN |
-| Evidence location | Not produced |
-| Acceptance criteria met | None asserted |
-| Technical outcome | Not evaluated |
+| Implementation / report status | Blocked on exact reversible property, scoped write plan and backend authorization/identity enforcement; generic low-level increment reviewed offline |
+| Source commit(s) | Local knust fork `da9a66679d6d49108f97ec8afeaed8d56c382a63`, based on Task019 `e1d3d9b0ad7ec0edad6b4c82782cd3148ff65d56`; fork not published |
+| Tests executed | Seven property codec regression tests, nine synthetic loopback write tests, focused Clippy, formatting and diff checks PASS; hardware writes/readback and backend authorization negative NOT RUN |
+| Evidence location | Fork `TASK020-PROPERTY-WRITE.md` at `da9a66679d6d49108f97ec8afeaed8d56c382a63`; checkpoint below |
+| Acceptance criteria met | AC-002 supported by offline review; AC-001 and AC-003 remain pending physical readback/restore and durable authorization/uncertainty enforcement |
+| Technical outcome | One-dispatch low-level write attempt reports uncertainty after possible dispatch and does not automatically replay; this does not authorize any real write or prove restoration |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Unassigned |
+| Reviewer | Independent protocol, safety and framing review PASS for the bounded offline increment; full task acceptance pending |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
+
+## Bounded offline write primitive — 2026-11-06
+
+The generic fork primitive accepts explicit typed selectors and opaque caller
+bytes, sends at most one request per in-memory attempt and latches an unknown
+outcome before dispatch can be polled. Cancellation, lost acknowledgments and
+malformed or ambiguous replies do not trigger an automatic replay. An exact
+response is a protocol observation, not independent readback or restoration.
+Caller-owned durable approval, target verification, cleanup and recovery remain
+unimplemented. A fresh attempt or process restart is not prevented by the
+in-memory latch and must not be treated as authorization to retry.
+
+On macOS arm64, seven property codec regression tests and nine synthetic
+loopback write tests passed with the pinned offline toolchain. The coordinator
+independently reran `cargo test --locked --offline --no-default-features
+--features dpt --test test_property_write` (nine PASS). Focused Clippy,
+formatting and diff checks passed. Independent review found a standard-frame
+length issue; the corrected implementation rejects cEMI length above 15 before
+dispatch and tests both sides of the 10-byte data boundary. Re-review passed.
+No physical device write, hardware readback, restore or Windows test was run.
