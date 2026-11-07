@@ -302,6 +302,11 @@ repeat attempt was refused at the preinstall no-overwrite check because those
 files already existed; no new partial installation was observed. Reinstallation
 is not required. Protected provisioning, service startup, passkey enrollment
 and the physical write remain NOT RUN.
+A fixed-purpose provisioning helper has been implemented and independently
+reviewed. It creates a new protected store from validated, hash-pinned private
+inputs without overwriting existing files; its temporary-filesystem tests and
+additive-package policy tests passed. It is not yet installed or run, and the
+actual private receipt, target, gateway and expiry must be reviewed before use.
 The local development installer was rebuilt as two narrow components after
 review found parent-permission and AppleDouble problems. Static inspection of
 the actual package, its BOM, contents, signatures and architecture passed

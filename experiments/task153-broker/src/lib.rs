@@ -23,6 +23,8 @@ pub mod operator_browser;
 #[cfg(target_os = "macos")]
 pub mod operator_connection;
 #[cfg(target_os = "macos")]
+pub mod provisioning;
+#[cfg(target_os = "macos")]
 pub mod root_passkey;
 
 pub const MAX_REQUEST_BYTES: usize = 4_096;

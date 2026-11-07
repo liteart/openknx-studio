@@ -149,7 +149,7 @@ pub(crate) fn verify_enrollment_bootstrap() -> Result<(), Error> {
     Ok(())
 }
 
-fn verify_running_image(cdhash: &str) -> Result<(), Error> {
+pub(crate) fn verify_running_image(cdhash: &str) -> Result<(), Error> {
     if cdhash.len() != 40 || !cdhash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
         return Err(Error::RunningImageRejected);
     }
@@ -161,6 +161,58 @@ fn verify_running_image(cdhash: &str) -> Result<(), Error> {
         &requirement,
     )
     .map_err(|_| Error::RunningImageRejected)
+}
+
+pub(crate) fn validate_provisioning_inputs(
+    manifest: &[u8],
+    plan: &[u8],
+    owner: u32,
+    now: u64,
+) -> Result<(), Error> {
+    use core_foundation::url::CFURL;
+    use security_framework::os::macos::code_signing::SecStaticCode;
+    let manifest = parse_manifest(manifest)?;
+    if owner == 0 || manifest.operator_uid != owner || manifest.agent_uid != owner {
+        return Err(Error::OperatorPolicyRejected);
+    }
+    User::from_uid(Uid::from_raw(owner))
+        .map_err(|_| Error::OperatorPolicyRejected)?
+        .filter(|user| user.gid.as_raw() == manifest.operator_gid)
+        .ok_or(Error::OperatorPolicyRejected)?;
+    parse_plan(plan, manifest.plan_digest, &manifest.gateway, now)?;
+    let bootstrap = manifest
+        .enrollment_bootstrap
+        .ok_or(Error::ManifestRejected)?;
+    for (path, hash, cdhash) in [
+        (
+            EXECUTABLE,
+            manifest.executable_sha256,
+            manifest.executable_cdhash,
+        ),
+        (
+            ENROLLMENT_EXECUTABLE,
+            bootstrap.executable_sha256,
+            bootstrap.executable_cdhash,
+        ),
+    ] {
+        if macos_config::hash_installed_service(Path::new(path))
+            .map_err(|_| Error::InstallationUnavailable)?
+            != hash
+        {
+            return Err(Error::RunningImageRejected);
+        }
+        let url = CFURL::from_path(path, false).ok_or(Error::RunningImageRejected)?;
+        let code =
+            SecStaticCode::from_path(&url, Flags::NONE).map_err(|_| Error::RunningImageRejected)?;
+        let requirement = SecRequirement::from_str(&format!("cdhash H\"{cdhash}\""))
+            .map_err(|_| Error::RunningImageRejected)?;
+        code.check_validity(
+            Flags::STRICT_VALIDATE | Flags::NO_NETWORK_ACCESS,
+            &requirement,
+        )
+        .map_err(|_| Error::RunningImageRejected)?;
+    }
+    Ok(())
 }
 
 fn reference_descriptor_fingerprint() -> [u8; 32] {

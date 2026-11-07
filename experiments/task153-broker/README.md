@@ -752,6 +752,32 @@ cannot be replaced by this passing synthetic integration.
 
 ## Dependencies and verification
 
+The separate fixed `task153-operator-provision` helper prepares first-time
+protected configuration only. It must be independently installed at
+`/Library/PrivilegedHelperTools/org.openknxstudio.operator-provision`; running
+it elevated from a writable checkout is refused. Root/wheel identity and its
+installed SHA-256/native running-code pin are checked. A bounded private receipt
+is pinned by the explicit `--receipt-sha256` argument and contains schema 1,
+`provisioner` code pins, `manifest` and `plan` path/SHA-256 pairs, and a UTC expiry
+at most 24 hours ahead. Receipt and inputs must be private single-link files
+owned by the same non-root account; no-follow descriptor reads, ancestry/ACL
+checks and content hashes reject substitution. The receipt hash is an input
+integrity pin, not human approval or a device capability. Independent owner
+review and OS-authenticated initiation remain required.
+
+The helper reuses the actual service/plan validators, requires the chosen
+same-account UID/GID, and checks the installed service and enrollment images
+against their SHA-256 and static code requirements. Only a fresh fixed staging
+directory under `/private/var/db` is created. Files `service-manifest.json` and
+`write-plan.json` are 0600, the empty `execution` directory is 0700, and the
+store becomes 0711. File and directory synchronization precede atomic
+no-replace publication of the whole store. No existing object is overwritten or
+deleted. Prepublication failure retains staging while the final store is absent;
+an entry can still be lost on power failure before its directory sync. Final
+publication/acknowledgement uncertainty must be inspected, never retried blindly.
+No service, enrollment, passkey or device operation is started by provisioning.
+Six unprivileged filesystem tests passed; actual root provisioning is NOT RUN.
+
 The bridge directly pins already-resolved `socket2 = 0.6.5`, default features
 disabled (MIT OR Apache-2.0, MSRV 1.70). Only existing libc/windows-sys packages
 are used; the lockfile adds only the direct dependency edge. Reviewed upstream

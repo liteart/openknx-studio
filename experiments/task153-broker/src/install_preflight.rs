@@ -29,6 +29,9 @@ fn check() -> Result<(), Refusal> {
         [argument] if argument == "--daemon" => {
             &["/Library/LaunchDaemons/org.openknxstudio.operator.plist"]
         }
+        [argument] if argument == "--provisioner" => {
+            &["/Library/PrivilegedHelperTools/org.openknxstudio.operator-provision"]
+        }
         _ => {
             return Err(Refusal {
                 code: "arguments_rejected",

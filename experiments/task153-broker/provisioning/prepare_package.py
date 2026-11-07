@@ -363,8 +363,9 @@ def verified_service_input(binary, evidence, binaries=None):
     return binary, result
 
 
-def build_component(name, binaries, output, inventory, service_binary=None, service_evidence=None):
-    install_location, root_mode, files = COMPONENTS[name]
+def build_component(name, binaries, output, inventory, service_binary=None, service_evidence=None,
+                    component_specification=None):
+    install_location, root_mode, files = COMPONENTS[name] if component_specification is None else component_specification
     work = output / name
     work.mkdir()
     payload, scripts = work / "staged-payload", work / "staged-scripts"

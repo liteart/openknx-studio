@@ -26,6 +26,10 @@ path = "src/install_preflight.rs"
 name = "task153-operator-enrollment"
 path = "src/enrollment_main.rs"
 
+[[bin]]
+name = "task153-operator-provision"
+path = "src/provision_main.rs"
+
 [workspace]
 
 [dependencies]
@@ -39,6 +43,7 @@ exacl = { git = "https://github.com/byllyfish/exacl.git", rev = "18275aa1a82aae9
 webauthn-rs = { version = "=0.6.2", default-features = false }
 rustix = { version = "=1.1.6", default-features = false, features = ["fs", "std"] }
 security-framework = { version = "=3.7.0", default-features = false }
+core-foundation = "=0.10.1"
 sha2 = { version = "=0.11.0", default-features = false }
 tempfile = "=3.24.0"
 socket2 = { version = "=0.6.5", default-features = false }
