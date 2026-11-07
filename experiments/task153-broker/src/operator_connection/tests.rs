@@ -74,6 +74,37 @@ fn actual_nonroot_process_and_peer_are_denied_without_reading_a_ceremony() {
 }
 
 #[test]
+fn same_account_peer_can_assert_but_cannot_start_enrollment() {
+    let (_directory, _client, server) = connected();
+    let uid = geteuid().as_raw();
+    if uid == 0 {
+        return;
+    }
+    let policy = ExpectedOperator::same_account(uid, getegid().as_raw()).unwrap();
+    let peer = require_operator_peer(&server, &policy).unwrap();
+    assert_eq!(
+        require_ceremony_permission(&Command::BeginAssertion {}, &peer, &policy),
+        Ok(())
+    );
+    assert_eq!(
+        require_ceremony_permission(
+            &Command::BeginEnrollment {
+                issuer: "synthetic".into()
+            },
+            &peer,
+            &policy
+        ),
+        Err(Error::OperatorPeerDenied)
+    );
+    // The service still requires root; matching this account never grants
+    // storage access, enrollment authority or a device capability.
+    assert_eq!(
+        handle_operator_connection(server, &plan(), &policy),
+        Err(Error::RootServiceRequired)
+    );
+}
+
+#[test]
 fn framing_rejects_oversize_empty_truncation_and_expired_reads() {
     for size in [0, MAX_FRAME as u32 + 1] {
         let (_directory, mut client, mut server) = connected();
@@ -209,7 +240,10 @@ fn configured_policy_matches_actual_peer_and_rejects_agent_on_same_connection() 
     // A deliberately different policy ID is not evidence of another account.
     let synthetic_other = uid.checked_add(1).unwrap();
     let accepted = ExpectedOperator::new(uid, gid, synthetic_other).unwrap();
-    assert_eq!(require_operator_peer(&server, &accepted), Ok(()));
+    assert_eq!(
+        require_operator_peer(&server, &accepted).map(|_| ()),
+        Ok(())
+    );
     let denied = ExpectedOperator::new(synthetic_other, gid, uid).unwrap();
     assert_eq!(
         require_operator_peer(&server, &denied),

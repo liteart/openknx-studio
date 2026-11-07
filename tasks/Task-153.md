@@ -19,6 +19,14 @@ Build a protected operator approval and execution path for one exact KNX write p
 
 ## Description
 
+Owner direction on 2026-11-07: use the same macOS account for Simon and
+Codex; do not require a second account. This supersedes the separate-principal
+assumption below. Keep protected initial enrollment, exact-plan WebAuthn user
+verification, backend-enforced one-use execution and no MCP grant-minting tool.
+Unrestricted code under the same principal can interfere with the local browser
+or operator display; this mode does not claim isolation against that principal.
+The existing target-scoped hardware consent is unchanged.
+
 Connect the user-tested WebAuthn passkey verifier to the existing Task020
 offline guard and connected-session adapter through a locally protected
 operator service. The service, its trust anchor and its execution authority

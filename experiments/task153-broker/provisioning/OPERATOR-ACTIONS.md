@@ -27,11 +27,15 @@ The service still drops its assertion witness; real execution is unavailable.
 1. Independently review the source, inventory.json, package hash, signatures,
    both component payloads/BOMs and their preinstall/preflight scripts. Building and hashing by the agent is
    not approval. This artifact is ready for review, not installation acceptance.
-2. Choose a dedicated standard macOS operator account and separately isolated
-   login/browser session that the agent cannot control or authenticate into.
-   The operator must create/choose it through macOS settings. No password,
-   passkey private data or account enumeration is requested by the preparer.
-3. In that operator session prepare a fresh Safari profile, with no existing
+2. Use the existing macOS account, as selected by the owner on 2026-11-07.
+   Set the protected manifest's operator and agent UID to that same nonzero UID.
+   This permits assertions against an already enrolled key but does not isolate
+   the user from Codex or other code in that account. First enrollment still
+   requires an actual root/wheel bootstrap connection after independent OS
+   authentication. That bootstrap client is not implemented; an ordinary
+   browser connection cannot enroll or replace a key. No password or PIN is
+   requested by the preparer.
+3. In the existing account prepare a fresh Safari profile, with no existing
    localhost:15300 Service Worker/site storage, extensions or agent-controlled
    automation. Isolation and profile state require independent qualification;
    neither this package nor its signature proves them.
@@ -50,7 +54,8 @@ The service still drops its assertion witness; real execution is unavailable.
    platform checks. Installation is NOT RUN.
 6. Private root provisioning remains separate: the existing service requires
    a root-owned 0711 store with no allow ACL, protected 0600 manifest/plan/lock,
-   selected distinct operator/agent UIDs, operator primary GID/native UUID,
+   selected operator/agent UIDs (equal for the chosen same-account mode),
+   operator primary GID/native UUID,
    reviewed executable SHA256/CDHash, approved private gateway and exact plan
    digest/expiry. Do not commit actual identities, gateway, plan or keys. The
    package intentionally supplies none of these values and does not launch.

@@ -76,7 +76,6 @@ fn parse_manifest(bytes: &[u8]) -> Result<Manifest, Error> {
         || !socket_access::valid_acl_uuid(&manifest.operator_acl_uuid)
         || manifest.operator_uid == 0
         || manifest.agent_uid == 0
-        || manifest.operator_uid == manifest.agent_uid
     {
         return Err(Error::ManifestRejected);
     }
@@ -182,11 +181,15 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     {
         return Err(Error::RunningImageRejected);
     }
-    let policy = ExpectedOperator::new(
-        manifest.operator_uid,
-        manifest.operator_gid,
-        manifest.agent_uid,
-    )
+    let policy = if manifest.operator_uid == manifest.agent_uid {
+        ExpectedOperator::same_account(manifest.operator_uid, manifest.operator_gid)
+    } else {
+        ExpectedOperator::new(
+            manifest.operator_uid,
+            manifest.operator_gid,
+            manifest.agent_uid,
+        )
+    }
     .map_err(|_| Error::OperatorPolicyRejected)?;
     // Resolve only the selected account; no enumeration or credential access.
     let _operator = User::from_uid(Uid::from_raw(policy.uid()))

@@ -8,6 +8,27 @@ no protected store, passkey enrollment, approval issuer or KNX adapter.
 `protected_host_unavailable`; it does not open a journal or contact a device.
 There is no test fixture that turns this facade into a protected service.
 
+## Same-account operator direction
+
+On 2026-11-07 the owner selected the existing macOS account for both the human
+operator and Codex. No additional account is required. When the protected
+manifest sets `operator_uid` and `agent_uid` to the same nonzero UID, that
+account may submit assertions against the already protected enrolled passkey.
+The daemon still verifies the standard assertion, exact plan and one-shot
+record; account matching by itself cannot create approval.
+
+Initial enrollment in this mode requires an actual root/wheel Unix peer,
+obtained through an independently OS-authenticated bootstrap. The normal
+same-account browser connection cannot start enrollment or replace its key.
+The bootstrap client is not yet implemented or exercised; no privileged
+operation or hardware path is enabled by this policy change.
+
+This is not OS isolation from Codex or other code under the same account.
+Such code can invoke assertion endpoints, influence the same desktop/browser,
+or bypass application-only controls if it gains administrative authority.
+The human must complete the passkey provider's verification. Protected first
+enrollment and the existing exact-plan/runtime qualifications remain required.
+
 ## Implemented boundary
 
 The JSON request is limited to 4096 bytes and a 64-character ASCII request ID.
@@ -35,9 +56,10 @@ another approval ledger or repeating the dispatcher simulator.
 
 The macOS-only `macos_peer` module now obtains the effective UID and GID of a
 connected Unix-domain peer through the safe `nix::unistd::getpeereid` wrapper.
-It never reads a claimed identity from request JSON. The matching policy rejects
-the configured agent UID, rejects a shared operator/agent UID, and requires the
-expected operator UID and GID. `PeerIdentity` has private fields and cannot be
+It never reads a claimed identity from request JSON. The separate-account
+policy rejects the configured agent UID and requires the expected operator UID
+and GID. The same-account policy admits the configured UID/GID for assertions
+and root/wheel only for enrollment bootstrap. `PeerIdentity` has private fields and cannot be
 deserialized. It is connection evidence, not an approval or host token.
 
 On macOS arm64, three tests used actual temporary Unix-domain sockets to check
@@ -324,7 +346,9 @@ array), exact `gateway` (canonical IPv4 address and nonzero port), and
 `operator_uid`, `operator_gid`, `agent_uid` numeric OS policy, plus an
 `operator_acl_uuid` native principal pin (canonical lowercase braced UUID,
 nonzero). Operator and agent
-UIDs must be distinct and nonzero; no identity is accepted from IPC. The
+UIDs must be nonzero. Equal UIDs select same-account assertions with root-only
+initial enrollment; distinct UIDs retain the separate-account policy. No
+identity is accepted from IPC. The
 selected operator account must resolve to that UID and primary GID. No host
 account IDs or deployment manifest are committed.
 Native `SecCode::for_self` dynamic validation must match the explicit
@@ -387,13 +411,13 @@ Dedicated-group authority was avoided: the pinned nix version does not expose
 getgrouplist on macOS, and primary-GID comparison cannot prove supplementary
 group exclusion. The UID ACL grants no group access.
 
-A separately provisioned operator login and normal Safari can avoid custom
-browser entitlements. That principal must not be available to the agent via
-login/session/process control or privilege escalation. The operator bridge/UI
-is still missing; no browser ceremony through this new principal has run. No
-account creation, root execution, installation or real key access occurred.
-Real distinct-user socket acceptance/agent denial, protected enrollment and
-launch-environment isolation remain **NOT RUN**. This source does not establish
+A separately provisioned operator login remains an optional mode, not a
+requirement for the owner's same-account direction. Normal Safari can avoid
+custom browser entitlements. The protected enrollment bootstrap remains
+missing; no same-account protected browser ceremony has run. No account
+creation, root execution, installation or real key access occurred. Real
+socket qualification, protected enrollment and launch-environment isolation
+remain **NOT RUN**. This source does not establish
 that the current host has those identities or isolation.
 
 Existing endpoints are never reused or unlinked. The
@@ -443,12 +467,13 @@ operator action described in Task153; no installation command is provided or
 invoked here. Windows and Linux need their own verified OS providers. Actual
 service, macOS ownership/IPC, Windows, Linux and hardware tests are **NOT RUN**.
 
-## Separate-operator Safari bridge source
+## Operator Safari bridge source
 
 `task153-operator-browser` accepts only `--enroll` or `--assert`. It must run
-under the independently provisioned operator login/session, using an artifact
-reviewed and installed outside the agent's writable boundary. A development
-checkout is not a trusted operator surface.
+under the configured operator account, using an artifact reviewed and installed
+outside ordinary account write access. The owner chose the same macOS account
+for Codex and the operator; this provides no same-principal UI isolation. A
+development checkout is not a trusted operator surface.
 
 Protected enrollment additionally requires a freshly isolated Safari profile in
 that operator account, with no pre-existing localhost:15300 Service Worker,
@@ -461,12 +486,10 @@ that compromised-browser case. The bridge neither clears nor proves browser
 profile state; a new profile and its isolation must be independently provisioned
 and qualified before treating enrollment as protected. This prerequisite is
 **unverified / NOT RUN**; no such browser profile was created or inspected.
- Installation, artifact integrity,
-separate-principal login/session/process isolation (including accessibility,
-remote control and privilege escalation), and actual browser behavior remain
-**NOT RUN**. This increment installs nothing and does not establish that the
-current host has an isolated operator principal. Never launch an agent-writable
-bridge artifact as the approving operator.
+Installation, artifact integrity and actual browser behavior remain **NOT RUN**.
+The owner's same-account direction does not claim protection against code with
+the same user's unrestricted UI or browser access. Never launch an
+agent-writable bridge artifact as the approving operator.
 
 Before HTTP binding or bootstrap creation, the client connects the fixed Unix
 socket with a two-second nonblocking connect deadline, verifies kernel-observed root/wheel server identity, sends the selected

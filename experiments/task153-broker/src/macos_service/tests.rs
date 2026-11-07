@@ -202,10 +202,13 @@ fn bounded_actual_local_listener_closes_denied_session_without_root_storage() {
 }
 
 #[test]
-fn manifest_requires_distinct_nonroot_principals() {
+fn manifest_accepts_same_account_but_requires_nonroot_principals() {
     // Arbitrary synthetic policy IDs, never host account data.
     let record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":"192.0.2.50:3671","operator_uid":41001,"operator_gid":41002,"operator_acl_uuid":"{00000000-0000-4000-8000-000000000001}","agent_uid":41003});
-    for (field, value) in [("operator_uid", 0), ("agent_uid", 0), ("agent_uid", 41001)] {
+    let mut shared = record.clone();
+    shared["agent_uid"] = 41001.into();
+    assert!(parse_manifest(&serde_json::to_vec(&shared).unwrap()).is_ok());
+    for (field, value) in [("operator_uid", 0), ("agent_uid", 0)] {
         let mut changed = record.clone();
         changed[field] = value.into();
         assert!(matches!(

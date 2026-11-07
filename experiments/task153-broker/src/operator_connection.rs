@@ -8,7 +8,7 @@ use crate::ConfiguredPlan;
 use crate::enrollment_store::{
     ActivationOutcome, activate_first_enrollment, persist_pending_enrollment,
 };
-use crate::macos_peer::{ExpectedOperator, check_operator_peer};
+use crate::macos_peer::{ExpectedOperator, PeerIdentity, check_operator_peer};
 use crate::root_passkey::{
     PersistedAssertion, RootAssertionObservation, RootPasskeyVerifier, operator_webauthn,
     unique_json,
@@ -92,10 +92,29 @@ enum Command {
     },
 }
 
-fn require_operator_peer(stream: &UnixStream, policy: &ExpectedOperator) -> Result<(), Error> {
+fn require_operator_peer(
+    stream: &UnixStream,
+    policy: &ExpectedOperator,
+) -> Result<PeerIdentity, Error> {
     // The service obtains policy from protected configuration, never request IDs.
-    check_operator_peer(stream, policy).map_err(|_| Error::OperatorPeerDenied)?;
-    Ok(())
+    check_operator_peer(stream, policy).map_err(|_| Error::OperatorPeerDenied)
+}
+
+fn require_ceremony_permission(
+    command: &Command,
+    peer: &PeerIdentity,
+    policy: &ExpectedOperator,
+) -> Result<(), Error> {
+    let allowed = match command {
+        Command::BeginEnrollment { .. } => policy.permits_enrollment(peer),
+        Command::BeginAssertion {} => policy.permits_assertion(peer),
+        _ => false,
+    };
+    if allowed {
+        Ok(())
+    } else {
+        Err(Error::OperatorPeerDenied)
+    }
 }
 
 fn remaining(deadline: Instant) -> Result<Duration, Error> {
@@ -236,11 +255,13 @@ where
     if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
         return Err(Error::RootServiceRequired);
     }
-    require_operator_peer(&stream, policy)?;
+    let peer = require_operator_peer(&stream, policy)?;
     let deadline = Instant::now()
         .checked_add(SESSION_TIMEOUT)
         .ok_or(Error::Timeout)?;
-    match read_request(&mut stream, deadline)?.command {
+    let command = read_request(&mut stream, deadline)?.command;
+    require_ceremony_permission(&command, &peer, policy)?;
+    match command {
         Command::BeginEnrollment { issuer } => {
             if issuer.is_empty()
                 || issuer.len() > 128

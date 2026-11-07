@@ -43,7 +43,12 @@ impl PeerIdentity {
 pub struct ExpectedOperator {
     uid: u32,
     gid: u32,
-    agent_uid: u32,
+    access: AccountAccess,
+}
+
+enum AccountAccess {
+    Separate { agent_uid: u32 },
+    SameAccount,
 }
 
 impl ExpectedOperator {
@@ -62,8 +67,37 @@ impl ExpectedOperator {
         Ok(Self {
             uid,
             gid,
-            agent_uid,
+            access: AccountAccess::Separate { agent_uid },
         })
+    }
+
+    /// Permit the configured account to submit assertions for a previously
+    /// enrolled key. This provides no isolation from code under that account.
+    /// Initial enrollment still requires an actual root/wheel bootstrap peer.
+    pub fn same_account(uid: u32, gid: u32) -> Result<Self, PeerError> {
+        if uid == 0 {
+            return Err(PeerError::UnexpectedPrincipal);
+        }
+        Ok(Self {
+            uid,
+            gid,
+            access: AccountAccess::SameAccount,
+        })
+    }
+
+    pub(crate) fn permits_enrollment(&self, peer: &PeerIdentity) -> bool {
+        match self.access {
+            AccountAccess::Separate { .. } => self.matches_operator(peer),
+            AccountAccess::SameAccount => peer.uid == 0 && peer.gid == 0,
+        }
+    }
+
+    pub(crate) fn permits_assertion(&self, peer: &PeerIdentity) -> bool {
+        self.matches_operator(peer)
+    }
+
+    fn matches_operator(&self, peer: &PeerIdentity) -> bool {
+        peer.uid == self.uid && peer.gid == self.gid
     }
 }
 
@@ -77,17 +111,22 @@ pub fn inspect_peer(stream: &UnixStream) -> Result<PeerIdentity, PeerError> {
     })
 }
 
-/// Deny a connection from the agent principal or any unexpected effective UID
-/// or GID. Successful connection matching alone is not a host or approval token.
+/// Inspect the connected peer and enforce the selected account policy. In
+/// same-account mode root/wheel can only bootstrap enrollment; callers must
+/// still enforce the per-ceremony permission. Identity alone is not approval.
 pub fn check_operator_peer(
     stream: &UnixStream,
     expected: &ExpectedOperator,
 ) -> Result<PeerIdentity, PeerError> {
     let peer = inspect_peer(stream)?;
-    if peer.uid == expected.agent_uid {
-        return Err(PeerError::SharedPrincipal);
+    match expected.access {
+        AccountAccess::Separate { agent_uid } if peer.uid == agent_uid => {
+            return Err(PeerError::SharedPrincipal);
+        }
+        AccountAccess::SameAccount if peer.uid == 0 && peer.gid == 0 => return Ok(peer),
+        _ => (),
     }
-    if peer.uid != expected.uid || peer.gid != expected.gid {
+    if !expected.matches_operator(&peer) {
         return Err(PeerError::UnexpectedPrincipal);
     }
     Ok(peer)
@@ -155,5 +194,32 @@ mod tests {
                 Err(PeerError::UnexpectedPrincipal)
             );
         }
+    }
+
+    #[test]
+    fn same_account_bootstrap_policy_requires_exact_root_wheel_peer() {
+        let policy = ExpectedOperator::same_account(41001, 41002).unwrap();
+        let bootstrap = PeerIdentity { uid: 0, gid: 0 };
+        assert!(policy.permits_enrollment(&bootstrap));
+        assert!(!policy.permits_assertion(&bootstrap));
+        for peer in [
+            PeerIdentity {
+                uid: 41001,
+                gid: 41002,
+            },
+            PeerIdentity { uid: 0, gid: 41002 },
+            PeerIdentity { uid: 41003, gid: 0 },
+        ] {
+            assert!(!policy.permits_enrollment(&peer));
+        }
+        assert!(policy.permits_assertion(&PeerIdentity {
+            uid: 41001,
+            gid: 41002
+        }));
+        assert!(!policy.permits_assertion(&PeerIdentity {
+            uid: 41001,
+            gid: 41003
+        }));
+        assert!(ExpectedOperator::same_account(0, 0).is_err());
     }
 }
