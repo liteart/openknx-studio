@@ -292,8 +292,16 @@ Safari profile/origin remains an operator prerequisite and is not proven by
 startup checks. The guarded review package SHA-256 is
 `46866f0b5e3fb38c7dbb3eed7e5c4a90bd632225b911daafbc8f92aae93c79e5`;
 its private inventory is under `private/evidence/task153-guarded-package-20261107/`.
-Actual installation, root provisioning, passkey enrollment and hardware write
-remain NOT RUN. Installation or enrollment alone cannot start a write.
+At that review, installation, root provisioning, passkey enrollment and hardware
+write were NOT RUN. Installation or enrollment alone cannot start a write.
+
+On 2026-11-07 the owner installed the reviewed guarded package. Installer logs
+record a successful installation at 09:06:22 UTC; all three installed helper
+hashes and the disabled job hash match the reviewed package inventory. A later
+repeat attempt was refused at the preinstall no-overwrite check because those
+files already existed; no new partial installation was observed. Reinstallation
+is not required. Protected provisioning, service startup, passkey enrollment
+and the physical write remain NOT RUN.
 The local development installer was rebuilt as two narrow components after
 review found parent-permission and AppleDouble problems. Static inspection of
 the actual package, its BOM, contents, signatures and architecture passed

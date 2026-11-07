@@ -1,7 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Read-only installer refusal checks; no installation, repair or execution.
 #[cfg(target_os = "macos")]
-fn allowed() -> bool {
+#[derive(Debug, PartialEq, Eq)]
+struct Refusal {
+    code: &'static str,
+    path: &'static str,
+}
+
+#[cfg(target_os = "macos")]
+fn destination_absent(path: &std::path::Path) -> Result<(), &'static str> {
+    match std::fs::symlink_metadata(path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Ok(_) => Err("destination_exists"),
+        Err(_) => Err("destination_inspection_failed"),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn check() -> Result<(), Refusal> {
     use std::{fs, os::unix::fs::MetadataExt, path::Path};
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
     let destinations: &[&str] = match arguments.as_slice() {
@@ -13,10 +29,18 @@ fn allowed() -> bool {
         [argument] if argument == "--daemon" => {
             &["/Library/LaunchDaemons/org.openknxstudio.operator.plist"]
         }
-        _ => return false,
+        _ => {
+            return Err(Refusal {
+                code: "arguments_rejected",
+                path: "",
+            });
+        }
     };
     if nix::unistd::geteuid().as_raw() != 0 || nix::unistd::getegid().as_raw() != 0 {
-        return false;
+        return Err(Refusal {
+            code: "root_wheel_required",
+            path: "",
+        });
     }
     // Component roots match these exact pre-existing modes. A package never
     // chooses a replacement mode for a differently configured host.
@@ -27,30 +51,71 @@ fn allowed() -> bool {
     ] {
         if task153_broker_core::macos_config::inspect_root_owned_directory(Path::new(path)).is_err()
         {
-            return false;
+            return Err(Refusal {
+                code: "parent_protection_rejected",
+                path,
+            });
         }
         let Ok(metadata) = fs::symlink_metadata(path) else {
-            return false;
+            return Err(Refusal {
+                code: "parent_inspection_failed",
+                path,
+            });
         };
         if metadata.gid() != 0 || metadata.mode() & 0o7777 != mode {
-            return false;
+            return Err(Refusal {
+                code: "parent_group_or_mode_mismatch",
+                path,
+            });
         }
     }
     for path in destinations {
-        match fs::symlink_metadata(path) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
-            _ => return false,
-        }
+        destination_absent(Path::new(path)).map_err(|code| Refusal { code, path })?;
     }
-    true
+    Ok(())
 }
 fn main() {
     #[cfg(target_os = "macos")]
-    if allowed() {
-        return;
+    match check() {
+        Ok(()) => return,
+        Err(refusal) => {
+            eprintln!(
+                "Installer preflight refused [{}]: {}. This preflight made no changes.",
+                refusal.code, refusal.path
+            );
+            if refusal.code == "destination_exists" {
+                eprintln!(
+                    "Existing installed files are never overwritten. Compare the installed artifacts and package inventory before deciding whether installation is needed; do not delete files or retry blindly."
+                );
+            }
+        }
     }
+    #[cfg(not(target_os = "macos"))]
     eprintln!(
-        "Installer preflight refused; protected parents and absent destinations are required. This preflight made no changes."
+        "Installer preflight refused [platform_unsupported]. This preflight made no changes."
     );
     std::process::exit(1);
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn destination_diagnostics_distinguish_missing_and_existing_objects_without_changes() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("destination");
+        assert_eq!(destination_absent(&path), Ok(()));
+        std::fs::write(&path, b"existing artifact").unwrap();
+        assert_eq!(destination_absent(&path), Err("destination_exists"));
+        let link = directory.path().join("link");
+        symlink(&path, &link).unwrap();
+        assert_eq!(destination_absent(&link), Err("destination_exists"));
+        assert_eq!(
+            destination_absent(directory.path()),
+            Err("destination_exists")
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), b"existing artifact");
+    }
 }
