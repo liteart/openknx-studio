@@ -283,6 +283,17 @@ passed 114 tests and independent review reproduced focused scenarios; evidence
 is in `private/evidence/task153-callback-20261106/` (result SHA-256
 `1d27517b35d98bbcd99ee8c4de57853a8f54f2682a0a46d5f4e31e909e6e7c69`).
 Actual host qualification, installed operation and hardware remain NOT RUN.
+Following the owner's same-account direction, the exact-export service now
+registers guarded execution after actual protected startup checks, a fresh
+passkey assertion and durable one-use evidence. The ordinary build remains
+observation-only. The exact-export run passed 125 tests; independent reviewers
+checked the target restriction, UI failure reporting and source export. A fresh
+Safari profile/origin remains an operator prerequisite and is not proven by
+startup checks. The guarded review package SHA-256 is
+`46866f0b5e3fb38c7dbb3eed7e5c4a90bd632225b911daafbc8f92aae93c79e5`;
+its private inventory is under `private/evidence/task153-guarded-package-20261107/`.
+Actual installation, root provisioning, passkey enrollment and hardware write
+remain NOT RUN. Installation or enrollment alone cannot start a write.
 The local development installer was rebuilt as two narrow components after
 review found parent-permission and AppleDouble problems. Static inspection of
 the actual package, its BOM, contents, signatures and architecture passed

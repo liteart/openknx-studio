@@ -135,7 +135,7 @@ fn framed_synthetic_service_exchange_is_bounded_and_never_authorizing() {
         read_exact(&mut server, &mut body, deadline).unwrap();
         let request: Value = unique_json(&body).unwrap();
         assert_eq!(request, Mode::Assert.begin());
-        let response = serde_json::to_vec(&json!({"schema":1,"status":"assertion_ready","options":{"publicKey":{"challenge":"synthetic"}},"plan_summary":"Synthetic canonical plan","plan_digest":vec![1u8;32],"physical_authorization":false})).unwrap();
+        let response = serde_json::to_vec(&json!({"schema":1,"status":"assertion_ready","execution_mode":"observe_only","options":{"publicKey":{"challenge":"synthetic"}},"plan_summary":"Synthetic canonical plan","plan_digest":vec![1u8;32],"physical_authorization":false})).unwrap();
         write_all(
             &mut server,
             &(response.len() as u32).to_be_bytes(),
@@ -161,6 +161,37 @@ fn framed_synthetic_service_exchange_is_bounded_and_never_authorizing() {
         )
         .is_err()
     );
+}
+
+#[test]
+fn execution_reports_preserve_uncertainty_and_reject_false_success_or_unknown_outcomes() {
+    for case in [
+        "success",
+        "cleanup_uncertain",
+        "false_success",
+        "unknown_outcome",
+    ] {
+        let (mut client, mut server) = UnixStream::pair().unwrap();
+        let mut value = json!({"schema":1,"status":"guarded_execution_report","execution_mode":"guarded_write","succeeded":true,"execution":{"operation":"restored_verified","cleanup":"device_and_gateway_confirmed"}});
+        if case == "cleanup_uncertain" || case == "false_success" {
+            value["execution"]["cleanup"] = "uncertain".into();
+            value["succeeded"] = (case == "false_success").into();
+        }
+        if case == "unknown_outcome" {
+            value["execution"]["operation"] = "probably_ok".into();
+        }
+        let body = serde_json::to_vec(&value).unwrap();
+        server
+            .write_all(&(body.len() as u32).to_be_bytes())
+            .unwrap();
+        server.write_all(&body).unwrap();
+        let result = read_frame(&mut client, Instant::now() + Duration::from_secs(1));
+        if matches!(case, "false_success" | "unknown_outcome") {
+            assert!(matches!(result, Err(Error::InvalidReply)));
+        } else {
+            assert_eq!(result.unwrap(), value);
+        }
+    }
 }
 
 #[test]

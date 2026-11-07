@@ -4,7 +4,9 @@ fn main() {
     if let Err(error) =
         task153_broker_core::macos_service::run(std::env::args_os().skip(1).collect())
     {
-        eprintln!("Operator service unavailable ({error:?}); no device authorization issued.");
+        eprintln!(
+            "Operator service unavailable ({error:?}); inspect protected operation state before retrying."
+        );
         std::process::exit(1);
     }
     #[cfg(not(target_os = "macos"))]

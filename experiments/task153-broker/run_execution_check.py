@@ -58,6 +58,8 @@ def main():
     parser.add_argument("--fork", required=True, type=Path)
     parser.add_argument("--exacl", required=True, type=Path)
     args = parser.parse_args()
+    if os.geteuid() == 0:
+        raise ValueError("unprivileged development runner required; do not run as root")
     fork, exacl = args.fork.resolve(strict=True), args.exacl.resolve(strict=True)
     helper.inspect_fork(fork)
     if helper.git_bytes(exacl,"rev-parse","HEAD").decode().strip() != EXACL_REV or helper.git_bytes(exacl,"diff","HEAD","--"):
@@ -87,13 +89,22 @@ def main():
         for name in helper.INPUTS:
             shutil.copyfile(GUARD / name,guard / name)
             report["source_sha256"][f"task020-guard/{name}"] = helper.digest(guard / name)
-        # Visible source-only registrations. No shipping source/manifest/path
-        # override or production constructor is added to the editor package.
+        # Explicit development-only registrations. No shipping fork manifest or
+        # local path override is changed. This exported entrypoint can execute
+        # only after genuine installed startup and passkey checks succeed.
         with (broker / "src/lib.rs").open("a") as output:
             output.write('\n#[allow(dead_code)]\n#[path="../../task020-guard/integrated_guard.rs"]\nmod guard;\n#[allow(dead_code)]\n#[path="../../task020-guard/knust_adapter.rs"]\nmod knust_adapter;\n')
         shutil.copyfile(guard / "guard.rs",guard / "integrated_guard.rs")
         with (guard / "integrated_guard.rs").open("a") as output:
-            output.write('\n#[cfg(test)]\n#[path="actor_tests.rs"]\nmod actor_tests;\n#[allow(dead_code)]\n#[path="../task153-broker/src/guard_execution.rs"]\nmod protected_operator;\n')
+            output.write('\n#[cfg(test)]\n#[path="actor_tests.rs"]\nmod actor_tests;\n#[path="../task153-broker/src/guard_execution.rs"]\npub(crate) mod protected_operator;\n')
+        with (broker / "src/lib.rs").open("a") as output:
+            output.write('\npub fn run_registered_operator(arguments: Vec<std::ffi::OsString>) -> Result<(), macos_service::Error> { macos_service::run_with_execution(arguments, guard::protected_operator::handle_verified_operator_connection) }\n')
+        service_main = broker / "src/service_main.rs"
+        entrypoint = service_main.read_text()
+        before = "task153_broker_core::macos_service::run"
+        if entrypoint.count(before) != 1:
+            raise ValueError("service entrypoint registration rejected")
+        service_main.write_text(entrypoint.replace(before, "task153_broker_core::run_registered_operator"))
         manifest = (broker / "Cargo.toml").read_text()
         manifest = manifest.replace('exacl = { git = "https://github.com/byllyfish/exacl.git", rev = "'+EXACL_REV+'", default-features = false }','exacl = { path = '+json.dumps(str(acl_export))+', default-features = false }')
         manifest += '\n[dependencies.tokio]\nversion="=1.53.1"\ndefault-features=false\nfeatures=["rt","sync","time","macros"]\n[dependencies.knust]\npath='+json.dumps(str(exported))+'\ndefault-features=false\nfeatures=["dpt"]\n'
@@ -116,9 +127,10 @@ def main():
         report["temporary_lock_sha256"] = helper.digest(broker / "Cargo.lock")
         record()
         # Build the actual service entrypoint from this same registered crate,
-        # not only a library/test harness. This does not enable the uninhabited
-        # host qualification, run the service, or install/package anything.
-        execute(["cargo","build","--locked","--offline","--bin","task153-operator-service"],broker)
+        # not only a library/test harness. It registers guarded execution but
+        # never runs, installs, provisions or contacts a device here.
+        helpers = ["task153-operator-service", "task153-operator-browser", "task153-operator-enrollment", "task153-install-preflight"]
+        execute(["cargo","build","--locked","--offline",*[argument for name in helpers for argument in ("--bin",name)]],broker)
         service = work / "target/debug/task153-operator-service"
         if service.is_symlink() or not service.is_file() or not 0 < service.stat().st_size <= 134217728:
             raise ValueError("operator service artifact rejected")
@@ -133,11 +145,23 @@ def main():
             "path":str(copied_service.relative_to(work)),
             "sha256":helper.digest(copied_service),
             "size_bytes":copied_service.stat().st_size,
-            "host_qualification":"UNCONSTRUCTIBLE",
+            "host_qualification":"VERIFIED_INSTALLED_STARTUP_AND_PROTECTED_JOURNAL_REQUIRED",
+            "execution_entrypoint":"REGISTERED; genuine protected passkey assertion required",
             "service_started":"NOT RUN",
             "installation":"NOT RUN",
             "hardware":"NOT RUN",
         }
+        report["helper_artifacts"] = {service.name:{key:report["operator_service_artifact"][key] for key in ("path","sha256","size_bytes")}}
+        for name in helpers[1:]:
+            original = work / "target/debug" / name
+            if original.is_symlink() or not original.is_file() or not 0 < original.stat().st_size <= 134217728:
+                raise ValueError("operator helper artifact rejected")
+            copied = artifacts / name
+            shutil.copyfile(original,copied)
+            copied.chmod(0o755)
+            if helper.digest(copied) != helper.digest(original):
+                raise ValueError("copied operator helper changed")
+            report["helper_artifacts"][name] = {"path":str(copied.relative_to(work)),"sha256":helper.digest(copied),"size_bytes":copied.stat().st_size}
         record()
         execute(["cargo","build","--locked","--offline","--no-default-features","--features","dpt","--example","connected_management_simulator"],exported)
         metadata=json.loads(execute(["cargo","metadata","--locked","--offline","--format-version","1","--filter-platform","aarch64-apple-darwin"],broker))
@@ -153,6 +177,10 @@ def main():
         if (helper.digest(copied_service) != report["operator_service_artifact"]["sha256"]
                 or helper.digest(service) != report["operator_service_artifact"]["sha256"]):
             raise ValueError("operator service artifact changed during verification")
+        if any(helper.digest(work / record["path"]) != record["sha256"]
+               or helper.digest(work / "target/debug" / name) != record["sha256"]
+               for name,record in report["helper_artifacts"].items()):
+            raise ValueError("operator helper artifact changed during verification")
         for directory, key in [(exported,"fork_files"),(acl_export,"exacl_files")]:
             if any(helper.digest(directory / name) != value["sha256"] for name,value in report[key].items()):
                 raise ValueError("exported dependency changed during verification")

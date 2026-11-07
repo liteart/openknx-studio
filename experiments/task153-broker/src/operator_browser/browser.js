@@ -18,8 +18,11 @@
     const ready = await post("/ceremony", {});
     const enroll = ready.status === "enrollment_ready";
     if (ready.physical_authorization !== false || (!enroll && ready.status !== "assertion_ready")) throw new Error("Unexpected operator response.");
-    // This client remains observation-only until its live UI is qualified.
-    if (!enroll && ready.execution_mode !== "observe_only") throw new Error("Executing operator mode is unavailable in this client.");
+    const guarded = !enroll && ready.execution_mode === "guarded_write";
+    if (!enroll && !guarded && ready.execution_mode !== "observe_only") throw new Error("Unknown execution mode.");
+    document.getElementById("effect").textContent = guarded
+      ? "Approving this exact plan will WRITE the displayed property change and restoration on KNX device 1.1.231. Review all details before confirming."
+      : "This ceremony only enrolls or verifies a passkey. It performs no KNX operation.";
     document.getElementById("plan").textContent = enroll ? "Enroll the first operator passkey in the protected store. No device authorization is issued." : ready.plan_summary;
     document.getElementById("digest").textContent = enroll ? "" : "Plan SHA256: " + ready.plan_digest.map(byte => byte.toString(16).padStart(2,"0")).join("");
     const publicKey = ready.options.publicKey;
@@ -31,6 +34,7 @@
     status.textContent = "Review the details, then explicitly confirm with your passkey.";
     button.addEventListener("click", async () => {
       button.disabled = true; ack.disabled = true;
+      let submitted = false;
       try {
         const credential = enroll ? await navigator.credentials.create({publicKey}) : await navigator.credentials.get({publicKey});
         if (!credential) throw new Error("Passkey ceremony did not complete.");
@@ -38,10 +42,29 @@
         for (const field of ["attestationObject", "authenticatorData", "signature"]) if (credential.response[field]) response[field] = encode(credential.response[field]);
         if ("userHandle" in credential.response) response.userHandle = credential.response.userHandle ? encode(credential.response.userHandle) : null;
         const serialized = {id:credential.id, rawId:encode(credential.rawId), type:credential.type, response, extensions:credential.getClientExtensionResults()};
+        submitted = true;
         const result = await post("/finish", {credential:serialized});
-        if (result.physical_authorization !== false) throw new Error("Unexpected authorization response.");
-        status.textContent = result.status + ". No device authorization was issued.";
-      } catch (_) { status.textContent = "Ceremony failed or session expired. No device authorization was issued. Enrollment outcome may require protected operator inspection."; }
+        if (guarded) {
+          const operation = result.execution?.operation;
+          const cleanup = result.execution?.cleanup;
+          if (result.status !== "guarded_execution_report" || result.execution_mode !== "guarded_write"
+              || !["restored_verified", "rejected_before_adapter", "outcome_unknown"].includes(operation)
+              || !["device_and_gateway_confirmed", "device_only", "uncertain", "not_attempted"].includes(cleanup)
+              || result.succeeded !== (operation === "restored_verified" && cleanup === "device_and_gateway_confirmed")) throw new Error("Invalid operation report.");
+          status.textContent = result.succeeded
+            ? "Original value restored and independently read back. Device and gateway cleanup confirmed."
+            : operation === "rejected_before_adapter"
+              ? "Operation rejected before KNX adapter contact. Inspect protected state before another attempt."
+              : operation === "restored_verified"
+                ? "Original value readback verified; session cleanup is not confirmed. Inspect protected state before another attempt."
+                : "Device outcome is unknown. Inspect protected evidence; do not retry automatically.";
+        } else {
+          if (result.physical_authorization !== false) throw new Error("Unexpected authorization response.");
+          status.textContent = result.status + ". No device authorization was issued.";
+        }
+      } catch (_) { status.textContent = guarded && submitted
+        ? "Operation result unavailable; a write may have occurred. Inspect protected evidence and do not retry automatically."
+        : "Ceremony failed or session expired before an execution request was submitted. Enrollment outcome may require protected operator inspection."; }
     }, {once:true});
   } catch (_) { status.textContent = "Private operator session unavailable or expired. No device authorization was issued."; }
 })();

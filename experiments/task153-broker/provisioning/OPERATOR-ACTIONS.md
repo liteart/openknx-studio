@@ -1,9 +1,10 @@
 # Task153 local development package — review only
 
-The prepared package contains two ad-hoc hardened executables and a disabled
+The prepared package contains three ad-hoc hardened executables and a disabled
 launchd job. It is unsigned as an installer, not notarized, and establishes no
 publisher identity or human approval. Ad-hoc signing uses no user signing key.
-No private configuration, account, passkey or device access is included.
+No private configuration, account or passkey is included. Building, installing,
+starting the service and enrolling a passkey do not perform a device write.
 The product's supported architectures are the intersection reported by `lipo`
 for every actual packaged executable, including the installer preflight. The
 current local build is arm64-only; an x86_64 claim is not inferred from Rust
@@ -22,7 +23,13 @@ source and staging xattrs are never deleted. Metadata-free generated cpio
 archives omit staging AppleDouble companions; actual expanded payload, BOM and
 script entries are verified and recorded in `inventory.json`. This is an
 explicit packaging policy, not removal of security attributes from an input.
-The service still drops its assertion witness; real execution is unavailable.
+The normal source build remains observation-only. A reviewed exact-export
+service build instead registers the guarded executor: after real installed
+startup checks, protected enrollment and a genuine passkey assertion, it can
+execute the fixed property change/readback/restore/readback on device 1.1.231.
+Verify the exact artifact and its execution mode in the export evidence and
+package inventory. Do not treat `--assert` against this executing service as a
+passkey-only demonstration.
 
 1. Independently review the source, inventory.json, package hash, signatures,
    both component payloads/BOMs and their preinstall/preflight scripts. Building and hashing by the agent is
@@ -36,10 +43,16 @@ The service still drops its assertion witness; real execution is unavailable.
    has not been installed or run with privilege. An ordinary browser connection
    cannot enroll or replace a key. No password or PIN is
    requested by the preparer.
-3. In the existing account prepare a fresh Safari profile, with no existing
-   localhost:15300 Service Worker/site storage, extensions or agent-controlled
-   automation. Isolation and profile state require independent qualification;
-   neither this package nor its signature proves them.
+3. Before any enrollment or assertion, actually create and qualify a fresh
+   Safari profile in the existing account, with no pre-existing
+   localhost:15300 Service Worker/site storage or enabled extensions. Use its
+   first navigation for the reviewed operator bridge. An existing worker could
+   replace the page before its own JavaScript runs; a page-level controller
+   check is not proof of a clean origin. Do not enroll or assert while this
+   prerequisite is unverified. `VerifiedStartup`, the package signature and
+   manifest checks do not inspect or prove browser/profile cleanliness. The
+   accepted same-account limitation still includes unrestricted UI/browser
+   control by code under that account; this is not a claim of isolation from it.
 4. Before any installation, review actual parent-directory ownership and ACLs,
    launch environment/library validation, artifact provenance and existing
    fixed destinations. Existing files cause the read-only preinstall to refuse;
@@ -61,14 +74,22 @@ The service still drops its assertion witness; real execution is unavailable.
    digest/expiry. Do not commit actual identities, gateway, plan or keys. The
    package intentionally supplies none of these values and does not launch.
 7. Qualify installed ownership/ACL, kernel peer denial/acceptance and the actual
-   Safari enrollment/assertion before activation. QualifiedExecution still has
-   no constructor: a reviewed service activation change is required before a
-   real write. Do not remove a one-shot assertion record merely to retry.
+   Safari enrollment before the executing assertion. The integrated service's
+   private qualification constructor uses actual checked startup, exact plan
+   and fresh protected journal facts; it is not a caller-controlled flag or a
+   browser-isolation attestation. For the real test, read the physical-write
+   notice and entire plan, acknowledge it, then confirm the fresh passkey.
+   A missing final reply may follow physical effects: inspect the protected
+   evidence and never retry blindly. Do not remove a one-shot assertion record
+   merely to retry.
 
-The new same-account enrollment bootstrap is not yet included in the earlier
-two-helper package. Its reviewed installed binary and protected
-`enrollment_bootstrap` SHA256/CDHash pins must be provisioned before `--enroll`
-can work. Then the owner can run the installed browser with `--enroll` in their
+The current package includes the fixed `task153-operator-enrollment` as
+`/Library/PrivilegedHelperTools/org.openknxstudio.operator-enrollment`. Its
+actual archived SHA256/CDHash are recorded in the inventory and in the review-only
+`manifest-pin-fragments.json` file under `enrollment_bootstrap`. These pins must
+be independently reviewed and provisioned in the protected manifest before
+`--enroll` can work. The pin fragment is never installed or merged automatically.
+Then the owner can run the installed browser with `--enroll` in their
 own terminal. It invokes only the fixed helper through sudo without a shell or
 password input pipe; the owner enters authentication directly into sudo's TTY.
 `sudo -k` ignores cached authentication under sudoers policy and may affect that
@@ -77,22 +98,24 @@ under the same account remain outside the claimed human-only boundary. Do not
 execute this step from an agent tool or send the password/PIN to the agent.
 
 All root/account/profile/service/enrollment/physical actions above are NOT RUN.
-A future live test remains limited to the previously approved device 1.1.231,
+A live test remains limited to the previously approved device 1.1.231,
 with its immutable reviewed plan, fresh identity/current reads and independent
-write/readback/restore/readback plus confirmed cleanup. This package cannot
-perform that test. Windows and Linux packaging are NOT RUN.
+write/readback/restore/readback plus confirmed cleanup. A normal-source package
+cannot perform it; an exact-export executing package requires all of the
+runtime and operator prerequisites above. Actual hardware execution remains
+NOT RUN. Windows and Linux packaging are NOT RUN.
 
 Preparation (normal user, pinned toolchain, no installation):
 
 ```sh
-cargo build --offline --locked --manifest-path experiments/task153-broker/Cargo.toml --bin task153-operator-service --bin task153-operator-browser --bin task153-install-preflight
-python3 -B experiments/task153-broker/provisioning/prepare_package.py --bin-dir experiments/task153-broker/target/debug --output "$NEW_PRIVATE_OUTPUT_DIRECTORY"
+python3 -B experiments/task153-broker/provisioning/prepare_package.py --bin-dir "$EXACT_EXPORT/artifacts" --service-bin "$EXACT_EXPORT/artifacts/task153-operator-service" --service-evidence "$EXACT_EXPORT/result.json" --output "$NEW_PRIVATE_OUTPUT_DIRECTORY"
 ```
 
-For a reviewed exact-export service build, provide both `--service-bin` and
-`--service-evidence`. The preparer reads the original binary directly, checks
+The exact-export directory must be from a successful reviewed run; all four
+helper artifacts and `--service-evidence` are required. The preparer reads the
+original binary directly, checks
 its security attributes before copying, and verifies its original path, hash,
-size and disabled host qualification against the export's `result.json`.
+size and runtime-checked execution registration against the export's `result.json`.
 Evidence is read once with bounded no-follow access and duplicate-key rejection.
 The preparer requires the pinned dependency revisions, the successful expected
 build/test command sequence and toolchain, and rechecks every actual compiled
@@ -107,7 +130,8 @@ between evidence validation and copying aborts package creation.
 The inventory records the evidence hash and original service hash separately
 from the ad-hoc-signed package copy. Do not copy inputs into an unchecked
 intermediate directory or remove security attributes to make them acceptable.
-An export build still does not enable the unconstructible execution gate.
+An executing export registers the real guarded branch; it does not run the
+service, provision trust or satisfy the browser precondition by being built.
 These checks establish snapshot consistency, not cryptographic execution
 attestation: report/log contents and the build itself still require independent
 review. An agent-owned report is never hardware approval or provenance signed

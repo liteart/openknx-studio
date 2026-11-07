@@ -11,7 +11,7 @@ use std::ffi::OsString;
 use std::fs;
 use std::net::SocketAddrV4;
 use std::os::unix::fs::PermissionsExt;
-use std::os::unix::net::UnixListener;
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::Path;
 use std::str::FromStr;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -26,6 +26,24 @@ const SOCKET: &str = "/private/var/db/org.openknxstudio.operator/operator.sock";
 // synchronous filesystem commit may complete after this instant.
 const LIFETIME: Duration = Duration::from_secs(900);
 const MAX_SESSIONS: usize = 8;
+
+/// Opaque runtime evidence, created only after installed startup checks. This
+/// proves the checked service/configuration facts, not same-user UI isolation.
+pub(crate) struct VerifiedStartup {
+    plan: ConfiguredPlan,
+    policy: ExpectedOperator,
+}
+
+impl VerifiedStartup {
+    pub(crate) fn plan(&self) -> &ConfiguredPlan {
+        &self.plan
+    }
+    pub(crate) fn policy(&self) -> &ExpectedOperator {
+        &self.policy
+    }
+}
+
+type ConnectionHandler = fn(UnixStream, &VerifiedStartup) -> Result<(), operator_connection::Error>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -184,8 +202,8 @@ fn parse_plan(
 
 fn serve_connections(
     listener: &UnixListener,
-    plan: &ConfiguredPlan,
-    policy: &ExpectedOperator,
+    startup: &VerifiedStartup,
+    execute: Option<ConnectionHandler>,
     deadline: Instant,
     limit: usize,
 ) -> Result<(), Error> {
@@ -194,7 +212,18 @@ fn serve_connections(
         match listener.accept() {
             Ok((stream, _)) => {
                 sessions += 1;
-                let _ = operator_connection::handle_operator_connection(stream, plan, policy);
+                match execute {
+                    Some(handle) => {
+                        let _ = handle(stream, startup);
+                    }
+                    None => {
+                        let _ = operator_connection::handle_operator_connection(
+                            stream,
+                            startup.plan(),
+                            startup.policy(),
+                        );
+                    }
+                }
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                 std::thread::sleep(Duration::from_millis(20))
@@ -210,6 +239,23 @@ fn serve_connections(
 /// reviewed provisioning and a protected operator client are still required.
 /// Every connection remains non-authorizing and no KNX adapter is linked here.
 pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
+    run_with_connection(arguments, None)
+}
+
+/// Used only by the exact-source integrated entrypoint. Callers cannot supply
+/// a startup witness; this function obtains it through the same real checks.
+#[allow(dead_code)] // Registered only by the exact-source integrated build.
+pub(crate) fn run_with_execution(
+    arguments: Vec<OsString>,
+    execute: ConnectionHandler,
+) -> Result<(), Error> {
+    run_with_connection(arguments, Some(execute))
+}
+
+fn run_with_connection(
+    arguments: Vec<OsString>,
+    execute: Option<ConnectionHandler>,
+) -> Result<(), Error> {
     if arguments != [OsString::from("--operator-service-only")] {
         return Err(Error::Arguments);
     }
@@ -283,7 +329,18 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     let deadline = Instant::now().checked_add(LIFETIME).ok_or(Error::Io)?;
     // Closing the listener never unlinks paths. A stale endpoint blocks restart
     // until an independently reviewed operator cleanup has checked its identity.
-    serve_connections(&listener, &plan, &policy, deadline, MAX_SESSIONS)
+    let startup = VerifiedStartup { plan, policy };
+    serve_connections(&listener, &startup, execute, deadline, MAX_SESSIONS)
+}
+
+#[cfg(test)]
+pub(crate) fn synthetic_startup_fixture(
+    plan: ConfiguredPlan,
+    policy: ExpectedOperator,
+) -> VerifiedStartup {
+    // Test-only values are never installed-host evidence. Runtime qualification
+    // still checks actual effective identity and protected journal before use.
+    VerifiedStartup { plan, policy }
 }
 
 mod socket_access;

@@ -1,9 +1,9 @@
 # Task153 portable broker input contract
 
 This non-shipping Rust library defines the bounded input and configured-plan
-policy for a future protected operator service. A separately explicit macOS
-peer-diagnostic executable is present; it is not an executing broker and has
-no protected store, passkey enrollment, approval issuer or KNX adapter.
+policy and macOS operator service. The normal build observes only; the explicit
+exact-source build can register the fixed guarded operation described below.
+A separate peer-diagnostic executable has no enrollment or KNX adapter.
 `UnprovisionedBroker` always rejects a valid request with
 `protected_host_unavailable`; it does not open a journal or contact a device.
 There is no test fixture that turns this facade into a protected service.
@@ -652,7 +652,7 @@ exact Task020 guard copy. That child alone can construct the guard's private
 HumanApproval from a consuming PersistedAssertion witness. Only successful
 standard WebAuthn verification plus protected ledger persistence emits that
 witness in non-test code. It has no public constructor, serializer, Clone or
-observation-to-witness conversion; the default UI drops it and returns only its
+observation-to-witness conversion; the default observation handler drops it and returns only its
 non-authorizing observation. No grant constructor was added to Task020 or to
 an MCP/IPC operation. Task152's ordinary guard copy is left unmodified.
 
@@ -666,13 +666,17 @@ consumption, intent, uncertain-state and cleanup evidence. Its existing
 prewrite descriptor/current-property reads remain in force. A profile digest
 is correlation evidence, not unique hardware authentication.
 
-Production execution requires a sealed QualifiedExecution context. Its private
-marker is inhabited, but no production constructor exists until independently
-reviewed installation, principal,
-browser/profile and operator qualification are implemented. The default crate
-never registers this execution module. There is no executable flag or claimed
-manifest boolean to enable it. Its dormant root wrapper additionally requires
-root/wheel and a descriptor-checked fixed execution directory under the
+The explicit exact-source service now obtains an opaque `VerifiedStartup`
+only after actual root identity, installed path, native running-code pin,
+protected executable/manifest/plan, configured operator policy, store and
+socket checks. Its fields are private and no deserializer or IPC constructor
+exists. The normal source entrypoint remains observation-only. The generated
+exact-source entrypoint registers the private executing callback; there is no
+caller-controlled qualification flag or approval-token import.
+
+After actual passkey verification and ledger persistence, the callback creates
+sealed plan-bound `QualifiedExecution` from that startup evidence and requires
+root/wheel and a descriptor-checked fresh execution directory under the
 protected store, root-owned mode0700 with no allow ACL. That descriptor stays
 alive through execution. The one-shot wrapper now scans that directory through
 the checked descriptor and rejects every existing entry, including hidden
@@ -685,7 +689,7 @@ assumption that privileged actors do not maliciously replace the root-protected
 ancestry. Root substitution and installed-root confinement were **NOT RUN**;
 this source preparation establishes neither qualified host nor hardware access.
 
-The combined offline run passed108 Rust tests, including the actual typed
+An earlier combined offline run passed108 Rust tests, including the actual typed
 adapter/owned fork loopback peer driven by a genuine synthetic WebAuthn
 assertion and actual filesystem counter record: exactly two writes (04,00),
 four property reads, four descriptor reads and separately confirmed device and
@@ -708,15 +712,22 @@ cleanup is not complete success. Setup rejection and session uncertainty are
 distinguished. No write is interrupted solely because the reply deadline
 expires; a lost final reply may follow effects and must not cause blind retry.
 
-There is still no production qualification constructor or startup registration.
-The marker is now inhabited and private rather than a zero-variant enum;
-synthetic construction occurs only in tests. The compiler may still elide
-unreachable executor code, so build completion does not prove an active binary
-path. The current Safari client explicitly rejects guarded-execution mode
-before requesting a credential. Live mode and UI require later qualification.
+The runtime constructor checks startup-bound plan digest, actual privilege and
+the protected journal; it does not attest to browser state or same-user UI
+isolation. The owner's same-account limitation remains explicit. The Safari
+client displays a physical-write notice for device 1.1.231 in guarded mode and
+still requires the review checkbox and a fresh passkey gesture. Installation,
+service start and enrollment alone cannot trigger a write. A lost final reply
+after credential submission is reported as potentially applied, never as proof
+of no effect and never automatically retried.
+The fresh, extension-free Safari profile and clean localhost origin are still
+mandatory independently qualified operator prerequisites before enrollment or
+assertion; no installed startup object claims to verify them. A pre-existing
+Service Worker could replace the page before that page could inspect itself.
 The loopback test exercises this same completion callback with a genuine
-synthetic persisted witness; the separate non-root test rejects a synthetic
-qualification before any UDP contact. Neither is installed-host evidence.
+synthetic persisted witness; the separate non-root test cannot obtain runtime
+qualification even with a test-only startup fixture and emits no UDP. Neither
+is installed-host evidence.
 
 Run with the pinned toolchain, a clean local fork checkout at the exact revision
 and the existing reviewed exacl checkout (source only):
@@ -726,16 +737,17 @@ python3 -B experiments/task153-broker/run_execution_check.py --fork "$PINNED_KNU
 ```
 
 The runner reports its temporary artifact directory and exact input hashes.
-It also builds the actual `task153-operator-service` entrypoint from the same
-registered exact-source crate and retains a hash-checked copy under
-`artifacts/` with its SHA-256 and size in `result.json`. This is a development
-build artifact, not a running or installed service. The compiled qualification
-has no production constructor and its normal handler still drops the witness; merely
-packaging this executable cannot enable a physical write.
+It builds all four package helpers from the same exact-source crate and retains
+hash-checked copies under `artifacts/`, with SHA-256 and size in `result.json`.
+The generated service entrypoint registers guarded execution, unlike the normal
+source binary. These are not running or installed services. The integrated
+artifact can execute the fixed plan only after protected installation/private
+provisioning, runtime checks and the genuine passkey assertion. Building the
+artifact or the package does not run it. The runner refuses root execution.
 An earlier normal broker run passed 67 library tests, six helper tests and two
 compile-fail doctests; default builds gain no adapter or network authority.
-Actual protected installation, profile qualification, service-to-executor
-activation and the real write remain **NOT RUN**. Their missing qualification
+Actual protected installation, same-account browser ceremony and the real
+write remain **NOT RUN**. Their missing qualification
 cannot be replaced by this passing synthetic integration.
 
 ## Dependencies and verification

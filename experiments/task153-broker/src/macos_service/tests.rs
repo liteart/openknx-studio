@@ -49,6 +49,19 @@ fn actual_nonroot_startup_and_arbitrary_arguments_are_denied() {
 }
 
 #[test]
+fn actual_nonroot_executing_entrypoint_cannot_create_startup_or_invoke_callback() {
+    fn never_called(_: UnixStream, _: &VerifiedStartup) -> Result<(), operator_connection::Error> {
+        panic!("unqualified callback must never run");
+    }
+    if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
+        assert_eq!(
+            run_with_execution(vec!["--operator-service-only".into()], never_called),
+            Err(Error::RootRequired)
+        );
+    }
+}
+
+#[test]
 fn fixed_reference_route_profile_descriptor_and_digest_are_all_required() {
     let selected = input();
     let digest = ConfiguredPlan::new(selected.clone()).unwrap().digest();
@@ -183,11 +196,15 @@ fn bounded_actual_local_listener_closes_denied_session_without_root_storage() {
         listener.set_nonblocking(true).unwrap();
         let mut client = UnixStream::connect(&path).unwrap();
         let plan = ConfiguredPlan::new(input()).unwrap();
+        let startup = synthetic_startup_fixture(
+            plan,
+            ExpectedOperator::new(0, 0, geteuid().as_raw()).unwrap(),
+        );
         assert_eq!(
             serve_connections(
                 &listener,
-                &plan,
-                &ExpectedOperator::new(0, 0, geteuid().as_raw()).unwrap(),
+                &startup,
+                None,
                 Instant::now() + Duration::from_secs(2),
                 1
             ),

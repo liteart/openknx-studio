@@ -144,7 +144,19 @@ fn read_frame(stream: &mut impl TimedIo, deadline: Instant) -> Result<Value, Err
     let mut bytes = vec![0; size];
     read_exact(stream, &mut bytes, deadline)?;
     let value: Value = unique_json(&bytes).map_err(|_| Error::InvalidReply)?;
-    if value["schema"] != 1 || value["physical_authorization"] != false {
+    if value["schema"] != 1 {
+        return Err(Error::InvalidReply);
+    }
+    if value["status"] == "guarded_execution_report" {
+        let report: crate::operator_connection::GuardedExecutionReply =
+            serde_json::from_value(value["execution"].clone()).map_err(|_| Error::InvalidReply)?;
+        if value["execution_mode"] != "guarded_write"
+            || value.get("physical_authorization").is_some()
+            || value["succeeded"] != report.succeeded()
+        {
+            return Err(Error::InvalidReply);
+        }
+    } else if value["physical_authorization"] != false {
         return Err(Error::InvalidReply);
     }
     Ok(value)
@@ -190,6 +202,10 @@ fn validate_ready(value: &Value, mode: Mode) -> Result<(), Error> {
     }
     if matches!(mode, Mode::Assert)
         && (!value["plan_summary"].is_string()
+            || !matches!(
+                value["execution_mode"].as_str(),
+                Some("observe_only" | "guarded_write")
+            )
             || value["plan_digest"].as_array().is_none_or(|digest| {
                 digest.len() != 32
                     || digest
@@ -312,6 +328,9 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
                         response["status"].as_str(),
                         Some("enrollment_activated" | "enrollment_committed_cleanup_uncertain")
                     ),
+                    Mode::Assert if ready["execution_mode"] == "guarded_write" => {
+                        response["status"] == "guarded_execution_report"
+                    }
                     Mode::Assert => response["status"] == "assertion_verified",
                 };
                 if !valid {

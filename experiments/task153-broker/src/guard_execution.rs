@@ -1,20 +1,37 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Registered ONLY as a private Task020 guard child by the exact-source runner.
-//! The shipping/default broker has no executor or qualification constructor.
+//! The default broker is observation-only; the integrated service qualifies
+//! actual protected startup and journal state before executing a verified plan.
 use super::dispatcher::{self, Clock, ExecutionReport};
 use super::{HumanApproval, Journal, Plan};
+use crate::macos_service::VerifiedStartup;
 use crate::operator_connection::{self, CleanupOutcome, GuardedExecutionReply, OperationOutcome};
 use crate::{ConfiguredPlan, knust_adapter::KnustAdapter, root_passkey::PersistedAssertion};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const JOURNAL: &str = "/private/var/db/org.openknxstudio.operator/execution";
-// Inhabited but sealed: there is no production constructor. Only independently
-// qualified installation, principal and browser/profile trust could justify a
-// future reviewed constructor. It is not deserializable or a manifest flag.
-struct HostQualificationMarker(());
 pub(crate) struct QualifiedExecution {
-    _qualification: HostQualificationMarker,
+    plan_digest: [u8; 32],
+    journal: std::fs::File,
+}
+
+fn qualify(
+    startup: &VerifiedStartup,
+    selected: &ConfiguredPlan,
+) -> Result<QualifiedExecution, Error> {
+    if nix::unistd::geteuid().as_raw() != 0 || nix::unistd::getegid().as_raw() != 0 {
+        return Err(Error::UnqualifiedHost);
+    }
+    if selected.digest() != startup.plan().digest() {
+        return Err(Error::PlanMismatch);
+    }
+    let journal = crate::macos_config::checked_fresh_execution_journal(Path::new(JOURNAL))
+        .map_err(|_| Error::JournalUnavailable)?;
+    Ok(QualifiedExecution {
+        plan_digest: selected.digest(),
+        journal,
+    })
 }
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Error {
@@ -34,20 +51,23 @@ impl Clock for WallClock {
     }
 }
 
-/// Actual private service-to-executor handoff. No normal service startup calls
-/// this wrapper and no production code can obtain its qualification argument.
-/// The callback owns both the one-use qualification and persisted witness.
-pub(crate) fn handle_qualified_operator_connection(
+/// Only the exact-source integrated entrypoint registers this callback. Its
+/// startup witness comes from real root/code/config/plan/socket checks. After
+/// operator peer and passkey verification, journal qualification is performed
+/// internally; wire input cannot construct this evidence or choose an effect.
+pub(crate) fn handle_verified_operator_connection(
     stream: std::os::unix::net::UnixStream,
-    configured: &ConfiguredPlan,
-    policy: &crate::macos_peer::ExpectedOperator,
-    qualified: QualifiedExecution,
+    startup: &VerifiedStartup,
 ) -> Result<(), operator_connection::Error> {
     operator_connection::handle_operator_connection_with_execution(
         stream,
-        configured,
-        policy,
+        startup.plan(),
+        startup.policy(),
         Some(move |plan: &ConfiguredPlan, witness| {
+            let qualified = match qualify(startup, plan) {
+                Ok(qualified) => qualified,
+                Err(error) => return execution_reply(Err(error)),
+            };
             // The service is synchronous. Never nest block_on in an existing
             // runtime or turn runtime setup failure into an execution attempt.
             if tokio::runtime::Handle::try_current().is_ok() {
@@ -100,25 +120,27 @@ fn execution_reply(result: Result<ExecutionReport, Error>) -> GuardedExecutionRe
     }
 }
 
-/// No production caller can construct the required host qualification. This is
-/// the real typed path for later integration, never an agent/MCP grant API.
+/// Qualification is private and plan-bound. The same-account policy does not
+/// claim UI isolation; the real passkey, protected enrollment and backend plan
+/// checks remain mandatory. This is never an agent/MCP grant API.
 pub(crate) async fn execute_qualified(
     configured: &ConfiguredPlan,
     witness: PersistedAssertion,
-    _qualified: QualifiedExecution,
+    qualified: QualifiedExecution,
 ) -> Result<ExecutionReport, Error> {
     if nix::unistd::geteuid().as_raw() != 0 || nix::unistd::getegid().as_raw() != 0 {
         return Err(Error::UnqualifiedHost);
     }
-    let directory = crate::macos_config::checked_fresh_execution_journal(Path::new(JOURNAL))
-        .map_err(|_| Error::JournalUnavailable)?;
+    if qualified.plan_digest != configured.digest() {
+        return Err(Error::PlanMismatch);
+    }
     // Every path component is root-owned and denies ordinary writes/allow ACLs;
     // root-only 0700 leaf confines the existing guard's path-based files. The
     // checked descriptor stays alive through execution. Malicious root/another
     // privileged actor is outside that provisioning assumption.
     let journal = Journal::open(Path::new(JOURNAL)).map_err(|_| Error::JournalUnavailable)?;
     let result = execute_selected(&journal, configured, witness, &WallClock).await;
-    drop(directory);
+    drop(qualified.journal);
     result
 }
 
@@ -313,7 +335,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn synthetic_qualification_on_unprivileged_host_rejects_before_any_udp_contact() {
+    async fn synthetic_startup_on_unprivileged_host_cannot_qualify_or_contact_udp() {
         assert_ne!(
             nix::unistd::geteuid().as_raw(),
             0,
@@ -323,15 +345,16 @@ mod tests {
         probe.set_nonblocking(true).unwrap();
         let configured =
             ConfiguredPlan::new(fixture_input(&probe.local_addr().unwrap().to_string())).unwrap();
-        let directory = tempfile::tempdir_in("/private/tmp").unwrap();
-        let parent = std::fs::File::open(directory.path()).unwrap();
-        let witness = crate::root_passkey::tests::persisted_assertion_fixture(&configured, &parent);
-        // Synthetic construction exists only here, never in normal code.
-        let qualification = QualifiedExecution {
-            _qualification: HostQualificationMarker(()),
-        };
-        let report = execution_reply(execute_qualified(&configured, witness, qualification).await);
-        assert_eq!(report, rejected_before_adapter());
+        let policy = crate::macos_peer::ExpectedOperator::same_account(
+            nix::unistd::geteuid().as_raw(),
+            nix::unistd::getegid().as_raw(),
+        )
+        .unwrap();
+        let startup = crate::macos_service::synthetic_startup_fixture(configured, policy);
+        assert!(matches!(
+            qualify(&startup, startup.plan()),
+            Err(Error::UnqualifiedHost)
+        ));
         assert_eq!(
             probe.recv(&mut [0; 1]).unwrap_err().kind(),
             std::io::ErrorKind::WouldBlock

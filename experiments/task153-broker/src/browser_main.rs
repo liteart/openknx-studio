@@ -5,7 +5,9 @@ fn main() {
         task153_broker_core::operator_browser::run(std::env::args_os().skip(1).collect())
     {
         // No request, token, credential, bootstrap path or service reply is logged.
-        eprintln!("Operator browser unavailable ({error:?}); no device authorization issued.");
+        eprintln!(
+            "Operator browser unavailable ({error:?}); operation status may be unknown. Inspect protected state; do not retry automatically."
+        );
         std::process::exit(1);
     }
     #[cfg(not(target_os = "macos"))]

@@ -25,7 +25,7 @@ const MAX_REPLY: usize = 65_536;
 const SESSION_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// Internal result, never an approval token or a caller-selected operation.
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[allow(dead_code)] // Constructed by the gated exact-source executor only.
 pub(crate) enum OperationOutcome {
@@ -34,7 +34,7 @@ pub(crate) enum OperationOutcome {
     OutcomeUnknown,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[allow(dead_code)] // Constructed by the gated exact-source executor only.
 pub(crate) enum CleanupOutcome {
@@ -44,7 +44,8 @@ pub(crate) enum CleanupOutcome {
     NotAttempted,
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct GuardedExecutionReply {
     pub(crate) operation: OperationOutcome,
     pub(crate) cleanup: CleanupOutcome,
