@@ -22,6 +22,10 @@ path = "src/browser_main.rs"
 name = "task153-install-preflight"
 path = "src/install_preflight.rs"
 
+[[bin]]
+name = "task153-operator-enrollment"
+path = "src/enrollment_main.rs"
+
 [workspace]
 
 [dependencies]

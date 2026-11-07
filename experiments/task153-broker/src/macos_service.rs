@@ -18,6 +18,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use task152_passkey_prototype::guard;
 
 const EXECUTABLE: &str = "/Library/PrivilegedHelperTools/org.openknxstudio.operator";
+pub(crate) const ENROLLMENT_EXECUTABLE: &str =
+    "/Library/PrivilegedHelperTools/org.openknxstudio.operator-enrollment";
 const STORE: &str = "/private/var/db/org.openknxstudio.operator";
 const SOCKET: &str = "/private/var/db/org.openknxstudio.operator/operator.sock";
 // Admission window, not a hard shutdown deadline: an admitted connection and
@@ -50,6 +52,19 @@ struct Manifest {
     operator_gid: u32,
     operator_acl_uuid: String,
     agent_uid: u32,
+    #[serde(default)]
+    enrollment_bootstrap: Option<EnrollmentBootstrapPins>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EnrollmentBootstrapPins {
+    executable_sha256: [u8; 32],
+    executable_cdhash: String,
+}
+
+fn valid_code_pins(sha256: &[u8; 32], cdhash: &str) -> bool {
+    *sha256 != [0; 32] && cdhash.len() == 40 && cdhash.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
 fn valid_gateway(gateway: &str) -> bool {
@@ -76,10 +91,44 @@ fn parse_manifest(bytes: &[u8]) -> Result<Manifest, Error> {
         || !socket_access::valid_acl_uuid(&manifest.operator_acl_uuid)
         || manifest.operator_uid == 0
         || manifest.agent_uid == 0
+        || manifest
+            .enrollment_bootstrap
+            .as_ref()
+            .is_some_and(|pins| !valid_code_pins(&pins.executable_sha256, &pins.executable_cdhash))
     {
         return Err(Error::ManifestRejected);
     }
     Ok(manifest)
+}
+
+/// Verify only the fixed enrollment helper. An installed pin provides integrity
+/// under protected provisioning, not proof that a human initiated the process.
+pub(crate) fn verify_enrollment_bootstrap() -> Result<(), Error> {
+    if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
+        return Err(Error::RootRequired);
+    }
+    if std::env::current_exe().map_err(|_| Error::InstallationUnavailable)?
+        != Path::new(ENROLLMENT_EXECUTABLE)
+    {
+        return Err(Error::InstallationUnavailable);
+    }
+    let snapshot =
+        macos_config::load_service_manifest().map_err(|_| Error::InstallationUnavailable)?;
+    let manifest = parse_manifest(snapshot.as_bytes())?;
+    if manifest.operator_uid != manifest.agent_uid {
+        return Err(Error::OperatorPolicyRejected);
+    }
+    let pins = manifest
+        .enrollment_bootstrap
+        .ok_or(Error::ManifestRejected)?;
+    verify_running_image(&pins.executable_cdhash)?;
+    if macos_config::hash_installed_service(Path::new(ENROLLMENT_EXECUTABLE))
+        .map_err(|_| Error::InstallationUnavailable)?
+        != pins.executable_sha256
+    {
+        return Err(Error::RunningImageRejected);
+    }
+    Ok(())
 }
 
 fn verify_running_image(cdhash: &str) -> Result<(), Error> {

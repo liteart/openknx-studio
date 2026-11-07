@@ -14,6 +14,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 mod bootstrap;
+mod enrollment;
 mod http;
 const SOCKET: &str = "/private/var/db/org.openknxstudio.operator/operator.sock";
 const ADDRESS: &str = "127.0.0.1:15300";
@@ -117,13 +118,23 @@ fn write_all(io: &mut impl TimedIo, mut bytes: &[u8], deadline: Instant) -> Resu
     }
     Ok(())
 }
-fn exchange(stream: &mut UnixStream, command: &Value, deadline: Instant) -> Result<Value, Error> {
+fn write_frame(stream: &mut impl TimedIo, command: &Value, deadline: Instant) -> Result<(), Error> {
+    write_bounded_frame(stream, command, MAX_FRAME, deadline)
+}
+fn write_bounded_frame(
+    stream: &mut impl TimedIo,
+    command: &Value,
+    maximum: usize,
+    deadline: Instant,
+) -> Result<(), Error> {
     let bytes = serde_json::to_vec(command).map_err(|_| Error::InvalidReply)?;
-    if bytes.len() > MAX_COMMAND {
+    if bytes.len() > maximum {
         return Err(Error::InvalidReply);
     }
     write_all(stream, &(bytes.len() as u32).to_be_bytes(), deadline)?;
-    write_all(stream, &bytes, deadline)?;
+    write_all(stream, &bytes, deadline)
+}
+fn read_frame(stream: &mut impl TimedIo, deadline: Instant) -> Result<Value, Error> {
     let mut size = [0; 4];
     read_exact(stream, &mut size, deadline)?;
     let size = u32::from_be_bytes(size) as usize;
@@ -137,6 +148,10 @@ fn exchange(stream: &mut UnixStream, command: &Value, deadline: Instant) -> Resu
         return Err(Error::InvalidReply);
     }
     Ok(value)
+}
+fn exchange(stream: &mut impl TimedIo, command: &Value, deadline: Instant) -> Result<Value, Error> {
+    write_bounded_frame(stream, command, MAX_COMMAND, deadline)?;
+    read_frame(stream, deadline)
 }
 fn connect_service(path: &Path, deadline: Instant) -> Result<UnixStream, Error> {
     remaining(deadline)?;
@@ -192,7 +207,7 @@ struct Finish {
     credential: Value,
 }
 
-/// Run only in the separately provisioned operator login/session. The protected
+/// Run in the configured operator account. The protected
 /// service must accept this connection before a secret or bootstrap is created.
 /// An operator browser bridge is not approval or permission to execute KNX.
 pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
@@ -206,9 +221,20 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     }
     let deadline = Instant::now().checked_add(LIFETIME).ok_or(Error::Timeout)?;
     let connect_deadline = deadline.min(Instant::now() + Duration::from_secs(2));
-    let mut service = connect_service(Path::new(SOCKET), connect_deadline)?;
-    require_root_server(&service)?;
-    let ready = exchange(&mut service, &mode.begin(), deadline)?;
+    let (mut service, ready) = match mode {
+        Mode::Assert => {
+            let stream = connect_service(Path::new(SOCKET), connect_deadline)?;
+            require_root_server(&stream)?;
+            let mut connection = enrollment::Connection::Direct(stream);
+            let ready = exchange(&mut connection, &mode.begin(), deadline)?;
+            (connection, ready)
+        }
+        Mode::Enroll => {
+            let mut connection = enrollment::Connection::start()?;
+            let ready = read_frame(&mut connection, deadline)?;
+            (connection, ready)
+        }
+    };
     validate_ready(&ready, mode)?;
     let listener = TcpListener::bind(ADDRESS).map_err(|_| Error::EndpointUnavailable)?;
     listener.set_nonblocking(true).map_err(|_| Error::Io)?;
@@ -312,6 +338,12 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
         }
     }
     Err(Error::Denied)
+}
+
+/// Dedicated installed root helper entry point. It only relays one first-key
+/// enrollment ceremony and cannot select a plan, assert, or execute a device.
+pub fn run_enrollment_bootstrap(arguments: Vec<OsString>) -> Result<(), Error> {
+    enrollment::run(arguments)
 }
 
 #[cfg(test)]

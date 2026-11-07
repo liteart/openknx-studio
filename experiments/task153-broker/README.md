@@ -20,14 +20,43 @@ record; account matching by itself cannot create approval.
 Initial enrollment in this mode requires an actual root/wheel Unix peer,
 obtained through an independently OS-authenticated bootstrap. The normal
 same-account browser connection cannot start enrollment or replace its key.
-The bootstrap client is not yet implemented or exercised; no privileged
-operation or hardware path is enabled by this policy change.
+The fixed-purpose bootstrap client is implemented below but is not installed
+or exercised with privilege. No hardware path is enabled by this policy.
 
 This is not OS isolation from Codex or other code under the same account.
 Such code can invoke assertion endpoints, influence the same desktop/browser,
 or bypass application-only controls if it gains administrative authority.
 The human must complete the passkey provider's verification. Protected first
 enrollment and the existing exact-plan/runtime qualifications remain required.
+
+### First enrollment from the existing account
+
+The browser's `--enroll` mode starts one fixed installed helper through
+`/usr/bin/sudo -k -- /Library/PrivilegedHelperTools/org.openknxstudio.operator-enrollment`.
+It uses no shell, arbitrary helper arguments, askpass, password environment or
+`-S`. Authentication is handled by sudo through the user's terminal; the
+application neither requests nor reads the password. This command must be
+initiated by the owner after reviewed installation, not by an agent tool.
+The local Apple `sudo(8)` manual documents that `-k` ignores cached credentials
+for this command; policy can still waive authentication. This is not proof of
+human presence where passwordless elevation or other root access exists.
+
+The root helper refuses arguments, an unprivileged process, an uninstalled path,
+or missing protected pins. The existing protected manifest must include
+`enrollment_bootstrap` with the reviewed helper's `executable_sha256` and
+`executable_cdhash`; its running image and installed bytes must match. It only
+relays a fixed begin-enrollment and one typed finish-enrollment over bounded
+pipes to the root service. It cannot assert, select a device, write files
+directly, or forward arbitrary commands. Safari remains in the ordinary account.
+Pipe EOF, malformed frames and a lost final reply remain failures/uncertain
+enrollment outcomes; they never authorize automatic retry or a device operation.
+
+After installation and private provisioning are qualified, the owner's entry
+point is the existing browser helper with `--enroll`. This source increment
+does not install the new helper or supply trusted pins. Tests never invoke
+sudo or Safari: they validate the fixed command specification, real temporary
+pipes and sockets, synthetic standard registration and rejection of other
+operations. Actual OS authentication and protected enrollment remain NOT RUN.
 
 ## Implemented boundary
 

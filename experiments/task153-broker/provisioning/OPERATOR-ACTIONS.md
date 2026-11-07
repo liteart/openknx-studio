@@ -32,8 +32,9 @@ The service still drops its assertion witness; real execution is unavailable.
    This permits assertions against an already enrolled key but does not isolate
    the user from Codex or other code in that account. First enrollment still
    requires an actual root/wheel bootstrap connection after independent OS
-   authentication. That bootstrap client is not implemented; an ordinary
-   browser connection cannot enroll or replace a key. No password or PIN is
+   authentication. The source now includes a fixed-purpose bootstrap, but it
+   has not been installed or run with privilege. An ordinary browser connection
+   cannot enroll or replace a key. No password or PIN is
    requested by the preparer.
 3. In the existing account prepare a fresh Safari profile, with no existing
    localhost:15300 Service Worker/site storage, extensions or agent-controlled
@@ -63,6 +64,17 @@ The service still drops its assertion witness; real execution is unavailable.
    Safari enrollment/assertion before activation. QualifiedExecution still has
    no constructor: a reviewed service activation change is required before a
    real write. Do not remove a one-shot assertion record merely to retry.
+
+The new same-account enrollment bootstrap is not yet included in the earlier
+two-helper package. Its reviewed installed binary and protected
+`enrollment_bootstrap` SHA256/CDHash pins must be provisioned before `--enroll`
+can work. Then the owner can run the installed browser with `--enroll` in their
+own terminal. It invokes only the fixed helper through sudo without a shell or
+password input pipe; the owner enters authentication directly into sudo's TTY.
+`sudo -k` ignores cached authentication under sudoers policy and may affect that
+session's authentication timestamp. Passwordless/root access and arbitrary code
+under the same account remain outside the claimed human-only boundary. Do not
+execute this step from an agent tool or send the password/PIN to the agent.
 
 All root/account/profile/service/enrollment/physical actions above are NOT RUN.
 A future live test remains limited to the previously approved device 1.1.231,

@@ -244,6 +244,12 @@ now available. Protected enrollment must not run until an isolated browser
 profile and origin state, including absence of service workers and untrusted
 extensions, are independently qualified. Actual separate-user access and
 Safari enrollment remain NOT RUN; the bridge does not authorize KNX writes.
+For the owner's same-account direction, assertions may use the configured
+account while first enrollment requires a kernel-authenticated root peer. A
+fixed-purpose enrollment relay and user-operated OS authentication path are
+implemented and independently reviewed with synthetic tests; actual sudo/TTY,
+root provisioning, Safari enrollment and hardware remain NOT RUN. The helper
+must be included and pinned in a subsequently reviewed package before use.
 A one-shot assertion record now stores the exact plan and updated public
 credential before reporting a verified observation; existing records prevent
 reuse. Synthetic cryptographic/filesystem tests and independent review passed.

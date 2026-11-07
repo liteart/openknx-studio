@@ -240,3 +240,22 @@ fn native_acl_uuid_pin_is_required_canonical_and_nonzero() {
         "{00000000-0000-4000-8000-000000000001}"
     ));
 }
+
+#[test]
+fn optional_enrollment_helper_pins_are_strict_and_never_enable_assertion_authority() {
+    let mut record = serde_json::json!({"schema":1,"executable_sha256":vec![1u8;32],"executable_cdhash":"a".repeat(40),"plan_digest":vec![2u8;32],"gateway":"192.0.2.50:3671","operator_uid":41001,"operator_gid":41002,"operator_acl_uuid":"{00000000-0000-4000-8000-000000000001}","agent_uid":41001});
+    record["enrollment_bootstrap"] =
+        serde_json::json!({"executable_sha256":vec![3u8;32],"executable_cdhash":"b".repeat(40)});
+    assert!(parse_manifest(&serde_json::to_vec(&record).unwrap()).is_ok());
+    for pins in [
+        serde_json::json!({"executable_sha256":vec![0u8;32],"executable_cdhash":"b".repeat(40)}),
+        serde_json::json!({"executable_sha256":vec![3u8;32],"executable_cdhash":"always"}),
+        serde_json::json!({"executable_sha256":vec![3u8;32],"executable_cdhash":"b".repeat(40),"path":"/tmp/other"}),
+    ] {
+        record["enrollment_bootstrap"] = pins;
+        assert!(parse_manifest(&serde_json::to_vec(&record).unwrap()).is_err());
+    }
+    if geteuid().as_raw() != 0 || getegid().as_raw() != 0 {
+        assert_eq!(verify_enrollment_bootstrap(), Err(Error::RootRequired));
+    }
+}
