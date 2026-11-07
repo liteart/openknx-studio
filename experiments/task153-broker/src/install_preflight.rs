@@ -8,6 +8,7 @@ fn allowed() -> bool {
         [argument] if argument == "--helpers" => &[
             "/Library/PrivilegedHelperTools/org.openknxstudio.operator",
             "/Library/PrivilegedHelperTools/org.openknxstudio.operator-browser",
+            "/Library/PrivilegedHelperTools/org.openknxstudio.operator-enrollment",
         ],
         [argument] if argument == "--daemon" => {
             &["/Library/LaunchDaemons/org.openknxstudio.operator.plist"]

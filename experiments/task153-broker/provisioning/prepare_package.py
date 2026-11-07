@@ -20,6 +20,7 @@ COMPONENTS = {
     "helpers": ("/Library/PrivilegedHelperTools", 0o1755, {
         "task153-operator-service": LABEL,
         "task153-operator-browser": LABEL + "-browser",
+        "task153-operator-enrollment": LABEL + "-enrollment",
     }),
     "daemon": ("/Library/LaunchDaemons", 0o755, {}),
 }
@@ -29,6 +30,10 @@ PINNED_FORK_REVISION = "4d296afb0906d17b6724b56c912f2e9e3f6680a5"
 PINNED_FORK_TREE = "619fd4ff1e49e6f064a1d54f772bffb6dbf9c5f9"
 PINNED_EXACL_REVISION = "18275aa1a82aae9a786b108b0db0992a4d06e6e2"
 PINNED_EXACL_TREE = "8a283b273ca09aa8b1b0eac9dbfc71a94895c1b6"
+HELPER_NAMES = ("task153-operator-service", "task153-operator-browser",
+                "task153-operator-enrollment", "task153-install-preflight")
+GUARDED_QUALIFICATION = "VERIFIED_INSTALLED_STARTUP_AND_PROTECTED_JOURNAL_REQUIRED"
+GUARDED_ENTRYPOINT = "REGISTERED; genuine protected passkey assertion required"
 
 
 def run(arguments, *, cwd=None):
@@ -95,6 +100,14 @@ def product_architectures(components):
     if not common:
         raise ValueError("components have no common executable architecture")
     return sorted(common)
+
+
+def enrollment_manifest_fragment(helpers):
+    enrollment = helpers[LABEL + "-enrollment"]
+    return {"enrollment_bootstrap": {
+        "executable_sha256": list(bytes.fromhex(enrollment["sha256"])),
+        "executable_cdhash": enrollment["cdhash"],
+    }}
 
 
 def archive(root, destination, entries):
@@ -217,9 +230,12 @@ def actual_export_files(root, maximum):
 
 
 def validate_export(record, root):
+    guarded = record.get("operator_service_artifact", {}).get("host_qualification") == GUARDED_QUALIFICATION
+    build = ["cargo", "build", "--locked", "--offline"]
+    build += [item for name in (HELPER_NAMES if guarded else HELPER_NAMES[:1]) for item in ("--bin", name)]
     expected_commands = [
         ["rustc", "-vV"], ["cargo", "check", "--offline", "--lib"],
-        ["cargo", "build", "--locked", "--offline", "--bin", "task153-operator-service"],
+        build,
         ["cargo", "build", "--locked", "--offline", "--no-default-features", "--features", "dpt", "--example", "connected_management_simulator"],
         ["cargo", "metadata", "--locked", "--offline", "--format-version", "1", "--filter-platform", "aarch64-apple-darwin"],
         ["cargo", "test", "--locked", "--offline", "--lib", "--", "--test-threads=1"],
@@ -287,7 +303,7 @@ def validate_export(record, root):
             "execution_attestation": "NOT ESTABLISHED; report/log claims still require independent review"}
 
 
-def verified_service_input(binary, evidence):
+def verified_service_input(binary, evidence, binaries=None):
     if (binary is None) != (evidence is None):
         raise ValueError("service binary and exact-export evidence must be supplied together")
     if binary is None:
@@ -305,17 +321,46 @@ def verified_service_input(binary, evidence):
     checked = checked_input(binary)
     binary_bytes = read_snapshot(binary, 134217728)
     built = read_snapshot(evidence.absolute().parent / "target/debug/task153-operator-service", 134217728)
+    qualification = artifact.get("host_qualification")
+    guarded = qualification == GUARDED_QUALIFICATION
     if (checked["sha256"] != hashlib.sha256(binary_bytes).hexdigest()
             or checked["sha256"] != artifact["sha256"] or binary_bytes != built
             or len(binary_bytes) != artifact["size_bytes"]
-            or artifact["host_qualification"] != "UNCONSTRUCTIBLE"
+            or qualification not in ("UNCONSTRUCTIBLE", GUARDED_QUALIFICATION)
+            or (guarded and artifact.get("execution_entrypoint") != GUARDED_ENTRYPOINT)
             or artifact["service_started"] != "NOT RUN"
             or artifact["installation"] != "NOT RUN"
             or artifact["hardware"] != "NOT RUN"):
         raise ValueError("service evidence/artifact mismatch or unsupported qualification")
-    return binary, {"evidence_sha256": hashlib.sha256(evidence_bytes).hexdigest(), "artifact_sha256": checked["sha256"],
-                    "fork_revision": record["fork_revision"], "host_qualification": "UNCONSTRUCTIBLE",
+    helpers = {}
+    if guarded:
+        root = evidence.absolute().parent
+        if binaries is None or binaries.absolute() != root / "artifacts":
+            raise ValueError("guarded helpers must come from the same exact export")
+        records = record.get("helper_artifacts")
+        if not isinstance(records, dict) or set(records) != set(HELPER_NAMES):
+            raise ValueError("guarded helper inventory rejected")
+        for name in HELPER_NAMES:
+            item = records[name]
+            if set(item) != {"path", "sha256", "size_bytes"} or item["path"] != "artifacts/" + name:
+                raise ValueError("guarded helper artifact path/schema rejected")
+            path = root / "artifacts" / name
+            original = read_snapshot(path, 134217728)
+            source_build = read_snapshot(root / "target/debug" / name, 134217728)
+            inputs = checked_input(path)
+            digest = hashlib.sha256(original).hexdigest()
+            if (not original or original != source_build or digest != item["sha256"]
+                    or digest != inputs["sha256"] or len(original) != item["size_bytes"]):
+                raise ValueError("guarded helper artifact/build mismatch")
+            helpers[name] = {"sha256": digest, "size_bytes": len(original)}
+        if helpers["task153-operator-service"]["sha256"] != checked["sha256"]:
+            raise ValueError("guarded service/helper inventory mismatch")
+    result = {"evidence_sha256": hashlib.sha256(evidence_bytes).hexdigest(), "artifact_sha256": checked["sha256"],
+                    "fork_revision": record["fork_revision"], "host_qualification": qualification,
                     "service_started": "NOT RUN", "installation": "NOT RUN", "hardware": "NOT RUN", "export_audit": audit}
+    if guarded:
+        result.update({"execution_entrypoint": GUARDED_ENTRYPOINT, "helper_artifacts": helpers})
+    return binary, result
 
 
 def build_component(name, binaries, output, inventory, service_binary=None, service_evidence=None):
@@ -329,7 +374,9 @@ def build_component(name, binaries, output, inventory, service_binary=None, serv
               "files": {}, "scripts": {}}
     for binary, leaf in files.items():
         source = service_binary if binary == "task153-operator-service" and service_binary is not None else binaries / binary
-        expected = service_evidence["artifact_sha256"] if binary == "task153-operator-service" and service_evidence is not None else None
+        expected = service_evidence.get("helper_artifacts", {}).get(binary, {}).get("sha256") if service_evidence else None
+        if expected is None and binary == "task153-operator-service" and service_evidence is not None:
+            expected = service_evidence["artifact_sha256"]
         record["files"][leaf] = copy_binary(source, payload / leaf, expected)
     if name == "daemon":
         daemon = {"Label": LABEL,
@@ -341,7 +388,8 @@ def build_component(name, binaries, output, inventory, service_binary=None, serv
         plist.write_bytes(plistlib.dumps(daemon)); plist.chmod(0o644)
         record["files"][plist.name] = {"sha256": sha(plist), "mode": "0644"}
         run(["/usr/bin/plutil", "-lint", str(plist)])
-    record["scripts"]["preflight"] = copy_binary(binaries / "task153-install-preflight", scripts / "preflight")
+    preflight_sha = service_evidence.get("helper_artifacts", {}).get("task153-install-preflight", {}).get("sha256") if service_evidence else None
+    record["scripts"]["preflight"] = copy_binary(binaries / "task153-install-preflight", scripts / "preflight", preflight_sha)
     template = SOURCE / "preinstall"
     record["preinstall_input"] = checked_input(template)
     text = template.read_text()
@@ -419,13 +467,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bin-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--service-bin", type=Path)
-    parser.add_argument("--service-evidence", type=Path)
+    parser.add_argument("--service-bin", required=True, type=Path)
+    parser.add_argument("--service-evidence", required=True, type=Path)
     args = parser.parse_args()
     if sys.platform != "darwin" or os.geteuid() == 0:
         raise ValueError("normal macOS development principal required; do not run as root")
-    binaries = args.bin_dir.resolve(strict=True)
-    service_binary, service_evidence = verified_service_input(args.service_bin, args.service_evidence)
+    binaries = args.bin_dir.absolute()
+    service_binary, service_evidence = verified_service_input(args.service_bin, args.service_evidence, binaries)
     output = args.output.absolute()
     output.mkdir(mode=0o700)
     inventory = {"schema": 2, "purpose": "local development / no device execution",
@@ -434,7 +482,11 @@ def main():
                  "components": {}, "preparer_sha256": sha(Path(__file__))}
     if service_evidence is not None:
         inventory["exact_export_service"] = service_evidence
+        if service_evidence["host_qualification"] == GUARDED_QUALIFICATION:
+            inventory["purpose"] = "guarded physical write capable after configured exact-plan approval; local development"
+            inventory["physical_execution"] = "Target 1.1.231 only; verified installed startup, protected journal/plan and genuine durable passkey assertion required. Installation and enrollment alone do not dispatch."
     packages = [build_component(name, binaries, output, inventory, service_binary, service_evidence) for name in COMPONENTS]
+    inventory["manifest_pin_fragments"] = enrollment_manifest_fragment(inventory["components"]["helpers"]["files"])
     distribution = output / "Distribution"
     run(["/usr/bin/productbuild", "--synthesize", *[x for package in packages for x in ("--package", str(package))], str(distribution)])
     architectures = product_architectures(inventory["components"])
@@ -458,6 +510,10 @@ def main():
     inventory["package_sha256"] = sha(final)
     inventory["host_architectures"] = architectures
     inventory["existing_parent_preservation"] = "Static checks PASS: no ancestor entries; component root metadata matches mandatory preflight. Actual Installer execution NOT RUN."
+    # Review material only: never an active root manifest or installation step.
+    pin_bytes = (json.dumps(inventory["manifest_pin_fragments"], indent=2) + "\n").encode()
+    inventory["manifest_pin_fragments_sha256"] = hashlib.sha256(pin_bytes).hexdigest()
+    (output / "manifest-pin-fragments.json").write_bytes(pin_bytes)
     (output / "inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
     print(f"Prepared review package: {final}")
     print("No installation, account/service/profile changes, enrollment or hardware operation performed.")

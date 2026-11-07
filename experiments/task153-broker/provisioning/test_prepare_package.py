@@ -2,6 +2,8 @@
 """Focused regressions for the installer defects; no installation or root use."""
 import importlib.util
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,6 +15,15 @@ SPEC.loader.exec_module(PACKAGE)
 
 
 class PackagePolicyTests(unittest.TestCase):
+    def test_packaging_without_exact_export_arguments_fails_before_creating_output(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
+            destination = Path(directory) / "not-created"
+            result = subprocess.run([sys.executable, "-B", str(Path(PACKAGE.__file__)),
+                                     "--bin-dir", directory, "--output", str(destination)],
+                                    capture_output=True, timeout=5, check=False)
+            self.assertEqual(result.returncode, 2)
+            self.assertFalse(destination.exists())
+
     def test_security_metadata_is_rejected_before_copy_or_sign(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "input"
@@ -49,6 +60,8 @@ class PackagePolicyTests(unittest.TestCase):
         self.assertEqual(PACKAGE.COMPONENTS["helpers"][:2], ("/Library/PrivilegedHelperTools", 0o1755))
         self.assertEqual(PACKAGE.COMPONENTS["daemon"][:2], ("/Library/LaunchDaemons", 0o755))
         self.assertEqual(len(PACKAGE.COMPONENTS), 2)
+        self.assertEqual(PACKAGE.COMPONENTS["helpers"][2]["task153-operator-enrollment"],
+                         "org.openknxstudio.operator-enrollment")
 
     def test_distribution_architectures_are_intersection_of_actual_executables(self):
         components = {"example": {"files": {
@@ -59,6 +72,16 @@ class PackagePolicyTests(unittest.TestCase):
         components["example"]["scripts"]["preflight"]["architectures"] = ["x86_64"]
         with self.assertRaisesRegex(ValueError, "no common executable architecture"):
             PACKAGE.product_architectures(components)
+
+    def test_enrollment_pin_fragment_uses_only_the_fixed_archived_helper(self):
+        data = {PACKAGE.LABEL + "-enrollment": {"sha256": "12" * 32, "cdhash": "a" * 40},
+                PACKAGE.LABEL: {"sha256": "34" * 32, "cdhash": "b" * 40}}
+        fragment = PACKAGE.enrollment_manifest_fragment(data)
+        self.assertEqual(fragment, {"enrollment_bootstrap": {
+            "executable_sha256": [0x12] * 32, "executable_cdhash": "a" * 40}})
+        del data[PACKAGE.LABEL + "-enrollment"]
+        with self.assertRaises(KeyError):
+            PACKAGE.enrollment_manifest_fragment(data)
 
     def test_service_override_is_bound_to_original_exact_export_artifact(self):
         with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
@@ -140,6 +163,44 @@ class PackagePolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "metadata rejected"):
                     PACKAGE.copy_binary(source, target, PACKAGE.sha(source))
                 self.assertTrue(all(call.args[0][0] == "/usr/bin/xattr" for call in run.call_args_list))
+
+    def test_guarded_runtime_requires_all_helpers_from_one_exact_export(self):
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
+            root = Path(directory)
+            artifacts, built = root / "artifacts", root / "target/debug"
+            artifacts.mkdir(); built.mkdir(parents=True)
+            helpers = {}
+            for name in PACKAGE.HELPER_NAMES:
+                data = ("synthetic-" + name).encode()
+                (artifacts / name).write_bytes(data); (built / name).write_bytes(data)
+                helpers[name] = {"path": "artifacts/" + name, "sha256": PACKAGE.sha(artifacts / name), "size_bytes": len(data)}
+            service = dict(helpers["task153-operator-service"])
+            service.update({"host_qualification": PACKAGE.GUARDED_QUALIFICATION,
+                            "execution_entrypoint": PACKAGE.GUARDED_ENTRYPOINT,
+                            "service_started": "NOT RUN", "installation": "NOT RUN", "hardware": "NOT RUN"})
+            record = {"operator_service_artifact": service, "helper_artifacts": helpers,
+                      "fork_revision": PACKAGE.PINNED_FORK_REVISION}
+            evidence = root / "result.json"
+            evidence.write_text(json.dumps(record))
+            with patch.object(PACKAGE, "run", return_value="com.apple.provenance\n"), patch.object(PACKAGE, "validate_export", return_value={}):
+                binary = artifacts / "task153-operator-service"
+                _, verified = PACKAGE.verified_service_input(binary, evidence, artifacts)
+                self.assertEqual(set(verified["helper_artifacts"]), set(PACKAGE.HELPER_NAMES))
+                self.assertEqual(verified["host_qualification"], PACKAGE.GUARDED_QUALIFICATION)
+                with self.assertRaisesRegex(ValueError, "same exact export"):
+                    PACKAGE.verified_service_input(binary, evidence, root / "other-build")
+                (artifacts / "task153-operator-browser").write_bytes(b"mixed browser")
+                with self.assertRaisesRegex(ValueError, "artifact/build mismatch"):
+                    PACKAGE.verified_service_input(binary, evidence, artifacts)
+                (artifacts / "task153-operator-browser").write_bytes((built / "task153-operator-browser").read_bytes())
+                del record["helper_artifacts"]["task153-operator-enrollment"]
+                evidence.write_text(json.dumps(record))
+                with self.assertRaisesRegex(ValueError, "helper inventory rejected"):
+                    PACKAGE.verified_service_input(binary, evidence, artifacts)
+                record["operator_service_artifact"]["execution_entrypoint"] = "unconditional execution"
+                evidence.write_text(json.dumps(record))
+                with self.assertRaisesRegex(ValueError, "unsupported qualification"):
+                    PACKAGE.verified_service_input(binary, evidence, artifacts)
 
 
 if __name__ == "__main__":
