@@ -6,7 +6,7 @@ import test from "node:test";
 import vm from "node:vm";
 const source = await readFile(new URL("./src/operator_browser/browser.js", import.meta.url), "utf8");
 const html = await readFile(new URL("./src/operator_browser/browser.html", import.meta.url), "utf8");
-for (const [enrollment, guarded, outcome = "success"] of [[false, false], [true, false], [true, false, "verification"], [true, false, "storage"], [true, false, "badstage"], [false, true], [false, true, "lost"], [false, true, "cleanup"]]) {
+for (const [enrollment, guarded, outcome = "success"] of [[false, false], [true, false], [true, false, "verification"], [true, false, "storage"], [true, false, "badstage"], [true, false, "diagnostic"], [false, true], [false, true, "lost"], [false, true, "cleanup"]]) {
   test(`${guarded ? "guarded " + outcome : enrollment ? "enrollment" : "assertion"} preserves Safari POST origin and fresh click`, async () => {
     assert.match(html, /name="referrer" content="same-origin"/);
     const elements = new Map(["status", "approve", "ack", "plan", "digest", "effect"].map(id => [id, {
@@ -17,13 +17,15 @@ for (const [enrollment, guarded, outcome = "success"] of [[false, false], [true,
     const paths = [], prompts = [];
     const prompt = kind => {
       assert.equal(activation, true, "WebAuthn must begin synchronously in operator click");
-      assert.match(elements.get("plan").textContent, enrollment ? /Enroll the first operator/ : /Synthetic exact plan/);
+      assert.match(elements.get("plan").textContent, outcome === "diagnostic" ? /temporary diagnostic passkey/ : enrollment ? /Enroll the first operator/ : /Synthetic exact plan/);
       if (guarded) assert.match(elements.get("effect").textContent, /WRITE.*1\.1\.231/);
       prompts.push(kind);
       return Promise.resolve({id:"synthetic",rawId:new Uint8Array([1]).buffer,type:"public-key",
         response:enrollment ? {clientDataJSON:new Uint8Array([2]).buffer,attestationObject:new Uint8Array([3]).buffer} : {clientDataJSON:new Uint8Array([2]).buffer,authenticatorData:new Uint8Array([3]).buffer,signature:new Uint8Array([4]).buffer,userHandle:null},getClientExtensionResults:()=>({})});
     };
-    const enrollmentResult = outcome === "verification"
+    const enrollmentResult = outcome === "diagnostic"
+      ? {status:"diagnostic_registration_result",stage:"verified",physical_authorization:false,credential_persisted:false}
+      : outcome === "verification"
       ? {physical_authorization:false,status:"enrollment_failed",stage:"credential_verification",storage_state:"not_started_by_this_attempt"}
       : outcome === "storage"
         ? {physical_authorization:false,status:"enrollment_failed",stage:"storage",storage_state:"inspection_required"}
@@ -43,7 +45,7 @@ for (const [enrollment, guarded, outcome = "success"] of [[false, false], [true,
         assert.ok(!path.includes("a".repeat(64)));
         paths.push(path);
         if (path === "/finish" && guarded && outcome === "lost") throw new Error("Synthetic lost reply");
-        const value = path === "/ceremony" ? {physical_authorization:false,execution_mode:guarded?"guarded_write":"observe_only",status:enrollment?"enrollment_ready":"assertion_ready",plan_summary:"Synthetic exact plan",plan_digest:Array(32).fill(1),options:{publicKey:{challenge:"AQID",...(enrollment?{user:{id:"AQID"}}:{allowCredentials:[{id:"AQID"}]})}}} : guarded ? {status:"guarded_execution_report",execution_mode:"guarded_write",succeeded:outcome!=="cleanup",execution:{operation:"restored_verified",cleanup:outcome==="cleanup"?"uncertain":"device_and_gateway_confirmed"}} : enrollment ? enrollmentResult : {physical_authorization:false,status:"assertion_verified"};
+        const value = path === "/ceremony" ? {physical_authorization:false,diagnostic:outcome === "diagnostic",execution_mode:guarded?"guarded_write":"observe_only",status:enrollment?"enrollment_ready":"assertion_ready",plan_summary:"Synthetic exact plan",plan_digest:Array(32).fill(1),options:{publicKey:{challenge:"AQID",...(enrollment?{user:{id:"AQID"}}:{allowCredentials:[{id:"AQID"}]})}}} : guarded ? {status:"guarded_execution_report",execution_mode:"guarded_write",succeeded:outcome!=="cleanup",execution:{operation:"restored_verified",cleanup:outcome==="cleanup"?"uncertain":"device_and_gateway_confirmed"}} : enrollment ? enrollmentResult : {physical_authorization:false,status:"assertion_verified"};
         return {ok:true,json:async()=>value};
       },
     });
@@ -61,7 +63,8 @@ for (const [enrollment, guarded, outcome = "success"] of [[false, false], [true,
     assert.deepEqual(prompts,[enrollment?"create":"get"]);
     assert.match(elements.get("status").textContent, guarded
       ? outcome === "lost" ? /write may have occurred/ : outcome === "cleanup" ? /cleanup is not confirmed/ : /Original value restored.*cleanup confirmed/
-      : enrollment && outcome === "verification" ? /credential verification.*did not start protected storage/
+      : enrollment && outcome === "diagnostic" ? /Synthetic diagnostic: registration verified.*No credential was persisted/
+        : enrollment && outcome === "verification" ? /credential verification.*did not start protected storage/
         : enrollment && outcome === "storage" ? /protected storage.*may have changed/
           : enrollment && outcome === "badstage" ? /protected service reply.*inspection/
             : /No device authorization was issued/);

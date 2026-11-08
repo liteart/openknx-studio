@@ -276,3 +276,100 @@ fn optional_enrollment_helper_pins_are_strict_and_never_enable_assertion_authori
         assert_eq!(verify_enrollment_bootstrap(), Err(Error::RootRequired));
     }
 }
+
+#[test]
+fn accepted_nonblocking_listener_waits_for_delayed_registration_frame() {
+    fn delayed_handler(
+        mut stream: UnixStream,
+        _: &VerifiedStartup,
+    ) -> Result<(), operator_connection::Error> {
+        use nix::fcntl::{FcntlArg, OFlag, fcntl};
+        use std::os::fd::AsFd;
+        let flags = fcntl(stream.as_fd(), FcntlArg::F_GETFL).unwrap();
+        assert!(
+            !OFlag::from_bits_retain(flags).contains(OFlag::O_NONBLOCK),
+            "accepted stream must use blocking ceremony I/O"
+        );
+        let start = Instant::now();
+        operator_connection::diagnostic_read_registration_begin(
+            &mut stream,
+            start + Duration::from_secs(1),
+        )?;
+        assert!(start.elapsed() >= Duration::from_millis(20));
+        Ok(())
+    }
+    use std::io::Write;
+    let directory = tempfile::Builder::new()
+        .prefix("task153-delayed-accept-")
+        .tempdir_in("/private/tmp")
+        .unwrap();
+    let path = directory.path().join("socket");
+    let listener = UnixListener::bind(&path).unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let mut client = UnixStream::connect(&path).unwrap();
+    let writer = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(50));
+        let bytes = br#"{"schema":1,"command":{"operation":"begin_enrollment","issuer":"operator-browser"}}"#;
+        client
+            .write_all(&(bytes.len() as u32).to_be_bytes())
+            .unwrap();
+        client.write_all(bytes).unwrap();
+    });
+    let startup = synthetic_startup_fixture(
+        ConfiguredPlan::new(input()).unwrap(),
+        ExpectedOperator::new(0, 0, geteuid().as_raw()).unwrap(),
+    );
+    assert_eq!(
+        serve_connections(
+            &listener,
+            &startup,
+            Some(delayed_handler),
+            Instant::now() + Duration::from_secs(2),
+            1
+        ),
+        Ok(())
+    );
+    writer.join().unwrap();
+}
+
+#[test]
+fn accepted_blocking_ceremony_keeps_absolute_read_deadline() {
+    fn expiry_handler(
+        mut stream: UnixStream,
+        _: &VerifiedStartup,
+    ) -> Result<(), operator_connection::Error> {
+        let start = Instant::now();
+        assert_eq!(
+            operator_connection::diagnostic_read_registration_begin(
+                &mut stream,
+                start + Duration::from_millis(60)
+            ),
+            Err(operator_connection::Error::Timeout)
+        );
+        assert!(start.elapsed() >= Duration::from_millis(40));
+        assert!(start.elapsed() < Duration::from_secs(1));
+        Ok(())
+    }
+    let directory = tempfile::Builder::new()
+        .prefix("task153-expired-accept-")
+        .tempdir_in("/private/tmp")
+        .unwrap();
+    let path = directory.path().join("socket");
+    let listener = UnixListener::bind(&path).unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let _silent_client = UnixStream::connect(&path).unwrap();
+    let startup = synthetic_startup_fixture(
+        ConfiguredPlan::new(input()).unwrap(),
+        ExpectedOperator::new(0, 0, geteuid().as_raw()).unwrap(),
+    );
+    assert_eq!(
+        serve_connections(
+            &listener,
+            &startup,
+            Some(expiry_handler),
+            Instant::now() + Duration::from_secs(2),
+            1
+        ),
+        Ok(())
+    );
+}

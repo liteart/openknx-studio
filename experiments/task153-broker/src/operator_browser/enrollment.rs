@@ -46,9 +46,13 @@ fn bootstrap_command() -> Command {
 
 impl Connection {
     pub(super) fn start() -> Result<Self, Error> {
-        let mut child = bootstrap_command()
+        let child = bootstrap_command()
             .spawn()
             .map_err(|_| Error::BootstrapUnavailable)?;
+        Self::from_child(child)
+    }
+
+    pub(super) fn from_child(mut child: Child) -> Result<Self, Error> {
         let input = child.stdin.take().ok_or(Error::BootstrapUnavailable)?;
         let output = child.stdout.take().ok_or(Error::BootstrapUnavailable)?;
         Ok(Self::Enrollment(ProcessIo {
@@ -124,11 +128,25 @@ impl Drop for ProcessIo {
     }
 }
 
-struct StandardIo {
+pub(super) struct StandardIo {
     input: std::fs::File,
     output: std::fs::File,
 }
 impl StandardIo {
+    pub(super) fn from_stdio() -> Result<Self, Error> {
+        let input = std::io::stdin()
+            .as_fd()
+            .try_clone_to_owned()
+            .map(std::fs::File::from)
+            .map_err(|_| Error::Io)?;
+        let output = std::io::stdout()
+            .as_fd()
+            .try_clone_to_owned()
+            .map(std::fs::File::from)
+            .map_err(|_| Error::Io)?;
+        Self::from_files(input, output)
+    }
+
     fn from_files(input: std::fs::File, output: std::fs::File) -> Result<Self, Error> {
         use std::os::unix::fs::FileTypeExt;
         if !input
@@ -181,7 +199,7 @@ enum EnrollmentFinish {
     },
 }
 
-fn validate_finish(value: Value) -> Result<Value, Error> {
+pub(super) fn validate_finish(value: Value) -> Result<Value, Error> {
     let request: EnrollmentRequest = serde_json::from_value(value).map_err(|_| Error::Denied)?;
     if request.schema != 1 {
         return Err(Error::Denied);
@@ -191,18 +209,36 @@ fn validate_finish(value: Value) -> Result<Value, Error> {
 }
 
 fn relay(io: &mut impl TimedIo, service: &mut UnixStream, deadline: Instant) -> Result<(), Error> {
+    relay_with_validation(io, service, deadline, validate_enrollment_result, |_| ())
+}
+
+pub(super) fn relay_with_validation(
+    io: &mut impl TimedIo,
+    service: &mut UnixStream,
+    deadline: Instant,
+    validate: fn(&Value) -> Result<(), Error>,
+    trace: fn(&'static str),
+) -> Result<(), Error> {
+    trace("relay_begin");
     let ready = exchange(service, &Mode::Enroll.begin(), deadline)?;
     validate_ready(&ready, Mode::Enroll)?;
     write_frame(io, &ready, deadline)?;
-    let finish = validate_finish(read_request_frame(io, deadline)?)?;
+    trace("relay_waiting_finish");
+    let finish = read_request_frame(io, deadline)?;
+    trace("relay_finish_frame_received");
+    let finish = validate_finish(finish)?;
+    trace("relay_finish_decoded");
     let result =
         exchange(service, &finish, deadline).map_err(|_| Error::EnrollmentReplyUnavailable)?;
-    validate_enrollment_result(&result)?;
-    write_frame(io, &result, deadline)
+    trace("relay_service_reply_received");
+    validate(&result)?;
+    write_frame(io, &result, deadline)?;
+    trace("relay_reply_written");
+    Ok(())
 }
 
 // Requests do not carry the reply-only physical_authorization envelope.
-fn read_request_frame(io: &mut impl TimedIo, deadline: Instant) -> Result<Value, Error> {
+pub(super) fn read_request_frame(io: &mut impl TimedIo, deadline: Instant) -> Result<Value, Error> {
     let mut size = [0; 4];
     read_exact(io, &mut size, deadline)?;
     let size = u32::from_be_bytes(size) as usize;
@@ -227,17 +263,7 @@ pub(super) fn run(arguments: Vec<OsString>) -> Result<(), Error> {
     require_root_server(&service)?;
     // Use unbuffered duplicated pipe descriptors: a buffered Stdout could keep
     // the ready frame until process exit while the browser waits for it.
-    let input = std::io::stdin()
-        .as_fd()
-        .try_clone_to_owned()
-        .map(std::fs::File::from)
-        .map_err(|_| Error::Io)?;
-    let output = std::io::stdout()
-        .as_fd()
-        .try_clone_to_owned()
-        .map(std::fs::File::from)
-        .map_err(|_| Error::Io)?;
-    let mut io = StandardIo::from_files(input, output)?;
+    let mut io = StandardIo::from_stdio()?;
     relay(&mut io, &mut service, deadline)
 }
 

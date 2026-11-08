@@ -207,7 +207,29 @@ fn read_request(stream: &mut UnixStream, deadline: Instant) -> Result<Request, E
     Ok(request)
 }
 
-fn write_reply(
+// Diagnostic access to the actual service request parser. These functions do
+// not authenticate, persist, approve or execute an operation.
+pub(crate) fn diagnostic_read_registration_begin(
+    stream: &mut UnixStream,
+    deadline: Instant,
+) -> Result<(), Error> {
+    match read_request(stream, deadline)?.command {
+        Command::BeginEnrollment { issuer } if issuer == "operator-browser" => Ok(()),
+        _ => Err(Error::InvalidRequest),
+    }
+}
+
+pub(crate) fn diagnostic_read_registration_finish(
+    stream: &mut UnixStream,
+    deadline: Instant,
+) -> Result<RegisterPublicKeyCredential, Error> {
+    match read_request(stream, deadline)?.command {
+        Command::FinishEnrollment { credential } => Ok(credential),
+        _ => Err(Error::InvalidRequest),
+    }
+}
+
+pub(crate) fn write_reply(
     stream: &mut UnixStream,
     value: &serde_json::Value,
     deadline: Instant,
@@ -239,14 +261,14 @@ fn now() -> Result<u64, Error> {
         .map_err(|_| Error::ClockUnavailable)
 }
 
-struct Registration {
+pub(crate) struct Registration {
     webauthn: Webauthn,
     state: PasskeyRegistration,
     issued: Instant,
 }
 
 impl Registration {
-    fn begin() -> Result<(Self, CreationChallengeResponse), Error> {
+    pub(crate) fn begin() -> Result<(Self, CreationChallengeResponse), Error> {
         let webauthn = operator_webauthn().map_err(|_| Error::VerificationFailed)?;
         let (options, state) = webauthn
             .start_passkey_registration(Uuid::new_v4(), "operator", "OpenKNX Studio operator", None)
@@ -261,7 +283,7 @@ impl Registration {
         ))
     }
 
-    fn finish(self, credential: RegisterPublicKeyCredential) -> Result<Passkey, Error> {
+    pub(crate) fn finish(self, credential: RegisterPublicKeyCredential) -> Result<Passkey, Error> {
         if self.issued.elapsed() >= SESSION_TIMEOUT {
             return Err(Error::Timeout);
         }

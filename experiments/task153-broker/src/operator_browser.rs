@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 mod bootstrap;
 mod enrollment;
 mod http;
+mod registration_diagnostic;
 const SOCKET: &str = "/private/var/db/org.openknxstudio.operator/operator.sock";
 const ADDRESS: &str = "127.0.0.1:15300";
 const ORIGIN: &str = "http://localhost:15300";
@@ -282,6 +283,16 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
             (connection, ready)
         }
     };
+    serve(&mut service, ready, mode, deadline, false)
+}
+
+fn serve(
+    service: &mut impl TimedIo,
+    ready: Value,
+    mode: Mode,
+    deadline: Instant,
+    diagnostic: bool,
+) -> Result<(), Error> {
     validate_ready(&ready, mode)?;
     let listener = TcpListener::bind(ADDRESS).map_err(|_| Error::EndpointUnavailable)?;
     listener.set_nonblocking(true).map_err(|_| Error::Io)?;
@@ -350,16 +361,20 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
             Ok(http::Action::Finish) if viewed => {
                 let finish: Finish = unique_json(&request.body).map_err(|_| Error::InvalidHttp)?;
                 let response = exchange(
-                    &mut service,
+                    service,
                     &json!({"schema":1,"command":{"operation":mode.finish(),"credential":finish.credential}}),
                     deadline,
                 )?;
-                let valid = match mode {
-                    Mode::Enroll => validate_enrollment_result(&response).is_ok(),
-                    Mode::Assert if ready["execution_mode"] == "guarded_write" => {
-                        response["status"] == "guarded_execution_report"
+                let valid = if diagnostic {
+                    registration_diagnostic::validate_result(&response).is_ok()
+                } else {
+                    match mode {
+                        Mode::Enroll => validate_enrollment_result(&response).is_ok(),
+                        Mode::Assert if ready["execution_mode"] == "guarded_write" => {
+                            response["status"] == "guarded_execution_report"
+                        }
+                        Mode::Assert => response["status"] == "assertion_verified",
                     }
-                    Mode::Assert => response["status"] == "assertion_verified",
                 };
                 if !valid {
                     return Err(Error::InvalidReply);
@@ -395,3 +410,8 @@ pub fn run_enrollment_bootstrap(arguments: Vec<OsString>) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests;
+
+/// Ordinary-user, in-memory registration diagnostic. Never accesses the installed service.
+pub fn run_registration_diagnostic(arguments: Vec<OsString>) -> Result<(), Error> {
+    registration_diagnostic::run(arguments)
+}

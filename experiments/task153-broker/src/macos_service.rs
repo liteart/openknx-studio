@@ -252,6 +252,10 @@ fn parse_plan(
     Ok(plan)
 }
 
+pub(crate) fn prepare_accepted_stream(stream: &UnixStream) -> Result<(), Error> {
+    stream.set_nonblocking(false).map_err(|_| Error::Io)
+}
+
 fn serve_connections(
     listener: &UnixListener,
     startup: &VerifiedStartup,
@@ -263,6 +267,10 @@ fn serve_connections(
     while Instant::now() < deadline && sessions < limit {
         match listener.accept() {
             Ok((stream, _)) => {
+                // macOS inherits O_NONBLOCK from this admission listener.
+                // Ceremony I/O uses blocking reads/writes with absolute socket
+                // deadlines; otherwise waiting for the operator expires at once.
+                prepare_accepted_stream(&stream)?;
                 sessions += 1;
                 match execute {
                     Some(handle) => {

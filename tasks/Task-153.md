@@ -325,6 +325,16 @@ service later stopped at its bounded lifetime and its socket remains present.
 The owner's subsequent enrollment attempt returned `ServiceUnavailable`
 because the bounded service had already stopped; no enrollment request reached
 the service. Read-only checks found no listener and the expected stale socket.
+After operator cleanup and restart, a second actual enrollment again returned
+`Io` immediately after the owner's fingerprint confirmation; the protected
+store still contained no enrollment files. A nonprivileged Safari diagnostic
+using the same WebAuthn verifier succeeded with the owner's confirmation.
+On macOS, a separate real-socket reproduction showed that accepted connections
+inherit nonblocking mode and the synchronous service read returns immediately
+instead of waiting for the passkey response. The source now resets accepted
+streams to blocking; delayed-input and deadline regressions passed and were
+independently reviewed. This strongly supports the cause, but the corrected
+installed service and real enrollment remain NOT RUN.
 New source-only, non-secret enrollment-stage diagnostics were independently
 reviewed and tested; they are not yet installed, and timeout or pre-ready errors
 can still remain generic. Do not blindly retry or remove the socket.

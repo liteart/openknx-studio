@@ -17,13 +17,16 @@
     if (!/^[0-9a-f]{64}$/.test(secret) || !window.isSecureContext || !navigator.credentials) throw new Error("Private operator bootstrap or WebAuthn support unavailable.");
     const ready = await post("/ceremony", {});
     const enroll = ready.status === "enrollment_ready";
+    const diagnostic = enroll && ready.diagnostic === true;
     if (ready.physical_authorization !== false || (!enroll && ready.status !== "assertion_ready")) throw new Error("Unexpected operator response.");
     const guarded = !enroll && ready.execution_mode === "guarded_write";
     if (!enroll && !guarded && ready.execution_mode !== "observe_only") throw new Error("Unknown execution mode.");
-    document.getElementById("effect").textContent = guarded
+    document.getElementById("effect").textContent = diagnostic
+      ? "Synthetic local registration diagnostic. No protected service or KNX operation is used. The browser may save a temporary test passkey; this diagnostic does not persist its public credential."
+      : guarded
       ? "Approving this exact plan will WRITE the displayed property change and restoration on KNX device 1.1.231. Review all details before confirming."
       : "This ceremony only enrolls or verifies a passkey. It performs no KNX operation.";
-    document.getElementById("plan").textContent = enroll ? "Enroll the first operator passkey in the protected store. No device authorization is issued." : ready.plan_summary;
+    document.getElementById("plan").textContent = diagnostic ? "Create a temporary diagnostic passkey. This does not enroll the protected operator or authorize any device operation." : enroll ? "Enroll the first operator passkey in the protected store. No device authorization is issued." : ready.plan_summary;
     document.getElementById("digest").textContent = enroll ? "" : "Plan SHA256: " + ready.plan_digest.map(byte => byte.toString(16).padStart(2,"0")).join("");
     const publicKey = ready.options.publicKey;
     publicKey.challenge = decode(publicKey.challenge);
@@ -47,6 +50,12 @@
         submitted = true;
         phase = "protected service reply";
         const result = await post("/finish", {credential:serialized});
+        if (diagnostic) {
+          const stages = {verified:"registration verified", service_decode:"service credential decoding failed", credential_verification:"registration verification failed", session_expired:"registration expired"};
+          if (result.status !== "diagnostic_registration_result" || result.physical_authorization !== false || result.credential_persisted !== false || !Object.hasOwn(stages, result.stage)) throw new Error("Invalid diagnostic result.");
+          status.textContent = "Synthetic diagnostic: " + stages[result.stage] + ". No credential was persisted by this diagnostic; no device authorization was issued.";
+          return;
+        }
         if (enroll && result.status === "enrollment_failed") {
           const stages = {
             challenge:"challenge creation", finish_request:"finish request decoding",

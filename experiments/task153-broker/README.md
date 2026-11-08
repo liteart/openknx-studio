@@ -878,3 +878,66 @@ finish-failure forwarding, lost-reply handling and refusal to forward anything
 after an expired relay deadline. Local service expiry-report tests do not
 establish end-to-end delivery of an expiry diagnostic. Actual installation of this
 increment and a new operator ceremony are **NOT RUN**.
+
+## Nonprivileged Safari registration diagnostic
+
+`task153-registration-diagnostic` runs the same `Registration::begin/finish`
+WebAuthn library path, browser script/credential serialization, HTTP controls,
+nonblocking OS child stdin/stdout pipes, typed enrollment relay and actual
+service request parser without connecting to the installed operator service.
+The child connects only to its parent's private temporary Unix socket. It does not inspect or change protected enrollment state,
+invoke sudo, issue a grant, enumerate credentials, or contact KNX.
+
+Build locally with the pinned toolchain:
+
+```text
+cargo build --offline --locked --manifest-path experiments/task153-broker/Cargo.toml --bin task153-registration-diagnostic
+```
+
+After review, leave Safari's intended test profile active and run the resulting
+`experiments/task153-broker/target/debug/task153-registration-diagnostic`
+without arguments or sudo. It opens the same private bootstrap in Safari and
+uses the exact `http://localhost:15300` RP origin; close any ordinary operator
+browser bridge occupying that port first. It does not stop the root service.
+The page identifies itself as a synthetic diagnostic before the user chooses
+to create a temporary test passkey. Safari/macOS may save that temporary test
+passkey in its vault; this executable never saves its public credential.
+
+The only completed result is a closed stage code: `verified`, `service_decode`,
+`credential_verification`, or `session_expired`. Browser responses, credential
+identifiers, attestation contents and raw library errors are never logged or
+written to files. The private temporary bootstrap file contains only an
+unpredictable session token and is removed using the existing bootstrap
+cleanup. Registration state and returned public credential stay in memory and
+are dropped after the single attempt. An expired transport may still end with
+a bounded error rather than a completed stage report; no automatic retry occurs.
+
+This is a browser/verification diagnostic, not an installed-service enrollment
+or storage test. A passing synthetic authenticator test does not establish a
+Safari result; an actual user-operated Safari run is separately required.
+
+
+### Accepted socket mode regression
+
+On this macOS host, an accepted Unix socket inherits `O_NONBLOCK` from a
+nonblocking listener. The service's synchronous ceremony reader uses
+`SO_RCVTIMEO` and an absolute deadline; an inherited nonblocking descriptor
+returns `WouldBlock` immediately while the user is still confirming the
+passkey. The admission loop now explicitly sets every accepted stream to
+blocking mode before calling either handler. Its listener stays nonblocking.
+The absolute read deadline and peer/operation checks are unchanged.
+
+Two real temporary-socket regressions failed before this change (inherited flag
+and premature expiry), then passed with delayed input and a genuine bounded
+expiry. The diagnostic's real subprocess-pipe test performs the complete
+browser-shaped synthetic registration round-trip through both typed parsers,
+plus a failed-verification case. The diagnostic emits only fixed stage names
+to stderr. `--headless-test` is an offline test-driver mode using framed
+stdin/stdout; `--synthetic-pipe-relay` is the internal ordinary-user child mode
+and accepts only the private temporary diagnostic socket. Neither invokes a
+privileged helper or accesses protected enrollment state.
+
+This source-level reproduction explains the immediate transport failure; it
+does not claim the running installed service has been upgraded or enrollment
+has succeeded. A rebuilt, reviewed service and separate operator enrollment
+remain necessary for installed-path evidence.
