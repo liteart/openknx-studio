@@ -78,3 +78,7 @@ contract](https://doc.rust-lang.org/std/fs/struct.File.html#method.try_lock).
 Native Windows registry/concurrency/crash tests, physical-service wiring,
 power-loss behavior and hardware are NOT RUN. The compile fixture is evidence
 of type compatibility, not a claim that the protected broker uses this backend.
+
+The next test-only increment prepares [native actual-guard integration cases](NATIVE-GUARD-TESTS.md)
+over `WindowsStorage`, including independent processes, abrupt termination,
+partial publications and recovery. They remain NOT RUN until native execution.

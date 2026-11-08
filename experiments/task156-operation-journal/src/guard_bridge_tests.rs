@@ -16,6 +16,9 @@ use std::task::{Context, Poll, Waker};
 
 crate::guard_persistence_backend!(ActualGuardPersistence, actual_guard);
 
+#[cfg(all(windows, feature = "experimental-windows-storage"))]
+mod native;
+
 fn binding(operation: u8, approval: u8) -> Binding {
     Binding::new([1; 32], [operation; 32], [3; 32], [approval; 16]).unwrap()
 }
