@@ -127,3 +127,14 @@ but did not reproduce the build. Commands, runtime dependency and limits are
 in `private/evidence/task152-156-windows-cross-20261108/README.md`, SHA-256
 `b860fb14269d7fc7c307c42daf6b5a86e2945990358b65cfe1d539410450d72c`.
 Native Windows registry/process tests remain NOT RUN.
+
+After a review identified unbounded child waits, source `1cc2204029aabd8c98373c0a34b99afdaab78916`
+was integrated as `91bea8c` and independently checked. The corrected Windows
+test harness was cross-linked from `91bea8c7dc45b8e6f2ca49013c45d886cd8bfe01`;
+its SHA-256 is `cdcbf0e6229c772c53f8670d41008880d46544030bffc55cf39314f37c217d10`.
+The private build record is
+`private/evidence/task152-156-windows-cross-91bea8c-20261108/README.md`,
+SHA-256 `8f336ef413fc7b4522dae413af44900d2f8822d54cb7e72340b78f3a8143fc5b`.
+An independent static review verified artifact hashes and imports, not the
+build itself. This supersedes the earlier test executable; native execution
+remains NOT RUN.
