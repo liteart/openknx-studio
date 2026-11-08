@@ -119,3 +119,17 @@ Linux arm64 container on tmpfs. The image digest, environment and command are
 in `experiments/task152-passkey/TASK152-JOURNAL-PREFLIGHT.md`. Native-host
 filesystem durability, Linux socket/provider integration and power-loss
 behavior remain NOT RUN.
+
+An experimental Windows development-journal backend uses a per-user registry
+reservation and explicit flushes through the pinned `winsafe` wrapper. It is
+disabled by default; without `experimental-windows-journal`, Windows still
+rejects verifier construction before a ceremony. The owned Windows code
+forbids unsafe; the dependency contains inherited FFI and was reviewed as a
+dependency. Reviewed source `9b3027aab13b950e674638fc30d0b63aa853be72` was
+integrated as `392a97e`. Both feature-off and feature-on Windows GNU
+cross-checks passed, as did 60 macOS library tests and independent review.
+Native Windows registry, concurrency, restart and provider tests remain NOT
+RUN; the imported guard journal also remains separately unqualified on Windows.
+This opt-in is for qualification, not device authorization or Windows support.
+Commands, dependency provenance and limitations are in
+`experiments/task152-passkey/TASK152-WINDOWS-REGISTRY-JOURNAL.md`.
