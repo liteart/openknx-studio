@@ -9,7 +9,8 @@ use sha2::{Digest, Sha256};
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::os::unix::fs::MetadataExt;
+use std::os::fd::AsFd;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Component, Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -54,6 +55,94 @@ struct Receipt {
 struct Snapshot {
     bytes: Vec<u8>,
     owner: u32,
+}
+
+#[derive(Deserialize)]
+struct OperatorAclBinding {
+    operator_uid: u32,
+    operator_acl_uuid: String,
+}
+
+fn native_operator_acl_uuid(operator_uid: u32) -> Result<String, Error> {
+    use exacl::{AclEntry, AclOption, Perm, getfacl, setfacl};
+
+    if operator_uid == 0 {
+        return Err(Error::PolicyRejected);
+    }
+    // The public exacl interface performs the same native UID conversion used
+    // by the service. Query it on an empty, newly created descriptor inside a
+    // private scratch directory; never grant an ACL on an existing input.
+    let scratch = tempfile::Builder::new()
+        .prefix("openknx-operator-identity-")
+        .permissions(std::fs::Permissions::from_mode(0o700))
+        .tempdir_in("/private/tmp")
+        .map_err(|_| Error::Io)?;
+    // Avoid recursive path cleanup. Only the verified probe and directory below
+    // are removed; a failure retains the scratch directory for inspection.
+    let scratch_path = scratch.keep();
+    let parent =
+        File::from(open(&scratch_path, flags(true), Mode::empty()).map_err(|_| Error::Io)?);
+    fchown(&parent, None, Some(getegid())).map_err(|_| Error::Io)?;
+    fchmod(&parent, Mode::S_IRWXU).map_err(|_| Error::Io)?;
+    check_created(&parent, 0o700, true)?;
+    let parent_stamp = parent.metadata().map_err(|_| Error::Io)?;
+    let probe = File::from(
+        openat(
+            &parent,
+            "identity",
+            OFlag::O_RDWR | OFlag::O_CREAT | OFlag::O_EXCL | OFlag::O_NOFOLLOW | OFlag::O_CLOEXEC,
+            Mode::S_IRUSR | Mode::S_IWUSR,
+        )
+        .map_err(|_| Error::Io)?,
+    );
+    fchown(&probe, None, Some(getegid())).map_err(|_| Error::Io)?;
+    fchmod(&probe, Mode::S_IRUSR | Mode::S_IWUSR).map_err(|_| Error::Io)?;
+    check_created(&probe, 0o600, false)?;
+    let probe_stamp = nix::sys::stat::fstat(&probe).map_err(|_| Error::Io)?;
+    setfacl(
+        probe.as_fd(),
+        &[AclEntry::allow_user(
+            &operator_uid.to_string(),
+            Perm::WRITE,
+            None,
+        )],
+        None,
+    )
+    .map_err(|_| Error::PolicyRejected)?;
+    let entries =
+        getfacl(probe.as_fd(), Some(AclOption::NATIVE_ID)).map_err(|_| Error::PolicyRejected)?;
+    let native = match entries.as_slice() {
+        [entry]
+            if *entry == AclEntry::allow_user(&entry.name, Perm::WRITE, None)
+                && !entry
+                    .name
+                    .to_ascii_lowercase()
+                    .starts_with("{ffffeeee-dddd-cccc-bbbb-aaaa") =>
+        {
+            entry.name.clone()
+        }
+        _ => return Err(Error::PolicyRejected),
+    };
+    let current =
+        fstatat(&parent, "identity", AtFlags::AT_SYMLINK_NOFOLLOW).map_err(|_| Error::Io)?;
+    if current.st_dev != probe_stamp.st_dev || current.st_ino != probe_stamp.st_ino {
+        return Err(Error::PolicyRejected);
+    }
+    nix::unistd::unlinkat(&parent, "identity", nix::unistd::UnlinkatFlags::NoRemoveDir)
+        .map_err(|_| Error::Io)?;
+    let current_parent = std::fs::symlink_metadata(&scratch_path).map_err(|_| Error::Io)?;
+    if current_parent.dev() != parent_stamp.dev() || current_parent.ino() != parent_stamp.ino() {
+        return Err(Error::PolicyRejected);
+    }
+    std::fs::remove_dir(&scratch_path).map_err(|_| Error::Io)?;
+    Ok(native)
+}
+
+fn validate_operator_acl_binding(operator_uid: u32, expected_uuid: &str) -> Result<(), Error> {
+    if native_operator_acl_uuid(operator_uid)? != expected_uuid {
+        return Err(Error::PolicyRejected);
+    }
+    Ok(())
 }
 
 fn flags(directory: bool) -> OFlag {
@@ -273,6 +362,12 @@ pub fn run(args: Vec<OsString>) -> Result<(), Error> {
     }
     macos_service::validate_provisioning_inputs(&manifest.bytes, &plan.bytes, input.owner, now)
         .map_err(|_| Error::PolicyRejected)?;
+    // Full schema validation above establishes the field types. Re-project only
+    // the selected account binding; never enumerate accounts or trust a UUID
+    // merely because it has a syntactically valid shape.
+    let binding: OperatorAclBinding =
+        unique_json(&manifest.bytes).map_err(|_| Error::PolicyRejected)?;
+    validate_operator_acl_binding(binding.operator_uid, &binding.operator_acl_uuid)?;
     let parent =
         macos_config::checked_directory(Path::new(PARENT)).map_err(|_| Error::PolicyRejected)?;
     publish(&parent, &manifest.bytes, &plan.bytes, |_| Ok(()))?;

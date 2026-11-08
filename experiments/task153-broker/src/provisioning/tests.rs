@@ -13,6 +13,29 @@ fn fixture() -> (tempfile::TempDir, File) {
     (dir, file)
 }
 #[test]
+fn operator_acl_uuid_is_native_for_the_selected_uid_not_a_synthetic_pin() {
+    let uid = geteuid().as_raw();
+    assert_ne!(uid, 0, "unprivileged source tests only");
+    let native = native_operator_acl_uuid(uid).unwrap();
+    assert!(!native.starts_with("{ffffeeee-dddd-cccc-bbbb-aaaa"));
+    assert_eq!(validate_operator_acl_binding(uid, &native), Ok(()));
+    let synthetic = format!("{{ffffeeee-dddd-cccc-bbbb-aaaa{uid:08x}}}");
+    assert_eq!(
+        validate_operator_acl_binding(uid, &synthetic),
+        Err(Error::PolicyRejected)
+    );
+    let wrong = if native == "{00000000-0000-4000-8000-000000000001}" {
+        "{00000000-0000-4000-8000-000000000002}"
+    } else {
+        "{00000000-0000-4000-8000-000000000001}"
+    };
+    assert_eq!(
+        validate_operator_acl_binding(uid, wrong),
+        Err(Error::PolicyRejected)
+    );
+    assert_eq!(native_operator_acl_uuid(0), Err(Error::PolicyRejected));
+}
+#[test]
 fn actual_nonroot_and_unknown_arguments_cannot_reach_inputs_or_publication() {
     assert_eq!(run(vec![]), Err(Error::Arguments));
     assert_ne!(geteuid().as_raw(), 0, "unprivileged source tests only");

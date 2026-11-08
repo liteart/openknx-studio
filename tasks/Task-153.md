@@ -302,6 +302,19 @@ repeat attempt was refused at the preinstall no-overwrite check because those
 files already existed; no new partial installation was observed. Reinstallation
 is not required. Protected provisioning, service startup, passkey enrollment
 and the physical write remain NOT RUN.
+Subsequently, the owner provisioned the protected store and attempted service
+startup on 2026-11-07. Startup failed with `EndpointUnavailable` before the
+listener began accepting connections: the manifest's synthetic ACL UUID did
+not match macOS's native UUID for the configured account. A root-owned socket
+remained; no passkey ceremony or device operation was started. Protected
+journal state has not been independently inspected. The original test plan
+expired on 2026-11-07; repair must preserve any existing evidence and prepare a
+fresh exact plan. Do not retry startup or overwrite the store blindly.
+The provisioning source now verifies the configured account's native ACL UUID
+using the same descriptor-based mapping as the service and rejects synthetic
+fallbacks or mismatches. Seven focused tests and independent review passed;
+the root-owned store was not modified. Existing state still requires a separate
+reviewed recovery and a new unexpired plan.
 A fixed-purpose provisioning helper has been implemented and independently
 reviewed. It creates a new protected store from validated, hash-pinned private
 inputs without overwriting existing files; its temporary-filesystem tests and
