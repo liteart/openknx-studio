@@ -102,6 +102,19 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
 
+## Owner-reported hardware result — 2026-11-08
+
+After the protected service upgrade and passkey enrollment, the owner ran the
+approved exact-plan operation and reported that the browser displayed:
+“Original value restored and independently read back. Device and gateway
+cleanup confirmed.” The plan identifies the selected device-control property
+and the `00` to `04` to `00` sequence. The private owner-report record has
+SHA-256 `8315dac424c6098d6f25e65184060819fc9c04d9c473e0f2c1459b42ea089ed8`.
+This is owner-reported application output, not an independently inspected
+protected execution journal or bus capture. Do not repeat the operation to
+obtain evidence. Task acceptance and the remaining criteria still require
+review of the durable execution evidence and predecessor status.
+
 ## Bounded offline write primitive — 2026-11-06
 
 The generic fork primitive accepts explicit typed selectors and opaque caller

@@ -1,5 +1,13 @@
 # Task-153: Prototype a protected local operator broker for KNX writes
 
+On 2026-11-08 the owner successfully ran the reviewed service upgrade and
+completed protected passkey enrollment. The owner subsequently reported the
+Task020 browser's successful restoration and cleanup result. The protected
+execution journal has not been independently inspected; this report alone does
+not close this task or establish all acceptance criteria. See Task020 for the
+private report hash. Earlier NOT RUN statements below describe their respective
+historical checkpoints.
+
 ## Subject
 
 Build a protected operator approval and execution path for one exact KNX write plan.
