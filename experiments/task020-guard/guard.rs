@@ -11,9 +11,12 @@ use sha2::{Digest, Sha256};
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 const MAX_VALUE_BYTES: usize = 64;
 const MAX_RECORD_BYTES: u64 = 16_384;
+/// Every persistence adapter must enforce this bound before allocating a record.
+pub const MAX_JOURNAL_RECORD_BYTES: usize = MAX_RECORD_BYTES as usize;
 const MAX_OBSERVATION_AGE_SECONDS: u64 = 30;
 
 #[path = "dispatcher.rs"]
@@ -105,7 +108,12 @@ mod tests {
             journal.begin(plan, None, &observed, 100).unwrap_err(),
             Error::ApprovalUnavailable
         );
-        assert_eq!(fs::read_dir(&journal.root).unwrap().count(), 0);
+        assert_eq!(
+            fs::read_dir(journal.filesystem_root().unwrap())
+                .unwrap()
+                .count(),
+            0
+        );
     }
 
     #[test]
@@ -129,7 +137,12 @@ mod tests {
                     .unwrap_err(),
                 Error::ApprovalMismatch
             );
-            assert_eq!(fs::read_dir(&journal.root).unwrap().count(), 0);
+            assert_eq!(
+                fs::read_dir(journal.filesystem_root().unwrap())
+                    .unwrap()
+                    .count(),
+                0
+            );
         }
     }
 
@@ -154,7 +167,12 @@ mod tests {
                 error,
                 Error::ObservationMismatch | Error::StaleObservation
             ));
-            assert_eq!(fs::read_dir(&journal.root).unwrap().count(), 0);
+            assert_eq!(
+                fs::read_dir(journal.filesystem_root().unwrap())
+                    .unwrap()
+                    .count(),
+                0
+            );
         }
     }
 
@@ -199,7 +217,7 @@ mod tests {
             Error::InvalidTransition
         );
         drop(attempt);
-        let reopened = Journal::open(&journal.root).unwrap();
+        let reopened = Journal::open(journal.filesystem_root().unwrap()).unwrap();
         let plan = Plan::new(input("consumed")).unwrap();
         let approval = synthetic_approval(&plan, 2);
         let observed = observation(&plan, 1, 102, 2);
@@ -225,7 +243,7 @@ mod tests {
             Error::InvalidTransition
         );
         drop(attempt);
-        let reopened = Journal::open(&journal.root).unwrap();
+        let reopened = Journal::open(journal.filesystem_root().unwrap()).unwrap();
         let mut next = input("new-operation");
         next.route.target = "another-synthetic-target".into();
         let next = Plan::new(next).unwrap();
@@ -353,7 +371,9 @@ mod tests {
         let original = observation(&attempt.plan, 1, 101, 1);
         attempt.dispatch_desired(&original, 101).unwrap();
         confirm(&mut attempt, 101);
-        let path = journal.path(&attempt.operation, "desired-readback");
+        let path = journal
+            .path(&attempt.operation, "desired-readback")
+            .unwrap();
         fs::write(path, b"untrusted existing evidence").unwrap();
         let changed = observation(&attempt.plan, 2, 102, 3);
         assert_eq!(
@@ -375,7 +395,7 @@ mod tests {
         let (_directory, journal) = journal();
         let attempt = begin(&journal, "torn-result");
         fs::write(
-            journal.path(&attempt.operation, "complete"),
+            journal.path(&attempt.operation, "complete").unwrap(),
             b"{\"schema\":1",
         )
         .unwrap();
@@ -384,7 +404,7 @@ mod tests {
             Status::OutcomeUnknown
         );
         fs::write(
-            journal.path(&attempt.operation, "complete"),
+            journal.path(&attempt.operation, "complete").unwrap(),
             json(&Record {
                 schema: 1,
                 plan_digest: [9; 32],
@@ -837,11 +857,118 @@ struct Record {
     at_utc_seconds: u64,
 }
 
-/// Private single-writer journal directory. Same-principal filesystem mutation
-/// is outside this model's security boundary. No evidence file grants approval.
+/// Exact immutable keys supplied only after the guard validates approval and
+/// the fresh initial observation. These identifiers are not an approval token.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JournalBinding {
+    route: [u8; 32],
+    operation: [u8; 32],
+    plan: [u8; 32],
+    approval: [u8; 16],
+}
+
+impl JournalBinding {
+    pub fn route(&self) -> [u8; 32] {
+        self.route
+    }
+    pub fn operation(&self) -> [u8; 32] {
+        self.operation
+    }
+    pub fn plan(&self) -> [u8; 32] {
+        self.plan
+    }
+    pub fn approval(&self) -> [u8; 16] {
+        self.approval
+    }
+}
+
+/// Storage keys for facts already validated by the existing guard. A backend
+/// does not independently evaluate observations or select a restoration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum JournalRecord {
+    DesiredReadback,
+    RestoreIntent,
+    RestoredReadback,
+    CleanupConfirmed,
+}
+
+impl JournalRecord {
+    fn labels(self) -> (&'static str, &'static str) {
+        match self {
+            Self::DesiredReadback => ("desired-readback", "DESIRED_READBACK_VERIFIED"),
+            Self::RestoreIntent => ("restore-intent", "RESTORE_OUTCOME_UNKNOWN"),
+            Self::RestoredReadback => ("complete", "RESTORED_VERIFIED"),
+            Self::CleanupConfirmed => ("cleanup", "DEVICE_AND_GATEWAY_CLEANUP_CONFIRMED"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PersistenceError {
+    AlreadyConsumed,
+    RouteUnresolved,
+    Unavailable,
+}
+
+impl From<PersistenceError> for Error {
+    fn from(value: PersistenceError) -> Self {
+        match value {
+            PersistenceError::AlreadyConsumed => Self::AlreadyConsumed,
+            PersistenceError::RouteUnresolved => Self::RouteUnresolved,
+            PersistenceError::Unavailable => Self::Io,
+        }
+    }
+}
+
+/// Trusted synchronous storage contract, not an authorization or observation
+/// provider. Native adapters require independent qualification.
+///
+/// Reserve must atomically exclude cooperating operations for the gateway/bus
+/// route, globally consume operation/approval keys, and persist the complete
+/// exact intent before returning success. Failure after a possible reservation
+/// retains unknown/quarantined state. Append is create-new and success requires
+/// the record and its namespace metadata to be durable. Reads enforce the
+/// requested limit before allocation. Release verifies the exact binding and
+/// durable cleanup evidence under route exclusion; uncertain release cannot
+/// report a free route without a successful durability reconciliation.
+///
+/// Full intent records can be 16KiB; a digest-only or 2KiB store cannot implement
+/// this contract by truncating or omitting plan bytes. Keep blocking calls off
+/// async executor threads. Arbitrary same-principal mutation is outside scope.
+pub trait JournalPersistence: std::fmt::Debug + Send + Sync {
+    fn preflight(&self) -> Result<(), PersistenceError>;
+    fn reserve(&self, binding: &JournalBinding, intent: &[u8]) -> Result<(), PersistenceError>;
+    fn append(
+        &self,
+        binding: &JournalBinding,
+        kind: JournalRecord,
+        record: &[u8],
+    ) -> Result<(), PersistenceError>;
+    fn read_intent(
+        &self,
+        operation: [u8; 32],
+        limit: usize,
+    ) -> Result<Option<Vec<u8>>, PersistenceError>;
+    fn read_record(
+        &self,
+        operation: [u8; 32],
+        kind: JournalRecord,
+        limit: usize,
+    ) -> Result<Option<Vec<u8>>, PersistenceError>;
+    fn release(&self, binding: &JournalBinding) -> Result<(), PersistenceError>;
+}
+
+#[derive(Debug, Clone)]
+enum JournalBackend {
+    Filesystem(PathBuf),
+    External(Arc<dyn JournalPersistence>),
+}
+
+/// The existing filesystem backend remains the default. An explicitly supplied
+/// trusted backend replaces persistence only; all guard validation is shared.
 #[derive(Debug, Clone)]
 pub struct Journal {
-    root: PathBuf,
+    backend: JournalBackend,
 }
 
 impl Journal {
@@ -858,11 +985,29 @@ impl Journal {
         File::open(root)
             .and_then(|directory| directory.sync_all())
             .map_err(|_| Error::Io)?;
-        Ok(Self { root: root.into() })
+        Ok(Self {
+            backend: JournalBackend::Filesystem(root.into()),
+        })
     }
 
-    fn path(&self, key: &[u8], suffix: &str) -> PathBuf {
-        self.root.join(format!("{}-{suffix}.json", hex(key)))
+    pub fn with_persistence(persistence: Arc<dyn JournalPersistence>) -> Result<Self, Error> {
+        persistence.preflight()?;
+        Ok(Self {
+            backend: JournalBackend::External(persistence),
+        })
+    }
+
+    fn filesystem_root(&self) -> Result<&Path, Error> {
+        match &self.backend {
+            JournalBackend::Filesystem(root) => Ok(root),
+            JournalBackend::External(_) => Err(Error::UnsafeJournalPath),
+        }
+    }
+
+    fn path(&self, key: &[u8], suffix: &str) -> Result<PathBuf, Error> {
+        Ok(self
+            .filesystem_root()?
+            .join(format!("{}-{suffix}.json", hex(key))))
     }
 
     fn write_new<T: Serialize>(&self, path: &Path, value: &T) -> Result<(), Error> {
@@ -880,7 +1025,7 @@ impl Journal {
             })?;
         file.write_all(&bytes).map_err(|_| Error::Io)?;
         file.sync_all().map_err(|_| Error::Io)?;
-        File::open(&self.root)
+        File::open(self.filesystem_root()?)
             .and_then(|directory| directory.sync_all())
             .map_err(|_| Error::Io)
     }
@@ -913,39 +1058,47 @@ impl Journal {
         }
         validate_observation(&plan, observation, &plan.input.original, now)?;
         let operation = Self::operation_key(&plan);
-        let intent_path = self.path(&operation, "intent");
-        let grant_path = self.path(&approval.id, "consumed-grant");
-        if intent_path.exists() || grant_path.exists() {
-            return Err(Error::AlreadyConsumed);
+        let binding = JournalBinding {
+            route: Self::route_key(&plan)?,
+            operation,
+            plan: plan.digest,
+            approval: approval.id,
+        };
+        let intent = Intent {
+            schema: 1,
+            plan: plan.input.clone(),
+            plan_digest: plan.digest,
+            approval_id: approval.id,
+            consumed_at_utc_seconds: now,
+            physical_state: "UNKNOWN_UNTIL_VERIFIED_RESTORED".into(),
+        };
+        if let JournalBackend::External(persistence) = &self.backend {
+            persistence.reserve(&binding, &json(&intent)?)?;
+        } else {
+            let intent_path = self.path(&operation, "intent")?;
+            let grant_path = self.path(&approval.id, "consumed-grant")?;
+            if intent_path.exists() || grant_path.exists() {
+                return Err(Error::AlreadyConsumed);
+            }
+            let route_path = self.path(&binding.route, "unresolved-route")?;
+            self.write_new(&route_path, &hex(&plan.digest))
+                .map_err(|error| {
+                    if error == Error::AlreadyConsumed {
+                        Error::RouteUnresolved
+                    } else {
+                        error
+                    }
+                })?;
+            // Every failure after reserving the route leaves it quarantined. A
+            // new grant/operation/process cannot silently clear uncertain state.
+            self.write_new(&grant_path, &hex(&plan.digest))?;
+            self.write_new(&intent_path, &intent)?;
         }
-        let route_path = self.path(&Self::route_key(&plan)?, "unresolved-route");
-        self.write_new(&route_path, &hex(&plan.digest))
-            .map_err(|error| {
-                if error == Error::AlreadyConsumed {
-                    Error::RouteUnresolved
-                } else {
-                    error
-                }
-            })?;
-        // Every failure after reserving the route leaves it quarantined. A
-        // new grant/operation/process cannot silently clear uncertain state.
-        self.write_new(&grant_path, &hex(&plan.digest))?;
-        self.write_new(
-            &intent_path,
-            &Intent {
-                schema: 1,
-                plan: plan.input.clone(),
-                plan_digest: plan.digest,
-                approval_id: approval.id,
-                consumed_at_utc_seconds: now,
-                physical_state: "UNKNOWN_UNTIL_VERIFIED_RESTORED".into(),
-            },
-        )?;
         Ok(Attempt {
             journal: self.clone(),
             plan,
             operation,
-            route_path,
+            binding,
             status: Status::DesiredReady,
             expires_at_start: approval.expires_at_utc_seconds,
             last_receipt: observation.receipt,
@@ -957,7 +1110,7 @@ impl Journal {
     /// Missing, partial or unrecognized records conservatively remain unknown.
     pub fn recovered_status(&self, operation_id: &str) -> Status {
         let key = digest(operation_id.as_bytes());
-        let intent: Intent = match read_record(&self.path(&key, "intent")) {
+        let intent: Intent = match self.read_intent(key) {
             Ok(record) => record,
             Err(_) => return Status::OutcomeUnknown,
         };
@@ -970,7 +1123,7 @@ impl Journal {
         {
             return Status::OutcomeUnknown;
         }
-        match read_record::<Record>(&self.path(&key, "complete")) {
+        match self.read_completion(key) {
             Ok(record)
                 if record.schema == 1
                     && record.plan_digest == plan.digest
@@ -981,6 +1134,34 @@ impl Journal {
             _ => Status::OutcomeUnknown,
         }
     }
+
+    fn read_intent(&self, operation: [u8; 32]) -> Result<Intent, Error> {
+        match &self.backend {
+            JournalBackend::Filesystem(_) => read_record(&self.path(&operation, "intent")?),
+            JournalBackend::External(persistence) => {
+                decode_persisted(persistence.read_intent(operation, MAX_JOURNAL_RECORD_BYTES)?)
+            }
+        }
+    }
+
+    fn read_completion(&self, operation: [u8; 32]) -> Result<Record, Error> {
+        match &self.backend {
+            JournalBackend::Filesystem(_) => read_record(&self.path(&operation, "complete")?),
+            JournalBackend::External(persistence) => decode_persisted(persistence.read_record(
+                operation,
+                JournalRecord::RestoredReadback,
+                MAX_JOURNAL_RECORD_BYTES,
+            )?),
+        }
+    }
+}
+
+fn decode_persisted<T: for<'de> Deserialize<'de>>(bytes: Option<Vec<u8>>) -> Result<T, Error> {
+    let bytes = bytes.ok_or(Error::Io)?;
+    if bytes.is_empty() || bytes.len() > MAX_JOURNAL_RECORD_BYTES {
+        return Err(Error::Io);
+    }
+    serde_json::from_slice(&bytes).map_err(|_| Error::Io)
 }
 
 fn read_record<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, Error> {
@@ -1005,7 +1186,7 @@ pub struct Attempt {
     journal: Journal,
     plan: Plan,
     operation: [u8; 32],
-    route_path: PathBuf,
+    binding: JournalBinding,
     status: Status,
     expires_at_start: u64,
     last_receipt: u64,
@@ -1100,7 +1281,7 @@ impl Attempt {
         self.status = Status::OutcomeUnknown;
         validate_observation(&self.plan, observation, &self.plan.input.desired, now)?;
         self.validate_new_readback(observation)?;
-        self.record("desired-readback", "DESIRED_READBACK_VERIFIED", now)?;
+        self.record(JournalRecord::DesiredReadback, now)?;
         self.last_receipt = observation.receipt;
         self.last_verified_at = observation.observed_at_utc_seconds;
         self.status = Status::RestoreReady;
@@ -1116,7 +1297,7 @@ impl Attempt {
         {
             return Err(Error::StaleObservation);
         }
-        self.record("restore-intent", "RESTORE_OUTCOME_UNKNOWN", now)?;
+        self.record(JournalRecord::RestoreIntent, now)?;
         self.dispatch_at = Some(now);
         self.status = Status::RestoreDispatched;
         Ok(self.selection(self.plan.input.original.clone(), DispatchPhase::Restore))
@@ -1133,7 +1314,7 @@ impl Attempt {
         self.status = Status::OutcomeUnknown;
         validate_observation(&self.plan, observation, &self.plan.input.original, now)?;
         self.validate_new_readback(observation)?;
-        self.record("complete", "RESTORED_VERIFIED", now)?;
+        self.record(JournalRecord::RestoredReadback, now)?;
         self.status = Status::RestoredVerified;
         Ok(())
     }
@@ -1142,23 +1323,33 @@ impl Attempt {
         if self.status != Status::RestoredVerified || receipt.plan_digest != self.plan.digest {
             return Err(Error::InvalidTransition);
         }
-        self.record("cleanup", "DEVICE_AND_GATEWAY_CLEANUP_CONFIRMED", now)?;
-        fs::remove_file(&self.route_path).map_err(|_| Error::Io)?;
-        File::open(&self.journal.root)
+        self.record(JournalRecord::CleanupConfirmed, now)?;
+        if let JournalBackend::External(persistence) = &self.journal.backend {
+            return persistence.release(&self.binding).map_err(Error::from);
+        }
+        fs::remove_file(self.journal.path(&self.binding.route, "unresolved-route")?)
+            .map_err(|_| Error::Io)?;
+        File::open(self.journal.filesystem_root()?)
             .and_then(|directory| directory.sync_all())
             .map_err(|_| Error::Io)
     }
 
-    fn record(&self, suffix: &str, state: &str, now: u64) -> Result<(), Error> {
-        self.journal.write_new(
-            &self.journal.path(&self.operation, suffix),
-            &Record {
-                schema: 1,
-                plan_digest: self.plan.digest,
-                state: state.into(),
-                at_utc_seconds: now,
-            },
-        )
+    fn record(&self, kind: JournalRecord, now: u64) -> Result<(), Error> {
+        let (suffix, state) = kind.labels();
+        let record = Record {
+            schema: 1,
+            plan_digest: self.plan.digest,
+            state: state.into(),
+            at_utc_seconds: now,
+        };
+        match &self.journal.backend {
+            JournalBackend::Filesystem(_) => self
+                .journal
+                .write_new(&self.journal.path(&self.operation, suffix)?, &record),
+            JournalBackend::External(persistence) => persistence
+                .append(&self.binding, kind, &json(&record)?)
+                .map_err(Error::from),
+        }
     }
 
     fn validate_new_readback(&self, observation: &Observation) -> Result<(), Error> {

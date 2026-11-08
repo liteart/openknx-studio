@@ -180,7 +180,12 @@ fn missing_or_altered_approval_never_invokes_session() {
         assert!(session.writes.is_empty());
         assert_eq!(session.closes, 0);
         assert_eq!(report.cleanup, None);
-        assert_eq!(std::fs::read_dir(&journal.root).unwrap().count(), 0);
+        assert_eq!(
+            std::fs::read_dir(journal.filesystem_root().unwrap())
+                .unwrap()
+                .count(),
+            0
+        );
     }
 }
 
@@ -427,14 +432,19 @@ fn typed_adapter_rejected_selection_emits_no_write() {
     );
     assert!(session.writes.is_empty());
     assert_eq!(session.closes, 1);
-    assert_eq!(std::fs::read_dir(&journal.root).unwrap().count(), 0);
+    assert_eq!(
+        std::fs::read_dir(journal.filesystem_root().unwrap())
+            .unwrap()
+            .count(),
+        0
+    );
 }
 
 fn assert_route_still_quarantined(journal: &Journal) {
     let plan = Plan::new(input("later-operation")).unwrap();
     let approval = approved(&plan, 99);
     let mut session = MockSession::new(&plan);
-    let reopened = Journal::open(&journal.root).unwrap();
+    let reopened = Journal::open(journal.filesystem_root().unwrap()).unwrap();
     let report = ready(execute(
         &reopened,
         plan,
@@ -517,7 +527,7 @@ fn cleanup_evidence_failure_keeps_quarantine_despite_confirmed_network_close() {
     let mut cx = Context::from_waker(Waker::noop());
     assert!(future.as_mut().poll(&mut cx).is_pending());
     // Model failure to publish the exclusive cleanup evidence record.
-    std::fs::create_dir(journal.path(&operation, "cleanup")).unwrap();
+    std::fs::create_dir(journal.path(&operation, "cleanup").unwrap()).unwrap();
     gate.store(true, std::sync::atomic::Ordering::SeqCst);
     let Poll::Ready(report) = future.as_mut().poll(&mut cx) else {
         panic!("cleanup must finish");
@@ -533,4 +543,422 @@ fn cleanup_evidence_failure_keeps_quarantine_despite_confirmed_network_close() {
     assert!(!report.succeeded());
     drop(future);
     assert_route_still_quarantined(&journal);
+}
+
+// Alternate persistence tests execute this same dispatcher and guard. The store
+// below is an owned, in-memory durability fixture, never a native OS adapter.
+mod alternate_persistence {
+    use super::*;
+    use crate::guard::{JournalBinding, JournalPersistence, JournalRecord, PersistenceError};
+    use std::collections::{HashMap, HashSet};
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Fault {
+        Preflight,
+        ReserveBefore,
+        ReserveRoute,
+        ReserveApproval,
+        ReserveIntent,
+        Append(JournalRecord),
+        Release,
+    }
+
+    #[derive(Debug, Default)]
+    struct State {
+        fault: Option<Fault>,
+        routes: HashMap<[u8; 32], JournalBinding>,
+        approvals: HashSet<[u8; 16]>,
+        intents: HashMap<[u8; 32], Vec<u8>>,
+        records: HashMap<([u8; 32], JournalRecord), Vec<u8>>,
+        events: Vec<JournalRecord>,
+    }
+
+    #[derive(Debug, Default)]
+    struct Store(Mutex<State>);
+
+    impl JournalPersistence for Store {
+        fn preflight(&self) -> Result<(), PersistenceError> {
+            if self.0.lock().unwrap().fault == Some(Fault::Preflight) {
+                Err(PersistenceError::Unavailable)
+            } else {
+                Ok(())
+            }
+        }
+
+        fn reserve(&self, binding: &JournalBinding, intent: &[u8]) -> Result<(), PersistenceError> {
+            assert!(intent.len() <= crate::guard::MAX_JOURNAL_RECORD_BYTES);
+            let decoded: crate::guard::Intent = serde_json::from_slice(intent).unwrap();
+            assert_eq!(decoded.plan_digest, binding.plan());
+            let mut state = self.0.lock().unwrap();
+            if state.fault == Some(Fault::ReserveBefore) {
+                return Err(PersistenceError::Unavailable);
+            }
+            if state.intents.contains_key(&binding.operation())
+                || state.approvals.contains(&binding.approval())
+            {
+                return Err(PersistenceError::AlreadyConsumed);
+            }
+            if state.routes.contains_key(&binding.route()) {
+                return Err(PersistenceError::RouteUnresolved);
+            }
+            state.routes.insert(binding.route(), binding.clone());
+            if state.fault == Some(Fault::ReserveRoute) {
+                return Err(PersistenceError::Unavailable);
+            }
+            state.approvals.insert(binding.approval());
+            if state.fault == Some(Fault::ReserveApproval) {
+                return Err(PersistenceError::Unavailable);
+            }
+            state.intents.insert(binding.operation(), intent.to_vec());
+            if state.fault == Some(Fault::ReserveIntent) {
+                return Err(PersistenceError::Unavailable);
+            }
+            Ok(())
+        }
+
+        fn append(
+            &self,
+            binding: &JournalBinding,
+            kind: JournalRecord,
+            bytes: &[u8],
+        ) -> Result<(), PersistenceError> {
+            assert!(bytes.len() <= crate::guard::MAX_JOURNAL_RECORD_BYTES);
+            let mut state = self.0.lock().unwrap();
+            if state.routes.get(&binding.route()) != Some(binding) {
+                return Err(PersistenceError::RouteUnresolved);
+            }
+            if state.records.contains_key(&(binding.operation(), kind)) {
+                return Err(PersistenceError::AlreadyConsumed);
+            }
+            // A failed barrier may follow a persisted effect. The guard must
+            // still return an error and retain route quarantine.
+            state
+                .records
+                .insert((binding.operation(), kind), bytes.to_vec());
+            state.events.push(kind);
+            if state.fault == Some(Fault::Append(kind)) {
+                return Err(PersistenceError::Unavailable);
+            }
+            Ok(())
+        }
+
+        fn read_intent(
+            &self,
+            operation: [u8; 32],
+            limit: usize,
+        ) -> Result<Option<Vec<u8>>, PersistenceError> {
+            let state = self.0.lock().unwrap();
+            bounded(state.intents.get(&operation), limit)
+        }
+
+        fn read_record(
+            &self,
+            operation: [u8; 32],
+            kind: JournalRecord,
+            limit: usize,
+        ) -> Result<Option<Vec<u8>>, PersistenceError> {
+            let state = self.0.lock().unwrap();
+            bounded(state.records.get(&(operation, kind)), limit)
+        }
+
+        fn release(&self, binding: &JournalBinding) -> Result<(), PersistenceError> {
+            let mut state = self.0.lock().unwrap();
+            if state.routes.get(&binding.route()) != Some(binding)
+                || !state
+                    .records
+                    .contains_key(&(binding.operation(), JournalRecord::CleanupConfirmed))
+                || state.fault == Some(Fault::Release)
+            {
+                return Err(PersistenceError::Unavailable);
+            }
+            state.routes.remove(&binding.route());
+            Ok(())
+        }
+    }
+
+    fn bounded(value: Option<&Vec<u8>>, limit: usize) -> Result<Option<Vec<u8>>, PersistenceError> {
+        match value {
+            Some(bytes) if bytes.len() > limit => Err(PersistenceError::Unavailable),
+            Some(bytes) => Ok(Some(bytes.clone())),
+            None => Ok(None),
+        }
+    }
+
+    fn external(fault: Option<Fault>) -> (Arc<Store>, Journal) {
+        let store = Arc::new(Store::default());
+        store.0.lock().unwrap().fault = fault;
+        let journal = Journal::with_persistence(store.clone()).unwrap();
+        (store, journal)
+    }
+
+    fn assert_locked(store: &Store, journal: &Journal, id: &str) {
+        assert_eq!(store.0.lock().unwrap().routes.len(), 1);
+        let mut next = input(id);
+        next.route.target = "another-synthetic-target".into();
+        let plan = Plan::new(next).unwrap();
+        let approval = approved(&plan, 99);
+        let mut session = MockSession::new(&plan);
+        let report = ready(execute(
+            journal,
+            plan,
+            Some(approval),
+            &mut session,
+            &FixedClock,
+        ));
+        assert_eq!(
+            report.operation,
+            Err(DispatchError::Guard(Error::RouteUnresolved))
+        );
+        assert!(session.writes.is_empty());
+    }
+
+    #[test]
+    fn actual_guard_persists_full_large_plan_and_releases_only_after_cleanup() {
+        let (store, journal) = external(None);
+        let mut selected = input("external-full-plan");
+        selected.purpose = "p".repeat(1024);
+        selected.recovery = "r".repeat(1024);
+        let plan = Plan::new(selected.clone()).unwrap();
+        let expected_digest = plan.digest();
+        let approval = approved(&plan, 3);
+        let mut session = MockSession::new(&plan);
+        let report = ready(execute(
+            &journal,
+            plan,
+            Some(approval),
+            &mut session,
+            &FixedClock,
+        ));
+        assert!(report.succeeded());
+        assert_eq!(session.writes, [vec![2], vec![1]]);
+        assert_eq!(
+            journal.recovered_status("external-full-plan"),
+            Status::RestoredVerified
+        );
+        let state = store.0.lock().unwrap();
+        let bytes = state.intents.values().next().unwrap();
+        assert!(
+            bytes.len() > 2048,
+            "digest-only Task156 records cannot substitute for the complete guard intent"
+        );
+        let intent: crate::guard::Intent = serde_json::from_slice(bytes).unwrap();
+        assert_eq!(intent.plan_digest, expected_digest);
+        assert_eq!(
+            serde_json::to_value(intent.plan).unwrap(),
+            serde_json::to_value(selected).unwrap()
+        );
+        assert_eq!(
+            state.events,
+            [
+                JournalRecord::DesiredReadback,
+                JournalRecord::RestoreIntent,
+                JournalRecord::RestoredReadback,
+                JournalRecord::CleanupConfirmed
+            ]
+        );
+        assert!(state.routes.is_empty());
+    }
+
+    #[test]
+    fn external_preflight_and_reservation_failure_never_select_a_write() {
+        let store = Arc::new(Store::default());
+        store.0.lock().unwrap().fault = Some(Fault::Preflight);
+        assert!(matches!(
+            Journal::with_persistence(store.clone()),
+            Err(Error::Io)
+        ));
+        assert!(store.0.lock().unwrap().routes.is_empty());
+        for fault in [
+            Fault::ReserveBefore,
+            Fault::ReserveRoute,
+            Fault::ReserveApproval,
+            Fault::ReserveIntent,
+        ] {
+            let (store, journal) = external(Some(fault));
+            let plan = Plan::new(input("reserve-failure")).unwrap();
+            let approval = approved(&plan, 1);
+            let mut session = MockSession::new(&plan);
+            let report = ready(execute(
+                &journal,
+                plan,
+                Some(approval),
+                &mut session,
+                &FixedClock,
+            ));
+            assert_eq!(report.operation, Err(DispatchError::Guard(Error::Io)));
+            assert!(session.writes.is_empty());
+            assert_eq!(session.closes, 1);
+            assert_eq!(
+                journal.recovered_status("reserve-failure"),
+                Status::OutcomeUnknown
+            );
+            store.0.lock().unwrap().fault = None;
+            if fault != Fault::ReserveBefore {
+                assert_locked(&store, &journal, "reservation-retry");
+            }
+        }
+    }
+
+    #[test]
+    fn external_failed_record_barriers_never_report_success_or_release_route() {
+        for (kind, writes) in [
+            (JournalRecord::DesiredReadback, 1),
+            (JournalRecord::RestoreIntent, 1),
+            (JournalRecord::RestoredReadback, 2),
+            (JournalRecord::CleanupConfirmed, 2),
+        ] {
+            let (store, journal) = external(Some(Fault::Append(kind)));
+            let plan = Plan::new(input("record-failure")).unwrap();
+            let approval = approved(&plan, 1);
+            let mut session = MockSession::new(&plan);
+            let report = ready(execute(
+                &journal,
+                plan,
+                Some(approval),
+                &mut session,
+                &FixedClock,
+            ));
+            assert_eq!(report.operation, Err(DispatchError::Guard(Error::Io)));
+            assert_eq!(session.writes.len(), writes);
+            assert!(!report.succeeded());
+            store.0.lock().unwrap().fault = None;
+            assert_locked(&store, &journal, "post-record-failure");
+        }
+    }
+
+    #[test]
+    fn external_restored_status_is_separate_from_cleanup_and_release() {
+        for fail_release in [false, true] {
+            let (store, journal) = external(if fail_release {
+                Some(Fault::Release)
+            } else {
+                None
+            });
+            let plan = Plan::new(input("cleanup-failure")).unwrap();
+            let approval = approved(&plan, 1);
+            let mut session = MockSession::new(&plan);
+            session.close_fails = !fail_release;
+            let report = ready(execute(
+                &journal,
+                plan,
+                Some(approval),
+                &mut session,
+                &FixedClock,
+            ));
+            assert!(!report.succeeded());
+            assert_eq!(
+                journal.recovered_status("cleanup-failure"),
+                Status::RestoredVerified
+            );
+            assert_eq!(session.writes.len(), 2);
+            store.0.lock().unwrap().fault = None;
+            assert_locked(&store, &journal, "cleanup-retry");
+        }
+    }
+
+    #[test]
+    fn external_missing_approval_uncertain_write_and_cancel_keep_original_guard_rules() {
+        let (store, journal) = external(None);
+        let plan = Plan::new(input("no-approval")).unwrap();
+        let mut session = MockSession::new(&plan);
+        let report = ready(execute(&journal, plan, None, &mut session, &FixedClock));
+        assert_eq!(
+            report.operation,
+            Err(DispatchError::Guard(Error::ApprovalUnavailable))
+        );
+        assert_eq!(session.reads, 0);
+        assert!(store.0.lock().unwrap().routes.is_empty());
+        for cancel in [false, true] {
+            let (store, journal) = external(None);
+            let plan = Plan::new(input("uncertain-or-cancelled")).unwrap();
+            let approval = approved(&plan, 1);
+            let mut session = MockSession::new(&plan);
+            if cancel {
+                session.pending_write = true;
+                let mut future = pin!(execute(
+                    &journal,
+                    plan,
+                    Some(approval),
+                    &mut session,
+                    &FixedClock
+                ));
+                let mut cx = Context::from_waker(Waker::noop());
+                assert!(matches!(future.as_mut().poll(&mut cx), Poll::Pending));
+            } else {
+                session.fail_write = Some(1);
+                let report = ready(execute(
+                    &journal,
+                    plan,
+                    Some(approval),
+                    &mut session,
+                    &FixedClock,
+                ));
+                assert!(matches!(
+                    report.operation,
+                    Err(DispatchError::Session(SessionError::Uncertain))
+                ));
+            }
+            assert_eq!(session.writes.len(), 1);
+            assert_eq!(
+                journal.recovered_status("uncertain-or-cancelled"),
+                Status::OutcomeUnknown
+            );
+            assert_locked(&store, &journal, "uncertain-retry");
+        }
+    }
+
+    #[test]
+    fn external_replay_and_corrupt_recovery_are_not_promoted_to_success() {
+        let (store, journal) = external(None);
+        let plan = Plan::new(input("external-replay")).unwrap();
+        let approval = approved(&plan, 1);
+        let mut session = MockSession::new(&plan);
+        assert!(
+            ready(execute(
+                &journal,
+                plan,
+                Some(approval),
+                &mut session,
+                &FixedClock
+            ))
+            .succeeded()
+        );
+        let plan = Plan::new(input("external-replay")).unwrap();
+        let approval = approved(&plan, 2);
+        let mut session = MockSession::new(&plan);
+        let report = ready(execute(
+            &journal,
+            plan,
+            Some(approval),
+            &mut session,
+            &FixedClock,
+        ));
+        assert_eq!(
+            report.operation,
+            Err(DispatchError::Guard(Error::AlreadyConsumed))
+        );
+        assert!(session.writes.is_empty());
+        let operation = crate::guard::digest(b"external-replay");
+        let original = store.0.lock().unwrap().intents[&operation].clone();
+        for bad in [
+            b"{}".to_vec(),
+            vec![b'x'; crate::guard::MAX_JOURNAL_RECORD_BYTES + 1],
+        ] {
+            store.0.lock().unwrap().intents.insert(operation, bad);
+            assert_eq!(
+                journal.recovered_status("external-replay"),
+                Status::OutcomeUnknown
+            );
+        }
+        store.0.lock().unwrap().intents.insert(operation, original);
+        store.0.lock().unwrap().records.insert(
+            (operation, JournalRecord::RestoredReadback),
+            br#"{"schema":1,"schema":1}"#.to_vec(),
+        );
+        assert_eq!(
+            journal.recovered_status("external-replay"),
+            Status::OutcomeUnknown
+        );
+    }
 }

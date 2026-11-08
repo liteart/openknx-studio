@@ -63,6 +63,12 @@ bounded structured recovery reads. It is not a security boundary against
 unrestricted code or filesystem modification under the same OS principal.
 Directory synchronization errors fail closed; Windows durability is NOT RUN.
 
+The default remains this filesystem journal. An explicitly supplied trusted
+persistence backend can replace storage through the same guard validation;
+see [the Task156 persistence contract and tests](../task156-operation-journal/GUARD-PERSISTENCE.md).
+That seam preserves complete intent records and provides no approval authority.
+The native Windows adapter is not connected to it yet.
+
 ## Verification
 
 Baseline editor revision: `10bee8e`. Pinned Rust 1.99.1, cached locked

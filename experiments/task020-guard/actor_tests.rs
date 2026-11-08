@@ -235,7 +235,7 @@ fn assert_quarantined(journal: &Journal, input: &PlanInput) {
         observed_at_utc_seconds: 100,
         receipt: 99,
     };
-    let reopened = Journal::open(&journal.root).unwrap();
+    let reopened = Journal::open(journal.filesystem_root().unwrap()).unwrap();
     assert!(matches!(
         reopened.begin(plan, Some(grant), &observed, 100),
         Err(Error::RouteUnresolved)
@@ -284,7 +284,7 @@ async fn actual_actor_roundtrip_has_independent_reads_and_distinct_cleanup() {
         assert!(operations[4].starts_with("WRITE_APPLIED"));
         assert!(operations[5].starts_with("PROPERTY_READ value=00"));
         assert_eq!(
-            Journal::open(&journal.root)
+            Journal::open(journal.filesystem_root().unwrap())
                 .unwrap()
                 .recovered_status(&input.operation_id),
             Status::RestoredVerified
@@ -293,6 +293,7 @@ async fn actual_actor_roundtrip_has_independent_reads_and_distinct_cleanup() {
         assert!(
             !journal
                 .path(&Journal::route_key(&check).unwrap(), "unresolved-route")
+                .unwrap()
                 .exists()
         );
     })
