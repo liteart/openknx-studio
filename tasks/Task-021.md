@@ -84,12 +84,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; generic load-state and memory reads reviewed, exact product profile and remaining primitives outstanding |
-| Source commit(s) | Local unpublished knust fork `f260e1113a355a5c16dec0ca98ae9a1b53557a63`, based on `e10459fd429b63576231048a85ca270891acff56` and `4d296afb0906d17b6724b56c912f2e9e3f6680a5` |
-| Tests executed | Three load-state codec tests, three memory codec tests, 18 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent review repeated each codec and its focused loopback tests; hardware and Windows NOT RUN |
-| Evidence location | Fork `TASK021-LOAD-STATE-READ.md` and `TASK021-MEMORY-READ.md` at the source commits above |
+| Implementation / report status | In progress; generic load-state and memory reads and basic load-control codec reviewed; exact profile and controlled load-event dispatch outstanding |
+| Source commit(s) | Local unpublished fork `01a7c22f9e6591cd20ef9e98ad8b22abbe58e373`, based on `f260e1113a355a5c16dec0ca98ae9a1b53557a63` and `e10459fd429b63576231048a85ca270891acff56` |
+| Tests executed | Six load-state/control codec tests, three memory codec tests, 18 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent review repeated focused codec and loopback tests; hardware and Windows NOT RUN |
+| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md` and `TASK021-LOAD-CONTROL-CODEC.md` at the source commits above |
 | Acceptance criteria met | Partial AC-001 for the generic reads only; complete profile and required primitive set remain unqualified |
-| Technical outcome | Typed load-state and bounded 16-bit memory reads reject invalid replies; no load events or memory writes implemented |
+| Technical outcome | Typed load-state and bounded 16-bit memory reads reject invalid replies. Basic load events have a reviewed codec but no executable session dispatch; memory writes remain unimplemented |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Independent protocol and simulator reviews PASS for both bounded read increments only |
 
