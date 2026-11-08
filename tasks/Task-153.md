@@ -315,6 +315,11 @@ using the same descriptor-based mapping as the service and rejects synthetic
 fallbacks or mismatches. Seven focused tests and independent review passed;
 the root-owned store was not modified. Existing state still requires a separate
 reviewed recovery and a new unexpired plan.
+A fixed-purpose recovery helper now checks the exact unused protected state,
+an expired plan, pinned old files and a non-listening socket before atomically
+moving the entire store to a no-overwrite quarantine. It deletes nothing.
+Seven temporary-filesystem/socket tests and independent source review passed;
+actual root recovery remains NOT RUN. The fresh plan must still be reviewed.
 A fixed-purpose provisioning helper has been implemented and independently
 reviewed. It creates a new protected store from validated, hash-pinned private
 inputs without overwriting existing files; its temporary-filesystem tests and

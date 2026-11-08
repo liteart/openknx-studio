@@ -30,6 +30,10 @@ path = "src/enrollment_main.rs"
 name = "task153-operator-provision"
 path = "src/provision_main.rs"
 
+[[bin]]
+name = "task153-operator-recover"
+path = "src/recovery_main.rs"
+
 [workspace]
 
 [dependencies]

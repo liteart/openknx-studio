@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from typing import NamedTuple
 
 SOURCE = Path(__file__).resolve().parent
 BROKER = SOURCE.parent
@@ -22,8 +23,31 @@ BINARY = "task153-operator-provision"
 LEAF = "org.openknxstudio.operator-provision"
 PREFLIGHT = "task153-install-preflight"
 COMPONENT = ("/Library/PrivilegedHelperTools", 0o1755, {BINARY: LEAF})
-BUILD_ARGUMENTS = ["build", "--offline", "--locked", "--manifest-path",
-                   "experiments/task153-broker/Cargo.toml", "--bin", BINARY, "--bin", PREFLIGHT]
+
+
+class HelperPackage(NamedTuple):
+    binary: str
+    leaf: str
+    component: str
+    pin_key: str
+    filename: str
+    purpose: str
+
+
+PROVISIONER = HelperPackage(BINARY, LEAF, "provisioner", "provisioner",
+                            "OpenKNX-Studio-Task153-Provisioner-Review.pkg",
+                            "additive fixed provisioning helper; no replacement of installed helpers")
+RECOVERY = HelperPackage("task153-operator-recover", "org.openknxstudio.operator-recover",
+                         "recovery", "recovery", "OpenKNX-Studio-Task153-Recovery-Review.pkg",
+                         "additive fixed recovery helper; no replacement of installed helpers")
+
+
+def build_arguments(profile):
+    return ["build", "--offline", "--locked", "--manifest-path",
+            "experiments/task153-broker/Cargo.toml", "--bin", profile.binary, "--bin", PREFLIGHT]
+
+
+BUILD_ARGUMENTS = build_arguments(PROVISIONER)
 
 
 def source_paths():
@@ -78,14 +102,16 @@ def build_environment():
     return cargo_home / "bin/cargo", environment
 
 
-def make_pins(files):
-    helper = files[LEAF]
-    return {"provisioner": {"executable_sha256": list(bytes.fromhex(helper["sha256"])),
+def make_pins(files, profile=PROVISIONER):
+    helper = files[profile.leaf]
+    return {profile.pin_key: {"executable_sha256": list(bytes.fromhex(helper["sha256"])),
                             "executable_cdhash": helper["cdhash"]}}
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(profile=PROVISIONER, invocation_file=None):
+    if profile not in (PROVISIONER, RECOVERY):
+        raise ValueError("unsupported fixed helper package")
+    parser = argparse.ArgumentParser(description="Build one fixed additive helper package; never install.")
     parser.add_argument("--output", required=True, type=Path)
     arguments = parser.parse_args()
     if sys.platform != "darwin" or os.geteuid() == 0:
@@ -95,8 +121,9 @@ def main():
     output = arguments.output.absolute()
     output.mkdir(mode=0o700)
     log = output / "build.log"
+    command = build_arguments(profile)
     with log.open("xb") as stream:
-        result = subprocess.run([str(cargo), *BUILD_ARGUMENTS], cwd=REPOSITORY, env=environment,
+        result = subprocess.run([str(cargo), *command], cwd=REPOSITORY, env=environment,
                                 stdin=subprocess.DEVNULL, stdout=stream, stderr=subprocess.STDOUT,
                                 timeout=360, check=False)
     if result.returncode or log.stat().st_size > 2097152:
@@ -105,41 +132,44 @@ def main():
         raise ValueError("source changed during build")
     binaries = BROKER / "target/debug"
     inputs = {}
-    for name in (BINARY, PREFLIGHT):
+    for name in (profile.binary, PREFLIGHT):
         data = PACKAGE.checked_input(binaries / name)
         original = PACKAGE.read_snapshot(binaries / name, 134217728)
         if hashlib.sha256(original).hexdigest() != data["sha256"]:
             raise ValueError("built helper changed while being inspected")
         inputs[name] = {"sha256": data["sha256"], "attribute_names": data["attribute_names"]}
-    inventory = {"schema": 1, "purpose": "additive fixed provisioning helper; no replacement of installed helpers",
+    inventory = {"schema": 1, "purpose": profile.purpose,
                  "installation": "NOT RUN", "root_helper_started": "NOT RUN", "hardware": "NOT RUN",
                  "installer_signature": "unsigned", "binary_signature": "ad-hoc hardened runtime; no publisher identity",
                  "components": {}, "source_revision": revision, "source_sha256": before,
-                 "build_command": ["cargo", *BUILD_ARGUMENTS], "build_exit": result.returncode,
+                 "build_command": ["cargo", *command], "build_exit": result.returncode,
                  "build_log_sha256": PACKAGE.sha(log), "preparer_sha256": PACKAGE.sha(Path(__file__)),
                  "component_preparer_sha256": PACKAGE.sha(SOURCE / "prepare_package.py"),
                  "source_build_claim": "Snapshot consistency only; not cryptographic execution attestation or independent review",
                  "original_inputs": inputs}
+    if invocation_file is not None:
+        inventory["invocation_preparer_sha256"] = PACKAGE.sha(invocation_file)
     # Only these two hashes feed the existing copy-before-signing guard.
     evidence = {"helper_artifacts": inputs}
-    component = PACKAGE.build_component("provisioner", binaries, output, inventory,
-                                        service_evidence=evidence, component_specification=COMPONENT)
+    specification = ("/Library/PrivilegedHelperTools", 0o1755, {profile.binary: profile.leaf})
+    component = PACKAGE.build_component(profile.component, binaries, output, inventory,
+                                        service_evidence=evidence, component_specification=specification)
     distribution = output / "Distribution"
     PACKAGE.run(["/usr/bin/productbuild", "--synthesize", "--package", str(component), str(distribution)])
     architectures = PACKAGE.product_architectures(inventory["components"])
     tree = ET.parse(distribution)
     tree.getroot().find("options").set("hostArchitectures", ",".join(architectures))
     tree.write(distribution, encoding="utf-8", xml_declaration=True)
-    final = output / "OpenKNX-Studio-Task153-Provisioner-Review.pkg"
+    final = output / profile.filename
     PACKAGE.run(["/usr/bin/productbuild", "--distribution", str(distribution), "--package-path", str(output), str(final)])
     expanded = output / "verified-product"
     PACKAGE.run(["/usr/sbin/pkgutil", "--expand-full", str(final), str(expanded)])
     if ET.parse(expanded / "Distribution").getroot().find("options").get("hostArchitectures") != ",".join(architectures):
         raise ValueError("product architecture mismatch")
-    component_record = inventory["components"]["provisioner"]
+    component_record = inventory["components"][profile.component]
     for folder, key in (("Payload", "files"), ("Scripts", "scripts")):
         expected = component_record[key]
-        actual = expanded / "provisioner.pkg" / folder
+        actual = expanded / (profile.component + ".pkg") / folder
         if {str(path.relative_to(actual)) for path in actual.rglob("*")} != set(expected):
             raise ValueError("unexpected additive archive entry")
         for name, record in expected.items():
@@ -147,12 +177,12 @@ def main():
                 raise ValueError("additive product content changed")
     if snapshot(paths) != before:
         raise ValueError("source changed during packaging")
-    pins = make_pins(component_record["files"])
+    pins = make_pins(component_record["files"], profile)
     pin_bytes = (json.dumps(pins, indent=2) + "\n").encode()
     inventory.update({"package_sha256": PACKAGE.sha(final), "host_architectures": architectures,
                       "receipt_pin_fragment": pins, "receipt_pin_fragment_sha256": hashlib.sha256(pin_bytes).hexdigest(),
                       "parent_preservation": "No ancestors in payload; component-root metadata matches mandatory preflight. Actual installation NOT RUN."})
-    (output / "provisioner-pin-fragment.json").write_bytes(pin_bytes)
+    (output / (profile.component + "-pin-fragment.json")).write_bytes(pin_bytes)
     (output / "inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
     print(f"Prepared additive review package: {final}")
     print("No installation, privileged helper, service, credential or hardware operation performed.")

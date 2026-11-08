@@ -52,9 +52,9 @@ struct Receipt {
     plan: Input,
     expires_at_utc_seconds: u64,
 }
-struct Snapshot {
-    bytes: Vec<u8>,
-    owner: u32,
+pub(super) struct Snapshot {
+    pub(super) bytes: Vec<u8>,
+    pub(super) owner: u32,
 }
 
 #[derive(Deserialize)]
@@ -63,7 +63,7 @@ struct OperatorAclBinding {
     operator_acl_uuid: String,
 }
 
-fn native_operator_acl_uuid(operator_uid: u32) -> Result<String, Error> {
+pub(super) fn native_operator_acl_uuid(operator_uid: u32) -> Result<String, Error> {
     use exacl::{AclEntry, AclOption, Perm, getfacl, setfacl};
 
     if operator_uid == 0 {
@@ -156,7 +156,7 @@ fn flags(directory: bool) -> OFlag {
             OFlag::empty()
         }
 }
-fn snapshot(path: &Path, expected: [u8; 32]) -> Result<Snapshot, Error> {
+pub(super) fn snapshot(path: &Path, expected: [u8; 32]) -> Result<Snapshot, Error> {
     if !path.is_absolute() || path.as_os_str().len() > 1024 {
         return Err(Error::InputRejected);
     }

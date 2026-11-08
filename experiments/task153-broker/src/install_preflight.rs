@@ -17,28 +17,36 @@ fn destination_absent(path: &std::path::Path) -> Result<(), &'static str> {
 }
 
 #[cfg(target_os = "macos")]
-fn check() -> Result<(), Refusal> {
-    use std::{fs, os::unix::fs::MetadataExt, path::Path};
-    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
-    let destinations: &[&str] = match arguments.as_slice() {
-        [argument] if argument == "--helpers" => &[
+fn destinations(arguments: &[std::ffi::OsString]) -> Result<&'static [&'static str], Refusal> {
+    match arguments {
+        [argument] if argument == "--helpers" => Ok(&[
             "/Library/PrivilegedHelperTools/org.openknxstudio.operator",
             "/Library/PrivilegedHelperTools/org.openknxstudio.operator-browser",
             "/Library/PrivilegedHelperTools/org.openknxstudio.operator-enrollment",
-        ],
+        ]),
         [argument] if argument == "--daemon" => {
-            &["/Library/LaunchDaemons/org.openknxstudio.operator.plist"]
+            Ok(&["/Library/LaunchDaemons/org.openknxstudio.operator.plist"])
         }
         [argument] if argument == "--provisioner" => {
-            &["/Library/PrivilegedHelperTools/org.openknxstudio.operator-provision"]
+            Ok(&["/Library/PrivilegedHelperTools/org.openknxstudio.operator-provision"])
         }
-        _ => {
-            return Err(Refusal {
-                code: "arguments_rejected",
-                path: "",
-            });
+        // An additive recovery package may only add its own fixed helper. It
+        // does not replace any installed service or perform recovery itself.
+        [argument] if argument == "--recovery" => {
+            Ok(&["/Library/PrivilegedHelperTools/org.openknxstudio.operator-recover"])
         }
-    };
+        _ => Err(Refusal {
+            code: "arguments_rejected",
+            path: "",
+        }),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn check() -> Result<(), Refusal> {
+    use std::{fs, os::unix::fs::MetadataExt, path::Path};
+    let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    let destinations = destinations(&arguments)?;
     if nix::unistd::geteuid().as_raw() != 0 || nix::unistd::getegid().as_raw() != 0 {
         return Err(Refusal {
             code: "root_wheel_required",
@@ -104,6 +112,27 @@ fn main() {
 mod tests {
     use super::*;
     use std::os::unix::fs::symlink;
+
+    #[test]
+    fn recovery_component_checks_only_its_fixed_new_helper() {
+        assert_eq!(
+            destinations(&["--recovery".into()]),
+            Ok(&["/Library/PrivilegedHelperTools/org.openknxstudio.operator-recover"][..])
+        );
+        for arguments in [
+            vec![],
+            vec!["--recovery".into(), "extra".into()],
+            vec!["/arbitrary/path".into()],
+        ] {
+            assert_eq!(
+                destinations(&arguments),
+                Err(Refusal {
+                    code: "arguments_rejected",
+                    path: ""
+                })
+            );
+        }
+    }
 
     #[test]
     fn destination_diagnostics_distinguish_missing_and_existing_objects_without_changes() {
