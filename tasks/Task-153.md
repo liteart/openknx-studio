@@ -8,6 +8,11 @@ not close this task or establish all acceptance criteria. See Task020 for the
 private report hash. Earlier NOT RUN statements below describe their respective
 historical checkpoints.
 
+The owner later provided read-only output of the protected Task020 journal:
+the matching plan records desired readback, verified restoration, and device
+and gateway cleanup. See Task020 for the exact digest, timestamp and private
+transcript hash. The agent did not directly inspect the protected files.
+
 ## Subject
 
 Build a protected operator approval and execution path for one exact KNX write plan.

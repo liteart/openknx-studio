@@ -115,6 +115,18 @@ protected execution journal or bus capture. Do not repeat the operation to
 obtain evidence. Task acceptance and the remaining criteria still require
 review of the durable execution evidence and predecessor status.
 
+The owner subsequently supplied the output of a read-only `sudo cat` of the
+three protected execution records. Each contained the same plan digest,
+`218597ef337c7001d8d7469434d1eb02f5d894860104fce40b17507cc7d3c165`,
+and the states `DESIRED_READBACK_VERIFIED`, `RESTORED_VERIFIED`, and
+`DEVICE_AND_GATEWAY_CLEANUP_CONFIRMED`, respectively, at 2026-11-08 07:10:11
+UTC. The digest matches the displayed approved plan. The private transcribed
+record SHA-256 is
+`9cf5cbc188279398ef6abcbec03fc086cece2cf3c6fff2c9b7dee956dbdcdbb2`.
+This is owner-transcribed protected journal output, not a separate bus capture
+or an agent-direct filesystem inspection. It strengthens the physical test
+evidence; predecessor acceptance and the complete task review remain open.
+
 ## Bounded offline write primitive — 2026-11-06
 
 The generic fork primitive accepts explicit typed selectors and opaque caller
