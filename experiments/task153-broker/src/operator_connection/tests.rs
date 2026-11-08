@@ -208,6 +208,72 @@ fn registration_rejects_wrong_origin_challenge_and_expired_session() {
     }
 }
 
+fn registration_response(
+    registration_options: CreationChallengeResponse,
+) -> RegisterPublicKeyCredential {
+    SoftPasskey::new(true)
+        .do_registration(
+            Url::parse(crate::root_passkey::OPERATOR_ORIGIN).unwrap(),
+            registration_options,
+        )
+        .unwrap()
+}
+
+#[test]
+fn enrollment_failure_stage_distinguishes_verification_expiry_and_storage_without_leaking_errors() {
+    let (registration, _) = Registration::begin().unwrap();
+    let wrong_response = registration_response(Registration::begin().unwrap().1);
+    assert_eq!(
+        complete_registration(registration, wrong_response, |_| panic!(
+            "unverified credential must not reach storage"
+        )),
+        Err(EnrollmentFailureStage::CredentialVerification)
+    );
+
+    let (mut registration, options) = Registration::begin().unwrap();
+    let credential = registration_response(options);
+    registration.issued = Instant::now() - SESSION_TIMEOUT;
+    assert_eq!(
+        complete_registration(registration, credential, |_| panic!(
+            "expired credential must not reach storage"
+        )),
+        Err(EnrollmentFailureStage::SessionExpired)
+    );
+
+    for stage in [
+        EnrollmentFailureStage::Storage,
+        EnrollmentFailureStage::Activation,
+    ] {
+        let (registration, options) = Registration::begin().unwrap();
+        let credential = registration_response(options);
+        assert_eq!(
+            complete_registration(registration, credential, |_| Err(stage)),
+            Err(stage)
+        );
+        let (_directory, mut client, mut server) = connected();
+        enrollment_failure(&mut server, stage, Instant::now()).unwrap();
+        let mut size = [0; 4];
+        client.read_exact(&mut size).unwrap();
+        let mut bytes = vec![0; u32::from_be_bytes(size) as usize];
+        client.read_exact(&mut bytes).unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(value["status"], "enrollment_failed");
+        assert_eq!(value["stage"], serde_json::to_value(stage).unwrap());
+        assert_eq!(value["storage_state"], "inspection_required");
+        assert_eq!(value["physical_authorization"], false);
+        assert_eq!(value.as_object().unwrap().len(), 5);
+    }
+}
+
+#[test]
+fn actual_finish_read_timeout_has_expired_diagnostic_instead_of_generic_io() {
+    let (_directory, _client, mut server) = connected();
+    assert_eq!(
+        read_request(&mut server, Instant::now() + Duration::from_millis(20)).err(),
+        Some(Error::Timeout)
+    );
+}
+
 #[test]
 fn replies_are_bounded_frames_without_implicit_authorization() {
     let (_directory, mut client, mut server) = connected();

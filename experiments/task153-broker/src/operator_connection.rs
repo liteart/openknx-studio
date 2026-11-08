@@ -71,6 +71,45 @@ pub enum Error {
     ProtectedStorageUnavailable,
 }
 
+/// Fixed diagnostics only. Never include credential data or library errors.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum EnrollmentFailureStage {
+    Challenge,
+    FinishRequest,
+    SessionExpired,
+    CredentialVerification,
+    Storage,
+    Activation,
+}
+
+impl EnrollmentFailureStage {
+    pub(crate) fn storage_state(self) -> &'static str {
+        match self {
+            Self::Storage | Self::Activation => "inspection_required",
+            _ => "not_started_by_this_attempt",
+        }
+    }
+}
+
+fn enrollment_failure(
+    stream: &mut UnixStream,
+    stage: EnrollmentFailureStage,
+    deadline: Instant,
+) -> Result<(), Error> {
+    // A timed-out ceremony may report its fixed failure code for at most one
+    // additional second. This never renews its WebAuthn state or retries it.
+    let error_deadline = Instant::now()
+        .checked_add(Duration::from_secs(1))
+        .ok_or(Error::Timeout)?;
+    write_reply(
+        stream,
+        &serde_json::json!({"schema":1,"status":"enrollment_failed","stage":stage,
+            "storage_state":stage.storage_state(),"physical_authorization":false}),
+        deadline.max(error_deadline),
+    )
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Request {
@@ -134,7 +173,16 @@ fn read_exact(
         stream
             .set_read_timeout(Some(remaining(deadline)?))
             .map_err(|_| Error::Io)?;
-        let count = stream.read(bytes).map_err(|_| Error::Io)?;
+        let count = stream.read(bytes).map_err(|error| {
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+            ) {
+                Error::Timeout
+            } else {
+                Error::Io
+            }
+        })?;
         if count == 0 {
             return Err(Error::InvalidFrame);
         }
@@ -223,6 +271,23 @@ impl Registration {
     }
 }
 
+fn complete_registration<F>(
+    registration: Registration,
+    credential: RegisterPublicKeyCredential,
+    store: F,
+) -> Result<ActivationOutcome, EnrollmentFailureStage>
+where
+    F: FnOnce(&Passkey) -> Result<ActivationOutcome, EnrollmentFailureStage>,
+{
+    let credential = registration
+        .finish(credential)
+        .map_err(|error| match error {
+            Error::Timeout => EnrollmentFailureStage::SessionExpired,
+            _ => EnrollmentFailureStage::CredentialVerification,
+        })?;
+    store(&credential)
+}
+
 /// Consume one connected stream for exactly one ceremony. Authentication uses
 /// that owned connection before any request is read. The caller must be an
 /// independently provisioned root service, with a protected operator client.
@@ -272,22 +337,50 @@ where
             {
                 return Err(Error::InvalidRequest);
             }
-            let (registration, options) = Registration::begin()?;
+            let (registration, options) = match Registration::begin() {
+                Ok(value) => value,
+                Err(_) => {
+                    return enrollment_failure(
+                        &mut stream,
+                        EnrollmentFailureStage::Challenge,
+                        deadline,
+                    );
+                }
+            };
             write_reply(
                 &mut stream,
                 &serde_json::json!({"schema":1,"status":"enrollment_ready","issuer":issuer,"options":options,"physical_authorization":false}),
                 deadline,
             )?;
-            let Command::FinishEnrollment { credential } =
-                read_request(&mut stream, deadline)?.command
-            else {
-                return Err(Error::InvalidRequest);
+            let credential = match read_request(&mut stream, deadline) {
+                Ok(Request {
+                    command: Command::FinishEnrollment { credential },
+                    ..
+                }) => credential,
+                Err(Error::Timeout) => {
+                    return enrollment_failure(
+                        &mut stream,
+                        EnrollmentFailureStage::SessionExpired,
+                        deadline,
+                    );
+                }
+                _ => {
+                    return enrollment_failure(
+                        &mut stream,
+                        EnrollmentFailureStage::FinishRequest,
+                        deadline,
+                    );
+                }
             };
-            let credential = registration.finish(credential)?;
-            persist_pending_enrollment(&issuer, &credential)
-                .map_err(|_| Error::ProtectedStorageUnavailable)?;
-            let outcome = activate_first_enrollment(&issuer, &credential)
-                .map_err(|_| Error::ProtectedStorageUnavailable)?;
+            let outcome = match complete_registration(registration, credential, |credential| {
+                persist_pending_enrollment(&issuer, credential)
+                    .map_err(|_| EnrollmentFailureStage::Storage)?;
+                activate_first_enrollment(&issuer, credential)
+                    .map_err(|_| EnrollmentFailureStage::Activation)
+            }) {
+                Ok(outcome) => outcome,
+                Err(stage) => return enrollment_failure(&mut stream, stage, deadline),
+            };
             let status = match outcome {
                 ActivationOutcome::Activated => "enrollment_activated",
                 ActivationOutcome::CommittedCleanupUncertain => {

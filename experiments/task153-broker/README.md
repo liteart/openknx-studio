@@ -847,3 +847,34 @@ they do not contact a network host or KNX interface.
 An earlier complete run passed 67 library tests, six helper tests and two
 compile-fail doctest on macOS arm64. Windows, Linux, installed-service,
 production-enrollment and hardware validation remain **NOT RUN**.
+
+## Enrollment failure diagnostics
+
+After authenticated enrollment has begun, the service now returns a bounded
+`enrollment_failed` frame with a closed stage code: challenge creation, finish
+request decoding, expiration, credential verification, storage or activation.
+No credential content, library error text, PIN or account data is included.
+Storage and activation failures explicitly require protected inspection;
+earlier stages say only that this attempt did not start storage. They do not
+certify the state left by any earlier attempt. The service may spend at most
+one additional second trying to deliver a timed-out ceremony's failure frame;
+this is best effort, not an end-to-end receive grace. The browser and relay
+keep their original deadlines, so an expiry report arriving after either
+deadline can still appear as unavailable/unknown transport state. No challenge
+is renewed and no retry is performed.
+
+After `enrollment_ready`, the relay preserves valid finish-failure reports.
+A challenge-creation failure precedes that ready state and the relay/browser
+currently reject it as unavailable rather than opening a ceremony page. A
+missing service reply remains
+`EnrollmentReplyUnavailable` and does not imply enrollment had no effect.
+The browser displays allowlisted stages and exception names only. Guarded KNX
+operation reporting and uncertain-effect handling are unchanged.
+
+The observed installed `Io` failure is not diagnosed by these source changes.
+Focused tests use synthetic credentials and local temporary sockets to verify
+stage distinctions, no storage invocation for invalid/expired registration,
+finish-failure forwarding, lost-reply handling and refusal to forward anything
+after an expired relay deadline. Local service expiry-report tests do not
+establish end-to-end delivery of an expiry diagnostic. Actual installation of this
+increment and a new operator ceremony are **NOT RUN**.

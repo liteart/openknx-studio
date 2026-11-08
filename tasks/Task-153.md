@@ -315,6 +315,19 @@ using the same descriptor-based mapping as the service and rejects synthetic
 fallbacks or mismatches. Seven focused tests and independent review passed;
 the root-owned store was not modified. Existing state still requires a separate
 reviewed recovery and a new unexpired plan.
+On 2026-11-08 the owner recovered the unused store, provisioned corrected
+inputs and started the installed service. The owner confirmed the macOS passkey
+dialog during enrollment, but the relay returned `Io`; protected directory
+inspection showed no credential, pending registration or enrollment lock. The
+exact failure stage remains INCONCLUSIVE because the installed service discards
+its handler error. No assertion or physical device operation was started. The
+service later stopped at its bounded lifetime and its socket remains present.
+The owner's subsequent enrollment attempt returned `ServiceUnavailable`
+because the bounded service had already stopped; no enrollment request reached
+the service. Read-only checks found no listener and the expected stale socket.
+New source-only, non-secret enrollment-stage diagnostics were independently
+reviewed and tested; they are not yet installed, and timeout or pre-ready errors
+can still remain generic. Do not blindly retry or remove the socket.
 A fixed-purpose recovery helper now checks the exact unused protected state,
 an expired plan, pinned old files and a non-listening socket before atomically
 moving the entire store to a no-overwrite quarantine. It deletes nothing.

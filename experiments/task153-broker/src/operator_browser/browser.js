@@ -35,15 +35,32 @@
     button.addEventListener("click", async () => {
       button.disabled = true; ack.disabled = true;
       let submitted = false;
+      let phase = "passkey prompt";
       try {
         const credential = enroll ? await navigator.credentials.create({publicKey}) : await navigator.credentials.get({publicKey});
         if (!credential) throw new Error("Passkey ceremony did not complete.");
+        phase = "credential encoding";
         const response = {clientDataJSON:encode(credential.response.clientDataJSON)};
         for (const field of ["attestationObject", "authenticatorData", "signature"]) if (credential.response[field]) response[field] = encode(credential.response[field]);
         if ("userHandle" in credential.response) response.userHandle = credential.response.userHandle ? encode(credential.response.userHandle) : null;
         const serialized = {id:credential.id, rawId:encode(credential.rawId), type:credential.type, response, extensions:credential.getClientExtensionResults()};
         submitted = true;
+        phase = "protected service reply";
         const result = await post("/finish", {credential:serialized});
+        if (enroll && result.status === "enrollment_failed") {
+          const stages = {
+            challenge:"challenge creation", finish_request:"finish request decoding",
+            session_expired:"session expiration", credential_verification:"credential verification",
+            storage:"protected storage", activation:"protected activation",
+          };
+          const stage = Object.hasOwn(stages, result.stage) ? stages[result.stage] : null;
+          const expected = ["storage", "activation"].includes(result.stage) ? "inspection_required" : "not_started_by_this_attempt";
+          if (!stage || result.physical_authorization !== false || result.storage_state !== expected) throw new Error("Invalid enrollment failure report.");
+          status.textContent = "Enrollment failed during " + stage + ". " + (expected === "inspection_required"
+            ? "Protected enrollment may have changed; inspect it before another attempt."
+            : "This attempt did not start protected storage; inspect the reported failure before another attempt.") + " No KNX operation was requested.";
+          return;
+        }
         if (guarded) {
           const operation = result.execution?.operation;
           const cleanup = result.execution?.cleanup;
@@ -62,9 +79,12 @@
           if (result.physical_authorization !== false) throw new Error("Unexpected authorization response.");
           status.textContent = result.status + ". No device authorization was issued.";
         }
-      } catch (_) { status.textContent = guarded && submitted
+      } catch (error) {
+        const code = ["NotAllowedError", "SecurityError", "InvalidStateError", "NotSupportedError", "AbortError", "TypeError"].includes(error?.name) ? " (" + error.name + ")" : "";
+        status.textContent = guarded && submitted
         ? "Operation result unavailable; a write may have occurred. Inspect protected evidence and do not retry automatically."
-        : "Ceremony failed or session expired before an execution request was submitted. Enrollment outcome may require protected operator inspection."; }
+        : "Ceremony failed during " + phase + code + ". Enrollment outcome may require protected operator inspection. No KNX execution request was submitted.";
+      }
     }, {once:true});
   } catch (_) { status.textContent = "Private operator session unavailable or expired. No device authorization was issued."; }
 })();

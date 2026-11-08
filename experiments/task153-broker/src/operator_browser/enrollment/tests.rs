@@ -88,6 +88,32 @@ fn relay_request_bounds_duplicate_keys_and_eof_are_enforced() {
 }
 
 #[test]
+fn expired_relay_never_forwards_input_or_renews_the_ceremony() {
+    let (mut browser, mut io) = UnixStream::pair().unwrap();
+    let (mut relay_service, mut service) = UnixStream::pair().unwrap();
+    browser.write_all(b"synthetic queued input").unwrap();
+    assert_eq!(
+        relay(&mut io, &mut relay_service, Instant::now()),
+        Err(Error::Timeout)
+    );
+    service.set_nonblocking(true).unwrap();
+    assert_eq!(
+        service.read(&mut [0; 1]).unwrap_err().kind(),
+        std::io::ErrorKind::WouldBlock
+    );
+}
+
+#[test]
+fn challenge_failure_cannot_be_mistaken_for_a_ready_ceremony() {
+    let response = json!({"schema":1,"status":"enrollment_failed","stage":"challenge","storage_state":"not_started_by_this_attempt","physical_authorization":false});
+    assert_eq!(validate_enrollment_result(&response), Ok(()));
+    assert_eq!(
+        validate_ready(&response, Mode::Enroll),
+        Err(Error::InvalidReply)
+    );
+}
+
+#[test]
 fn real_synthetic_registration_crosses_only_the_two_enrollment_frames() {
     let origin = webauthn_rs::prelude::Url::parse(crate::root_passkey::OPERATOR_ORIGIN).unwrap();
     let webauthn = crate::root_passkey::operator_webauthn().unwrap();
@@ -143,4 +169,72 @@ fn real_synthetic_registration_crosses_only_the_two_enrollment_frames() {
     assert_eq!(reply["physical_authorization"], false);
     assert_eq!(relay_thread.join().unwrap(), Ok(()));
     service_thread.join().unwrap();
+}
+
+#[test]
+fn relay_preserves_sanitized_service_failure_and_distinguishes_lost_service_reply() {
+    for failed_reply in [true, false] {
+        let webauthn = crate::root_passkey::operator_webauthn().unwrap();
+        let (options, _) = webauthn
+            .start_passkey_registration(
+                webauthn_rs::prelude::Uuid::new_v4(),
+                "synthetic",
+                "Synthetic",
+                None,
+            )
+            .unwrap();
+        let (mut browser, mut io) = UnixStream::pair().unwrap();
+        let (mut relay_service, mut service) = UnixStream::pair().unwrap();
+        let service_thread = std::thread::spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(3);
+            read_request_frame(&mut service, deadline).unwrap();
+            write_frame(&mut service, &json!({"schema":1,"status":"enrollment_ready","options":options,"physical_authorization":false}), deadline).unwrap();
+            read_request_frame(&mut service, deadline).unwrap();
+            if failed_reply {
+                write_frame(&mut service, &json!({"schema":1,"status":"enrollment_failed","stage":"credential_verification","storage_state":"not_started_by_this_attempt","physical_authorization":false}), deadline).unwrap();
+            }
+        });
+        let relay_thread = std::thread::spawn(move || {
+            relay(
+                &mut io,
+                &mut relay_service,
+                Instant::now() + Duration::from_secs(3),
+            )
+        });
+        let deadline = Instant::now() + Duration::from_secs(3);
+        let ready = read_frame(&mut browser, deadline).unwrap();
+        let options = serde_json::from_value(ready["options"].clone()).unwrap();
+        let credential = SoftPasskey::new(true)
+            .do_registration(
+                webauthn_rs::prelude::Url::parse(crate::root_passkey::OPERATOR_ORIGIN).unwrap(),
+                options,
+            )
+            .unwrap();
+        let response = exchange(
+            &mut browser,
+            &json!({"schema":1,"command":{"operation":"finish_enrollment","credential":credential}}),
+            deadline,
+        );
+        if failed_reply {
+            assert_eq!(response.unwrap()["stage"], "credential_verification");
+            assert_eq!(relay_thread.join().unwrap(), Ok(()));
+        } else {
+            assert!(response.is_err());
+            assert_eq!(
+                relay_thread.join().unwrap(),
+                Err(Error::EnrollmentReplyUnavailable)
+            );
+        }
+        service_thread.join().unwrap();
+    }
+    for response in [
+        json!({"status":"enrollment_failed","stage":"credential_verification","storage_state":"inspection_required"}),
+        json!({"status":"enrollment_failed","stage":"arbitrary-secret-detail","storage_state":"not_started_by_this_attempt"}),
+        json!({"schema":1,"status":"enrollment_failed","stage":"storage","storage_state":"inspection_required","physical_authorization":false,"credential":"must not forward"}),
+    ] {
+        assert_eq!(
+            validate_enrollment_result(&response),
+            Err(Error::InvalidReply)
+        );
+    }
 }

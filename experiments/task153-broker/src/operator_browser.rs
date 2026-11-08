@@ -32,6 +32,7 @@ pub enum Error {
     EndpointUnavailable,
     RandomUnavailable,
     BootstrapUnavailable,
+    EnrollmentReplyUnavailable,
     InvalidHttp,
     Denied,
     Timeout,
@@ -217,6 +218,36 @@ fn validate_ready(value: &Value, mode: Mode) -> Result<(), Error> {
     }
     Ok(())
 }
+
+fn validate_enrollment_result(value: &Value) -> Result<(), Error> {
+    match value["status"].as_str() {
+        Some("enrollment_activated" | "enrollment_committed_cleanup_uncertain") => Ok(()),
+        Some("enrollment_failed") => {
+            if value.as_object().is_none_or(|fields| {
+                fields.len() != 5
+                    || fields.keys().any(|key| {
+                        !matches!(
+                            key.as_str(),
+                            "schema"
+                                | "status"
+                                | "stage"
+                                | "storage_state"
+                                | "physical_authorization"
+                        )
+                    })
+            }) {
+                return Err(Error::InvalidReply);
+            }
+            let stage: crate::operator_connection::EnrollmentFailureStage =
+                serde_json::from_value(value["stage"].clone()).map_err(|_| Error::InvalidReply)?;
+            if value["storage_state"] != stage.storage_state() {
+                return Err(Error::InvalidReply);
+            }
+            Ok(())
+        }
+        _ => Err(Error::InvalidReply),
+    }
+}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Finish {
@@ -324,10 +355,7 @@ pub fn run(arguments: Vec<OsString>) -> Result<(), Error> {
                     deadline,
                 )?;
                 let valid = match mode {
-                    Mode::Enroll => matches!(
-                        response["status"].as_str(),
-                        Some("enrollment_activated" | "enrollment_committed_cleanup_uncertain")
-                    ),
+                    Mode::Enroll => validate_enrollment_result(&response).is_ok(),
                     Mode::Assert if ready["execution_mode"] == "guarded_write" => {
                         response["status"] == "guarded_execution_report"
                     }

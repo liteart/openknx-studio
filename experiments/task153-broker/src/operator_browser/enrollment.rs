@@ -195,13 +195,9 @@ fn relay(io: &mut impl TimedIo, service: &mut UnixStream, deadline: Instant) -> 
     validate_ready(&ready, Mode::Enroll)?;
     write_frame(io, &ready, deadline)?;
     let finish = validate_finish(read_request_frame(io, deadline)?)?;
-    let result = exchange(service, &finish, deadline)?;
-    if !matches!(
-        result["status"].as_str(),
-        Some("enrollment_activated" | "enrollment_committed_cleanup_uncertain")
-    ) {
-        return Err(Error::InvalidReply);
-    }
+    let result =
+        exchange(service, &finish, deadline).map_err(|_| Error::EnrollmentReplyUnavailable)?;
+    validate_enrollment_result(&result)?;
     write_frame(io, &result, deadline)
 }
 
