@@ -92,7 +92,13 @@ pub(crate) fn acquire(root: &Path) -> Result<FileLease, StorageError> {
 mod tests {
     use super::*;
     use std::process::{Child, Command};
+    use std::sync::Mutex;
     use std::time::{Duration, Instant};
+
+    // Fork/exec can transiently retain another test's flock descriptor before
+    // CLOEXEC runs. Isolate these OS-lock/process tests; production try_lock
+    // remains zero-wait and no lockfile lifecycle guarantee is weakened.
+    static OS_LOCK_TESTS: Mutex<()> = Mutex::new(());
 
     struct ChildGuard(Child);
     impl Drop for ChildGuard {
@@ -104,6 +110,7 @@ mod tests {
 
     #[test]
     fn separate_handles_contend_and_the_stable_file_is_reused() {
+        let _serial = OS_LOCK_TESTS.lock().unwrap();
         let directory = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(directory.path()).unwrap();
         let lease = acquire(&root).unwrap();
@@ -117,7 +124,24 @@ mod tests {
     }
 
     #[test]
+    fn duplicated_descriptor_retains_lock_until_all_related_handles_close() {
+        let _serial = OS_LOCK_TESTS.lock().unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(directory.path()).unwrap();
+        let lease = acquire(&root).unwrap();
+        // Deliberately duplicate only in this regression to make the documented
+        // duplicated/inherited descriptor lifetime deterministic.
+        let duplicate = lease._file.try_clone().unwrap();
+        drop(lease);
+        assert!(matches!(acquire(&root), Err(StorageError::Busy)));
+        assert!(duplicate.metadata().unwrap().is_file());
+        drop(duplicate);
+        let _next = acquire(&root).unwrap();
+    }
+
+    #[test]
     fn unqualified_roots_and_nonfile_lock_paths_are_rejected() {
+        let _serial = OS_LOCK_TESTS.lock().unwrap();
         assert!(qualified_root(Path::new("relative")).is_err());
         let directory = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(directory.path()).unwrap();
@@ -128,6 +152,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn symlink_lock_path_is_not_followed() {
+        let _serial = OS_LOCK_TESTS.lock().unwrap();
         let directory = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(directory.path()).unwrap();
         let target = root.join("unrelated");
@@ -139,6 +164,7 @@ mod tests {
 
     #[test]
     fn lock_child_process() {
+        let _serial = OS_LOCK_TESTS.lock().unwrap();
         let Some(root) = std::env::var_os("OPENKNX_TASK156_LOCK_CHILD") else {
             return;
         };
@@ -150,6 +176,7 @@ mod tests {
 
     #[test]
     fn process_death_releases_only_the_cooperative_os_lock() {
+        let _serial = OS_LOCK_TESTS.lock().unwrap();
         let directory = tempfile::tempdir().unwrap();
         let root = fs::canonicalize(directory.path()).unwrap();
         let mut child = ChildGuard(

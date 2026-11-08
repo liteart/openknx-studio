@@ -279,3 +279,40 @@ fn native_two_processes_cannot_both_reserve_the_same_route() {
         Ok(RouteStatus::Quarantined)
     );
 }
+
+#[test]
+fn native_guard_full_intent_and_record_namespace_lease() {
+    use crate::NamespaceStorage;
+    let directory = tempfile::tempdir().unwrap();
+    let root = std::fs::canonicalize(directory.path()).unwrap();
+    let storage = WindowsStorage::open(&root).unwrap();
+    let lease = storage.lock_route([1; 32]).unwrap();
+    assert!(matches!(storage.lock_records(), Err(StorageError::Busy)));
+    assert!(matches!(
+        storage.lock_route([2; 32]),
+        Err(StorageError::Busy)
+    ));
+    drop(lease);
+    {
+        let _records = storage.lock_records().unwrap();
+        assert!(matches!(
+            storage.lock_route([2; 32]),
+            Err(StorageError::Busy)
+        ));
+    }
+    let bytes = vec![0xa5; crate::guard_storage::MAX_INTENT_BYTES];
+    let binding = Binding::new([1; 32], [0x22; 32], [3; 32], [4; 16]).unwrap();
+    let bridge = crate::guard_storage::GuardStore::new(storage);
+    bridge.reserve(binding, &bytes).unwrap();
+    assert_eq!(
+        bridge.intent([0x22; 32], bytes.len()).unwrap(),
+        Some(bytes.clone())
+    );
+    drop(bridge);
+    let reopened = crate::guard_storage::GuardStore::new(WindowsStorage::open(&root).unwrap());
+    assert_eq!(
+        reopened.intent([0x22; 32], bytes.len()).unwrap(),
+        Some(bytes)
+    );
+    assert!(reopened.intent([0x22; 32], 2048).is_err());
+}

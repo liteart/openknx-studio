@@ -5,8 +5,8 @@
 #![forbid(unsafe_code)]
 
 use crate::{
-    Digest, Key, MAX_RECORD_BYTES, RouteLease, Storage, StorageError, cooperative_lock,
-    native_layout,
+    Digest, Key, MAX_RECORD_BYTES, NamespaceStorage, RouteLease, Storage, StorageError,
+    cooperative_lock, native_layout,
 };
 use sha2::{Digest as _, Sha256};
 use std::os::windows::ffi::OsStrExt;
@@ -182,6 +182,14 @@ impl Storage for WindowsStorage {
             namespace,
             route,
         })
+    }
+}
+
+impl NamespaceStorage for WindowsStorage {
+    fn lock_records(&self) -> Result<WindowsLease, StorageError> {
+        // lock_route already takes the one namespace-wide file lease. The
+        // route field is unused by record-only operations; no head is touched.
+        self.lock_route([0xfe; 32])
     }
 }
 

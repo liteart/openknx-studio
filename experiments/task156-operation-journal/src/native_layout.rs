@@ -38,6 +38,11 @@ pub(crate) fn record_path(key: Key) -> String {
                 Event::CleanupConfirmed => "cleanup-confirmed",
             }
         ),
+        Key::GuardOperation(id) => format!("GO\\{}", hex(&id)),
+        Key::GuardApproval(id) => format!("GA\\{}", hex(&id)),
+        Key::GuardIntent(id) => format!("GI\\{}", hex(&id)),
+        Key::GuardIntentPart(id, index) => format!("GP\\{}\\{index:02x}", hex(&id)),
+        Key::GuardEvidence(id, evidence) => format!("GE\\{}\\{}", hex(&id), evidence.key()),
     }
 }
 
@@ -166,6 +171,31 @@ mod tests {
             record_path(Key::Operation([1; 32])),
             record_path(Key::Event([1; 32], Event::Intent))
         );
+        let mut guard_keys = vec![
+            Key::GuardOperation([1; 32]),
+            Key::GuardApproval([2; 16]),
+            Key::GuardIntent([1; 32]),
+        ];
+        for index in 0..=8 {
+            guard_keys.push(Key::GuardIntentPart([1; 32], index));
+        }
+        for evidence in [
+            crate::guard_storage::Evidence::DesiredReadback,
+            crate::guard_storage::Evidence::RestoreIntent,
+            crate::guard_storage::Evidence::RestoredReadback,
+            crate::guard_storage::Evidence::CleanupConfirmed,
+        ] {
+            guard_keys.push(Key::GuardEvidence([1; 32], evidence));
+        }
+        let mut paths = std::collections::HashSet::new();
+        for key in guard_keys {
+            let path = record_path(key);
+            assert!(paths.insert(path.clone()), "guard keys must be distinct");
+            assert!(!path.starts_with("Operations\\") && !path.starts_with("Events\\"));
+            // Every new guard key path is shorter than the pre-existing longest
+            // path already verified against Windows' full registry-key bound.
+            assert!(path.len() <= record_path(Key::Event([1; 32], Event::CleanupConfirmed)).len());
+        }
     }
 
     #[test]

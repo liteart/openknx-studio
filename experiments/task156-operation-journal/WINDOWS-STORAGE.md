@@ -103,7 +103,7 @@ checked status propagation, NEW disposition and owned-handle disposal. Package
 checksums and license metadata for all 34 locked packages matched the existing
 offline cache; no package was downloaded for this increment. New direct pins:
 `winsafe = 0.0.29` (MIT, MSRV 1.87, `advapi` implies `kernel`, no transitive
-crate dependencies), Windows-only `sha2 = 0.11.0`, and test-only
+crate dependencies), `sha2 = 0.11.0` (also used by the portable guard bridge), and test-only
 `tempfile = 3.24.0`. See `DEPENDENCIES.tsv` and Cargo.lock.
 
 Inspected winsafe source SHA-256:

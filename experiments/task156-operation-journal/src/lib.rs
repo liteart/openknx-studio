@@ -10,6 +10,8 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod guard_storage;
+
 #[cfg(any(test, all(windows, feature = "experimental-windows-storage")))]
 mod cooperative_lock;
 #[cfg(any(test, all(windows, feature = "experimental-windows-storage")))]
@@ -121,6 +123,11 @@ pub enum Key {
     Operation(Digest),
     Approval([u8; 16]),
     Event(Digest, Event),
+    GuardOperation(Digest),
+    GuardApproval([u8; 16]),
+    GuardIntent(Digest),
+    GuardIntentPart(Digest, u8),
+    GuardEvidence(Digest, guard_storage::Evidence),
 }
 
 /// Backend contract, not a security boundary against its implementer.
@@ -138,6 +145,14 @@ pub trait Storage {
     where
         Self: 'a;
     fn lock_route(&self, route: Digest) -> Result<Self::Lease<'_>, StorageError>;
+}
+
+/// Stronger contract needed by full guard recovery, whose operation key does
+/// not contain a route. All route leases and this record-only lease must share
+/// one namespace-wide exclusion mechanism. This lease must not read or mutate
+/// a synthetic route head. Implementing only route-local exclusion is invalid.
+pub trait NamespaceStorage: Storage {
+    fn lock_records(&self) -> Result<Self::Lease<'_>, StorageError>;
 }
 
 pub trait RouteLease {
@@ -441,3 +456,11 @@ impl<S: Storage> Journal<S> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "../../task020-guard/guard.rs"]
+#[allow(dead_code)]
+mod guard;
+
+#[cfg(test)]
+mod guard_bridge_tests;

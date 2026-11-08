@@ -11,7 +11,7 @@ struct Image {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum Failure {
+pub(super) enum Failure {
     Before,
     Partial,
     After,
@@ -26,28 +26,54 @@ struct State {
 }
 
 #[derive(Clone, Default)]
-struct FakeStorage(Arc<Mutex<State>>);
+pub(super) struct FakeStorage(Arc<Mutex<State>>);
 
 impl FakeStorage {
-    fn crash(&self) {
+    pub(super) fn crash(&self) {
         let mut state = self.0.lock().unwrap();
         state.visible = state.durable.clone();
         state.calls = 0;
         state.failure = None;
     }
 
-    fn fail(&self, call: usize, mode: Failure) {
+    pub(super) fn fail(&self, call: usize, mode: Failure) {
         let mut state = self.0.lock().unwrap();
         state.calls = 0;
         state.failure = Some((call, mode));
     }
 
-    fn calls(&self) -> usize {
+    pub(super) fn calls(&self) -> usize {
         self.0.lock().unwrap().calls
     }
 }
 
-struct Lease<'a> {
+impl NamespaceStorage for FakeStorage {
+    fn lock_records(&self) -> Result<Self::Lease<'_>, StorageError> {
+        self.lock_route([0xfe; 32])
+    }
+}
+
+impl FakeStorage {
+    pub(super) fn record_bytes(&self, key: Key) -> Option<Vec<u8>> {
+        self.0.lock().unwrap().visible.records.get(&key).cloned()
+    }
+    pub(super) fn replace_record(&self, key: Key, bytes: Option<Vec<u8>>) {
+        let mut state = self.0.lock().unwrap();
+        match bytes {
+            Some(bytes) => {
+                state.visible.records.insert(key, bytes);
+            }
+            None => {
+                state.visible.records.remove(&key);
+            }
+        }
+    }
+    pub(super) fn has_route(&self, route: Digest) -> bool {
+        self.0.lock().unwrap().visible.routes.contains_key(&route)
+    }
+}
+
+pub(super) struct Lease<'a> {
     route: Digest,
     state: MutexGuard<'a, State>,
 }

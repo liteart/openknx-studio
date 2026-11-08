@@ -8,6 +8,9 @@ guard and Task152 journal were inspected as contracts and remain unchanged.
 The initial policy-only checkpoint below is historical. A later opt-in native
 Windows adapter is described in [WINDOWS-STORAGE.md](WINDOWS-STORAGE.md), with
 Windows-target checks but no native Windows execution or qualification.
+The later [guard storage bridge](GUARD-STORAGE-BRIDGE.md) persists complete
+Task020 intents through these storage primitives without reusing this policy
+state machine or creating another authorization authority.
 
 ## Implemented scope
 

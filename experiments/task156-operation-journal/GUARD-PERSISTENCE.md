@@ -76,7 +76,13 @@ store now verifies that accessor against the exact serialized intent, followed
 by a successful Clippy run. Tests were added together with this new seam; no
 historical failed test is claimed.
 
-## Remaining native integration
+## Remaining native integration (historical seam checkpoint)
+
+The later [guard storage bridge](GUARD-STORAGE-BRIDGE.md) adds full-intent
+segmentation and a consumer-local adapter to the existing Storage primitives.
+The original seam checkpoint below remains historical; native qualification
+and physical-service activation remain outstanding.
+
 
 No implementation yet maps this 16KiB full-intent contract to the 2KiB native
 Task156 record format. That requires a versioned bounded full-plan representation
