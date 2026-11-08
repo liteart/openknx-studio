@@ -4,8 +4,11 @@
 use super::*;
 use crate::{AttemptStatus, Binding, Event, Journal, RouteStatus};
 use std::fs;
-use std::process::{Child, Command};
+use std::io;
+use std::process::{Child, Command, ExitStatus};
 use std::time::{Duration, Instant};
+
+const CHILD_TIMEOUT: Duration = Duration::from_secs(5);
 
 fn binding(operation: u8, approval: u8) -> Binding {
     Binding::new([1; 32], [operation; 32], [3; 32], [approval; 16]).unwrap()
@@ -153,8 +156,11 @@ fn native_cooperating_threads_have_at_most_one_begin_winner() {
 struct ChildGuard(Child);
 impl Drop for ChildGuard {
     fn drop(&mut self) {
-        let _ = self.0.kill();
-        let _ = self.0.wait();
+        if let Err(error) = terminate_child(&mut self.0) {
+            // A failed assertion must not trigger an indefinite cleanup wait or
+            // another panic. Report uncertainty instead of claiming a reap.
+            eprintln!("synthetic journal child cleanup failed: {error}");
+        }
     }
 }
 
@@ -183,15 +189,35 @@ fn wait_marker(root: &Path, name: &str) {
 }
 
 fn wait_exit(child: &mut ChildGuard) {
-    let deadline = Instant::now() + Duration::from_secs(5);
+    let status = reap_child_until(&mut child.0, Instant::now() + CHILD_TIMEOUT).unwrap();
+    assert!(status.success(), "synthetic journal child failed: {status}");
+}
+
+fn reap_child_until(child: &mut Child, deadline: Instant) -> io::Result<ExitStatus> {
     loop {
-        if let Some(status) = child.0.try_wait().unwrap() {
-            assert!(status.success());
-            break;
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
         }
-        assert!(Instant::now() < deadline, "child exit deadline expired");
+        if Instant::now() >= deadline {
+            return Err(io::Error::new(
+                io::ErrorKind::TimedOut,
+                "synthetic journal child exit was not observed before the deadline",
+            ));
+        }
         std::thread::sleep(Duration::from_millis(10));
     }
+}
+
+fn terminate_child(child: &mut Child) -> io::Result<ExitStatus> {
+    if let Ok(Some(status)) = child.try_wait() {
+        return Ok(status);
+    }
+    // Preserve the termination attempt after a status-query error, and observe
+    // exit only through bounded polling even if kill itself returns an error.
+    let killed = child.kill();
+    let reaped = reap_child_until(child, Instant::now() + CHILD_TIMEOUT);
+    killed?;
+    reaped
 }
 
 #[test]
@@ -239,8 +265,15 @@ fn native_process_termination_releases_os_lock_but_preserves_active_quarantine()
         storage.lock_route([1; 32]),
         Err(StorageError::Busy)
     ));
-    owner.0.kill().unwrap();
-    owner.0.wait().unwrap();
+    assert_eq!(
+        reap_child_until(&mut owner.0, Instant::now())
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::TimedOut
+    );
+    let status = terminate_child(&mut owner.0).unwrap();
+    assert!(!status.success(), "active owner exited without termination");
+    assert!(owner.0.try_wait().unwrap().is_some());
     assert_eq!(
         Journal::new(storage).inspect_route([1; 32]),
         Ok(RouteStatus::Quarantined)

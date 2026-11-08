@@ -151,3 +151,23 @@ in place; no production deletion API is added. All native Windows tests are
 protected-service/guard integration and physical device qualification remain
 open. Independent review is required before accepting this source increment;
 Task156 itself remains incomplete.
+
+## Native test child cleanup correction — 2026-11-08
+
+At editor base `7aae1bb`, this older native test group still used blocking
+`Child::wait` in its cleanup guard and abrupt-owner test. Both paths now use
+deadline-bound `try_wait` polling. A failed status query still attempts
+termination; kill failure or a missing exit observation is an explicit error.
+The abrupt-owner test first requires an expired polling deadline to return a
+timeout, then confirms a non-successful terminated child before checking that
+the persisted route remains quarantined. Test cleanup reports uncertainty
+instead of blocking indefinitely or claiming a child was reaped.
+
+macOS regression: 69 tests and one compile-fail doctest PASS. Windows GNU
+feature-on all-target check and Clippy with warnings denied PASS; formatting
+and diff checks PASS. An initial macOS build emitted a `rust-objcopy`
+debug-stripping warning while tests passed; a repeat with explicit no-strip
+configuration passed without that warning. The native cleanup assertions are
+type-checked only: Windows execution remains NOT RUN. Production storage,
+locking and dependencies are unchanged. Previously cross-linked test
+executables must be rebuilt before running this complete native group.
