@@ -133,3 +133,14 @@ RUN; the imported guard journal also remains separately unqualified on Windows.
 This opt-in is for qualification, not device authorization or Windows support.
 Commands, dependency provenance and limitations are in
 `experiments/task152-passkey/TASK152-WINDOWS-REGISTRY-JOURNAL.md`.
+
+The Windows x86_64 synthetic test harness was cross-linked from editor
+`69b2f9b452176f56b2eb03c7078bc3526ad0c5b2` using pinned Rust 1.99.1 and
+verified llvm-mingw 20261104. The locked/offline `cargo test --no-run` build
+passed; the private test executable SHA-256 is
+`d1cf41e4ff92c3a0702dffefa21901cc4d7e89e3a4fb050fbc9094bf500d6796`.
+An independent verifier checked saved hashes, architecture and static
+imports, but did not reproduce the build. Commands, runtime dependency and
+limits are in `private/evidence/task152-156-windows-cross-20261108/README.md`,
+SHA-256 `b860fb14269d7fc7c307c42daf6b5a86e2945990358b65cfe1d539410450d72c`.
+Native Windows execution and registry behavior remain NOT RUN.
