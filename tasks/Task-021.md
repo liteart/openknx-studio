@@ -84,13 +84,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; generic load-state read increment reviewed, exact product profile and remaining primitives outstanding |
-| Source commit(s) | Local unpublished knust fork `e10459fd429b63576231048a85ca270891acff56`, based on `4d296afb0906d17b6724b56c912f2e9e3f6680a5` |
-| Tests executed | Three codec tests, 16 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent reviewer repeated codec and two focused loopback tests; hardware and Windows NOT RUN |
-| Evidence location | Fork `TASK021-LOAD-STATE-READ.md` at `e10459fd429b63576231048a85ca270891acff56` |
-| Acceptance criteria met | Partial AC-001 for the generic read only; complete profile and required primitive set remain unqualified |
-| Technical outcome | Typed PID5 load-state observation accepts six defined states and fails closed on invalid responses; no load events or memory operations implemented |
+| Implementation / report status | In progress; generic load-state and memory reads reviewed, exact product profile and remaining primitives outstanding |
+| Source commit(s) | Local unpublished knust fork `f260e1113a355a5c16dec0ca98ae9a1b53557a63`, based on `e10459fd429b63576231048a85ca270891acff56` and `4d296afb0906d17b6724b56c912f2e9e3f6680a5` |
+| Tests executed | Three load-state codec tests, three memory codec tests, 18 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent review repeated each codec and its focused loopback tests; hardware and Windows NOT RUN |
+| Evidence location | Fork `TASK021-LOAD-STATE-READ.md` and `TASK021-MEMORY-READ.md` at the source commits above |
+| Acceptance criteria met | Partial AC-001 for the generic reads only; complete profile and required primitive set remain unqualified |
+| Technical outcome | Typed load-state and bounded 16-bit memory reads reject invalid replies; no load events or memory writes implemented |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Independent protocol and simulator review PASS for the bounded read increment only |
+| Reviewer | Independent protocol and simulator reviews PASS for both bounded read increments only |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
