@@ -138,6 +138,50 @@ pub(super) fn persist(directory: &Path, path: &Path, bytes: &[u8]) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io;
+    use std::process::{Child, ExitStatus};
+    use std::time::{Duration, Instant};
+
+    const CHILD_TIMEOUT: Duration = Duration::from_secs(5);
+
+    struct ChildGuard(Child);
+
+    impl Drop for ChildGuard {
+        fn drop(&mut self) {
+            if let Err(error) = terminate_child(&mut self.0) {
+                // Never block indefinitely or panic during another assertion's
+                // unwind. A diagnostic is not a claim that the child was reaped.
+                eprintln!("synthetic registry contender cleanup failed: {error}");
+            }
+        }
+    }
+
+    fn reap_child_until(child: &mut Child, deadline: Instant) -> io::Result<ExitStatus> {
+        loop {
+            if let Some(status) = child.try_wait()? {
+                return Ok(status);
+            }
+            if Instant::now() >= deadline {
+                return Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "synthetic registry contender exit was not observed before the deadline",
+                ));
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    fn terminate_child(child: &mut Child) -> io::Result<ExitStatus> {
+        if let Ok(Some(status)) = child.try_wait() {
+            return Ok(status);
+        }
+        // Even an initial status-query error must not skip termination. Observe
+        // exit with a deadline after kill, including when kill itself fails.
+        let killed = child.kill();
+        let reaped = reap_child_until(child, Instant::now() + CHILD_TIMEOUT);
+        killed?;
+        reaped
+    }
 
     #[test]
     fn native_key_value_is_flushed_and_existing_or_partial_records_are_not_reused() {
@@ -247,7 +291,7 @@ mod tests {
         for index in 0..2 {
             let stdout = std::fs::File::create(root.join(format!("stdout-{index}"))).unwrap();
             let stderr = std::fs::File::create(root.join(format!("stderr-{index}"))).unwrap();
-            children.push(
+            children.push(ChildGuard(
                 std::process::Command::new(&executable)
                     .args([
                         "--exact",
@@ -260,14 +304,14 @@ mod tests {
                     .stderr(stderr)
                     .spawn()
                     .unwrap(),
-            );
+            ));
         }
         fs::write(root.join("go"), b"start").unwrap();
         let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
         let mut failed = false;
         for child in &mut children {
             loop {
-                match child.try_wait() {
+                match child.0.try_wait() {
                     Ok(Some(status)) => {
                         failed = !status.success();
                         break;
@@ -290,8 +334,9 @@ mod tests {
         }
         if failed {
             for child in &mut children {
-                let _ = child.kill();
-                let _ = child.wait();
+                if let Err(error) = terminate_child(&mut child.0) {
+                    eprintln!("synthetic registry contender was not confirmed reaped: {error}");
+                }
             }
             panic!("native registry contenders failed or timed out; no retry");
         }
@@ -313,5 +358,36 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn native_contender_exit_timeout_is_bounded_and_cleanup_is_confirmed() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(directory.path()).unwrap();
+        // Without the go marker this helper waits, so an expired deadline must
+        // return a timeout rather than waiting for the child to finish.
+        let mut child = ChildGuard(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "journal::windows::tests::native_process_contender",
+                    "--test-threads=1",
+                ])
+                .env("OPENKNX_TASK152_TEST_JOURNAL", &root)
+                .env("OPENKNX_TASK152_TEST_CONTENDER", "0")
+                .spawn()
+                .unwrap(),
+        );
+        assert_eq!(
+            reap_child_until(&mut child.0, Instant::now())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::TimedOut
+        );
+        let status = terminate_child(&mut child.0).unwrap();
+        assert!(!status.success(), "waiting contender was not terminated");
+        assert!(child.0.try_wait().unwrap().is_some());
+        assert!(!root.join("go").exists());
+        assert!(!root.join("outcome-0").exists());
     }
 }

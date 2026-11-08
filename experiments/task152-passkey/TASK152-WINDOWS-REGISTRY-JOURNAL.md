@@ -151,3 +151,21 @@ behavior is preserved. Independent review and native Windows validation remain.
 The imported Task020 guard retains its own separate filesystem journal and
 directory-sync behavior. This change does not replace that journal or establish
 Windows execution of the guard's synthetic integration tests.
+
+## Native test child cleanup correction — 2026-11-08
+
+At editor base `7aae1bb`, the separate-process native test polled for normal
+completion but used blocking `Child::wait` after a timeout. The test-only code
+now retains every spawned child in a cleanup guard and uses deadline-bound
+`try_wait` polling after termination. A failed status query still attempts
+termination; failed termination or unobserved exit is reported explicitly.
+Cleanup never claims successful reaping from a kill request alone. The new
+native expired-deadline case withholds the start marker, requires a timeout,
+then confirms termination without publishing a receipt.
+
+macOS regression: 66 library tests PASS. Windows GNU feature-on all-target
+check and Clippy with warnings denied PASS; formatting and diff checks PASS.
+The native timeout/cleanup regression is type-checked only: Windows execution
+remains NOT RUN. No production code, registry behavior, dependency or device
+capability changed. Previously cross-linked test executables predate this
+correction and must be rebuilt before running the complete native test group.
