@@ -241,6 +241,7 @@ windows-link	0.2.1	MIT OR Apache-2.0	https://github.com/microsoft/windows-rs
 windows-result	0.4.1	MIT OR Apache-2.0	https://github.com/microsoft/windows-rs
 windows-strings	0.5.1	MIT OR Apache-2.0	https://github.com/microsoft/windows-rs
 windows-sys	0.61.2	MIT OR Apache-2.0	https://github.com/microsoft/windows-rs
+winsafe	0.0.29	MIT	https://github.com/rodrigocfd/winsafe
 wit-bindgen	0.57.1	Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT	https://github.com/bytecodealliance/wit-bindgen
 wnaf	0.14.1	Apache-2.0 OR MIT	https://github.com/RustCrypto/elliptic-curves
 writeable	0.6.4	Unicode-3.0	https://github.com/unicode-org/icu4x

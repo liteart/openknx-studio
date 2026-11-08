@@ -66,20 +66,26 @@ as a trusted display of the KNX transaction. Unrestricted code under the same
 approving OS principal can modify enrollment, executable code and desktop
 display. This experiment does not claim protection against that principal.
 
-The directory synchronization path was tested only on macOS arm64. The same
-concrete file-and-directory barriers have a Linux implementation. The library
-tests passed in a Linux arm64 container on tmpfs; native-host filesystem and
-power-loss durability remain unqualified. Windows
-and other platforms have no reviewed parent-directory persistence operation
-here: opening a verifier explicitly returns `UnsupportedJournalPlatform`
-before any ceremony can start. This is a fail-closed limitation, not Windows
-support. A failed preflight on the implemented platforms returns
+The directory synchronization path has macOS arm64 and Linux-container
+regression evidence; native Linux filesystem/power-loss qualification remains
+open. Default Windows startup still returns `UnsupportedJournalPlatform`
+before a ceremony can begin. The non-default `experimental-windows-journal`
+feature selects a development-only nonvolatile HKCU registry
+journal implementation: it reserves one key per consumed challenge, writes the
+bounded receipt, and requires checked `RegFlushKey` barriers. Its source and
+native-only tests type-check for `x86_64-pc-windows-gnu`, but **native Windows
+execution is NOT RUN**. It is not qualified Windows support or a protected operator service;
+the owned module forbids unsafe code and uses reviewed safe registry APIs.
+Those dependencies contain unsafe code; no absence claim is made for them. Other
+platforms return `UnsupportedJournalPlatform`. A failed preflight returns
 `JournalDurabilityUnavailable`. A later write or barrier failure returns `Io`
 and releases no receipt; a newly created consumption file is preserved and
 cannot be silently overwritten or retried. No successful fsync call proves
 power-loss behavior for every filesystem or device. Callers must provide a
 trusted UTC clock and an independently protected service before any future
-physical integration. See [the preflight evidence](TASK152-JOURNAL-PREFLIGHT.md).
+physical integration. See [the preflight evidence](TASK152-JOURNAL-PREFLIGHT.md)
+and [Windows development journal scope](TASK152-WINDOWS-REGISTRY-JOURNAL.md).
+The experimental feature is a qualification switch, never operation approval.
 
 ## Temporary browser runner
 
