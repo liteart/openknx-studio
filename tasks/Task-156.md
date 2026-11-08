@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Ready |
+| Status | In progress |
 | Stage | PoC platform qualification |
 | Component | knx-editor / guarded operation persistence |
 | Dependencies | Task-003, Task-151; Task020 guard model as a test contract |
@@ -47,6 +47,19 @@ invariants. Work is offline and simulator-only; it grants no device authority.
 
 ## Completion record
 
-Not started. Windows registry/mutex operation-journal implementation and
-native tests are NOT RUN. The experimental Task152 receipt journal is not
-evidence that this operation journal exists.
+The first increment implements a portable policy and owned crash/fault
+simulator, not a Windows backend or a Task020 integration. Independent review
+found two persistence/transition issues; both were fixed and their regressions
+passed. Source commit `bdb844067c6748e2ef2b164f215253234d9264cf` was
+integrated as `32bcd86`.
+
+The implementer and independent reviewer each ran 14 simulator tests; the
+coordinator repeated `cargo test --locked --offline --manifest-path
+experiments/task156-operation-journal/Cargo.toml` on main: 14 PASS. Focused
+Clippy, Windows GNU type-check, formatting and diff checks passed in the
+isolated worktree. Commands, fault model and limitations are recorded in
+`experiments/task156-operation-journal/README.md`.
+
+Windows registry/mutex implementation, native cross-process tests, guard
+integration and hardware are NOT RUN. The experimental Task152 receipt
+journal is not evidence that this operation journal exists.
