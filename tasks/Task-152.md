@@ -102,3 +102,16 @@ is under `private/evidence/task153-service-build-20261108T064526827601Z/`.
 These results do not prove Windows or Linux operation, protect the browser from
 unrestricted same-account interference, or qualify the fixed one-shot broker
 as a reusable production workflow. The task remains in progress.
+
+The development verifier now checks its actual journal directory barrier before
+issuing any enrollment or assertion ceremony. A failed or unsupported barrier
+returns an explicit error; receipt consumption still requires both file and
+directory synchronization and is never automatically cleared after failure.
+Reviewed source `0fd7df84f50e501e0e820cace66522c87af64927` was integrated as
+`523e337`. The implementer and independent reviewer each ran 56 library tests,
+one compile-fail doctest and six browser-handler tests (socket test excluded),
+and the coordinator repeated the 56 library tests on main. Details and the
+mutation test are in `experiments/task152-passkey/TASK152-JOURNAL-PREFLIGHT.md`.
+This explicitly rejects the unqualified Windows barrier before a ceremony; it
+does not implement Windows support. Linux native behavior, socket integration
+and power-loss durability remain NOT RUN for this increment.
