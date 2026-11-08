@@ -71,6 +71,15 @@ reviewed and pinned before use.
 
 ## Completion record
 
+On 2026-11-08 the owner completed protected macOS passkey enrollment and an
+exact-plan assertion through the Task153 operator service. The owner-provided
+Task020 execution journal reports desired readback, restored readback and
+cleanup for the same plan digest; see Task020 for the transcript hash and
+limitations. This supplements the earlier synthetic browser ceremony; it does
+not establish Windows or Linux provider behavior, trusted transaction display,
+or resistance to unrestricted interference by the same macOS principal.
+The criteria and security review remain open pending task-level assessment.
+
 | Field | Current value |
 |---|---|
 | Implementation / report status | Development-only verifier and localhost browser demo; protected enrollment and physical grant remain absent |
