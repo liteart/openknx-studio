@@ -116,3 +116,14 @@ Windows GNU feature-on all-target check and Clippy passed. Exact commands and
 limits are in `experiments/task156-operation-journal/NATIVE-GUARD-TESTS.md`.
 These Windows tests have only been type-checked: native registry/process
 execution, physical service integration and hardware remain NOT RUN.
+
+The Windows x86_64 synthetic test harness was cross-linked from editor
+`69b2f9b452176f56b2eb03c7078bc3526ad0c5b2` using pinned Rust 1.99.1 and
+verified llvm-mingw 20261104. The locked/offline `cargo test --no-run` build
+passed; the private executable SHA-256 is
+`d1472ed00ee2dd23c9bab1d6d61ab0e99dafec8c7c011aa5b684875180eefa7a`.
+An independent verifier checked saved hashes, architecture and static imports,
+but did not reproduce the build. Commands, runtime dependency and limits are
+in `private/evidence/task152-156-windows-cross-20261108/README.md`, SHA-256
+`b860fb14269d7fc7c307c42daf6b5a86e2945990358b65cfe1d539410450d72c`.
+Native Windows registry/process tests remain NOT RUN.
