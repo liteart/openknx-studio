@@ -60,6 +60,18 @@ Clippy, Windows GNU type-check, formatting and diff checks passed in the
 isolated worktree. Commands, fault model and limitations are recorded in
 `experiments/task156-operation-journal/README.md`.
 
-Windows registry/mutex implementation, native cross-process tests, guard
-integration and hardware are NOT RUN. The experimental Task152 receipt
-journal is not evidence that this operation journal exists.
+The next increment adds an opt-in Windows registry adapter and a stable,
+namespace-wide cooperative file lock; it has no device capability and is not
+integrated with Task020. The first review found an unbounded registry-value
+read; it was replaced with bounded chunk-key enumeration and independently
+re-reviewed. Reviewed source `ce0f82db6a05d7cb94e67d4aa772483b90c6d339` was
+integrated as `757dd05`. The coordinator repeated the locked offline suite on
+main: 24 macOS tests and one compile-fail doctest PASS. Independent review
+also repeated those tests and the Windows GNU feature-on all-target check;
+the implementer checked feature-off/on and Clippy. The exact storage format,
+commands and limits are in `experiments/task156-operation-journal/WINDOWS-STORAGE.md`.
+
+Native Windows registry, cross-process and crash tests, Task020 guard
+integration and hardware are NOT RUN. The experimental Task152 receipt journal
+is not evidence that this operation journal is qualified. The Windows feature
+remains disabled by default and is not operation authorization.
