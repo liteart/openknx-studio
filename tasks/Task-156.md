@@ -75,3 +75,16 @@ Native Windows registry, cross-process and crash tests, Task020 guard
 integration and hardware are NOT RUN. The experimental Task152 receipt journal
 is not evidence that this operation journal is qualified. The Windows feature
 remains disabled by default and is not operation authorization.
+
+A subsequent increment added an explicit trusted persistence seam below the
+actual Task020 guard, retaining its approval/observation checks, full 16 KiB
+intent and existing default filesystem behavior. It does not connect the
+2 KiB Task156 storage format or provide a Windows backend for the guard.
+Independent review passed 37 guard tests, 66 Task152 library tests and a
+Task153 library compatibility check; the coordinator repeated `cargo test
+--locked --offline --test task020-guard` on main: 37 PASS. Reviewed source
+`5c82ae05d3c5bd3e5d3df4f235b565e7b3a0e285` was integrated as `805dd21`.
+Contract, commands and limits are in
+`experiments/task156-operation-journal/GUARD-PERSISTENCE.md`. Native Windows
+storage mapping, cross-process tests and physical service redeployment remain
+NOT RUN; no new device authorization or phase gate is implied.
