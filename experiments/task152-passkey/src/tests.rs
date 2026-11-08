@@ -404,3 +404,54 @@ fn invalid_issuer_or_noncanonical_journal_is_rejected() {
         Err(Error::UnsafeJournalPath)
     ));
 }
+
+#[test]
+fn unavailable_journal_barrier_prevents_verifier_creation_without_mutation() {
+    for failure in [
+        Error::UnsupportedJournalPlatform,
+        Error::JournalDurabilityUnavailable,
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(directory.path()).unwrap();
+        let expected = format!("{failure:?}");
+        let result =
+            DevelopmentVerifier::open_with_preflight(&root, "synthetic-issuer", |actual| {
+                assert_eq!(actual, root);
+                Err(failure)
+            });
+        // There is no verifier from which a registration or assertion challenge
+        // could be obtained, and no probe/consumption/credential file is written.
+        assert_eq!(format!("{:?}", result.err().unwrap()), expected);
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
+    }
+}
+
+#[test]
+fn journal_failure_after_preflight_consumes_the_signed_challenge_without_receipt() {
+    let (directory, mut verifier, mut authenticator) = enrolled();
+    let plan = BoundPlan::new(input()).unwrap();
+    let options = verifier.begin_assertion(&plan, 102).unwrap();
+    let response = sign(&mut authenticator, options);
+    // The preflight is not a cached promise of future persistence. Make the
+    // actual directory unavailable after it succeeded and after challenge issue.
+    fs::remove_dir(directory.path()).unwrap();
+    fs::write(directory.path(), b"synthetic unavailable directory").unwrap();
+    assert_eq!(
+        verifier
+            .finish_assertion(&plan, &response, 103)
+            .unwrap_err(),
+        Error::Io
+    );
+    assert_eq!(
+        verifier
+            .finish_assertion(&plan, &response, 104)
+            .unwrap_err(),
+        Error::ChallengeUnavailable
+    );
+    assert_eq!(
+        fs::read(directory.path()).unwrap(),
+        b"synthetic unavailable directory"
+    );
+    fs::remove_file(directory.path()).unwrap();
+    fs::create_dir(directory.path()).unwrap();
+}

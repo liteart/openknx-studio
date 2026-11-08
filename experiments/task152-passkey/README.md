@@ -35,6 +35,11 @@ enrollment, a physical grant adapter or device execution.
   containing directory before returning. Existing receipt paths are rejected.
   Cancellation or restart discards pending ceremonies. Expiration, rollback of
   supplied UTC time and a monotonic timeout are rejected.
+- Opening the verifier first checks the actual journal's directory-sync barrier
+  without creating a probe, credential or consumption record. An unavailable
+  barrier fails before enrollment or assertion can begin. Every successful
+  assertion still requires its own file and directory synchronization; an
+  earlier preflight never substitutes for those barriers.
 
 ## Platform direction and trust boundary
 
@@ -61,11 +66,19 @@ as a trusted display of the KNX transaction. Unrestricted code under the same
 approving OS principal can modify enrollment, executable code and desktop
 display. This experiment does not claim protection against that principal.
 
-The directory synchronization path was tested only on macOS arm64. Windows and
-Linux builds/durability are **NOT RUN**. If directory synchronization is not
-supported, this implementation returns `Io` rather than releasing an
-observation. Callers must provide a trusted UTC clock and an independently
-protected service before any future physical integration.
+The directory synchronization path was tested only on macOS arm64. The same
+concrete file-and-directory barriers have a Linux implementation, but Linux
+builds, native execution and filesystem durability are **NOT RUN**. Windows
+and other platforms have no reviewed parent-directory persistence operation
+here: opening a verifier explicitly returns `UnsupportedJournalPlatform`
+before any ceremony can start. This is a fail-closed limitation, not Windows
+support. A failed preflight on the implemented platforms returns
+`JournalDurabilityUnavailable`. A later write or barrier failure returns `Io`
+and releases no receipt; a newly created consumption file is preserved and
+cannot be silently overwritten or retried. No successful fsync call proves
+power-loss behavior for every filesystem or device. Callers must provide a
+trusted UTC clock and an independently protected service before any future
+physical integration. See [the preflight evidence](TASK152-JOURNAL-PREFLIGHT.md).
 
 ## Temporary browser runner
 

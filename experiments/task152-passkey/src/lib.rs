@@ -7,11 +7,13 @@
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::fs::{self, File, OpenOptions};
+use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use webauthn_rs::prelude::*;
+
+mod journal;
 
 #[path = "../../task020-guard/guard.rs"]
 // Import the existing model intact; its unused executor is intentionally absent
@@ -28,6 +30,8 @@ pub enum Error {
     InvalidPlan,
     InvalidIssuer,
     UnsafeJournalPath,
+    UnsupportedJournalPlatform,
+    JournalDurabilityUnavailable,
     EnrollmentUnavailable,
     AlreadyEnrolled,
     ChallengePending,
@@ -131,6 +135,14 @@ impl DevelopmentVerifier {
     /// Use an existing canonical directory. This file journal is not a security
     /// boundary against code running as its owner; callers must not claim one.
     pub fn open(journal: &Path, issuer: &str) -> Result<Self, Error> {
+        Self::open_with_preflight(journal, issuer, journal::preflight)
+    }
+
+    fn open_with_preflight(
+        journal: &Path,
+        issuer: &str,
+        preflight: impl FnOnce(&Path) -> Result<(), Error>,
+    ) -> Result<Self, Error> {
         if issuer.is_empty()
             || issuer.len() > 128
             || !issuer
@@ -146,6 +158,10 @@ impl DevelopmentVerifier {
         {
             return Err(Error::UnsafeJournalPath);
         }
+        // Fail before any enrollment or assertion challenge can be issued. This
+        // checks the same actual directory barrier used after each new receipt;
+        // it does not replace the final barrier or protect this owner-writable path.
+        preflight(journal)?;
         let origin = Url::parse(DEVELOPMENT_ORIGIN).map_err(|_| Error::VerificationFailed)?;
         let webauthn = WebauthnBuilder::new("localhost", &origin)
             .map_err(|_| Error::VerificationFailed)?
@@ -295,23 +311,7 @@ impl DevelopmentVerifier {
         let path = self
             .journal
             .join(format!("{}.spent.json", receipt.challenge_id));
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(path)
-            .map_err(|e| {
-                if e.kind() == std::io::ErrorKind::AlreadyExists {
-                    Error::Replay
-                } else {
-                    Error::Io
-                }
-            })?;
-        file.write_all(&bytes)
-            .and_then(|_| file.sync_all())
-            .map_err(|_| Error::Io)?;
-        File::open(&self.journal)
-            .and_then(|dir| dir.sync_all())
-            .map_err(|_| Error::Io)?;
+        journal::persist(&self.journal, &path, &bytes)?;
         Ok(receipt)
     }
 
