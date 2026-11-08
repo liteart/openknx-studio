@@ -145,6 +145,14 @@ limits are in `private/evidence/task152-156-windows-cross-20261108/README.md`,
 SHA-256 `b860fb14269d7fc7c307c42daf6b5a86e2945990358b65cfe1d539410450d72c`.
 Native Windows execution and registry behavior remain NOT RUN.
 
+At editor revision `6aea59752cd15d340cc32b0c571ef8e1de329df9`, the
+coordinator and an independent verifier separately reran the locked offline
+Linux arm64 library suite on isolated Docker volumes: 66 tests PASS in each
+run. The LinuxKit filesystem reported `ext2/ext3`; source and registry-cache
+mounts were read-only and networking was disabled. These tests do not establish
+native-host power-loss durability, a Linux browser/provider ceremony, or
+Windows behavior.
+
 After a review identified unbounded child waits, source `0006012e08f6e8f97c03461c7b707a75d5daf767`
 was integrated as `ed94ab4` and independently checked. The corrected Windows
 test harness was cross-linked from `91bea8c7dc45b8e6f2ca49013c45d886cd8bfe01`;

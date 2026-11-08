@@ -110,3 +110,11 @@ This covers Linux compilation and the actual directory barrier on tmpfs; it
 does not qualify a native-host filesystem, power-loss durability, browser
 socket, real passkey provider, or Windows. The original checkpoint above is
 historical, and Task152 remains in progress.
+
+At editor revision `6aea59752cd15d340cc32b0c571ef8e1de329df9`, the same
+locked/offline library command passed 66 tests in two independent Linux arm64
+container runs using isolated persistent Docker volumes for `TMPDIR` rather
+than tmpfs. LinuxKit reported the filesystem as `ext2/ext3`; the test volumes
+were removed afterwards. This exercises the real directory barrier on that
+VM filesystem but does not simulate power loss or qualify a native host,
+browser/provider ceremony or Windows.
