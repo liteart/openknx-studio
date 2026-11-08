@@ -145,3 +145,12 @@ PowerShell parsing passed; its SHA-256 is
 `18a8fe0042966bfa1a06dadc81f794ea394d129dc6d14f45d113d8eac448255f`.
 It selects the exact synthetic test inventory, checks bounded process cleanup
 and does not automatically retry. The runner and native tests remain NOT RUN.
+
+At editor revision `30c4a9871acc4f67cc849bb4dffaf5434f8648a9`, the
+coordinator and an independent verifier separately ran the locked offline
+suite in Linux arm64 containers: 69 tests and one compile-fail doctest PASS
+in each run. Each used an isolated persistent Docker volume for temporary
+files; LinuxKit reported its filesystem as `ext2/ext3`. Source and Cargo
+registry mounts were read-only and networking was disabled. This exercises
+the Linux test suite and cooperative file-lock cases, not the Windows
+registry adapter, a native-host power-loss scenario or hardware.
