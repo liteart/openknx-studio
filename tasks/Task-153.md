@@ -13,6 +13,35 @@ the matching plan records desired readback, verified restoration, and device
 and gateway cleanup. See Task020 for the exact digest, timestamp and private
 transcript hash. The agent did not directly inspect the protected files.
 
+## Evidence reconciliation — 2026-11-08
+
+The reviewed exact-source macOS export at editor revision `de571a6a582c87a0af8386c7431968037e8d1ba5`
+and fork revision `4d296afb0906d17b6724b56c912f2e9e3f6680a5` reports 148
+tests, focused Clippy and actor validation PASS. Evidence is in
+`private/evidence/task153-service-build-20261108T064526827601Z/`; its tests
+use synthetic credentials and loopback peers. The following is an evidence
+map, not final task acceptance:
+
+- TEST-001: peer, ownership and permission negative tests exist; subsequent
+  read-only installed-host inspection found a root-owned executable and
+  protected configuration and execution directory not writable by the shared
+  ordinary principal. Same-account browser interference remains possible.
+- TEST-002 and TEST-003: verifier and IPC tests cover plan mutation, origin,
+  RP, user verification, challenge and peer restrictions. Owner-driven
+  enrollment and assertion succeeded on the installed macOS service.
+- TEST-004 and TEST-005: guard, recovery and actor tests cover interruption,
+  uncertain execution and the synthetic-peer sequence; see the exact-export
+  result and logs. These are not physical bus evidence.
+- TEST-006: the owner installed and manually started the reviewed service;
+  automatic launch-daemon registration was not exercised. Windows and Linux
+  remain NOT RUN. The separately authorized physical operation and
+  owner-transcribed journal are recorded under Task020, not as a Task153 test.
+
+Earlier statements below that installation, enrollment or hardware were NOT
+RUN are historical checkpoint results. The installed fixed one-shot broker is
+not a qualified reusable production service, and its identity check is not a
+unique device serial or application identity.
+
 ## Subject
 
 Build a protected operator approval and execution path for one exact KNX write plan.
