@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Ready |
+| Status | In progress |
 | Stage | PoC input qualification |
 | Component | knust-fork / read-only management example |
 | Dependencies | Task-018, Task-019, Task-151 |
@@ -39,5 +39,16 @@ the ETS fingerprint.
 
 ## Completion record
 
-Not started. No live version read has been performed. Fingerprint `9BDB`,
-installed application and unique device identity remain unverified.
+The read-only harness now accepts an optional same-session object-type
+precondition after descriptor validation. Wrong type, denial, malformed
+response or cancellation prevent the selected property request. Its default
+remains offline; no write service was added. Independent review and 13 owned
+loopback tests passed, along with focused Clippy, formatting and diff checks.
+The local unpublished fork commit is
+`6acedecebc5ae3b7f5dec07a9afb97a30cd3cc02`; details and commands are in
+`TASK155-OBJECT-TYPE-PRECONDITION.md` at that commit. A sandbox exception was
+needed for owned UDP loopback tests.
+
+No live version read has been performed. Fingerprint `9BDB`, installed
+application and unique device identity remain unverified. The live read
+requires a coordinated idle bus and remains pending.
