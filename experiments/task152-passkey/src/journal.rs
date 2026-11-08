@@ -15,7 +15,7 @@ pub(super) fn preflight(directory: &Path) -> Result<(), Error> {
 
 // The Linux fsync contract explicitly requires synchronizing the containing
 // directory in addition to the file. This implementation has native macOS
-// tests; Linux execution and filesystem qualification remain NOT RUN.
+// tests and Linux-container tests; native filesystem qualification remains open.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn sync_directory(directory: &Path) -> Result<(), Error> {
     File::open(directory)

@@ -86,7 +86,7 @@ The criteria and security review remain open pending task-level assessment.
 |---|---|
 | Implementation / report status | Protected macOS enrollment and exact-plan assertion exercised via Task153; criterion-by-criterion security review remains open |
 | Source commit(s) | Protected integrated exact-source build `de571a6a582c87a0af8386c7431968037e8d1ba5`; fork `4d296afb0906d17b6724b56c912f2e9e3f6680a5` |
-| Tests executed | Independent macOS review: 51 verifier library tests, one compile-fail doctest and nine browser tests PASS; exact-export 148 tests and actor validation PASS; owner-observed protected enrollment/assertion and Task020 result recorded separately. Windows and Linux NOT RUN |
+| Tests executed | macOS: 56 verifier library tests, compile-fail doctest and browser tests PASS; exact-export 148 tests and actor validation PASS. Linux arm64 container: 56 library tests PASS twice independently. Owner-observed macOS enrollment/assertion and Task020 result recorded separately. Windows and Linux provider ceremonies NOT RUN |
 | Evidence location | [Experiment README](../experiments/task152-passkey/README.md), tests and dependency inventory; local private evidence `private/evidence/task152-browser-demo/`; Task020 offline guard evidence |
 | Acceptance criteria met | Positive macOS integration and negative-test evidence exist; final supported-host security review remains open. Synthetic credentials cannot authorize physical effects |
 | Reviewer | Independent security review found no blocker for the bounded macOS PoC under the approved same-account policy; Windows directory synchronization and provider operation remain unverified |
@@ -113,5 +113,9 @@ one compile-fail doctest and six browser-handler tests (socket test excluded),
 and the coordinator repeated the 56 library tests on main. Details and the
 mutation test are in `experiments/task152-passkey/TASK152-JOURNAL-PREFLIGHT.md`.
 This explicitly rejects the unqualified Windows barrier before a ceremony; it
-does not implement Windows support. Linux native behavior, socket integration
-and power-loss durability remain NOT RUN for this increment.
+does not implement Windows support. Subsequently, the coordinator and an
+independent verifier ran all 56 library tests successfully in an isolated
+Linux arm64 container on tmpfs. The image digest, environment and command are
+in `experiments/task152-passkey/TASK152-JOURNAL-PREFLIGHT.md`. Native-host
+filesystem durability, Linux socket/provider integration and power-loss
+behavior remain NOT RUN.

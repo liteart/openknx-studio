@@ -26,8 +26,9 @@ remain mandatory after each receipt write. A failure preserves any newly
 created consumption file and returns no successful observation; it never
 deletes it to permit a retry.
 
-The concrete implementation is enabled for macOS and Linux. Native tests were
-run only on macOS arm64; Linux is **NOT RUN**, not qualified support. Windows
+The concrete implementation is enabled for macOS and Linux. At this original
+checkpoint tests ran only on macOS arm64. A later Linux-container result is
+recorded below; it does not establish native-host filesystem durability. Windows
 and other platforms have no reviewed parent-directory persistence implementation
 and fail explicitly at construction. The native toolchain has only the
 `aarch64-apple-darwin` target. This increment adds no Windows implementation,
@@ -95,3 +96,17 @@ installer, remote host or KNX hardware was used. Native Windows/Linux,
 power-loss behavior, protected cross-platform service and provider ceremonies
 remain **NOT RUN**. Task152 acceptance and source integration still require
 independent review and coordinator action.
+
+## Linux container verification — 2026-11-08
+
+The coordinator and an independent verifier each ran the 56 library tests at
+editor revision `5a36820` under Linux arm64 in the local Docker LinuxKit VM
+(kernel 5.15.49), using Rust 1.99.1 and a tmpfs `/tmp`. The pinned image was
+`rust@sha256:f2c004e3d2d8b547e8cf7ffbc29205385f4e71d23e53e4e383065db5e9f822cd`.
+Both runs passed with no network, read-only source and Cargo registry mounts,
+and temporary build output. The command inside the container was
+`cargo test --locked --offline --manifest-path /work/experiments/task152-passkey/Cargo.toml --lib`.
+This covers Linux compilation and the actual directory barrier on tmpfs; it
+does not qualify a native-host filesystem, power-loss durability, browser
+socket, real passkey provider, or Windows. The original checkpoint above is
+historical, and Task152 remains in progress.

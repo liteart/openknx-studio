@@ -67,8 +67,9 @@ approving OS principal can modify enrollment, executable code and desktop
 display. This experiment does not claim protection against that principal.
 
 The directory synchronization path was tested only on macOS arm64. The same
-concrete file-and-directory barriers have a Linux implementation, but Linux
-builds, native execution and filesystem durability are **NOT RUN**. Windows
+concrete file-and-directory barriers have a Linux implementation. The library
+tests passed in a Linux arm64 container on tmpfs; native-host filesystem and
+power-loss durability remain unqualified. Windows
 and other platforms have no reviewed parent-directory persistence operation
 here: opening a verifier explicitly returns `UnsupportedJournalPlatform`
 before any ceremony can start. This is a fail-closed limitation, not Windows
