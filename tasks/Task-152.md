@@ -62,8 +62,10 @@ offline guard model supplies the integration fixture. No phase gate applies to
 this bounded PoC. It does not mark the gated production authorization
 [Task-070](Task-070.md) Done or advance [Task-028](Task-028.md).
 
-Verify with standards-based unit/negative tests, an operator-driven local phone
-enrollment and assertion, and an independent security review. Physical KNX
+Verify with standards-based unit/negative tests, an operator-driven local
+platform passkey enrollment and assertion, and an independent security review.
+The later owner decision selected the macOS vault for this first ceremony.
+Physical KNX
 writes, production credentials and actual PINs are not test fixtures. Browser,
 phone and authenticator compatibility are NOT ESTABLISHED until observed.
 Any package dependency must have its version, license and security properties
@@ -83,8 +85,20 @@ The criteria and security review remain open pending task-level assessment.
 | Field | Current value |
 |---|---|
 | Implementation / report status | Protected macOS enrollment and exact-plan assertion exercised via Task153; criterion-by-criterion security review remains open |
-| Source commit(s) | See Git history for this task's verifier increment |
-| Tests executed | Offline Cargo test: 45 library tests, 7 browser-runner tests and one compile-fail doctest PASS on macOS arm64; fmt and clippy PASS. Synthetic Safari ceremony and protected macOS enrollment/assertion observed; Task020 records the owner-reported hardware outcome. Windows and Linux NOT RUN |
+| Source commit(s) | Protected integrated exact-source build `de571a6a582c87a0af8386c7431968037e8d1ba5`; fork `4d296afb0906d17b6724b56c912f2e9e3f6680a5` |
+| Tests executed | Independent macOS review: 51 verifier library tests, one compile-fail doctest and nine browser tests PASS; exact-export 148 tests and actor validation PASS; owner-observed protected enrollment/assertion and Task020 result recorded separately. Windows and Linux NOT RUN |
 | Evidence location | [Experiment README](../experiments/task152-passkey/README.md), tests and dependency inventory; local private evidence `private/evidence/task152-browser-demo/`; Task020 offline guard evidence |
 | Acceptance criteria met | Positive macOS integration and negative-test evidence exist; final supported-host security review remains open. Synthetic credentials cannot authorize physical effects |
-| Reviewer | Independent agent review: no blocker for development-only increment; Windows directory synchronization remains unverified and likely requires a platform-specific implementation |
+| Reviewer | Independent security review found no blocker for the bounded macOS PoC under the approved same-account policy; Windows directory synchronization and provider operation remain unverified |
+
+The independent review traced plan binding, challenge expiry and one-use
+consumption, protected credential verification, exact origin and RP, user
+verification, synthetic-grant separation, and the visible plan to source and
+negative tests. Commands were `cargo test --locked --offline --manifest-path
+experiments/task152-passkey/Cargo.toml --lib` (51 PASS), the same command with
+`--doc` (one compile-fail PASS), and `node --test
+experiments/task152-passkey/browser_test.mjs` (nine PASS). Exact-export evidence
+is under `private/evidence/task153-service-build-20261108T064526827601Z/`.
+These results do not prove Windows or Linux operation, protect the browser from
+unrestricted same-account interference, or qualify the fixed one-shot broker
+as a reusable production workflow. The task remains in progress.
