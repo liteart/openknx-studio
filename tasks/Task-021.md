@@ -84,10 +84,10 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; generic reads, writes and absolute allocation controls reviewed; restart and exact profile completeness remain unqualified |
-| Source commit(s) | Local unpublished fork `fcf3af5e669eca9fc4661106c17308e1bd983499`, based on `9ccbd4f8173cfa2ef55f89b7558db757a7cb45e9` and prior Task021 increments |
-| Tests executed | Additional-control codec tests with and without opt-in, 28 connected-session loopback tests, both focused Clippy configurations, formatting and diff checks PASS. Independent review repeated the three new codec and three focused loopback tests; earlier protocol and partial-effect results remain recorded below. Hardware and Windows NOT RUN |
-| Evidence location | Fork `TASK021-ABSOLUTE-ALLOCATION.md`, `TASK021-SIMULATOR-COMPLETENESS.md` and preceding Task021 reports at the source commits above |
+| Implementation / report status | In progress; generic reads, writes, allocation controls and basic restart reviewed; exact profile completeness remains unqualified |
+| Source commit(s) | Local unpublished fork `776ac0545780c578801ff48221aa877014b3d5ab`, based on `fcf3af5e669eca9fc4661106c17308e1bd983499` and prior Task021 increments |
+| Tests executed | Basic restart codec and 33 connected-session loopback tests, both focused Clippy configurations, feature-off doctest, formatting and diff checks PASS. Independent review repeated the restart codec and five focused loopback tests; earlier allocation and partial-effect results remain recorded below. Hardware and Windows NOT RUN |
+| Evidence location | Fork `TASK021-BASIC-RESTART.md`, `TASK021-ABSOLUTE-ALLOCATION.md`, `TASK021-SIMULATOR-COMPLETENESS.md` and preceding Task021 reports at the source commits above |
 | Acceptance criteria met | AC-001 supported for implemented generic reads and writes, but the complete profile-required primitive set remains unqualified; AC-002 and the local fail-closed portion of AC-003 supported by independent audit |
 | Technical outcome | Typed reads and opt-in one-attempt writes reject invalid replies and retain uncertainty. Verify-mode responses are distinguished from independent readback; target ACK without Verify Mode is explicitly unverified. Feature opt-in is not operation authorization |
 | Gate outcome, when applicable | Not evaluated |
@@ -100,7 +100,10 @@ stack and task allocation controls. Their generic codecs and opt-in
 one-attempt session operations are now covered by simulator tests; checksum
 attributes other than disabled remain unsupported. The caller must supply
 qualified PEI/application identity and ranges. The candidate's omitted task
-fields, its property-comparison representation and basic restart remain
-unqualified or unimplemented. No System B or IP example is assumed to define
+fields and its property-comparison representation remain unqualified. Basic
+restart now implements one attempt, own disconnect and six-second retirement;
+its acknowledgement is transport evidence, not proof of device restart. A
+dropped session still needs caller-owned durable quarantine and wait tracking.
+No System B or IP example is assumed to define
 the candidate's mask `0705` procedure; physical application matching and
 missing RAM payload semantics remain open.
