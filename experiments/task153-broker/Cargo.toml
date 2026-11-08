@@ -35,6 +35,10 @@ name = "task153-operator-recover"
 path = "src/recovery_main.rs"
 
 [[bin]]
+name = "task153-operator-service-upgrade"
+path = "src/service_upgrade_main.rs"
+
+[[bin]]
 name = "task153-registration-diagnostic"
 path = "src/registration_diagnostic_main.rs"
 

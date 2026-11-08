@@ -35,6 +35,10 @@ fn destinations(arguments: &[std::ffi::OsString]) -> Result<&'static [&'static s
         [argument] if argument == "--recovery" => {
             Ok(&["/Library/PrivilegedHelperTools/org.openknxstudio.operator-recover"])
         }
+        [argument] if argument == "--service-upgrade" => Ok(&[
+            "/Library/PrivilegedHelperTools/org.openknxstudio.operator-service-upgrade",
+            "/Library/PrivilegedHelperTools/org.openknxstudio.operator-service-next",
+        ]),
         _ => Err(Refusal {
             code: "arguments_rejected",
             path: "",

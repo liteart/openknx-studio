@@ -28,6 +28,8 @@ pub mod provisioning;
 pub mod recovery;
 #[cfg(target_os = "macos")]
 pub mod root_passkey;
+#[cfg(target_os = "macos")]
+pub mod service_upgrade;
 
 pub const MAX_REQUEST_BYTES: usize = 4_096;
 pub const PROTOCOL_VERSION: u8 = 1;

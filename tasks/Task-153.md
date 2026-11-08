@@ -335,6 +335,12 @@ instead of waiting for the passkey response. The source now resets accepted
 streams to blocking; delayed-input and deadline regressions passed and were
 independently reviewed. This strongly supports the cause, but the corrected
 installed service and real enrollment remain NOT RUN.
+A fixed-purpose service-upgrade helper now verifies the old and replacement
+code pins, unchanged unused protected state and a non-listening socket before
+preserving the old service/manifest/socket and publishing the replacement.
+Seven temporary-filesystem tests and independent source review passed. Actual
+root upgrade, process coordination and hardware execution remain NOT RUN; the
+service must remain stopped throughout the operator-driven upgrade.
 New source-only, non-secret enrollment-stage diagnostics were independently
 reviewed and tested; they are not yet installed, and timeout or pre-ready errors
 can still remain generic. Do not blindly retry or remove the socket.
