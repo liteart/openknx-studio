@@ -1,11 +1,13 @@
 # Bounded product static IR contract
 
-Task: [Task-145](../tasks/Task-145.md). The standalone crate is offline inspection
+Tasks: [Task-145](../tasks/Task-145.md), [Task-154](../tasks/Task-154.md). The standalone crate is offline inspection
 only. The existing `inspect_archive` entry point always selects the original
 BE-04000.02 profile. `inspect_archive_with_profile` requires an explicit profile;
 `GlassV31` is a separately bounded structural observation of the registered
 MDT V3.1 non-temperature family application. Archive identity does not qualify an
 actual BE-GT20S.02S device, firmware or security mode.
+`GlassLiteV13` is a separate project/11 candidate profile described below;
+references to Glass in the existing resource rules mean `GlassV31` only.
 
 IR version 2 adds anonymous union structure and explicit memory ownership.
 A union's source identity is the selected immutable XML SHA-256 plus byte range;
@@ -22,7 +24,7 @@ semantics remain unverified. Load controls retain opaque attributes, source rang
 and order. No numeric field is interpreted as KNX wire data. Absent segment Data
 is `None`; inspection never supplies zeros or infers transfer behavior.
 
-Both profiles reject unknown application elements, attributes, placements,
+All profiles reject unknown application elements, attributes, placements,
 reference kinds and unapproved scope crossings, malformed archives/XML and
 exceeded bounds. The sole Glass scope observation is `choose/@ParamRefId`
 inside a ModuleDef targeting an existing global ParameterRef: its exact kind
@@ -46,9 +48,42 @@ The compression-ratio cap stays 64. Glass alone permits internal ASCII spaces
 in flat `M-0083/Baggages/*.png` leaves; leading/trailing spaces, nested paths,
 traversal, case collisions, symlinks and CRC failures remain rejected.
 
+## Glass Lite project/11 candidate
+
+`GlassLiteV13` selects namespace `http://knx.org/xml/project/11`, the fixed
+`BE-GTL4Tx.01` catalog/product/hardware chain and application
+`M-0083_A-0090-13-D12F` (number 144, version 19, mask `MV-0705`,
+ProductProcedure). The public `inspect_archive_with_profile` entrypoint also
+requires the exact registered archive SHA-256
+`c8feaa000ca891df90b455a4ae27de9e1c0e3d3e5cf53e63cf944807f755c7e9`.
+Matching labels or XML structure cannot accept a different archive. Size and
+cancellation checks run before hashing. The unpinned structural helper is
+private; only crate-internal synthetic tests exercise the Lite grammar through
+it. Existing project/20 profile acceptance remains unchanged.
+
+Its fixed bounds are 2 MiB archive, 4 MiB/member, 16 MiB expanded, 16 entries,
+50,000 XML nodes and depth 32, with the same ratio/path/CRC/XML safety rules.
+The observed application requires TypeText Pattern, ParameterBlockRename,
+ParameterSeparator Access and additional conditional placements. These
+allowances apply only to the explicit Lite profile. Rename targets are
+kind/scope checked. Conditional, assignment and module declarations retain
+opaque names, raw attributes, source ranges and scope; source bytes remain
+immutable. No condition, module allocation, pattern or load procedure is
+executed or evaluated.
+
+The selected private inventory has six segments: four with data and two with
+Data absent (RAM address `0x0700`, size 316; address `0x083C`, size 1). These
+payloads remain `None`, including when referenced by a raw load declaration.
+No fill bytes, omission semantics or transfer behavior are inferred. The
+current encoder rejects Lite snapshots even if caller-visible blocker labels
+are cleared. Archive acceptance establishes structural inspection only; the
+physical application, fingerprint `9BDB`, compilation semantics and download
+eligibility remain unqualified. See
+[the bounded implementation evidence](../poc/product-download/TASK154-GLASS-LITE-INSPECTION.md).
+
 ## IR version 3 external resources
 
-Both profiles report IR version 3. The default profile keeps its existing
+All profiles report IR version 3. The default profile keeps its existing
 inspection behavior and has empty `external_resources` and
 `external_resource_references`. Glass with no external references also needs no
 baggage document; unreferenced documents are not interpreted. When a Glass

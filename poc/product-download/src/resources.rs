@@ -37,7 +37,7 @@ pub(crate) fn inspect(
         return Ok(());
     }
     let source = members.get(MANIFEST).ok_or(Error::MissingMember)?;
-    let doc = xml::parse(source, limits, cancelled)?;
+    let doc = xml::parse(source, limits, crate::NAMESPACE, cancelled)?;
     let mut paths = BTreeSet::new();
     for (index, node) in doc.nodes.iter().enumerate() {
         checkpoint(cancelled)?;

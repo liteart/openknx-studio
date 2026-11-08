@@ -4,6 +4,8 @@
 #![forbid(unsafe_code)]
 
 mod archive;
+#[cfg(test)]
+mod glass_lite_tests;
 mod parameter_encoding;
 mod resources;
 mod xml;
@@ -34,11 +36,13 @@ pub const MAX_MEMBERS: usize = 16;
 pub const MAX_ELEMENTS: usize = 20_000;
 pub const MAX_DEPTH: usize = 32;
 
-/// Explicit structural profiles; neither profile authorizes compilation.
+/// Explicit structural profiles; none authorizes compilation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InspectionProfile {
     Be04000,
     GlassV31,
+    /// Fixed project/11 structural candidate; no physical or compiler qualification.
+    GlassLiteV13,
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct InspectionLimits {
@@ -49,6 +53,11 @@ pub struct InspectionLimits {
     pub elements: usize,
     pub depth: usize,
 }
+pub const GLASS_LITE_APPLICATION_ID: &str = "M-0083_A-0090-13-D12F";
+pub const GLASS_LITE_APPLICATION_MEMBER: &str = "M-0083/M-0083_A-0090-13-D12F.xml";
+pub const GLASS_LITE_REGISTERED_SHA256: &str =
+    "c8feaa000ca891df90b455a4ae27de9e1c0e3d3e5cf53e63cf944807f755c7e9";
+pub const GLASS_LITE_NAMESPACE: &str = "http://knx.org/xml/project/11";
 pub const GLASS_APPLICATION_ID: &str = "M-0083_A-018B-31-369F";
 pub const GLASS_APPLICATION_MEMBER: &str = "M-0083/M-0083_A-018B-31-369F.xml";
 pub const GLASS_REGISTERED_SHA256: &str =
@@ -64,6 +73,12 @@ struct Identity {
     version: u32,
 }
 impl InspectionProfile {
+    pub const fn namespace(self) -> &'static str {
+        match self {
+            Self::GlassLiteV13 => GLASS_LITE_NAMESPACE,
+            Self::Be04000 | Self::GlassV31 => NAMESPACE,
+        }
+    }
     pub const fn limits(self) -> InspectionLimits {
         match self {
             Self::Be04000 => InspectionLimits {
@@ -73,6 +88,14 @@ impl InspectionProfile {
                 members: MAX_MEMBERS,
                 elements: MAX_ELEMENTS,
                 depth: MAX_DEPTH,
+            },
+            Self::GlassLiteV13 => InspectionLimits {
+                archive_bytes: 2 * 1024 * 1024,
+                member_bytes: 4 * 1024 * 1024,
+                total_bytes: 16 * 1024 * 1024,
+                members: 16,
+                elements: 50_000,
+                depth: 32,
             },
             Self::GlassV31 => InspectionLimits {
                 archive_bytes: 2 * 1024 * 1024,
@@ -95,6 +118,16 @@ impl InspectionProfile {
                 order_number: "BE-04000.02",
                 number: 179,
                 version: 50,
+            },
+            Self::GlassLiteV13 => Identity {
+                application: GLASS_LITE_APPLICATION_ID,
+                member: GLASS_LITE_APPLICATION_MEMBER,
+                catalog: "M-0083_H-142-1_HP-0090-13-D12F_CI-BE.2DGTL4Tx.2E01-1",
+                product: "M-0083_H-142-1_P-BE.2DGTL4Tx.2E01",
+                hardware_program: "M-0083_H-142-1_HP-0090-13-D12F",
+                order_number: "BE-GTL4Tx.01",
+                number: 144,
+                version: 19,
             },
             Self::GlassV31 => Identity {
                 application: GLASS_APPLICATION_ID,
@@ -396,7 +429,31 @@ pub fn inspect_archive(
 }
 
 /// Opt-in offline inspection with fixed profile-specific identity and bounds.
+/// GlassLiteV13 additionally requires the exact registered archive SHA-256;
+/// a matching catalog/application structure alone cannot qualify other bytes.
 pub fn inspect_archive_with_profile(
+    bytes: &[u8],
+    application_id: &str,
+    profile: InspectionProfile,
+    cancelled: &AtomicBool,
+) -> Result<Snapshot, Error> {
+    if profile == InspectionProfile::GlassLiteV13 {
+        checkpoint(cancelled)?;
+        if bytes.len() > profile.limits().archive_bytes {
+            return Err(Error::Limit);
+        }
+        if application_id != GLASS_LITE_APPLICATION_ID
+            || sha256(bytes) != GLASS_LITE_REGISTERED_SHA256
+        {
+            return Err(Error::UnsupportedApplication);
+        }
+    }
+    inspect_archive_structure(bytes, application_id, profile, cancelled)
+}
+
+// Private structural implementation. Only cfg(test) fixtures may exercise the
+// Lite grammar without passing the public entrypoint's registered archive pin.
+fn inspect_archive_structure(
     bytes: &[u8],
     application_id: &str,
     profile: InspectionProfile,
@@ -413,7 +470,7 @@ pub fn inspect_archive_with_profile(
     let mut documents = Vec::new();
     for name in ["M-0083/Catalog.xml", "M-0083/Hardware.xml", identity.member] {
         let source = members.get(name).ok_or(Error::MissingMember)?;
-        documents.push(xml::parse(source, limits, cancelled)?);
+        documents.push(xml::parse(source, limits, profile.namespace(), cancelled)?);
         sources.push(SourceMember {
             name: name.into(),
             sha256: sha256(source),
@@ -434,7 +491,7 @@ pub fn inspect_archive_with_profile(
     let mut snapshot = Snapshot {
         ir_version: 3,
         archive_sha256: sha256(bytes),
-        namespace: NAMESPACE.into(),
+        namespace: profile.namespace().into(),
         catalog_id: identity.catalog.into(),
         product_id: identity.product.into(),
         hardware_program_id: identity.hardware_program.into(),
@@ -616,7 +673,7 @@ pub fn inspect_archive_with_profile(
                     })
                     .collect::<Result<Vec<_>, Error>>()?,
             }),
-            "TypePicture" | "Baggage" | "Rename" => {
+            "TypePicture" | "Baggage" | "Rename" | "ParameterBlockRename" => {
                 snapshot.opaque_declarations.push(OpaqueDeclaration {
                     name: node.name.clone(),
                     attributes: node.attrs.clone(),
@@ -652,6 +709,21 @@ pub fn inspect_archive_with_profile(
             }),
             _ => {}
         }
+        // Preserve observed project/11 conditional/module declarations without
+        // evaluating activation, allocation or transition semantics.
+        if profile == InspectionProfile::GlassLiteV13
+            && matches!(
+                node.name.as_str(),
+                "choose" | "when" | "Assign" | "Module" | "ModuleDef"
+            )
+        {
+            snapshot.opaque_declarations.push(OpaqueDeclaration {
+                name: node.name.clone(),
+                attributes: node.attrs.clone(),
+                module_scope: doc.scope(index),
+                source_range: node.range.clone(),
+            });
+        }
         let feature = match node.name.as_str() {
             "ModuleDef" => Some(UnsupportedFeature::ModuleDefinition),
             "Module" => Some(UnsupportedFeature::ModuleInstance),
@@ -664,7 +736,7 @@ pub fn inspect_archive_with_profile(
             "ParameterType" => Some(UnsupportedFeature::ParameterTypeSemantics),
             "LoadProcedure" => Some(UnsupportedFeature::UnverifiedLoadProcedure),
             "TypePicture" | "Baggage" => Some(UnsupportedFeature::ExternalResourceReference),
-            "Rename" => Some(UnsupportedFeature::TextRename),
+            "Rename" | "ParameterBlockRename" => Some(UnsupportedFeature::TextRename),
             _ => None,
         };
         if let Some(feature) = feature {
@@ -769,6 +841,9 @@ fn validate_references(
                 "ComObjectRefRef" => "ComObjectRef",
                 "Module" => "ModuleDef",
                 "Rename" if profile == InspectionProfile::GlassV31 => "ParameterBlock",
+                "ParameterBlockRename" if profile == InspectionProfile::GlassLiteV13 => {
+                    "ParameterBlock"
+                }
                 "TypePicture" | "Baggage" if profile == InspectionProfile::GlassV31 => continue,
                 "NumericArg" | "TextArg" => "Argument",
                 "Manufacturer" => continue,

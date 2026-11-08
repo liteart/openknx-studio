@@ -1,4 +1,4 @@
-use crate::{Declaration, Error, InspectionLimits, InspectionProfile, NAMESPACE, checkpoint};
+use crate::{Declaration, Error, InspectionLimits, InspectionProfile, checkpoint};
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use std::collections::BTreeMap;
@@ -142,19 +142,36 @@ impl Document {
                 "when",
                 "Dynamic",
             ],
-            "ParameterBlock" if profile == InspectionProfile::GlassV31 => {
+            "ParameterBlock"
+                if matches!(
+                    profile,
+                    InspectionProfile::GlassV31 | InspectionProfile::GlassLiteV13
+                ) =>
+            {
                 &["Channel", "ChannelIndependentBlock", "Dynamic", "when"]
             }
             "ParameterBlock" => &["Channel", "ChannelIndependentBlock", "Dynamic"],
+            "choose" if profile == InspectionProfile::GlassLiteV13 => &[
+                "Channel",
+                "ChannelIndependentBlock",
+                "ParameterBlock",
+                "when",
+            ],
             "choose" => &["Channel", "ParameterBlock", "when"],
             "when" => &["choose"],
             "ParameterSeparator" => &["ParameterBlock", "when"],
-            "ComObjectRefRef" if profile == InspectionProfile::GlassV31 => {
+            "ComObjectRefRef"
+                if matches!(
+                    profile,
+                    InspectionProfile::GlassV31 | InspectionProfile::GlassLiteV13
+                ) =>
+            {
                 &["when", "Dynamic", "ParameterBlock"]
             }
             "ComObjectRefRef" => &["when", "Dynamic"],
             "Baggage" if profile == InspectionProfile::GlassV31 => &["Extension"],
             "Rename" if profile == InspectionProfile::GlassV31 => &["when"],
+            "ParameterBlockRename" if profile == InspectionProfile::GlassLiteV13 => &["when"],
             "Assign" => &["when"],
             "ChannelIndependentBlock" | "Channel" => &["Dynamic"],
             "Module" => &["Channel", "when"],
@@ -195,6 +212,7 @@ impl Document {
 pub(crate) fn parse(
     bytes: &[u8],
     limits: InspectionLimits,
+    namespace: &str,
     cancelled: &AtomicBool,
 ) -> Result<Document, Error> {
     if bytes.len() > limits.member_bytes {
@@ -260,7 +278,7 @@ pub(crate) fn parse(
                         return Err(Error::Xml);
                     }
                     root_seen = true;
-                    if attrs.get("xmlns").map(String::as_str) != Some(NAMESPACE) {
+                    if attrs.get("xmlns").map(String::as_str) != Some(namespace) {
                         return Err(Error::Namespace);
                     }
                     for (key, expected) in [
@@ -380,6 +398,7 @@ pub(crate) fn check_application_construct(
         }
         "AbsoluteSegment" => "Address Id MemoryType Size",
         "ParameterType" => "Id Name",
+        "TypeText" if profile == InspectionProfile::GlassLiteV13 => "Pattern SizeInBit",
         "TypeText" => "SizeInBit",
         "TypeRestriction" => "Base SizeInBit",
         "Enumeration" => "Id Text Value",
@@ -390,6 +409,7 @@ pub(crate) fn check_application_construct(
         "TypeFloat" => "Encoding maxInclusive minInclusive",
         "TypePicture" | "Baggage" if profile == InspectionProfile::GlassV31 => "RefId",
         "Rename" if profile == InspectionProfile::GlassV31 => "Id RefId Text",
+        "ParameterBlockRename" if profile == InspectionProfile::GlassLiteV13 => "Id RefId Text",
         "Options" if profile == InspectionProfile::GlassV31 => {
             "Comparable DownloadInvisibleParameters Reconstructable TextParameterEncoding"
         }
@@ -434,6 +454,7 @@ pub(crate) fn check_application_construct(
         "choose" => "ParamRefId",
         "when" => "InternalDescription default test",
         "ComObjectRefRef" => "RefId",
+        "ParameterSeparator" if profile == InspectionProfile::GlassLiteV13 => "Access Id Text",
         "ParameterSeparator" => "Id Text UIHint",
         "Assign" => "SourceParamRefRef TargetParamRefRef Value",
         "Channel" => "Id Name Number Text",
