@@ -11,6 +11,27 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 
+// Finite negative-test policy. It can deny a load, never admit another dependency.
+internal static class ProductRuntimeDependencyNegative
+{
+    internal const string Mode = "original-sdk-product-store-fixture";
+    internal const string Flag = "--runtime-dependency-negative";
+    internal const string Case = "cvnext";
+    internal const string Identity = "Knx.Ets.CvNext, Version=6.4.8718.0, Culture=neutral, PublicKeyToken=61439873ec5e1159";
+    internal const string Failure = "PRODUCT_RUNTIME_DEPENDENCY_DENIED";
+
+    internal static bool Selected(string mode, string flag, string value)
+    { return mode == Mode && flag == Flag && value == Case; }
+
+    internal static void BeforeLoad(bool enabled, string requested, string policy, Action recordDenial)
+    {
+        if (!enabled || requested != Identity || policy != Identity) return;
+        // Preserve the named failure even when the diagnostic recorder fails.
+        try { recordDenial(); }
+        finally { throw new FileNotFoundException(Failure, Identity); }
+    }
+}
+
 internal static class ProbeFiles
 {
     // No isolation capability exists yet. Never infer authorization from flags or files.

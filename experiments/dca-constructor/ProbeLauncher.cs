@@ -62,6 +62,7 @@ internal static class ProbeLauncher
             bool originalHostBus=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--offline-host-bus-denial"&&args[9]=="probe";
             bool missingDevice=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-ui-context-negative"&&args[9]=="missing-device";
             bool stableIdentity=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-stable-identity"&&args[9]=="observe";
+            bool runtimeDependencyNegative=args.Length==10&&ProductRuntimeDependencyNegative.Selected(args[3],args[8],args[9]);
             bool parameterNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-parameter-negative"&&args[9]=="missing-definition";
             bool selectionNegative=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--owned-selection-negative"&&(args[9]=="actual-product"||args[9]=="missing-context");
             bool stateReload=args.Length==10&&args[3]=="original-sdk-product-store-fixture"&&args[8]=="--ui-state-reload"&&StateReloadHash(args[9]);
@@ -85,7 +86,7 @@ internal static class ProbeLauncher
             bool selectedCacheCase = args.Length == 10 && mode == "owned-project-large-string-cache-denied" && args[8] == "--owned-cache-case" && Array.IndexOf(cacheCases, args[9]) >= 0;
             bool selectedFactoryCase = args.Length == 10 && mode == "owned-project-undo-provider-factory" && args[8] == "--owned-factory-case" && Array.IndexOf(factoryCases, args[9]) >= 0;
             bool selectedUndoCase = args.Length == 10 && mode == "owned-project-undo-provider-denied" && args[8] == "--owned-undo-case" && Array.IndexOf(undoCases, args[9]) >= 0;
-            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative && !parameterNegative && !stableIdentity && !missingDevice && !ownedHostBus && !originalHostBus;
+            bool selectedResourceCase = args.Length == 10 && !selectedUndoCase && !selectedFactoryCase && !selectedCacheCase && !selectedContextCase && !selectedXmlCase && !selectedDiagnosticCase && !selectedContentCase && !selectedContentDiagnosticCase && !selectedExistsCase && !interactiveProductUi && !selectionNegative && !parameterNegative && !stableIdentity && !missingDevice && !ownedHostBus && !originalHostBus && !runtimeDependencyNegative;
             ProbeFiles.Require(!selectedResourceCase || (mode == "owned-project-genuine-factory-resources" && args[8] == "--owned-resource-case"
                 && Array.IndexOf(resourceCases, args[9]) >= 0), "OWNED_RESOURCE_CASE_ARGUMENTS");
             ProbeFiles.Require(!selectionNegative||seconds<=15,"SELECTION_NEGATIVE_DEADLINE");
@@ -111,6 +112,7 @@ internal static class ProbeLauncher
             if(interactiveProductUi)child.StartInfo.Arguments+=stateReload?" --ui-state-reload "+ProbeFiles.Quote(args[9]):stateInspection?" "+ProbeFiles.Quote(args[8])+" 600":" --ui-seconds 600";
             if(ownedHostBus)child.StartInfo.Arguments+=" --owned-host-bus-denial check";
             if(originalHostBus)child.StartInfo.Arguments+=" --offline-host-bus-denial probe";
+            if(runtimeDependencyNegative)child.StartInfo.Arguments+=" --runtime-dependency-negative cvnext";
             if(parameterNegative)child.StartInfo.Arguments+=" --owned-parameter-negative missing-definition";
             if(stableIdentity)child.StartInfo.Arguments+=" --owned-stable-identity observe";
             if(missingDevice)child.StartInfo.Arguments+=" --owned-ui-context-negative missing-device";
