@@ -138,3 +138,10 @@ SHA-256 `8f336ef413fc7b4522dae413af44900d2f8822d54cb7e72340b78f3a8143fc5b`.
 An independent static review verified artifact hashes and imports, not the
 build itself. This supersedes the earlier test executable; native execution
 remains NOT RUN.
+
+The private Windows runner for this rebuilt harness is pinned to the reviewed
+source, artifact hashes and dev-host identity. Independent static review and
+PowerShell parsing passed; its SHA-256 is
+`18a8fe0042966bfa1a06dadc81f794ea394d129dc6d14f45d113d8eac448255f`.
+It selects the exact synthetic test inventory, checks bounded process cleanup
+and does not automatically retry. The runner and native tests remain NOT RUN.
