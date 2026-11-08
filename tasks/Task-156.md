@@ -104,3 +104,15 @@ lock-test failure was reproducible; test-only coordination corrected it without
 changing the production lock. Details and limits are in
 `experiments/task156-operation-journal/GUARD-STORAGE-BRIDGE.md`. Native Windows
 registry/process recovery and physical-service integration remain NOT RUN.
+
+Native Windows tests now exercise the actual Task020 guard, dispatcher,
+consumer bridge and `WindowsStorage` with synthetic approvals and sessions.
+They cover full intent and replay, injected partial persistence, process
+contention and termination. Independent review found and verified corrections
+to the race-loser assertion, bounded child cleanup and proof of fault
+publication. Reviewed source `82b653f5edcda112779439dfc1e485dcd1363aaf` was
+integrated as `8940f2e`. The macOS suite passed 69 tests and one doctest;
+Windows GNU feature-on all-target check and Clippy passed. Exact commands and
+limits are in `experiments/task156-operation-journal/NATIVE-GUARD-TESTS.md`.
+These Windows tests have only been type-checked: native registry/process
+execution, physical service integration and hardware remain NOT RUN.
