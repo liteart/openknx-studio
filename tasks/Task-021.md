@@ -84,12 +84,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; generic load-state and memory reads and basic load-control codec reviewed; exact profile and controlled load-event dispatch outstanding |
-| Source commit(s) | Local unpublished fork `01a7c22f9e6591cd20ef9e98ad8b22abbe58e373`, based on `f260e1113a355a5c16dec0ca98ae9a1b53557a63` and `e10459fd429b63576231048a85ca270891acff56` |
-| Tests executed | Six load-state/control codec tests, three memory codec tests, 18 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent review repeated focused codec and loopback tests; hardware and Windows NOT RUN |
-| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md` and `TASK021-LOAD-CONTROL-CODEC.md` at the source commits above |
+| Implementation / report status | In progress; generic reads and basic load-control and memory-write codecs reviewed; exact profile and controlled destructive dispatch outstanding |
+| Source commit(s) | Local unpublished fork `9c80bb1ee58d713c43ce57b60b2541a16615db98`, based on `01a7c22f9e6591cd20ef9e98ad8b22abbe58e373` and `f260e1113a355a5c16dec0ca98ae9a1b53557a63` |
+| Tests executed | Six load-state/control and six memory codec tests, 18 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent review repeated focused codec and loopback tests; hardware and Windows NOT RUN |
+| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md`, `TASK021-LOAD-CONTROL-CODEC.md` and `TASK021-MEMORY-WRITE-CODEC.md` at the source commits above |
 | Acceptance criteria met | Partial AC-001 for the generic reads only; complete profile and required primitive set remain unqualified |
-| Technical outcome | Typed load-state and bounded 16-bit memory reads reject invalid replies. Basic load events have a reviewed codec but no executable session dispatch; memory writes remain unimplemented |
+| Technical outcome | Typed load-state and bounded memory reads reject invalid replies. Basic load events and memory writes have reviewed codecs but no executable session dispatch. Verify-mode responses are distinguished from independent readback and missing responses cannot prove success |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Independent protocol and simulator reviews PASS for both bounded read increments only |
 
