@@ -5,6 +5,10 @@ Base editor revision: `a80b769b645d51af2008f299117a9c7801c10798`.
 Task003 and Task151 are Done; Task156 has no phase gate. The existing Task020
 guard and Task152 journal were inspected as contracts and remain unchanged.
 
+The initial policy-only checkpoint below is historical. A later opt-in native
+Windows adapter is described in [WINDOWS-STORAGE.md](WINDOWS-STORAGE.md), with
+Windows-target checks but no native Windows execution or qualification.
+
 ## Implemented scope
 
 This executable-free crate implements a portable persistence policy and an

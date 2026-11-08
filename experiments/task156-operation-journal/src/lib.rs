@@ -1,14 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Offline operation-journal policy. No native backend or device authority exists.
+//! Operation-journal policy with an opt-in, unqualified Windows storage adapter.
 //!
 //! Callers must separately verify plans, approval and physical observations.
 //! This crate persists their supplied bindings; no record or return value is a
 //! dispatch capability. The storage contract is trusted and not implemented by
-//! a native Windows adapter in this increment.
+//! production code. Native Windows behavior requires separate qualification.
 
 #![forbid(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(any(test, all(windows, feature = "experimental-windows-storage")))]
+mod cooperative_lock;
+#[cfg(any(test, all(windows, feature = "experimental-windows-storage")))]
+mod native_layout;
+#[cfg(all(windows, feature = "experimental-windows-storage"))]
+pub mod windows;
+
+#[cfg_attr(
+    not(all(windows, feature = "experimental-windows-storage")),
+    doc = r#"
+The native adapter is absent without an explicit Windows qualification opt-in:
+```compile_fail
+use task156_operation_journal_policy::windows::WindowsStorage;
+```
+"#
+)]
+const _: () = ();
 
 pub const MAX_RECORD_BYTES: usize = 2048;
 pub type Digest = [u8; 32];
@@ -108,8 +126,9 @@ pub enum Key {
 /// Backend contract, not a security boundary against its implementer.
 ///
 /// The lease must exclude cooperating threads/processes for this route, remain
-/// held through every read/write/flush in the call, and fail on abandoned or
-/// unqualified locking state. Operation and approval `create_new` keys must be
+/// held through every read/write/flush in the call. Acquiring an OS lock must
+/// never imply that persisted active/unknown route state is free. Operation
+/// and approval `create_new` keys must be
 /// globally atomic across routes. Reads must enforce the supplied byte bound
 /// before allocating. Successful `flush` must durably publish all preceding
 /// writes; errors may leave partial/visible records and must never delete them.
