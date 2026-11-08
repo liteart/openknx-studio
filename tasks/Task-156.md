@@ -88,3 +88,19 @@ Contract, commands and limits are in
 `experiments/task156-operation-journal/GUARD-PERSISTENCE.md`. Native Windows
 storage mapping, cross-process tests and physical service redeployment remain
 NOT RUN; no new device authorization or phase gate is implied.
+
+The next increment connects the actual guard persistence contract to bounded
+storage through a consumer-local bridge. It preserves a full 16 KiB intent as
+immutable bounded parts with an exact binding/hash manifest, uses an explicit
+namespace-wide lease, and keeps approval and observation authority in the
+existing guard. The adapter is not activated in the physical service.
+Reviewed source `327b3e5497d4a414c98d71ca4b425ba576689464` was integrated as
+`194cc36`. The coordinator and independent reviewer each ran the normal
+parallel `cargo test --locked --offline --manifest-path
+experiments/task156-operation-journal/Cargo.toml`: 69 tests and one
+compile-fail doctest PASS. Windows GNU feature-on type-check passed, as did a
+compile-only fixture using the actual Task152/153 guard types. A prior parallel
+lock-test failure was reproducible; test-only coordination corrected it without
+changing the production lock. Details and limits are in
+`experiments/task156-operation-journal/GUARD-STORAGE-BRIDGE.md`. Native Windows
+registry/process recovery and physical-service integration remain NOT RUN.
