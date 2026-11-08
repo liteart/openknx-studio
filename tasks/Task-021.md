@@ -84,12 +84,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; generic reads and basic load-control and memory-write codecs reviewed; exact profile and controlled destructive dispatch outstanding |
-| Source commit(s) | Local unpublished fork `9c80bb1ee58d713c43ce57b60b2541a16615db98`, based on `01a7c22f9e6591cd20ef9e98ad8b22abbe58e373` and `f260e1113a355a5c16dec0ca98ae9a1b53557a63` |
-| Tests executed | Six load-state/control and six memory codec tests, 18 connected-session loopback tests, seven existing property codec tests, focused Clippy, formatting and diff checks PASS; independent review repeated focused codec and loopback tests; hardware and Windows NOT RUN |
-| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md`, `TASK021-LOAD-CONTROL-CODEC.md` and `TASK021-MEMORY-WRITE-CODEC.md` at the source commits above |
+| Implementation / report status | In progress; generic reads, codecs and opt-in one-attempt connected writes reviewed; exact profile and controlled backend integration outstanding |
+| Source commit(s) | Local unpublished fork `63a5f10bfa5df74e555928c11219add01d97a9fb`, based on `9c80bb1ee58d713c43ce57b60b2541a16615db98` and prior Task021 increments |
+| Tests executed | Six load-state/control and six memory codec tests; 24 connected-session loopback tests with experimental writes and 18 without; feature-off compile-fail doctest, focused Clippy, formatting and diff checks PASS; independent review repeated the six new loopback tests, existing feature-off suite and doctest; hardware and Windows NOT RUN |
+| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md`, `TASK021-LOAD-CONTROL-CODEC.md`, `TASK021-MEMORY-WRITE-CODEC.md` and `TASK021-EXPERIMENTAL-WRITES.md` at the source commits above |
 | Acceptance criteria met | Partial AC-001 for the generic reads only; complete profile and required primitive set remain unqualified |
-| Technical outcome | Typed load-state and bounded memory reads reject invalid replies. Basic load events and memory writes have reviewed codecs but no executable session dispatch. Verify-mode responses are distinguished from independent readback and missing responses cannot prove success |
+| Technical outcome | Typed reads and opt-in one-attempt writes reject invalid replies and retain uncertainty. Verify-mode responses are distinguished from independent readback; target ACK without Verify Mode is explicitly unverified. Feature opt-in is not operation authorization |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Independent protocol and simulator reviews PASS for both bounded read increments only |
 
