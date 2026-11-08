@@ -92,6 +92,19 @@ device connection or hardware test is claimed. See the latest checkpoint below.
 
 ## Completion Record
 
+### Late dependency negative preparation — 2026-11-08
+
+Reviewed source `842551aee724a31a880d56cd783047ae54726ac7`, integrated as
+`0b2b358`, adds a finite diagnostic option that rejects the exact pinned
+CvNext dependency in the explicit product-import loader and fails before UI
+startup if the expected loader is not reached. Two owned policy/wiring tests,
+full C#5 host/launcher/fixture compilation against pinned .NET 4.8 references,
+PowerShell parsing and diff checks passed; an independent reviewer repeated
+them. Commands and limits are in
+`experiments/dca-constructor/TASK010-RUNTIME-DEPENDENCY-NEGATIVE.md`.
+This is not a CLR callback test: the original Windows/vendor path and observed
+absence of UI remain NOT RUN. TEST-003 and task acceptance remain open.
+
 | Field | Current value |
 |---|---|
 | Implementation / report status | In progress; original UI clean-close and state-restore display evidence exist; Task010 clean-machine, network-isolation, responsive human interaction, and direct-vendor-path evidence remain incomplete |
