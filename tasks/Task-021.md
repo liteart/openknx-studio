@@ -84,13 +84,13 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | In progress; generic reads, codecs and opt-in one-attempt connected writes reviewed; exact profile and controlled backend integration outstanding |
-| Source commit(s) | Local unpublished fork `63a5f10bfa5df74e555928c11219add01d97a9fb`, based on `9c80bb1ee58d713c43ce57b60b2541a16615db98` and prior Task021 increments |
-| Tests executed | Six load-state/control and six memory codec tests; 24 connected-session loopback tests with experimental writes and 18 without; feature-off compile-fail doctest, focused Clippy, formatting and diff checks PASS; independent review repeated the six new loopback tests, existing feature-off suite and doctest; hardware and Windows NOT RUN |
-| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md`, `TASK021-LOAD-CONTROL-CODEC.md`, `TASK021-MEMORY-WRITE-CODEC.md` and `TASK021-EXPERIMENTAL-WRITES.md` at the source commits above |
-| Acceptance criteria met | Partial AC-001 for the generic reads only; complete profile and required primitive set remain unqualified |
+| Implementation / report status | In progress; generic reads, codecs and opt-in one-attempt connected writes reviewed; exact profile completeness remains unqualified |
+| Source commit(s) | Local unpublished fork `9ccbd4f8173cfa2ef55f89b7558db757a7cb45e9`, based on `63a5f10bfa5df74e555928c11219add01d97a9fb` and prior Task021 increments |
+| Tests executed | Six load-state/control and six memory codec tests; 24 connected-session loopback tests with experimental writes and 18 without at `63a5f10`; new partial synthetic memory effect test PASS for mismatched and lost responses; feature-off compile-fail doctest, focused Clippy, formatting and diff checks PASS. Independent audit also ran 155 protocol tests and repeated the new partial-effect test; hardware and Windows NOT RUN |
+| Evidence location | Fork `TASK021-LOAD-STATE-READ.md`, `TASK021-MEMORY-READ.md`, `TASK021-LOAD-CONTROL-CODEC.md`, `TASK021-MEMORY-WRITE-CODEC.md`, `TASK021-EXPERIMENTAL-WRITES.md` and `TASK021-SIMULATOR-COMPLETENESS.md` at the source commits above |
+| Acceptance criteria met | AC-001 supported for implemented generic reads and writes, but the complete profile-required primitive set remains unqualified; AC-002 and the local fail-closed portion of AC-003 supported by independent audit |
 | Technical outcome | Typed reads and opt-in one-attempt writes reject invalid replies and retain uncertainty. Verify-mode responses are distinguished from independent readback; target ACK without Verify Mode is explicitly unverified. Feature opt-in is not operation authorization |
 | Gate outcome, when applicable | Not evaluated |
-| Reviewer | Independent protocol and simulator reviews PASS for both bounded read increments only |
+| Reviewer | Independent protocol and simulator reviews PASS for the bounded increments and partial-effect test; full task acceptance remains open |
 
 Update this record only with observed results. Follow the task-scoped branch/commit policy in [AGENTS.md](../AGENTS.md).
