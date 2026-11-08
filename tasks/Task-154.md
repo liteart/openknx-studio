@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Ready |
+| Status | Done |
 | Stage | PoC input qualification |
 | Component | knx-editor / poc/product-download |
 | Dependencies | Task-003, Task-004, Task-023 |
@@ -57,6 +57,25 @@ software-candidate association only, not a physical-device qualification.
 
 ## Completion record
 
-Not started. Parser acceptance, physical application match, fingerprint
-interpretation, compiler semantics, Windows and hardware are NOT RUN or
-unverified. No phase gate is advanced.
+The bounded project/11 inspection was implemented in reviewed source commit
+`5f9052bdf99f74b7a549dec28cc4b53b2891f0d8` and integrated on main as
+`2937b7a`. The public Lite entrypoint requires the registered archive hash;
+the inspection preserves absent RAM data and cannot make the existing compiler
+accept this profile. Independent review found and verified the correction of
+an initially missing runtime hash check. The existing project/20 tests remain
+passing.
+
+On macOS arm64, the implementer ran the locked offline product-download suite
+(13 unit and 39 integration tests), all four private fixture tests, Clippy,
+format and diff checks; independent review repeated the suite and registered
+Lite fixture. On main the coordinator repeated the suite and Lite fixture:
+`cargo test --manifest-path poc/product-download/Cargo.toml --workspace
+--locked --offline --no-default-features` and `cargo test --manifest-path
+poc/product-download/Cargo.toml --locked --offline --no-default-features
+registered_lite_private_fixture -- --ignored`, with the private archive path
+provided via `KNXPROD_GLASS_LITE_FIXTURE`; both PASS. Exact commands, hashes
+and limits are in `poc/product-download/TASK154-GLASS-LITE-INSPECTION.md`.
+
+Physical application match, fingerprint interpretation, compiler semantics,
+Windows and hardware are NOT RUN or unverified. The selected candidate is not
+a downloadable image. No phase gate is advanced.
