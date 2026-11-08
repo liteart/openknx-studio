@@ -103,6 +103,27 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 Update this record only with observed results. Follow the source-code Git policy in [AGENTS.md](../AGENTS.md).
 
+## Glass Lite candidate observation — 2026-11-08
+
+Task154 added bounded structural inspection of a separate Glass Lite
+candidate corresponding to the owner's stated model and version. The older
+DisplayTimeout candidate below belongs to a different application and must
+not be substituted for it. The candidate's `startupTimeout` declaration and
+the [manufacturer's technical manual](https://www.mdt-group.com/fileadmin/user_upload/user_upload/download/MDT_TM_BE_01_Glass_Push_Button_II_Lite_55_63_Basic.pdf)
+agree on the parameter name, 2–240 second range and default of 2. The private
+archive's 498-byte segment data begins `00 00`; it therefore does not itself
+establish the encoded default or ETS overlay semantics. An offline structural
+inspection found no overlapping direct parameter or union declaration for the
+candidate's first 16 bits, but did not qualify dynamic activation, byte order,
+full occupancy or load behavior. Two RAM payloads referenced by load
+declarations remain absent. No image was generated or device contacted.
+
+The private observation has SHA-256
+`77b5f9cac8ad8b923ba7b2726d32f97d1a3f16bb6c260cc87c4b369e340d9043`.
+The task remains blocked until an independently reviewed reference compilation
+or authoritative encoding and allocation evidence establishes the required
+semantics. Physical application and fingerprint matching remain unverified.
+
 
 ## Reviewed partial source, 2026-10-22
 
