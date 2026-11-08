@@ -51,7 +51,7 @@ Build a protected operator approval and execution path for one exact KNX write p
 | Field | Value |
 |---|---|
 | Task ID | Task-153 |
-| Status | In progress |
+| Status | In review |
 | Stage / required gate | PoC; no phase gate unlocked |
 | Priority | P0 |
 | Component / Git project | knx-editor / operator approval and guarded KNX executor |
@@ -244,6 +244,24 @@ household data or proprietary files in Git.
   proven, stop with the physical dispatcher disabled.
 
 ## Completion Record
+
+Independent final review of the bounded macOS prototype found evidence for
+AC-001 through AC-005 under the owner's same-account policy. On macOS arm64,
+`cargo test --locked --offline --manifest-path experiments/task153-broker/Cargo.toml --lib`
+passed 113 tests, the corresponding `--doc` run passed two compile-fail
+tests, and `node --test experiments/task153-broker/browser_test.mjs` passed
+nine tests. The library suite required a local-OS sandbox exception for
+owned sockets and native UUID resolution; the initial sandbox-only attempt
+failed those environment-dependent cases. The exact-source integrated build
+and synthetic adapter evidence remain separately recorded above. The owner
+installed, enrolled and manually started the service; automatic launchd,
+Windows and Linux were not tested. No additional hardware write was performed.
+
+This review supports the fixed macOS prototype only, without claiming
+resistance to unrestricted shared-account UI interference or a reusable
+production service. Task status is In review; no maintainer acceptance or
+phase gate is implied. Subsequent incremental statements in this completion
+record are historical checkpoints.
 
 The first source-only increment defines bounded request parsing and a configured
 plan policy; its unprovisioned facade always refuses execution. Five offline
