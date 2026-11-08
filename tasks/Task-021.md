@@ -107,3 +107,15 @@ dropped session still needs caller-owned durable quarantine and wait tracking.
 No System B or IP example is assumed to define
 the candidate's mask `0705` procedure; physical application matching and
 missing RAM payload semantics remain open.
+
+The selected candidate uses allocation flag `0x80`. Independent source review
+found that the property-based allocation specification explicitly documents
+only disabled checksum control, while an enabled bit is described for a
+different memory-mapped procedure restricted to another mask family. The
+candidate's master data also needs qualification to resolve property versus
+memory mapping. No enabled-bit behavior is inferred. The source investigation
+is recorded in local unpublished fork `9d479c8d160830c84e9b54a0e8563f5a0ea5d4d5`,
+`TASK021-CHECKSUM-CONTROL-INVESTIGATION.md`; it changes no protocol code.
+The candidate's property 78 comparison data is ten bytes although both the
+resource specification and candidate master describe a six-byte value. Its
+comparison representation remains unqualified; no truncation is assumed.
