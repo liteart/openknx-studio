@@ -42,10 +42,12 @@ The existing target-scoped hardware consent is unchanged.
 
 Connect the user-tested WebAuthn passkey verifier to the existing Task020
 offline guard and connected-session adapter through a locally protected
-operator service. The service, its trust anchor and its execution authority
-must be outside the agent/MCP principal's writable and callable boundary. The
-service consumes the approval and executes the single immutable approved plan
-itself; it must not return a bearer grant that the agent can reuse or redirect.
+operator service. The service executable, trust anchor and execution ledger
+must be outside the shared principal's writable boundary. The shared principal
+may invoke the assertion endpoint, but cannot authorize dispatch without a
+verified exact-plan passkey assertion. The service consumes the approval and
+executes the single immutable approved plan itself; it must not return a bearer
+grant that the agent can reuse or redirect.
 
 The first implementation targets the current macOS test host using an
 OS-protected service boundary. Define a portable Rust protocol and explicit
@@ -119,8 +121,10 @@ hardware test remain later explicit operator actions.
 ## Acceptance Criteria
 
 - [ ] AC-001: An unprivileged agent/MCP process cannot enroll a credential,
-  change the trusted key, mint a grant, access the protected execution API, or
-  alter the service/ledger; tests prove each denied path on the supported host.
+  change the trusted key, mint a grant, cause dispatch without a verified
+  exact-plan passkey assertion, or alter the service/ledger; tests prove each
+  denied path on the supported host. The shared account can invoke the
+  assertion endpoint and interfere with its local browser display.
 - [ ] AC-002: The operator surface displays the same canonical plan that the
   protected service validates and binds to one passkey assertion; mutation,
   replay, wrong target, wrong effect, wrong origin/RP, missing UV and expiry

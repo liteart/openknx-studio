@@ -82,9 +82,9 @@ The criteria and security review remain open pending task-level assessment.
 
 | Field | Current value |
 |---|---|
-| Implementation / report status | Development-only verifier and localhost browser demo; protected enrollment and physical grant remain absent |
+| Implementation / report status | Protected macOS enrollment and exact-plan assertion exercised via Task153; criterion-by-criterion security review remains open |
 | Source commit(s) | See Git history for this task's verifier increment |
-| Tests executed | Offline Cargo test: 45 library tests, 7 browser-runner tests and one compile-fail doctest PASS on macOS arm64; fmt and clippy PASS. On 2026-11-06, Simon reported successful Safari/macOS passkey enrollment and assertion for the synthetic plan; the local development receipt records user verification and no physical authorization. Windows, Linux and hardware NOT RUN |
+| Tests executed | Offline Cargo test: 45 library tests, 7 browser-runner tests and one compile-fail doctest PASS on macOS arm64; fmt and clippy PASS. Synthetic Safari ceremony and protected macOS enrollment/assertion observed; Task020 records the owner-reported hardware outcome. Windows and Linux NOT RUN |
 | Evidence location | [Experiment README](../experiments/task152-passkey/README.md), tests and dependency inventory; local private evidence `private/evidence/task152-browser-demo/`; Task020 offline guard evidence |
-| Acceptance criteria met | None complete; synthetic credentials cannot authorize physical effects |
+| Acceptance criteria met | Positive macOS integration and negative-test evidence exist; final supported-host security review remains open. Synthetic credentials cannot authorize physical effects |
 | Reviewer | Independent agent review: no blocker for development-only increment; Windows directory synchronization remains unverified and likely requires a platform-specific implementation |

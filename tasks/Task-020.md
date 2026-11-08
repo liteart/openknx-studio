@@ -9,7 +9,7 @@ Implement an explicitly authorized reversible property write
 | Field | Value |
 |---|---|
 | Task ID | Task-020 |
-| Status | Blocked |
+| Status | In review |
 | Stage | PoC |
 | Priority within stage | P0 |
 | Component / Git project | knust-fork / property services |
@@ -91,12 +91,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 | Field | Initial value |
 |---|---|
-| Implementation / report status | Blocked on protected broker Task-153, exact-plan execution integration, and final identity/recovery qualification; generic low-level increment and simulator remain offline only |
-| Source commit(s) | Local knust fork `da9a66679d6d49108f97ec8afeaed8d56c382a63`, based on Task019 `e1d3d9b0ad7ec0edad6b4c82782cd3148ff65d56`; editor offline guard model `8c06571`; fork not published |
-| Tests executed | Seven property codec regression tests, nine synthetic loopback write tests, focused Clippy, formatting and diff checks PASS; hardware writes/readback and backend authorization negative NOT RUN |
-| Evidence location | Fork `TASK020-PROPERTY-WRITE.md` at `da9a66679d6d49108f97ec8afeaed8d56c382a63`; checkpoint below |
-| Acceptance criteria met | AC-002 supported by offline review; AC-001 and AC-003 remain pending physical readback/restore and durable authorization/uncertainty enforcement |
-| Technical outcome | One-dispatch low-level write attempt reports uncertainty after possible dispatch and does not automatically replay; this does not authorize any real write or prove restoration |
+| Implementation / report status | In review; owner-reported hardware read/change/restore and protected journal evidence obtained; predecessor and final task acceptance remain open |
+| Source commit(s) | Local unpublished fork `4d296afb0906d17b6724b56c912f2e9e3f6680a5`; exact-export service source `de571a6a582c87a0af8386c7431968037e8d1ba5`; editor adapter `8498089` |
+| Tests executed | Codec and synthetic loopback tests, exact-export 148 tests, focused Clippy and actor-log validation PASS; owner-reported physical write/readback/restore and protected journal result below |
+| Evidence location | Fork `TASK020-PROPERTY-WRITE.md`; `private/evidence/task153-service-build-20261108T064526827601Z/`; private owner reports below |
+| Acceptance criteria met | AC-001 supported by owner-transcribed protected records; AC-002 and AC-003 supported by generic API review and guard/uncertainty tests; final acceptance pending |
+| Technical outcome | Selected property was reported changed, independently read back and restored; target identity check uses address plus DD0 mask and is not unique serial or application identification |
 | Gate outcome, when applicable | Not evaluated |
 | Reviewer | Independent protocol, safety and framing review PASS for the bounded offline increment; full task acceptance pending |
 
