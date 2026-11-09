@@ -1,6 +1,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Task156 guard storage bridge
 
+Historical checkpoint: this report predates native Windows execution. Current
+Task156 outcomes and scope are recorded in
+[`Task-156`](../../tasks/Task-156.md). The later bounded Windows and Linux
+test results do not qualify power-loss behavior, production-service
+integration or hardware.
+
 Base: editor `2297ec5`. Task003/151 are Done; Task156 has no phase gate.
 The bridge implements actual Task020 `JournalPersistence` using Task156's
 storage primitives, not Task156's separate policy state machine. No approval,
@@ -75,10 +81,13 @@ their own group with a test-local mutex. Production zero-wait locking is
 unchanged; the final default parallel suite passed. See the [Rust File lock
 contract](https://doc.rust-lang.org/std/fs/struct.File.html#method.try_lock).
 
-Native Windows registry/concurrency/crash tests, physical-service wiring,
-power-loss behavior and hardware are NOT RUN. The compile fixture is evidence
-of type compatibility, not a claim that the protected broker uses this backend.
+At this report's checkpoint, native Windows registry/concurrency/crash tests,
+physical-service wiring, power-loss behavior and hardware were NOT RUN. The
+later bounded native test result is recorded in [`Task-156`](../../tasks/Task-156.md).
+The compile fixture is evidence of type compatibility, not a claim that the
+protected broker uses this backend.
 
 The next test-only increment prepares [native actual-guard integration cases](NATIVE-GUARD-TESTS.md)
 over `WindowsStorage`, including independent processes, abrupt termination,
-partial publications and recovery. They remain NOT RUN until native execution.
+partial publications and recovery. At the time of this report, they remained
+NOT RUN; see [`Task-156`](../../tasks/Task-156.md) for the later result.

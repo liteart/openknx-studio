@@ -5,9 +5,12 @@ Base editor revision: `a80b769b645d51af2008f299117a9c7801c10798`.
 Task003 and Task151 are Done; Task156 has no phase gate. The existing Task020
 guard and Task152 journal were inspected as contracts and remain unchanged.
 
-The initial policy-only checkpoint below is historical. A later opt-in native
-Windows adapter is described in [WINDOWS-STORAGE.md](WINDOWS-STORAGE.md), with
-Windows-target checks but no native Windows execution or qualification.
+The policy-only and cross-compilation checkpoints below are historical. The
+opt-in Windows adapter and actual Task020 guard bridge have since passed the
+bounded synthetic native Windows run recorded in
+[NATIVE-GUARD-TESTS.md](NATIVE-GUARD-TESTS.md) and
+[WINDOWS-STORAGE.md](WINDOWS-STORAGE.md). This does not qualify power-loss
+behavior, a provider or production service, or hardware.
 The later [guard storage bridge](GUARD-STORAGE-BRIDGE.md) persists complete
 Task020 intents through these storage primitives without reusing this policy
 state machine or creating another authorization authority.
@@ -112,9 +115,14 @@ claim is made that inherited dependencies contain no unsafe.
 
 ## Remaining work
 
-Native registry persistence and route mutex adapters, protected exact-plan
-approval/observation integration, native Windows process/crash tests, Linux
-execution and storage power-loss qualification are NOT RUN or absent. Native
-APIs must remain behind a non-default experimental feature until qualified.
-This policy is not integrated into Task020 or Task153 and cannot replace their
-existing safety boundaries. Task156 remains incomplete; no gate is advanced.
+The 2026-11-09 native Windows run passed the seven storage tests and four
+actual-guard bridge tests; a separate Linux arm64 container run passed 69
+tests and one compile-fail doctest using an isolated persistent Docker volume
+for temporary files (`ext2/ext3` as reported by LinuxKit). Exact revisions and
+evidence hashes are recorded in [Task-156](../../tasks/Task-156.md). These are
+bounded synthetic and container results. Power-loss behavior, arbitrary
+same-account security, passkey-provider behavior, protected-service or
+production integration, and physical device qualification remain NOT RUN.
+The Windows adapter remains behind its non-default experimental feature; the
+policy is not activated in the physical service and does not replace Task020
+or Task153 safety boundaries. Task156 is In review; no gate is advanced.

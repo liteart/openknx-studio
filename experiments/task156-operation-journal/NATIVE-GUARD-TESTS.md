@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# Prepared native guard integration tests
+# Native guard integration tests
 
 Base editor: `041f01e`. Task003 and Task151 are Done; Task156 has no required
 phase gate. This increment adds test source only. The Windows adapter remains
@@ -63,8 +63,49 @@ Common option: `--manifest-path experiments/task156-operation-journal/Cargo.toml
 | `cargo clippy --locked --offline --all-targets -- -D warnings` | PASS: macOS |
 | Windows feature-on all-target Clippy with `-D warnings` | PASS: type-check only |
 | `cargo fmt --all -- --check` and `git diff --check` | PASS |
-| Focused native Windows command above | NOT RUN: no Windows execution environment used |
+| Focused native Windows command above | NOT RUN at this macOS checkpoint; later native run is recorded below |
 
-No registry, remote host or hardware operation was executed here. Native
-runtime outcomes, Linux execution, physical service integration and Task156
-acceptance remain open. Cross-compilation does not establish native success.
+No registry, remote host or hardware operation was executed at this macOS
+checkpoint. The earlier NOT RUN outcome is historical; cross-compilation alone
+did not establish native success. The later native run is recorded below.
+
+## Native outcome — 2026-11-09
+
+The feature-on harness built from editor source
+`91bea8c7dc45b8e6f2ca49013c45d886cd8bfe01` ran once on Windows host
+`DESKTOP-3UKTEIP` as `dev`. The combined selected run passed 15 tests in total:
+four Task152 tests, seven Task156 native storage tests and the four actual
+Task020 guard, dispatcher and consumer-bridge cases described above. All 11
+Task156 tests passed, each with exit code 0. The run was not retried; the
+runner exited 0 and scoped process inspection found no remaining test
+processes. An independent reviewer audited the captured outputs and saved
+pins; no separate reviewer artifact or hash was persisted.
+
+Evidence is under
+`private/evidence/task152-156-windows-native-20261109/`. The combined
+`result.json` SHA-256 is
+`e7baf24638e5d4c6cb32295a5f5a7295228bf67d38c61f148864724199645b5a`;
+`run.json` SHA-256 is
+`54685c077e3f9693e48ba4d706a71a9e65407038bf040f1cce6c85b92bb832a0`;
+launcher result SHA-256 is
+`5a30bb557bc06e9fc06c1af68a14b185b909ce0e14d66ff8e762377639d990ae`;
+post-run task status SHA-256 is
+`f2aaf5f6031d70771cafbd0722cce2693ef1c6fcbe9bca02ff93dae6bd2b3933`.
+The saved run identifies the source, test binaries and runtime dependency by
+hash. It records synthetic temporary paths and HKCU namespaces, with no
+network, KNX, browser, service, vendor DLL or real credentials.
+
+Separately, at editor revision
+`30c4a9871acc4f67cc849bb4dffaf5434f8648a9`, the coordinator and an
+independent verifier each ran `cargo test --locked --offline --manifest-path
+experiments/task156-operation-journal/Cargo.toml` in Linux arm64 containers.
+Each run passed 69 tests and one compile-fail doctest using an isolated
+persistent Docker volume for temporary files. LinuxKit reported `ext2/ext3`;
+source and Cargo registry mounts were read-only, networking was disabled, and
+the volumes were removed after the runs.
+
+PASS applies only to these bounded synthetic Windows tests and Linux container
+suite. Power-loss behavior, arbitrary same-account security, passkey-provider
+behavior, protected-service or production integration, and physical device
+qualification remain NOT RUN. Task156 remains In review; these experiments do
+not constitute maintainer acceptance or advance a phase gate.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | In progress |
+| Status | In review |
 | Stage | PoC platform qualification |
 | Component | knx-editor / guarded operation persistence |
 | Dependencies | Task-003, Task-151; Task020 guard model as a test contract |
@@ -146,28 +146,44 @@ PowerShell parsing passed; its SHA-256 is
 It selects the exact synthetic test inventory, checks bounded process cleanup
 and does not automatically retry. The runner and native tests remain NOT RUN.
 
-### Windows native synthetic tests — 2026-11-09
+### Native Windows and Linux volume evidence — 2026-11-09
 
-On Windows dev host `DESKTOP-3UKTEIP`, the reviewed feature-on harness ran
-once under the launcher's limited-token check. All seven native storage tests
-and four actual-guard integration tests passed, including process contention,
-holder termination, incomplete records, recovery/quarantine and release.
-An independent reviewer checked each output and the saved pins. Private
-evidence is under `private/evidence/task152-156-windows-native-20261109/`;
-the combined `result.json` SHA-256 is
-`e7baf24638e5d4c6cb32295a5f5a7295228bf67d38c61f148864724199645b5a`.
-The scheduled task exited 0 and a scoped process check found no remaining
-test processes. Earlier NOT RUN statements are historical. This qualifies the
-bounded synthetic experiment on this host, not power-loss behavior, a
-protected Windows production service or any physical KNX operation. The
-experimental feature remains disabled by default and the task remains in
-progress pending its full acceptance review.
+At editor source `91bea8c7dc45b8e6f2ca49013c45d886cd8bfe01`, the feature-on
+synthetic harness ran once on Windows dev host `DESKTOP-3UKTEIP` as `dev`.
+All 15 selected tests passed: four Task152 tests, seven Task156 native storage
+tests and four Task156 actual-guard integration tests. The run result records
+each named test and exit code 0. The runner exited 0 without retry; scoped
+process inspection found no remaining test processes. An independent reviewer
+audited the outputs and saved pins; that review was an agent report and has no
+separate persisted artifact or hash.
+
+Private evidence is under
+`private/evidence/task152-156-windows-native-20261109/`. The combined
+`result.json` SHA-256 is
+`e7baf24638e5d4c6cb32295a5f5a7295228bf67d38c61f148864724199645b5a`; the
+`run.json` source and input pins SHA-256 is
+`54685c077e3f9693e48ba4d706a71a9e65407038bf040f1cce6c85b92bb832a0`; the
+launcher result SHA-256 is
+`5a30bb557bc06e9fc06c1af68a14b185b909ce0e14d66ff8e762377639d990ae`; and
+the post-run task status SHA-256 is
+`f2aaf5f6031d70771cafbd0722cce2693ef1c6fcbe9bca02ff93dae6bd2b3933`.
+The selected tests used synthetic temporary paths and per-path HKCU namespaces;
+the evidence records no network, KNX, browser, service, vendor DLL or real
+credentials.
 
 At editor revision `30c4a9871acc4f67cc849bb4dffaf5434f8648a9`, the
-coordinator and an independent verifier separately ran the locked offline
-suite in Linux arm64 containers: 69 tests and one compile-fail doctest PASS
-in each run. Each used an isolated persistent Docker volume for temporary
-files; LinuxKit reported its filesystem as `ext2/ext3`. Source and Cargo
-registry mounts were read-only and networking was disabled. This exercises
-the Linux test suite and cooperative file-lock cases, not the Windows
-registry adapter, a native-host power-loss scenario or hardware.
+coordinator and independent verifier separately ran the locked offline suite
+in Linux arm64 containers. Both runs passed 69 tests and one compile-fail
+doctest. Each used a dedicated persistent Docker volume for temporary files;
+LinuxKit reported `ext2/ext3`. Source and Cargo registry mounts were read-only,
+networking was disabled, and the volumes were removed after the runs. This is
+Linux container evidence, not a power-loss experiment or native-host storage
+qualification.
+
+These results qualify the bounded synthetic Windows test run and the recorded
+Linux container suite only. They do not establish power-loss behavior,
+arbitrary same-account security, a passkey provider, protected-service or
+production integration, or hardware behavior. Windows storage remains
+non-default and no KNX operation occurred. Historical NOT RUN entries above
+describe their earlier checkpoints. Task156 is In review pending acceptance;
+no maintainer acceptance or phase-gate result is recorded.

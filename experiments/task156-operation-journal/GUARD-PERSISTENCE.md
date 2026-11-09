@@ -1,6 +1,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 # Task156 actual-guard persistence seam
 
+Historical checkpoint: this report predates the native Windows run. Current
+Task156 test outcomes and scope are recorded in
+[`Task-156`](../../tasks/Task-156.md); the later bounded Windows and Linux
+results do not establish production-service integration, power-loss behavior
+or hardware qualification.
+
 Base editor revision: `d31ded9`. Task003 and Task151 are Done; Task156 has no
 phase gate. This increment changes persistence selection below the existing
 Task020 guard. It does not connect Task156's native storage or add execution,
@@ -90,6 +96,8 @@ and qualified atomic reservation/read/release mapping, retaining complete plan
 and cleanup evidence. The existing Task156 policy is not a replacement semantic
 engine. The exact-source adapter runner and Task152/153 integration need their
 own subsequent regression verification before changing a physical service.
-Native Windows storage, cross-process/crash behavior, guard-to-registry
-integration, power-loss behavior and hardware are NOT RUN. No task or gate is
+At this report's checkpoint, native Windows storage, cross-process/crash
+behavior and guard-to-registry integration were NOT RUN. The later native
+synthetic test outcome is recorded in [`Task-156`](../../tasks/Task-156.md).
+Power-loss behavior and hardware remain unqualified. No task or gate is
 accepted by this report.

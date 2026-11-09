@@ -146,11 +146,10 @@ Prepared Windows tests cover exact registry ledger readback/reopen/release,
 partial/oversized chunks, unexpected values and torn route payloads, competing threads and separate processes,
 and terminated lock owners whose durable active route remains quarantined.
 They create only unique synthetic namespaces and leave their registry evidence
-in place; no production deletion API is added. All native Windows tests are
-**NOT RUN**. Native process/storage recovery, power loss, Linux execution,
-protected-service/guard integration and physical device qualification remain
-open. Independent review is required before accepting this source increment;
-Task156 itself remains incomplete.
+in place; no production deletion API is added. At this checkpoint native
+execution, Linux execution, protected-service/guard integration and physical
+device qualification were **NOT RUN**. These are historical results; see the
+2026-11-09 qualification record below.
 
 ## Native test child cleanup correction — 2026-11-08
 
@@ -167,7 +166,33 @@ macOS regression: 69 tests and one compile-fail doctest PASS. Windows GNU
 feature-on all-target check and Clippy with warnings denied PASS; formatting
 and diff checks PASS. An initial macOS build emitted a `rust-objcopy`
 debug-stripping warning while tests passed; a repeat with explicit no-strip
-configuration passed without that warning. The native cleanup assertions are
-type-checked only: Windows execution remains NOT RUN. Production storage,
-locking and dependencies are unchanged. Previously cross-linked test
-executables must be rebuilt before running this complete native group.
+configuration passed without that warning. At this 2026-11-08 checkpoint the
+native cleanup assertions were type-checked only. Production storage, locking
+and dependencies were unchanged. The Windows executables were later rebuilt
+from the corrected source revision recorded below.
+
+## Native Windows and Linux container qualification — 2026-11-09
+
+The corrected feature-on harness from editor source
+`91bea8c7dc45b8e6f2ca49013c45d886cd8bfe01` ran once on Windows host
+`DESKTOP-3UKTEIP` as `dev`. The combined native run passed all 15 selected
+synthetic tests: four Task152 tests, seven `WindowsStorage` tests and four
+actual Task020 guard/dispatcher/bridge integration tests. The runner exited
+0 without retry, and scoped post-run process inspection found no remaining
+test processes. An independent reviewer audited the individual outputs and
+saved pins; no separate review artifact or hash exists. The result JSON SHA-256
+is `e7baf24638e5d4c6cb32295a5f5a7295228bf67d38c61f148864724199645b5a`;
+the evidence directory and additional run, launcher and status pins are listed
+in [`Task-156`](../../tasks/Task-156.md).
+
+The coordinator and an independent verifier also each ran the locked offline
+suite at editor revision `30c4a9871acc4f67cc849bb4dffaf5434f8648a9` in a Linux
+arm64 container: 69 tests and one compile-fail doctest PASS per run. Both used
+isolated persistent Docker volumes for temporary files; LinuxKit reported
+`ext2/ext3`. Source and registry mounts were read-only, networking was
+disabled, and the volumes were removed after each run.
+
+These results do not test power-loss durability, arbitrary same-account
+interference, a passkey provider, deployment into the protected or production
+service, or a physical device. The native Windows feature remains disabled by
+default. This document records test outcomes, not Task156 acceptance.
