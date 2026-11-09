@@ -146,6 +146,23 @@ PowerShell parsing passed; its SHA-256 is
 It selects the exact synthetic test inventory, checks bounded process cleanup
 and does not automatically retry. The runner and native tests remain NOT RUN.
 
+### Windows native synthetic tests — 2026-11-09
+
+On Windows dev host `DESKTOP-3UKTEIP`, the reviewed feature-on harness ran
+once under the launcher's limited-token check. All seven native storage tests
+and four actual-guard integration tests passed, including process contention,
+holder termination, incomplete records, recovery/quarantine and release.
+An independent reviewer checked each output and the saved pins. Private
+evidence is under `private/evidence/task152-156-windows-native-20261109/`;
+the combined `result.json` SHA-256 is
+`e7baf24638e5d4c6cb32295a5f5a7295228bf67d38c61f148864724199645b5a`.
+The scheduled task exited 0 and a scoped process check found no remaining
+test processes. Earlier NOT RUN statements are historical. This qualifies the
+bounded synthetic experiment on this host, not power-loss behavior, a
+protected Windows production service or any physical KNX operation. The
+experimental feature remains disabled by default and the task remains in
+progress pending its full acceptance review.
+
 At editor revision `30c4a9871acc4f67cc849bb4dffaf5434f8648a9`, the
 coordinator and an independent verifier separately ran the locked offline
 suite in Linux arm64 containers: 69 tests and one compile-fail doctest PASS
