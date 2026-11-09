@@ -170,3 +170,20 @@ PowerShell parsing passed; its SHA-256 is
 `18a8fe0042966bfa1a06dadc81f794ea394d129dc6d14f45d113d8eac448255f`.
 It selects the exact synthetic test inventory, checks bounded process cleanup
 and does not automatically retry. The runner and native tests remain NOT RUN.
+
+### Windows native synthetic tests — 2026-11-09
+
+On Windows dev host `DESKTOP-3UKTEIP`, the owner-established connection was
+used to run the reviewed feature-on harness once in the existing `dev` account
+under the launcher's limited-token check. All four Task152 synthetic registry
+tests passed, including same-process and separate-process contention and bounded
+child termination. The independent reviewer checked each test's output and
+the saved pins; the complete combined run contained 15 successful tests.
+Private evidence is under `private/evidence/task152-156-windows-native-20261109/`;
+the combined `result.json` SHA-256 is
+`e7baf24638e5d4c6cb32295a5f5a7295228bf67d38c61f148864724199645b5a`.
+The scheduled task exited 0 and a scoped process check found no remaining test
+processes. Earlier NOT RUN statements are historical. These results cover the
+experimental synthetic registry journal on this host, not a real passkey
+provider, power-loss durability, Windows guard production integration or KNX.
+Task152 remains in progress.
