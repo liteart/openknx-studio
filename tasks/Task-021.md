@@ -103,8 +103,9 @@ the corresponding private metadata text SHA-256 is
 The capture was stopped and its temporary filter removed. No independent
 download or write by OpenKNX Studio was performed in this observation.
 An independent count also found a discrepancy in the fork's extended-frame
-layout; extended-frame decoding must be investigated before relying on its
-target counts or additional interpretations.
+layout. Its correction is independently reviewed in local unpublished fork
+`3ebe3d979f61c699283c1f7ac07c7de920eb2c3e`; Task-157 records its scope and
+tests. This codec fix does not itself resolve the complete download profile.
 
 | Field | Initial value |
 |---|---|
