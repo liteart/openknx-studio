@@ -113,6 +113,15 @@ successful verification and build used process-scoped execution policy. No
 vendor runtime, UI or hardware operation was run. Runtime isolation and the
 late dependency negative remain unverified.
 
+The owned Windows host was rebuilt from committed editor revision
+`8120070cbc4305aa30a84a852935d28a8269eae7`, including the tested process
+limit. The fresh build checked the 42 input pins and build references before
+and after compilation and completed without starting vendor code. Its private
+`build-report.json` SHA-256 is
+`c76c350f3cb6edc40ff13fab9719e2a0b53441146e3dc87e853e1f56bb270a05`.
+The original DCA with this new build and the late dependency negative remain
+NOT RUN; the earlier automatic review rejection still applies.
+
 ### Late dependency negative preparation — 2026-11-08
 
 Reviewed source `842551aee724a31a880d56cd783047ae54726ac7`, integrated as
