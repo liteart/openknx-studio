@@ -203,3 +203,20 @@ scope, but did not reproduce the build. The demo was staged and started in the
 existing limited Windows `dev` session; a loopback listener was observed.
 The real Windows provider enrollment and assertion remain NOT RUN until the
 owner completes them. No device authorization or KNX operation is involved.
+
+### Windows provider diagnosis — 2026-11-13
+
+The owner reported no visible response to the enrollment button. The old page
+displayed a `NotAllowedError` at the passkey prompt below the long plan; after
+the server was replaced, that old page also reported a CSRF mismatch. The
+enrollment outcome is not claimed. Editor `1b8d26c` moves the existing status
+above the button, without changing the WebAuthn or verification logic; nine
+browser tests and the Windows cross-build passed. The updated synthetic demo
+was started separately and awaits an owner-driven retry after page reload.
+
+In the same limited interactive Windows session, the read-only
+[`WebAuthNIsUserVerifyingPlatformAuthenticatorAvailable`](https://learn.microsoft.com/en-us/windows/win32/api/webauthn/nf-webauthn-webauthnisuserverifyingplatformauthenticatoravailable)
+returned success and `true`. The private result SHA-256 is
+`9af3d5a655118e7c6caecc89cc9e946dece4f81003c97957372723c6c111cf24`.
+This establishes reported platform authenticator availability only; it does
+not identify the cause of the browser error or prove enrollment/assertion.
