@@ -99,14 +99,15 @@ hub; the Microsoft USB serial driver was stopped. The private inventory
 record SHA-256 is
 `cb94dfb5280a9b3a222e0097d6e90701d9d8cbc8695af29d9d5744a088c78c0a`.
 This filtered guest inventory does not inspect hypervisor passthrough or
-establish absence of every possible driver. The launcher explicitly reports
-descendants as `NOT_CONTAINED`. The original offline runtime test remains
+establish absence of every possible driver. At that checkpoint the launcher
+reported descendants as `NOT_CONTAINED`. The original offline runtime test remains
 NOT RUN after automatic review rejected its start with those paths unverified.
 
 The launcher now establishes a non-breakaway Windows job before starting its
 host, with an active limit of two processes and kill-on-close. Four synthetic
 Windows tests passed on the dev host, including descendant denial and host
-termination after launcher death; details, exact source and evidence are in
+termination after launcher death, both through SSH and in a limited interactive
+session; details, exact source and evidence are in
 [`TASK013-PROCESS-CONTAINMENT.md`](../experiments/dca-constructor/TASK013-PROCESS-CONTAINMENT.md).
 This does not contain work delegated to an existing service, establish device
 or network isolation, or constitute the previously rejected vendor test.

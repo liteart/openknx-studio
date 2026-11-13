@@ -78,4 +78,14 @@ The remote invocation checked source SHA-256 pins immediately before the run:
 `ProcessContainmentProbe.cs` `05f9fe7195354d96a3e29d0d5009d915301f60a0dbcff0f29d610ee2a015dbae`,
 and `Test-ProcessContainment.ps1` `c0dac0306ddfe93bc5705d0c42ceb87fa1df934a74cb4ccd5fdb81418722945e`.
 Original vendor execution, restricted interactive execution and hardware
-were NOT RUN. These process tests do not establish network/device isolation.
+were NOT RUN at this checkpoint. These process tests do not establish
+network/device isolation.
+
+The same four owned cases subsequently passed on the same host in the
+existing `dev` RDP session via a scheduled task configured as Interactive
+and Limited. The test checked the limited token and pinned sources before
+execution. The scheduler reported exit 0; no test process remained and the
+finished task was removed. The private result
+`private/evidence/task013-interactive-result-20261113.txt` has SHA-256
+`1481a069a2c6df446d9a668036be2bf3a75610a9431c1e295cab91f4b910754c`.
+No original DCA or hardware was exercised.
