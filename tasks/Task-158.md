@@ -71,6 +71,17 @@ inline comparison data. Independent review confirmed the selectors and prefix
 equality. The remaining four bytes and ETS comparison semantics are still
 unknown; this observation does not justify truncation.
 
+Further primary-source review narrows the uncertainty. Configuration
+Procedures Management v02.01.01 maps `LdCtrlCompareProp` to
+`DM_InterfaceObjectVerify` (page 73, load-control implementation); Management
+Procedures v02.01.02 §3.26 describes reading the selected property and
+comparing the returned value with the supplied data. A mismatch or missing
+response is an error. The project/22 schema defines `InlineData` as
+`xs:hexBinary` without a length restriction and defaults `Count` to one.
+Neither source establishes how ETS handles this candidate's ten-byte value
+against the six-byte property response. The prefix match therefore remains
+INCONCLUSIVE, and no executable comparison rule follows from it.
+
 The observation was reproduced and saved as private, pinned reference
 artifacts under `private/evidence/task158-trace-reference-20261113/`. The
 offline extractor SHA-256 is
