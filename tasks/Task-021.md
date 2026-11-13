@@ -102,6 +102,10 @@ the corresponding private metadata text SHA-256 is
 `a6539ba2164e9f89203df484320ecfb7bf4f259e8060ae93545ee869480188ff`.
 The capture was stopped and its temporary filter removed. No independent
 download or write by OpenKNX Studio was performed in this observation.
+Subsequent independently reviewed analysis identified classic MemoryWrite
+confirmations with up to 52 data bytes and matching service-internal responses.
+That exceeds the current standard-frame 12-byte codec limit. Task-163 covers
+the generic codec; path qualification and long-frame dispatch remain separate.
 An independent count also found a discrepancy in the fork's extended-frame
 layout. Its correction is independently reviewed in local unpublished fork
 `3ebe3d979f61c699283c1f7ac07c7de920eb2c3e`; Task-157 records its scope and

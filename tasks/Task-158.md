@@ -47,3 +47,26 @@ An independently produced ETS reference for the exact selected application in
 a separate scratch project is the next candidate for resolving these gaps.
 Its ability to expose the needed compiled data has not been established. The
 owner's production project remains deferred and outside this investigation.
+
+The owner-authorized ETS capture was subsequently inspected offline against
+the corrected cEMI layout and primary application-layer definitions. It
+contains 20 positive classic MemoryWrite confirmations to the selected device
+and 20 matching MemoryResponses, with exact address, length and data equality
+in capture order. The observed write counts are 1, 10, 15, sixteen blocks of
+52, and 30 bytes. This supports the observed traffic and service-internal
+responses, not independent readback or a complete transaction trace.
+
+The observed writes cover all 364 bytes of candidate segment AS-4400 and all
+498 bytes of AS-456C, but only 11 of 513 bytes of AS-4000 and 15 of 511 bytes
+of AS-4201. No direct writes to the two RAM segments were identified. The two
+complete observed segment snapshots differ from the manufacturer archive
+baselines; their actual contents and configuration remain private. These
+observations do not resolve RAM omission, profile activation or checksum
+semantics. Independent review reproduced the pair and coverage counts; no
+physical operation was performed during analysis.
+
+Two observed PID78 reads and their matching six-byte responses have identical
+values. Those bytes equal the first six bytes of the candidate's ten-byte
+inline comparison data. Independent review confirmed the selectors and prefix
+equality. The remaining four bytes and ETS comparison semantics are still
+unknown; this observation does not justify truncation.
