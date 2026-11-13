@@ -76,6 +76,14 @@ or justify enabling this attribute in an independent download.
 Reproduce with `python3 private/evidence/task158-trace-reference-20261113/count_allocations.py`;
 the private script SHA-256 is
 `148055325229183a8e72e290bc52f5b389c1605741b5d8bb9151a295eb176680`.
+For each of these six confirmations the next observed PID5 response with the
+same object and selector returned `02`; Resources v01.10.01 defines load
+state 2 as `Loading` (page 294). The separate pinned-capture check
+`python3 private/evidence/task158-trace-reference-20261113/count_allocation_responses.py`
+(SHA-256 `6907f8993b1d2c71480606a4515e5df98edd8ee915baf1bef1d7f15f0c3d5b67`)
+reproduces the ordered associations. This is evidence of a subsequent state
+response, not proof that the checksum was calculated or verified; the capture
+still lacks the original outbound ETS packets and a complete procedure trace.
 
 Two observed PID78 reads and their matching six-byte responses have identical
 values. Those bytes equal the first six bytes of the candidate's ten-byte
