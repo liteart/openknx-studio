@@ -187,3 +187,19 @@ processes. Earlier NOT RUN statements are historical. These results cover the
 experimental synthetic registry journal on this host, not a real passkey
 provider, power-loss durability, Windows guard production integration or KNX.
 Task152 remains in progress.
+
+### Windows provider test preparation — 2026-11-13
+
+The synthetic browser demo was cross-built from editor
+`cebe8e81776602afe10749cd19ccea34c1fe05fc` for Windows x86-64 with the
+experimental development journal enabled, using locked offline dependencies.
+The executable SHA-256 is
+`e95292155a3bf84ccb1fe0715bad11c96cb1d5fd9f93dde159a640b4a44210b5`;
+the private build record is
+`private/evidence/task152-windows-provider-build-20261113/README.md`, SHA-256
+`a609d1ad7ea2c62edf419c90f62813582d3a305f8ff7b4077fbec9f0cb9ee0de`.
+Independent inspection verified source and artifact pins and synthetic-only
+scope, but did not reproduce the build. The demo was staged and started in the
+existing limited Windows `dev` session; a loopback listener was observed.
+The real Windows provider enrollment and assertion remain NOT RUN until the
+owner completes them. No device authorization or KNX operation is involved.

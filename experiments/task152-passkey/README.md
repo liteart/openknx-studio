@@ -48,9 +48,10 @@ usable on Windows and Linux. This verifier uses browser-standard WebAuthn and
 leaves authenticator attachment unrestricted: a future browser UI can offer
 the macOS vault, Windows platform credentials or supported Linux authenticators
 and a phone where the browser supports it. It does not invoke a macOS-only
-keychain API. Native browser, platform vault and phone compatibility are
-**NOT RUN** until an operator completes the browser test. A synchronized credential
-does not prove that its private key is held only on the phone.
+keychain API. The owner completed macOS platform-vault enrollment and assertion
+through the protected Task153 path; Windows and Linux provider ceremonies
+remain NOT RUN. A synchronized credential does not prove that its private key
+is held only on the phone.
 
 Enrollment is explicitly **development enrollment**, stored only in process
 memory. It proves possession of a new credential, not the operator's identity.
@@ -73,8 +74,9 @@ before a ceremony can begin. The non-default `experimental-windows-journal`
 feature selects a development-only nonvolatile HKCU registry
 journal implementation: it reserves one key per consumed challenge, writes the
 bounded receipt, and requires checked `RegFlushKey` barriers. Its source and
-native-only tests type-check for `x86_64-pc-windows-gnu`, but **native Windows
-execution is NOT RUN**. It is not qualified Windows support or a protected operator service;
+native-only tests also passed on the Windows dev host; the four synthetic
+registry cases and their evidence are recorded in [Task-152](../../tasks/Task-152.md).
+This does not qualify Windows passkey providers or a protected operator service;
 the owned module forbids unsafe code and uses reviewed safe registry APIs.
 Those dependencies contain unsafe code; no absence claim is made for them. Other
 platforms return `UnsupportedJournalPlatform`. A failed preflight returns
