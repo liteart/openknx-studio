@@ -1,10 +1,66 @@
-// Owned direct-child supervisor. This is not a process-tree or network sandbox.
+// Owned Windows supervisor with a two-process job. This is not a network/device sandbox.
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Runtime.InteropServices;
+
+// The launcher joins before starting the host, so job inheritance has no assign-after-start race.
+// A two-process limit admits this launcher and its selected host, and denies host descendants.
+// The unnamed handle is non-inheritable and intentionally held until OS process teardown:
+// closing it while this launcher is alive would terminate this launcher as well as its host.
+internal static class ProbeProcessContainment
+{
+    const uint ActiveProcessLimit = 0x8, KillOnClose = 0x2000;
+    static IntPtr job;
+    [StructLayout(LayoutKind.Sequential)]
+    struct BasicLimits { public long ProcessTime, JobTime; public uint Flags; public UIntPtr MinWorkingSet, MaxWorkingSet; public uint ActiveLimit; public UIntPtr Affinity; public uint Priority, Scheduling; }
+    [StructLayout(LayoutKind.Sequential)]
+    struct IoCounters { public ulong ReadOperations, WriteOperations, OtherOperations, ReadBytes, WriteBytes, OtherBytes; }
+    [StructLayout(LayoutKind.Sequential)]
+    struct ExtendedLimits { public BasicLimits Basic; public IoCounters Io; public UIntPtr ProcessMemory, JobMemory, PeakProcessMemory, PeakJobMemory; }
+    [StructLayout(LayoutKind.Sequential)]
+    struct Accounting { public long User, Kernel, PeriodUser, PeriodKernel; public uint PageFaults, TotalProcesses, ActiveProcesses, TerminatedProcesses; }
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern IntPtr CreateJobObject(IntPtr security, string name);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool SetInformationJobObject(IntPtr handle, int kind, ref ExtendedLimits information, uint length);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool QueryInformationJobObject(IntPtr handle, int kind, out ExtendedLimits information, uint length, IntPtr returnedLength);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool QueryInformationJobObject(IntPtr handle, int kind, out Accounting information, uint length, IntPtr returnedLength);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool AssignProcessToJobObject(IntPtr handle, IntPtr process);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool IsProcessInJob(IntPtr process, IntPtr handle, out bool result);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool SetHandleInformation(IntPtr handle, uint mask, uint flags);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool GetHandleInformation(IntPtr handle, out uint flags);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool CloseHandle(IntPtr handle);
+    static void Require(bool value, string code) { if(!value)throw new InvalidOperationException(code+" win32="+Marshal.GetLastWin32Error()); }
+    internal static void Enter()
+    {
+        Require(Environment.OSVersion.Platform==PlatformID.Win32NT && Environment.Is64BitProcess,"LAUNCH_JOB_WINDOWS_X64_REQUIRED");
+        Require(job==IntPtr.Zero,"LAUNCH_JOB_ALREADY_ENTERED");
+        IntPtr created=CreateJobObject(IntPtr.Zero,null);Require(created!=IntPtr.Zero,"LAUNCH_JOB_CREATE");
+        bool assigned=false;
+        try {
+            Require(SetHandleInformation(created,1,0),"LAUNCH_JOB_NONINHERITABLE");uint flags;
+            Require(GetHandleInformation(created,out flags)&&(flags&1)==0,"LAUNCH_JOB_HANDLE_FLAGS");
+            var limits=new ExtendedLimits();limits.Basic.Flags=ActiveProcessLimit|KillOnClose;limits.Basic.ActiveLimit=2;
+            Require(SetInformationJobObject(created,9,ref limits,(uint)Marshal.SizeOf(typeof(ExtendedLimits))),"LAUNCH_JOB_SET_LIMITS");
+            ExtendedLimits actual;Require(QueryInformationJobObject(created,9,out actual,(uint)Marshal.SizeOf(typeof(ExtendedLimits)),IntPtr.Zero),"LAUNCH_JOB_READ_LIMITS");
+            Require(actual.Basic.Flags==(ActiveProcessLimit|KillOnClose)&&actual.Basic.ActiveLimit==2,"LAUNCH_JOB_LIMITS");
+            using(var current=Process.GetCurrentProcess())Require(AssignProcessToJobObject(created,current.Handle),"LAUNCH_JOB_ASSIGN_LAUNCHER");
+            assigned=true;job=created;Require(OnlyLauncher(2000),"LAUNCH_JOB_INITIAL_ACCOUNTING");
+        } finally { if(!assigned)CloseHandle(created); }
+    }
+    internal static void VerifyChild(Process child)
+    {
+        bool member;Require(job!=IntPtr.Zero && IsProcessInJob(child.Handle,job,out member)&&member,"LAUNCH_JOB_CHILD_MEMBERSHIP");
+    }
+    internal static bool OnlyLauncher(int milliseconds)
+    {
+        Require(job!=IntPtr.Zero,"LAUNCH_JOB_NOT_ENTERED");var clock=Stopwatch.StartNew();
+        do {Accounting value;Require(QueryInformationJobObject(job,1,out value,(uint)Marshal.SizeOf(typeof(Accounting)),IntPtr.Zero),"LAUNCH_JOB_ACCOUNTING");if(value.ActiveProcesses==1)return true;Thread.Sleep(10);}while(clock.ElapsedMilliseconds<milliseconds);
+        return false;
+    }
+}
 
 internal static class ProbeLauncher
 {
@@ -49,13 +105,13 @@ internal static class ProbeLauncher
         foreach(string file in files)if(!ProbeFiles.Same(file,marker)){ProbeFiles.Local(file,true,false);File.Delete(file);}
         for(int i=directories.Count-1;i>0;i--){ProbeFiles.Local(directories[i],true,true);Directory.Delete(directories[i],false);}
         File.Delete(ProbeFiles.Local(marker,true,false));ProbeFiles.Local(root,true,true);Directory.Delete(root,false);
-        Console.WriteLine("LAUNCH_PRODUCT_TEMP removed=True files="+files.Count+" directories="+directories.Count+" bytes="+bytes+" evidence=conversion-temp-evidence.txt descendants=NOT_CONTAINED");
+        Console.WriteLine("LAUNCH_PRODUCT_TEMP removed=True files="+files.Count+" directories="+directories.Count+" bytes="+bytes+" evidence=conversion-temp-evidence.txt descendants=DENIED_BY_JOB_LIMIT");
     }
     static bool StateReloadHash(string value){if(value==null||value.Length!=64)return false;foreach(char c in value)if(!(c>='0'&&c<='9'||c>='a'&&c<='f'))return false;return true;}
     internal static int Main(string[] args)
     {
         if(ProbeFiles.OriginalBusProbeBlocked(args)){Console.WriteLine("LAUNCH_FAILURE OFFLINE_BUS_ISOLATION_CAPABILITY_REQUIRED child-started=False vendor-runtime=NOT_RUN");return 2;}
-        Process child = null; bool started = false, confirmed = false;
+        Process child = null; bool started = false, confirmed = false, jobReady = false;
         string productTemp=null,productToken=null,productEvidence=null;
         try {
             bool ownedHostBus=args.Length==10&&args[3]=="owned-sdk-project-fixture"&&args[8]=="--owned-host-bus-denial"&&args[9]=="check";
@@ -141,8 +197,10 @@ internal static class ProbeLauncher
             child.StartInfo.RedirectStandardOutput = true; child.StartInfo.RedirectStandardError = true;
             // Prevent caller-supplied managed startup instrumentation in the owned child.
             foreach (string name in new string[] { "COR_ENABLE_PROFILING", "COR_PROFILER", "COR_PROFILER_PATH", "COR_PROFILER_PATH_64", "APPDOMAIN_MANAGER_ASM", "APPDOMAIN_MANAGER_TYPE", "DEVPATH", "COMPLUS_Version", "DOTNET_STARTUP_HOOKS" }) child.StartInfo.EnvironmentVariables.Remove(name);
+            ProbeProcessContainment.Enter();jobReady=true;
             ProbeFiles.Require(child.Start(), "LAUNCH_START"); started = true;
-            Console.WriteLine("LAUNCH_START pid=" + child.Id + " mode=" + mode + " deadline-seconds=" + seconds + " capture-bytes=65536 descendants=NOT_CONTAINED");
+            ProbeProcessContainment.VerifyChild(child);
+            Console.WriteLine("LAUNCH_START pid=" + child.Id + " mode=" + mode + " deadline-seconds=" + seconds + " capture-bytes=65536 descendants=DENIED_BY_JOB_LIMIT active-process-limit=2");
             var stdout = new Thread(delegate() { Read(child.StandardOutput.BaseStream); }); stdout.IsBackground = true;
             var stderr = new Thread(delegate() { Read(child.StandardError.BaseStream); }); stderr.IsBackground = true;
             stdout.Start(); stderr.Start();
@@ -153,7 +211,7 @@ internal static class ProbeLauncher
                 if (clock.ElapsedMilliseconds >= seconds * 1000L) { reason = "TIMEOUT"; break; }
             }
             if (!child.HasExited) child.Kill();
-            confirmed = child.WaitForExit(2000);
+            confirmed = child.WaitForExit(2000) && ProbeProcessContainment.OnlyLauncher(2000);
             if (!confirmed) { Console.WriteLine("LAUNCH_RESULT child-exit-confirmed=false"); return 126; }
             bool readersDone = stdout.Join(1000) & stderr.Join(1000);
             // An inherited pipe in a descendant must never make the supervisor hang.
@@ -163,7 +221,7 @@ internal static class ProbeLauncher
             if (reason == "EXIT") {
                 lock (CaptureLock) { Console.Write(Encoding.UTF8.GetString(Captured.ToArray())); }
             }
-            Console.WriteLine("LAUNCH_RESULT reason=" + reason + " child-exit=" + child.ExitCode + " child-exit-confirmed=true captured-bytes=" + total + " descendants=NOT_CONTAINED");
+            Console.WriteLine("LAUNCH_RESULT reason=" + reason + " child-exit=" + child.ExitCode + " child-exit-confirmed=true captured-bytes=" + total + " descendants=DENIED_BY_JOB_LIMIT job-empty-except-launcher=true");
             if(productTemp!=null){string owned=productTemp;productTemp=null;FinishProductTemp(owned,productToken,productEvidence);}
             if (reason == "TIMEOUT") return 124;
             if (reason != "EXIT") return 125;
@@ -172,7 +230,7 @@ internal static class ProbeLauncher
             Console.WriteLine("LAUNCH_FAILURE " + error.GetType().FullName + " " + error.Message.Replace("\r", " ").Replace("\n", " "));
             return 127;
         } finally {
-            if (started && !confirmed) { try { if (!child.HasExited) child.Kill(); confirmed = child.WaitForExit(2000); Console.WriteLine("LAUNCH_CLEANUP child-exit-confirmed=" + confirmed); } catch (Exception error) { Console.WriteLine("LAUNCH_CLEANUP_UNCONFIRMED " + error.GetType().FullName); } }
+            if (started && !confirmed) { try { if (!child.HasExited) child.Kill(); confirmed = child.WaitForExit(2000) && jobReady && ProbeProcessContainment.OnlyLauncher(2000); Console.WriteLine("LAUNCH_CLEANUP child-exit-confirmed=" + confirmed); } catch (Exception error) { Console.WriteLine("LAUNCH_CLEANUP_UNCONFIRMED " + error.GetType().FullName); } }
             if(productTemp!=null){
                 if(!started||confirmed){try{FinishProductTemp(productTemp,productToken,productEvidence);}catch(Exception error){Console.WriteLine("LAUNCH_PRODUCT_TEMP_CLEANUP_FAILED root="+productTemp+" type="+error.GetType().FullName+" action=PRESERVED_FOR_INSPECTION");}}
                 else Console.WriteLine("LAUNCH_PRODUCT_TEMP_CLEANUP_NOT_RUN root="+productTemp+" reason=CHILD_EXIT_UNCONFIRMED");

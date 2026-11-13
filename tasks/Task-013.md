@@ -103,6 +103,14 @@ establish absence of every possible driver. The launcher explicitly reports
 descendants as `NOT_CONTAINED`. The original offline runtime test remains
 NOT RUN after automatic review rejected its start with those paths unverified.
 
+The launcher now establishes a non-breakaway Windows job before starting its
+host, with an active limit of two processes and kill-on-close. Four synthetic
+Windows tests passed on the dev host, including descendant denial and host
+termination after launcher death; details, exact source and evidence are in
+[`TASK013-PROCESS-CONTAINMENT.md`](../experiments/dca-constructor/TASK013-PROCESS-CONTAINMENT.md).
+This does not contain work delegated to an existing service, establish device
+or network isolation, or constitute the previously rejected vendor test.
+
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; owned deny-only profile and pre-start isolation guard only |
