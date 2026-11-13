@@ -106,6 +106,9 @@ An independent count also found a discrepancy in the fork's extended-frame
 layout. Its correction is independently reviewed in local unpublished fork
 `3ebe3d979f61c699283c1f7ac07c7de920eb2c3e`; Task-157 records its scope and
 tests. This codec fix does not itself resolve the complete download profile.
+The Task021 management branch and corrected codec have since been combined
+and tested in local unpublished fork integration `8d827644a93d5cf548885449879742290c5d2271`;
+Task-159 records the evidence and remaining limits.
 
 The subsequent coordinated Task155 live read observed mask `0705` and a
 five-byte application identifier matching the selected Task154 candidate's
