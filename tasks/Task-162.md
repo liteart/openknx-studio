@@ -37,3 +37,17 @@ sources and the documented 14/15 terminology discrepancy are in
 Runtime route binding, long-frame session support, Windows, hardware and the
 complete download remain unqualified. Final acceptance is in review and the
 fork is not published.
+
+### Device capacity observation — 2026-11-13
+
+Under the owner's read authorization, the coordinated `readonly_connected_property`
+example from local fork `f9441237b878b48c4423076044c50a80ec0f4202` ran once
+on macOS arm64 via `192.168.1.50:3671` to `1.1.231`. It checked mask `0705`
+and device object index 0/type 0, then read PID56 index 1, one two-byte value.
+The result `0x0037` is 55 in the Resources §4.3.7 unsigned big-endian format.
+Device cleanup was `LOCAL_NETWORK_CONFIRMED`; gateway cleanup was
+`REMOTE_CONFIRMED`; no device write occurred. Private stdout SHA-256 is
+`1c533124e3204d63a15bfe52540866794e184abfe5219549acb1b748e59312d6`;
+stderr was empty. Independent review verified the source, result and semantics.
+The gateway separately advertised 240 in Task161. Unknown router and route
+limits prevent claiming a usable end-to-end limit or enabling long frames.
