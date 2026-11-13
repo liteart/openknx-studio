@@ -107,6 +107,12 @@ layout. Its correction is independently reviewed in local unpublished fork
 `3ebe3d979f61c699283c1f7ac07c7de920eb2c3e`; Task-157 records its scope and
 tests. This codec fix does not itself resolve the complete download profile.
 
+The subsequent coordinated Task155 live read observed mask `0705` and a
+five-byte application identifier matching the selected Task154 candidate's
+manufacturer, application number and version. This narrows the profile
+identity uncertainty; it does not establish the exact archive, configuration,
+hardware variant or fingerprint, nor resolve the load semantics below.
+
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; generic reads, writes, allocation controls and basic restart reviewed; exact profile completeness remains unqualified |
