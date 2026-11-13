@@ -65,6 +65,18 @@ observations do not resolve RAM omission, profile activation or checksum
 semantics. Independent review reproduced the pair and coverage counts; no
 physical operation was performed during analysis.
 
+A further offline count of positive link confirmations in the same pinned
+capture found four property-based absolute data-allocation events with memory
+attribute bit 7 set, and one with it clear. One stack-allocation event had the
+bit clear. The decoder used the ten-byte load-event layout in Management
+Procedures v02.01.02, pages 139–140, and selected property 5 writes to the
+observed target. This shows that ETS sent those event payloads on this run;
+link confirmation alone does not show device acceptance, checksum behavior,
+or justify enabling this attribute in an independent download.
+Reproduce with `python3 private/evidence/task158-trace-reference-20261113/count_allocations.py`;
+the private script SHA-256 is
+`148055325229183a8e72e290bc52f5b389c1605741b5d8bb9151a295eb176680`.
+
 Two observed PID78 reads and their matching six-byte responses have identical
 values. Those bytes equal the first six bytes of the candidate's ten-byte
 inline comparison data. Independent review confirmed the selectors and prefix
