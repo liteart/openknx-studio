@@ -109,6 +109,10 @@ tests. This codec fix does not itself resolve the complete download profile.
 The Task021 management branch and corrected codec have since been combined
 and tested in local unpublished fork integration `8d827644a93d5cf548885449879742290c5d2271`;
 Task-159 records the evidence and remaining limits.
+The connected session's required short extended EFF=0 receive tolerance is
+implemented and reviewed in local fork `1275bacee12c087dc2a6d0335aedd862c023d58e`;
+Task-160 records its bounded tests. Long APDUs and download-specific
+capability negotiation remain unqualified.
 
 The subsequent coordinated Task155 live read observed mask `0705` and a
 five-byte application identifier matching the selected Task154 candidate's
