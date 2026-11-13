@@ -82,6 +82,30 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 ## Completion Record
 
+### ETS reference observation — 2026-11-13
+
+Simon authorized passive observation and reported that ETS completed a full
+download to the selected bench device successfully. A private NIC-level
+capture contains traffic involving the selected device, but the Windows
+capture recorded only gateway-to-ETS IP packets. Its original ETL metadata
+shows receive observations and no transmitted packets at the chosen NIC
+capture point. This is incomplete reference evidence: it does not qualify
+the complete load sequence or resolve the profile ambiguities below. The
+observed cEMI frames include positive link-layer confirmations addressed
+to the selected device, including six PropertyValue reads and 19 writes;
+these confirmations are not independent application-level readbacks. Two
+KNXnet/IP `0x0423` messages are tunnelling feature responses, not routing
+loss indications. The original ETS requests were not captured. The private
+PCAPNG SHA-256 is
+`83b2d26fba26e1f37138721043eb7b74c46be9bc59f7fbe987b85293c7e124e6`;
+the corresponding private metadata text SHA-256 is
+`a6539ba2164e9f89203df484320ecfb7bf4f259e8060ae93545ee869480188ff`.
+The capture was stopped and its temporary filter removed. No independent
+download or write by OpenKNX Studio was performed in this observation.
+An independent count also found a discrepancy in the fork's extended-frame
+layout; extended-frame decoding must be investigated before relying on its
+target counts or additional interpretations.
+
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; generic reads, writes, allocation controls and basic restart reviewed; exact profile completeness remains unqualified |
