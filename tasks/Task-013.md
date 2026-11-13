@@ -92,6 +92,17 @@ independent inventory of passthrough configuration, drivers or process
 descendants. Simon directs the agent to configure temporary Windows Firewall
 rules immediately before each offline test.
 
+On 2026-11-13 a read-only Windows guest inventory found no present device
+or installed driver/service matching the selected KNX/Falcon name filters.
+It reported QEMU USB controllers, a USB input device and a Remote Desktop USB
+hub; the Microsoft USB serial driver was stopped. The private inventory
+record SHA-256 is
+`cb94dfb5280a9b3a222e0097d6e90701d9d8cbc8695af29d9d5744a088c78c0a`.
+This filtered guest inventory does not inspect hypervisor passthrough or
+establish absence of every possible driver. The launcher explicitly reports
+descendants as `NOT_CONTAINED`. The original offline runtime test remains
+NOT RUN after automatic review rejected its start with those paths unverified.
+
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; owned deny-only profile and pre-start isolation guard only |
