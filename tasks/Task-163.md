@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | In progress |
+| Status | In review |
 | Stage | PoC protocol codec |
 | Component | knust-fork / classic memory services |
 | Dependencies | Task-016, Task-019, Task-151; related: Task-021, Task-160, Task-162 |
@@ -30,4 +30,16 @@ is included.
 
 ## Completion record
 
-In progress. No long-frame session dispatch or full download is claimed.
+The explicit classic long-memory codecs are committed in local unpublished
+fork `bc8133e9912ea31bfabf5921fd3dd43cf9c51f55`, based on
+`f9441237b878b48c4423076044c50a80ec0f4202`. Existing standard constructors
+remain limited to 12 bytes and the new types provide no session dispatch.
+Seven new codec tests and six existing memory tests passed, as did focused
+Clippy, DPT all-target compilation, formatting and diff checks. An independent
+reviewer repeated the codec tests and checked the supplied application-layer
+specification. Exact commands and evidence are in
+`TASK163-CLASSIC-LONG-MEMORY.md` at the fork commit.
+
+Windows, hardware, route qualification, long-frame session dispatch and the
+full download remain NOT RUN. Final acceptance is in review; the fork is not
+published.
