@@ -86,6 +86,12 @@ See [RISKS-AND-INPUTS.md](../docs/RISKS-AND-INPUTS.md). Do not guess missing app
 
 ## Completion Record
 
+On 2026-11-13 Simon confirmed that no external devices are connected to the
+dev VM. This is an owner-provided environment statement; it is not an
+independent inventory of passthrough configuration, drivers or process
+descendants. Simon directs the agent to configure temporary Windows Firewall
+rules immediately before each offline test.
+
 | Field | Initial value |
 |---|---|
 | Implementation / report status | In progress; owned deny-only profile and pre-start isolation guard only |
