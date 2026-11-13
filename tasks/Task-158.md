@@ -28,6 +28,31 @@ Task-021's applicable primitive selection. This task creates no device write,
 does not inspect the owner's deferred production project, and does not publish
 manufacturer inputs or private captures.
 
+## Remaining qualification checks
+
+Work through these in order; an observation closes a check only to the extent
+that it actually establishes the stated behavior. Keep actual device/project
+data private and record INCONCLUSIVE where a comparison lacks a known input.
+
+- [x] Reproduce and independently review the new 1,024-byte snapshot against
+  the pinned trace and archive; identify coverage and differing offsets without
+  interpreting unknown production parameter values.
+- [ ] Obtain an independently generated ETS reference for the exact product
+  in an owner-approved scratch project, with known defaults and one controlled
+  parameter change; compare compiled segments and activation/module allocation.
+- [ ] Qualify the two absent RAM payloads and their allocation/load behavior
+  against primary evidence or the controlled ETS reference.
+- [ ] Resolve the PID78 comparison representation and the `0x80` allocation
+  attribute from authoritative evidence or a sufficiently complete controlled
+  trace. Keep unresolved behavior explicitly unsupported.
+- [ ] Establish the profile's applicable load sequence and generic primitives
+  from complete enough independent evidence, with identity and path limits.
+- [ ] Review the evidence and reproducibility against the acceptance criteria;
+  identify any cases that must remain unsupported before requesting acceptance.
+
+The scratch project and any further live operation need their applicable owner
+coordination. These checks do not authorize a write or production-project access.
+
 ## Completion record
 
 Investigation in progress. No complete image, load plan or independent device
@@ -131,3 +156,12 @@ AS-4201 matched the corresponding snapshot offsets. This is a current raw
 memory observation and partial cross-check against the ETS trace, not proof
 that the full range is the correct compiled image, writable, dynamically
 allocated as assumed, or sufficient for a download. Data remains private.
+
+The pinned offline comparison
+`python3 private/evidence/task158-trace-reference-20261113/compare_snapshot.py`
+(script SHA-256 `7d9bca22debccdd293c0fcbd4835dccdfc149d63f8427005382353efb4b88aa1`)
+reproduced the trace overlap and compared all 513 and 511 respective bytes
+with the registered archive: 16 and 10 bytes differ. An independent reviewer
+repeated the comparison and separately decoded the pinned XML and snapshot,
+confirming the counts and uniqueness of the captured offsets. These differences
+do not identify parameter settings or qualify a downloadable image.
