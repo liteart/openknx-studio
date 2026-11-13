@@ -92,6 +92,17 @@ device connection or hardware test is claimed. See the latest checkpoint below.
 
 ## Completion Record
 
+### Windows negative build attempt — 2026-11-13
+
+The prepared run `010deb202611` reached dev host `DESKTOP-3UKTEIP` but
+stopped at `INPUT_COUNT` before the Windows build or original runtime: the
+previously staged 42-file input directory contained only three files. The
+private build-result record has SHA-256
+`7691ddb550577414d24780eef91b5705a8d198f54e24a1eb77433971f3b603ab`.
+No firewall modification, vendor execution, UI or KNX operation occurred.
+The original runtime test remains NOT RUN; restoring hash-qualified inputs
+and verifying isolation remain prerequisites, not evidence of a passed test.
+
 ### Late dependency negative preparation — 2026-11-08
 
 Reviewed source `842551aee724a31a880d56cd783047ae54726ac7`, integrated as
