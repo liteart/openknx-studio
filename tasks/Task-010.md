@@ -103,6 +103,16 @@ No firewall modification, vendor execution, UI or KNX operation occurred.
 The original runtime test remains NOT RUN; restoring hash-qualified inputs
 and verifying isolation remain prerequisites, not evidence of a passed test.
 
+The exact 42 pinned files, product archive and build references were then
+restaged in a fresh private directory. The owned Windows net48/C#5 build
+passed, with input checks before and after compilation. The private build
+result SHA-256 is
+`086081f77129cc402a44ec233385cdaa388b5c4400b44a8d1dc96d781cd6c66b`.
+The first staging verification was refused by Windows script policy; the
+successful verification and build used process-scoped execution policy. No
+vendor runtime, UI or hardware operation was run. Runtime isolation and the
+late dependency negative remain unverified.
+
 ### Late dependency negative preparation — 2026-11-08
 
 Reviewed source `842551aee724a31a880d56cd783047ae54726ac7`, integrated as
