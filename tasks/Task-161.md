@@ -42,3 +42,18 @@ its sequence-ordering finding was fixed and rechecked. Exact commands and
 standard references are in `TASK161-TUNNEL-CAPACITY.md` at the fork commit.
 Gateway compatibility, Windows, long APDUs and a full download remain NOT RUN;
 final acceptance is in review and the fork is not published.
+
+### Gateway observation — 2026-11-13
+
+The reviewed offline-default example was committed in local unpublished fork
+`f9441237b878b48c4423076044c50a80ec0f4202`, based on Task162's
+`f9f7354429387be3e899203431e57cc13fa4049c`. Six example tests and focused
+Clippy passed; independent review repeated all six tests. With the owner's
+gateway-read authorization, the example was run once on macOS arm64 using
+`--execute 192.168.1.50:3671 --non-secure`. The gateway returned Feature07
+maximum APDU length 240; the gateway disconnect received remote confirmation.
+No device operation was requested. Private stdout SHA-256 is
+`b85622caff1526c6fa3e4a3ffdfc37f323f3bff79b7c1a6baf9716076198c769`; stderr
+was empty. An independent reviewer checked the result and source semantics.
+The earlier gateway NOT RUN statement is historical. This qualifies only the
+observed gateway response, not the target, router path or long-frame support.
