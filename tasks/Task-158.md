@@ -112,3 +112,22 @@ An independent reviewer re-parsed the capture and verified the source pins,
 pairing, coverage, private artifacts and stated limitations. This is a bounded
 reference observation, not a general packet-parser qualification or complete
 download image. No manufacturer input or actual configuration was published.
+
+## Coordinated read-only snapshot — 2026-11-13
+
+After the owner confirmed the bus was free, the Task164 diagnostic from local
+fork `cff2be7d7a80097e51eb9ee498efbab3128b4c7e` read the concrete address
+range `4000`–`43FF` on `1.1.231` through the selected gateway. Mask `0705`,
+application object type 3 and program identifier `0083009013` matched before
+the memory requests. All 1,024 bytes were read in 86 standard-frame blocks;
+device cleanup was locally confirmed and gateway cleanup remotely confirmed.
+No writes were performed. The private stdout SHA-256 is
+`843b460077b6bd83ee67ab8fe49cf6a33a290a6e7966e00e86c91431bb24927e`;
+the example binary SHA-256 is
+`c24fd88c4030cbd3de76715ed434e8b28521b5d8f39aab5536ed55121435a5ad`.
+
+All 11 bytes previously observed in candidate segment AS-4000 and all 15 in
+AS-4201 matched the corresponding snapshot offsets. This is a current raw
+memory observation and partial cross-check against the ETS trace, not proof
+that the full range is the correct compiled image, writable, dynamically
+allocated as assumed, or sufficient for a download. Data remains private.
