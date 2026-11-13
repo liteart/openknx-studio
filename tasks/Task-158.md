@@ -25,8 +25,9 @@ Acceptance requires reviewed primary or independent reference evidence for
 the selected profile, reproducible offline input hashes, explicit unsupported
 cases, and sufficient qualified information for Task-024's image work and
 Task-021's applicable primitive selection. This task creates no device write,
-does not inspect the owner's deferred production project, and does not publish
-manufacturer inputs or private captures.
+does not write to the device or publish manufacturer inputs or private captures.
+The owner subsequently authorized using the production ETS project, scoped
+exclusively to device `1.1.231`; preserve unrelated project data and settings.
 
 ## Remaining qualification checks
 
@@ -37,9 +38,10 @@ data private and record INCONCLUSIVE where a comparison lacks a known input.
 - [x] Reproduce and independently review the new 1,024-byte snapshot against
   the pinned trace and archive; identify coverage and differing offsets without
   interpreting unknown production parameter values.
-- [ ] Obtain an independently generated ETS reference for the exact product
-  in an owner-approved scratch project, with known defaults and one controlled
-  parameter change; compare compiled segments and activation/module allocation.
+- [ ] Obtain an independently generated ETS reference for the exact product,
+  with known values and one controlled parameter change; compare compiled
+  segments and activation/module allocation. The owner has authorized use of
+  the production project scoped to device `1.1.231`.
 - [ ] Qualify the two absent RAM payloads and their allocation/load behavior
   against primary evidence or the controlled ETS reference.
 - [ ] Resolve the PID78 comparison representation and the `0x80` allocation
@@ -50,8 +52,8 @@ data private and record INCONCLUSIVE where a comparison lacks a known input.
 - [ ] Review the evidence and reproducibility against the acceptance criteria;
   identify any cases that must remain unsupported before requesting acceptance.
 
-The scratch project and any further live operation need their applicable owner
-coordination. These checks do not authorize a write or production-project access.
+Any further live operation requires applicable owner coordination. These checks
+do not authorize a device write or access to unrelated project objects.
 
 ## Completion record
 
@@ -68,10 +70,10 @@ also uses allocation checksum flag `0x80`, whose property-based semantics
 remain unqualified as documented in Task-021. These findings are structural
 evidence only, not downloadable bytes or an executable plan.
 
-An independently produced ETS reference for the exact selected application in
-a separate scratch project is the next candidate for resolving these gaps.
-Its ability to expose the needed compiled data has not been established. The
-owner's production project remains deferred and outside this investigation.
+An independently produced ETS reference for the exact selected application is
+a candidate for resolving these gaps. Its ability to expose the needed
+compiled data has not been established. The owner initially deferred the
+production project and subsequently authorized access limited to `1.1.231`.
 
 The owner-authorized ETS capture was subsequently inspected offline against
 the corrected cEMI layout and primary application-layer definitions. It
@@ -165,3 +167,24 @@ with the registered archive: 16 and 10 bytes differ. An independent reviewer
 repeated the comparison and separately decoded the pinned XML and snapshot,
 confirming the counts and uniqueness of the captured offsets. These differences
 do not identify parameter settings or qualify a downloadable image.
+
+## Owner-scoped ETS reference observation
+
+The owner authorized access to the production ETS project exclusively for
+device `1.1.231`. In the existing ETS 6.4.1 session, that device's displayed
+`Geräteanlaufzeit` was 2 seconds. The first two bytes of the previously
+captured AS-456C segment match the unsigned big-endian encoding of 2, the
+candidate's declared `startupTimeout` default. This is one consistent
+observation, not an independent controlled change, proof of the parameter's
+absolute mapping, activation or complete image. No project parameter or device
+was modified during this observation.
+
+The selected device's `Geräteausführung` currently displays
+`BE-GTL2Tx.01 NEUTRAL 2-fach`, while the owner previously identified the
+hardware as `BE-GTL4Tx.01`. Offline inspection of the pinned application
+shows that this display is a configurable `DeviceType` parameter; its 2-fold
+and 4-fold product variants reference the same application but select
+different conditional branches. The display alone does not establish physical
+hardware identity. The owner's clarification is pending, and neither the
+configured variant nor the 4-fold profile is inferred from the application
+identifier alone. No setting was changed.
