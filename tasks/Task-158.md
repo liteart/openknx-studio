@@ -70,3 +70,14 @@ values. Those bytes equal the first six bytes of the candidate's ten-byte
 inline comparison data. Independent review confirmed the selectors and prefix
 equality. The remaining four bytes and ETS comparison semantics are still
 unknown; this observation does not justify truncation.
+
+The observation was reproduced and saved as private, pinned reference
+artifacts under `private/evidence/task158-trace-reference-20261113/`. The
+offline extractor SHA-256 is
+`68c34ba53b311d03cf62614773fda062395f969f6816bc88031c2ec464df0fc6`;
+its report SHA-256 is
+`b0666516fc75aeae203ee426b229d90638d1c985587dd293b85083ef4d406cbe`.
+An independent reviewer re-parsed the capture and verified the source pins,
+pairing, coverage, private artifacts and stated limitations. This is a bounded
+reference observation, not a general packet-parser qualification or complete
+download image. No manufacturer input or actual configuration was published.
